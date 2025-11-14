@@ -1,0 +1,114 @@
+/**
+ * Dashboard 相关类型定义
+ */
+
+import type { ID, Timestamp } from './common';
+import type { PanelGroup } from './panelGroup';
+import type { TimeRange } from './timeRange';
+
+/**
+ * Dashboard 定义
+ */
+export interface Dashboard {
+  /** Dashboard ID */
+  id: ID;
+  /** Dashboard 名称 */
+  name: string;
+  /** Dashboard 描述 */
+  description?: string;
+  /** 面板组列表 */
+  panelGroups: PanelGroup[];
+  /** 时间范围 */
+  timeRange: TimeRange;
+  /** 刷新间隔（毫秒，0 表示不自动刷新） */
+  refreshInterval: number;
+  /** 变量列表 */
+  variables?: DashboardVariable[];
+  /** 创建时间 */
+  createdAt: Timestamp;
+  /** 更新时间 */
+  updatedAt: Timestamp;
+  /** 标签 */
+  tags?: string[];
+}
+
+/**
+ * Dashboard 变量
+ */
+export interface DashboardVariable {
+  /** 变量 ID */
+  id: ID;
+  /** 变量名称 */
+  name: string;
+  /** 变量标签（显示名称） */
+  label: string;
+  /** 变量类型 */
+  type: VariableType;
+  /** 变量选项 */
+  options: VariableOption[];
+  /** 当前值 */
+  current: string | string[];
+  /** 是否支持多选 */
+  multi?: boolean;
+  /** 是否支持全选 */
+  includeAll?: boolean;
+  /** 全选值 */
+  allValue?: string;
+}
+
+/**
+ * 变量类型
+ */
+export type VariableType = 'custom' | 'query' | 'textbox' | 'constant';
+
+/**
+ * 变量选项
+ */
+export interface VariableOption {
+  /** 显示文本 */
+  text: string;
+  /** 实际值 */
+  value: string;
+}
+
+/**
+ * Dashboard 创建参数
+ */
+export interface CreateDashboardParams {
+  /** 名称 */
+  name: string;
+  /** 描述 */
+  description?: string;
+  /** 标签 */
+  tags?: string[];
+}
+
+/**
+ * Dashboard 更新参数
+ */
+export interface UpdateDashboardParams {
+  /** 名称 */
+  name?: string;
+  /** 描述 */
+  description?: string;
+  /** 标签 */
+  tags?: string[];
+}
+
+/**
+ * Dashboard 列表项
+ */
+export interface DashboardListItem {
+  /** Dashboard ID */
+  id: ID;
+  /** Dashboard 名称 */
+  name: string;
+  /** Dashboard 描述 */
+  description?: string;
+  /** 创建时间 */
+  createdAt: Timestamp;
+  /** 更新时间 */
+  updatedAt: Timestamp;
+  /** 标签 */
+  tags?: string[];
+}
