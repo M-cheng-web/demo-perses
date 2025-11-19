@@ -30,6 +30,7 @@
             <a-form-item label="图表类型" required>
               <a-select v-model:value="formData.type">
                 <a-select-option value="timeseries">时间序列图</a-select-option>
+                <a-select-option value="bar">柱状图</a-select-option>
                 <a-select-option value="pie">饼图</a-select-option>
                 <a-select-option value="stat">统计值</a-select-option>
                 <a-select-option value="gauge">仪表盘</a-select-option>
@@ -82,6 +83,7 @@
         <a-tab-pane key="style" tab="图表样式">
           <!-- 根据面板类型显示不同的样式配置 -->
           <TimeSeriesChartStyles v-if="formData.type === 'timeseries'" v-model:options="formData.options" />
+          <BarChartStyles v-else-if="formData.type === 'bar'" v-model:options="formData.options" />
           <GaugeChartStyles v-else-if="formData.type === 'gauge'" v-model:options="formData.options" />
 
           <!-- 其他类型暂无特定配置 -->
@@ -92,7 +94,7 @@
 
         <!-- JSON 编辑器 -->
         <a-tab-pane key="json" tab="JSON 编辑">
-          <JsonEditor v-model="jsonValue" :height="500" @validate="handleJsonValidate" />
+          <JsonEditor v-model="jsonValue" @validate="handleJsonValidate" />
         </a-tab-pane>
       </a-tabs>
     </a-form>
@@ -115,6 +117,7 @@
   import { useDashboardStore, useEditorStore } from '@/stores';
   import { generateId, deepClone } from '@/utils';
   import TimeSeriesChartStyles from './ChartStyles/TimeSeriesChartStyles.vue';
+  import BarChartStyles from './ChartStyles/BarChartStyles.vue';
   import GaugeChartStyles from './ChartStyles/GaugeChartStyles.vue';
   import type { Panel } from '@/types';
   import JsonEditor from '@/components/Common/JsonEditor.vue';

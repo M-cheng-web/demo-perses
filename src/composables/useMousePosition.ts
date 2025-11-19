@@ -35,4 +35,3 @@ export function useMousePosition(): Ref<MousePosition | null> {
 
   return position;
 }
-

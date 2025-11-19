@@ -70,13 +70,12 @@ export const useDashboardStore = defineStore('dashboard', {
     /**
      * 加载 Dashboard
      */
-    async loadDashboard(id?: ID) {
+    async loadDashboard(id: ID) {
       try {
-        const dashboard = id ? mockDataManager.getDashboard(id) : mockDataManager.getDefaultDashboard();
+        const dashboard = await mockDataManager.getDashboard(id);
+        this.currentDashboard = deepClone(dashboard);
 
-        if (dashboard) {
-          this.currentDashboard = deepClone(dashboard);
-        }
+        console.log('currentDashboard', this.currentDashboard);
       } catch (error) {
         console.error('Failed to load dashboard:', error);
       }

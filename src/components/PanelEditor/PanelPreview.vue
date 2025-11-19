@@ -15,13 +15,14 @@
   import { Empty as AEmpty } from 'ant-design-vue';
   import TimeSeriesChart from '@/components/Charts/TimeSeriesChart.vue';
   import PieChart from '@/components/Charts/PieChart.vue';
+  import BarChart from '@/components/Charts/BarChart.vue';
   import StatPanel from '@/components/Charts/StatPanel.vue';
   import GaugeChart from '@/components/Charts/GaugeChart.vue';
   import HeatmapChart from '@/components/Charts/HeatmapChart.vue';
   import TableChart from '@/components/Charts/TableChart.vue';
   import type { Panel, QueryResult } from '@/types';
   import { useTimeRangeStore } from '@/stores';
-  import { queryPrometheus } from '@/api/prometheus';
+  import { executeQueries } from '@/mock/queries';
 
   const props = defineProps<{
     panel: Panel;
@@ -37,6 +38,7 @@
     const componentMap: Record<string, any> = {
       timeseries: TimeSeriesChart,
       pie: PieChart,
+      bar: BarChart,
       stat: StatPanel,
       gauge: GaugeChart,
       heatmap: HeatmapChart,
@@ -45,8 +47,8 @@
     return componentMap[props.panel.type] || TimeSeriesChart;
   });
 
-  // 执行查询
-  const executeQueries = async () => {
+  // 执行查询（使用和外部一样的查询逻辑，确保数据一致）
+  const executeQueriesInternal = async () => {
     if (!props.panel.queries || props.panel.queries.length === 0) {
       queryResults.value = [];
       return;
@@ -55,21 +57,12 @@
     isLoading.value = true;
     try {
       const { start, end } = timeRangeStore.getTimeRangeTimestamps();
-      const results = await Promise.all(
-        props.panel.queries.map((query) =>
-          queryPrometheus({
-            query: query.expr,
-            start,
-            end,
-            step: query.minStep || 15,
-          })
-        )
-      );
+      const timeRange = { from: start, to: end };
 
-      queryResults.value = results.map((result, index) => ({
-        id: props.panel.queries[index]!.id,
-        data: result,
-      }));
+      // 使用和外部一样的 executeQueries 函数，确保数据来源一致
+      const results = await executeQueries(props.panel.queries, timeRange);
+
+      queryResults.value = results;
     } catch (error) {
       console.error('Query execution failed:', error);
       queryResults.value = [];
@@ -78,13 +71,13 @@
     }
   };
 
-  // 监听面板查询变化
+  // 监听面板变化（包括查询、选项等）
   watch(
-    () => props.panel.queries,
+    () => props.panel,
     () => {
-      executeQueries();
+      executeQueriesInternal();
     },
-    { deep: true }
+    { deep: true, immediate: false }
   );
 
   // 监听面板类型变化
@@ -102,8 +95,17 @@
     }
   );
 
+  // 监听时间范围变化
+  watch(
+    () => timeRangeStore.timeRange,
+    () => {
+      executeQueriesInternal();
+    },
+    { deep: true }
+  );
+
   onMounted(() => {
-    executeQueries();
+    executeQueriesInternal();
   });
 </script>
 

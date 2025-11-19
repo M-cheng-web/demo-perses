@@ -25,4 +25,3 @@ export interface LegendItem {
 }
 
 export type LegendSelection = 'ALL' | Record<string, boolean>;
-

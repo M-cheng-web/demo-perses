@@ -3,31 +3,27 @@
     <div v-for="variable in variables" :key="variable.id" class="variable-item">
       <label class="variable-label">{{ variable.label }}:</label>
 
-      <!-- 自定义选择 / 查询选择 -->
+      <!-- 选择 -->
       <a-select
-        v-if="variable.type === 'custom' || variable.type === 'query'"
+        v-if="variable.type === 'select'"
         v-model:value="variableValues[variable.name]"
         :mode="variable.multi ? 'multiple' : undefined"
         :style="{ minWidth: '150px' }"
-        :placeholder="`选择 ${variable.label}`"
+        :placeholder="`请选择 ${variable.label}`"
+        :options="variable.options"
         @change="handleVariableChange(variable.name, $event)"
-      >
-        <a-select-option v-if="variable.includeAll" :value="variable.allValue || '*'"> 全部 </a-select-option>
-        <a-select-option v-for="option in variable.options" :key="option.value" :value="option.value">
-          {{ option.text }}
-        </a-select-option>
-      </a-select>
+      />
 
-      <!-- 文本输入 -->
+      <!-- 输入 -->
       <a-input
-        v-else-if="variable.type === 'textbox'"
+        v-else-if="variable.type === 'input'"
         v-model:value="variableValues[variable.name]"
         :style="{ width: '150px' }"
-        :placeholder="`输入 ${variable.label}`"
+        :placeholder="`请输入 ${variable.label}`"
         @change="handleVariableChange(variable.name, $event.target.value)"
       />
 
-      <!-- 常量（只读） -->
+      <!-- 常量 -->
       <span v-else-if="variable.type === 'constant'" class="variable-constant">
         {{ variable.current }}
       </span>
@@ -36,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, onMounted } from 'vue';
+  import { ref, watch } from 'vue';
   import type { DashboardVariable } from '@/types';
 
   const props = defineProps<{
@@ -57,9 +53,9 @@
     props.variables.forEach((variable) => {
       // 如果是多选模式，确保值是数组
       if (variable.multi) {
-        values[variable.name] = Array.isArray(variable.current) ? variable.current : variable.current ? [variable.current as string] : [];
+        values[variable.name] = variable.current || [];
       } else {
-        values[variable.name] = Array.isArray(variable.current) ? variable.current[0] || '' : variable.current || '';
+        values[variable.name] = variable.current || '';
       }
     });
     variableValues.value = values;
@@ -77,10 +73,6 @@
     },
     { immediate: true, deep: true }
   );
-
-  onMounted(() => {
-    initializeValues();
-  });
 </script>
 
 <style scoped lang="less">

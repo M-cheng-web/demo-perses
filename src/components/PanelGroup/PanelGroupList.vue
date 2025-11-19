@@ -15,26 +15,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import type { PanelGroup } from '@/types';
-import PanelGroupItem from './PanelGroupItem.vue';
-import PanelGroupDialog from './PanelGroupDialog.vue';
+  import { ref } from 'vue';
+  import type { PanelGroup } from '@/types';
+  import PanelGroupItem from './PanelGroupItem.vue';
+  import PanelGroupDialog from './PanelGroupDialog.vue';
 
-defineProps<{
-  panelGroups: PanelGroup[];
-}>();
+  defineProps<{
+    panelGroups: PanelGroup[];
+  }>();
 
-const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
+  const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
 
-const handleEditGroup = (group: PanelGroup) => {
-  panelGroupDialogRef.value?.openEdit(group);
-};
+  const handleEditGroup = (group: PanelGroup) => {
+    panelGroupDialogRef.value?.openEdit(group);
+  };
 </script>
 
 <style scoped lang="less">
-.panel-group-list {
-  display: flex;
-  flex-direction: column;
-  gap: @spacing-md;
-}
+  .panel-group-list {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-md;
+  }
 </style>

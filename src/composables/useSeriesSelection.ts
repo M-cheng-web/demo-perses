@@ -57,7 +57,8 @@ export function useSeriesSelection() {
 
   const getSelectedIds = computed((): string[] => {
     if (selectedItems.value === 'ALL') return [];
-    return Object.keys(selectedItems.value).filter(id => selectedItems.value[id]);
+    const selection = selectedItems.value;
+    return Object.keys(selection).filter((id) => selection[id]);
   });
 
   return {

@@ -21,10 +21,7 @@ export function deepClone<T>(obj: T): T {
 /**
  * 防抖
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
+export function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
   return function (this: any, ...args: Parameters<T>) {
@@ -38,10 +35,7 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * 节流
  */
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
+export function throttle<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
   let inThrottle = false;
 
   return function (this: any, ...args: Parameters<T>) {

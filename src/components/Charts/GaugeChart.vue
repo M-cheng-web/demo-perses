@@ -6,6 +6,7 @@
   import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
   import * as echarts from 'echarts';
   import type { EChartsOption } from 'echarts';
+  import type { EChartsType } from 'echarts/core';
   import type { Panel, QueryResult, GaugeOptions } from '@/types';
   import { formatValue } from '@/utils';
   import { useChartResize } from '@/composables/useChartResize';
@@ -16,7 +17,7 @@
   }>();
 
   const chartRef = ref<HTMLElement>();
-  const chartInstance = ref<echarts.ECharts | null>(null);
+  const chartInstance = ref<EChartsType | null>(null);
 
   // 使用响应式 resize
   useChartResize(chartInstance, chartRef);
@@ -63,11 +64,26 @@
   const initChart = () => {
     if (!chartRef.value) return;
 
-    chartInstance.value = echarts.init(chartRef.value);
+    // 只在有数据时才初始化图表
+    if (!props.queryResults || props.queryResults.length === 0 || props.queryResults.every((r) => !r.data || r.data.length === 0)) {
+      console.log('Waiting for data before initializing gauge chart');
+      return;
+    }
+
+    chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
     updateChart();
   };
 
   const updateChart = () => {
+    // 如果图表还没初始化且有数据了，先初始化
+    if (!chartInstance.value && chartRef.value) {
+      if (props.queryResults && props.queryResults.length > 0 && !props.queryResults.every((r) => !r.data || r.data.length === 0)) {
+        chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
+      } else {
+        return; // 没有数据，不初始化
+      }
+    }
+
     if (!chartInstance.value) return;
 
     const option = getChartOption();
@@ -171,9 +187,14 @@
 
   watch(
     () => props.queryResults,
-    () => {
+    (newResults) => {
       nextTick(() => {
-        updateChart();
+        // 如果之前没有数据现在有数据了，需要初始化图表
+        if (!chartInstance.value && newResults && newResults.length > 0) {
+          initChart();
+        } else {
+          updateChart();
+        }
       });
     },
     { deep: true }
@@ -190,7 +211,10 @@
   );
 
   onMounted(() => {
-    initChart();
+    // 延迟初始化，等待数据到达
+    nextTick(() => {
+      initChart();
+    });
   });
 
   onUnmounted(() => {

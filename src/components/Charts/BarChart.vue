@@ -1,17 +1,6 @@
 <template>
-  <div class="time-series-chart-container">
-    <div ref="chartRef" class="time-series-chart" @click="handleChartClick"></div>
-
-    <!-- 自定义 Tooltip -->
-    <ChartTooltip
-      ref="tooltipRef"
-      :chart-id="chartId"
-      :chart-instance="chartInstance as any"
-      :chart-container-ref="chartRef"
-      :data="timeSeriesData"
-      :format-options="panel.options.format"
-      :enable-pinning="true"
-    />
+  <div class="bar-chart-container">
+    <div ref="chartRef" class="bar-chart"></div>
 
     <!-- 自定义 Legend -->
     <Legend
@@ -35,7 +24,6 @@
   import { formatValue } from '@/utils';
   import { useChartResize } from '@/composables/useChartResize';
   import { useSeriesSelection } from '@/composables/useSeriesSelection';
-  import ChartTooltip from '@/components/ChartTooltip/ChartTooltip.vue';
   import Legend from '@/components/ChartLegend/Legend.vue';
 
   const props = defineProps<{
@@ -45,21 +33,12 @@
 
   const chartRef = ref<HTMLElement>();
   const chartInstance = ref<EChartsType | null>(null);
-  const tooltipRef = ref();
-
-  // 生成唯一的图表 ID
-  const chartId = computed(() => `chart-${props.panel.id}`);
 
   // Legend 选中管理
   const { selectedItems: legendSelection, toggleSeries, isSeriesSelected } = useSeriesSelection();
 
   // 使用响应式 resize
   useChartResize(chartInstance, chartRef);
-
-  // 时间序列数据
-  const timeSeriesData = computed(() => {
-    return props.queryResults.flatMap((result) => result.data);
-  });
 
   // Legend 项目
   const legendItems = computed((): LegendItem[] => {
@@ -99,7 +78,7 @@
 
     // 只在有数据时才初始化图表
     if (!props.queryResults || props.queryResults.length === 0 || props.queryResults.every((r) => !r.data || r.data.length === 0)) {
-      console.log('Waiting for data before initializing chart');
+      console.log('Waiting for data before initializing bar chart');
       return;
     }
 
@@ -148,57 +127,32 @@
     let colorIndex = 0;
 
     const specificOptions = options.specific as any;
+    const isHorizontal = specificOptions?.orientation === 'horizontal';
 
+    // 收集所有时间点作为类目
+    const categories = new Set<number>();
     queryResults.forEach((result) => {
       if (!result.data) return;
 
       result.data.forEach((timeSeries) => {
-        if (!timeSeries || !timeSeries.values || timeSeries.values.length === 0) return;
+        if (!timeSeries || !timeSeries.values) return;
 
-        const legend = timeSeries.metric.__legend__ || timeSeries.metric.__name__ || 'series';
-        const seriesId = `series-${colorIndex}`;
-
-        // 检查该系列是否被选中
-        const isVisible = isSeriesSelected(seriesId);
-
-        const data = timeSeries.values.map(([timestamp, value]) => [timestamp, value]);
-
-        const color = colors[colorIndex % colors.length] || `hsl(${(colorIndex * 137.5) % 360}, 70%, 50%)`;
-
-        series.push({
-          id: seriesId,
-          name: legend,
-          type: specificOptions?.mode === 'bar' ? 'bar' : 'line',
-          data,
-          smooth: options.chart?.smooth ?? true,
-          showSymbol: options.chart?.showSymbol ?? false,
-          areaStyle:
-            specificOptions?.mode === 'area'
-              ? {
-                  opacity: (specificOptions?.fillOpacity ?? 0.3) * (isVisible ? 1 : 0.15),
-                }
-              : undefined,
-          stack: specificOptions?.stackMode !== 'none' ? 'total' : undefined,
-          // 控制可见性
-          silent: !isVisible,
-          lineStyle: {
-            width: options.chart?.line?.width ?? 2,
-            type: options.chart?.line?.type ?? 'solid',
-            color: color,
-            opacity: isVisible ? 1 : 0.15,
-          },
-          itemStyle: {
-            color: color,
-            opacity: isVisible ? 1 : 0.15,
-          },
+        timeSeries.values.forEach(([timestamp]) => {
+          categories.add(timestamp);
         });
-
-        colorIndex++;
       });
     });
 
-    // 如果没有系列数据，返回空配置
-    if (series.length === 0) {
+    const sortedCategories = Array.from(categories).sort((a, b) => a - b);
+
+    // 将时间戳转换为日期字符串
+    const categoryLabels = sortedCategories.map((ts) => {
+      const date = new Date(ts);
+      return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+    });
+
+    // 如果没有数据，返回空配置
+    if (sortedCategories.length === 0) {
       return {
         title: {
           text: '暂无数据',
@@ -212,28 +166,66 @@
       };
     }
 
+    queryResults.forEach((result) => {
+      if (!result.data) return;
+
+      result.data.forEach((timeSeries) => {
+        if (!timeSeries || !timeSeries.values || timeSeries.values.length === 0) return;
+
+        const legend = timeSeries.metric.__legend__ || timeSeries.metric.__name__ || 'series';
+        const seriesId = `series-${colorIndex}`;
+
+        // 检查该系列是否被选中
+        const isVisible = isSeriesSelected(seriesId);
+
+        // 为每个时间点创建数据
+        const dataMap = new Map(timeSeries.values.map(([timestamp, value]) => [timestamp, value]));
+        const data = sortedCategories.map((ts) => dataMap.get(ts) ?? 0);
+
+        const color = colors[colorIndex % colors.length] || `hsl(${(colorIndex * 137.5) % 360}, 70%, 50%)`;
+
+        series.push({
+          id: seriesId,
+          name: legend,
+          type: 'bar',
+          data,
+          barWidth: specificOptions?.barWidth || 'auto',
+          stack: specificOptions?.barMode === 'stack' ? 'total' : undefined,
+          // 控制可见性
+          itemStyle: {
+            color: color,
+            opacity: isVisible ? 1 : 0.15,
+          },
+          emphasis: {
+            focus: 'series',
+          },
+        });
+
+        colorIndex++;
+      });
+    });
+
+    const axisLabel = {
+      formatter: (value: number) => formatValue(value, options.format || {}),
+    };
+
     return {
-      // 启用 ECharts 原生 tooltip，用于坐标转换
       tooltip: {
-        show: true,
         trigger: 'axis',
         axisPointer: {
-          type: 'line',
+          type: 'shadow',
         },
-        // 不显示内容，由自定义 tooltip 处理
-        formatter: () => '',
-        position: () => [-10000, -10000], // 移到屏幕外
+        formatter: (params: any) => {
+          if (!Array.isArray(params)) return '';
+          let result = `<div style="font-weight: bold;">${params[0].axisValueLabel}</div>`;
+          params.forEach((param: any) => {
+            result += `<div>${param.marker} ${param.seriesName}: ${formatValue(param.value, options.format || {})}</div>`;
+          });
+          return result;
+        },
       },
-      // 禁用 ECharts 原生 legend，使用自定义
       legend: {
         show: false,
-      },
-      // 添加 axisPointer - Y轴竖线跟随鼠标
-      axisPointer: {
-        link: [{ xAxisIndex: 'all' }],
-        label: {
-          backgroundColor: '#777',
-        },
       },
       grid: {
         left: '3%',
@@ -242,39 +234,34 @@
         top: '10%',
         containLabel: true,
       },
-      xAxis: {
-        type: 'time',
-        show: options.axis?.xAxis?.show ?? true,
-        name: options.axis?.xAxis?.name,
-        splitLine: {
-          show: options.axis?.xAxis?.splitLine?.show ?? false,
-        },
-        axisPointer: {
-          show: true,
-          type: 'line',
-          lineStyle: {
-            type: 'solid',
-            color: '#aaa',
-            width: 1,
+      xAxis: isHorizontal
+        ? {
+            type: 'value',
+            show: options.axis?.xAxis?.show ?? true,
+            name: options.axis?.xAxis?.name,
+            axisLabel,
+          }
+        : {
+            type: 'category',
+            data: categoryLabels,
+            show: options.axis?.xAxis?.show ?? true,
+            name: options.axis?.xAxis?.name,
           },
-          label: {
-            show: false,
+      yAxis: isHorizontal
+        ? {
+            type: 'category',
+            data: categoryLabels,
+            show: options.axis?.yAxis?.show ?? true,
+            name: options.axis?.yAxis?.name,
+          }
+        : {
+            type: 'value',
+            show: options.axis?.yAxis?.show ?? true,
+            name: options.axis?.yAxis?.name,
+            min: options.axis?.yAxis?.min,
+            max: options.axis?.yAxis?.max,
+            axisLabel,
           },
-        },
-      },
-      yAxis: {
-        type: 'value',
-        show: options.axis?.yAxis?.show ?? true,
-        name: options.axis?.yAxis?.name,
-        min: options.axis?.yAxis?.min,
-        max: options.axis?.yAxis?.max,
-        splitLine: {
-          show: options.axis?.yAxis?.splitLine?.show ?? true,
-        },
-        axisLabel: {
-          formatter: (value: number) => formatValue(value, options.format || {}),
-        },
-      },
       series,
     };
   };
@@ -290,7 +277,6 @@
   const handleLegendHover = (id: string) => {
     if (!chartInstance.value) return;
 
-    // 高亮对应系列
     chartInstance.value.dispatchAction({
       type: 'highlight',
       seriesId: id,
@@ -300,16 +286,10 @@
   const handleLegendLeave = (id: string) => {
     if (!chartInstance.value) return;
 
-    // 取消高亮
     chartInstance.value.dispatchAction({
       type: 'downplay',
       seriesId: id,
     });
-  };
-
-  // Tooltip 交互处理
-  const handleChartClick = (event: MouseEvent) => {
-    tooltipRef.value?.handleChartClick(event);
   };
 
   watch(
@@ -351,7 +331,7 @@
 </script>
 
 <style scoped lang="less">
-  .time-series-chart-container {
+  .bar-chart-container {
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -359,7 +339,7 @@
     position: relative;
   }
 
-  .time-series-chart {
+  .bar-chart {
     flex: 1;
     width: 100%;
     min-height: 200px;

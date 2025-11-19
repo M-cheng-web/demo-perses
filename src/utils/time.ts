@@ -77,20 +77,14 @@ export function parseTimeRange(timeRange: TimeRange): AbsoluteTimeRange {
 /**
  * 格式化时间戳
  */
-export function formatTimestamp(
-  timestamp: Timestamp,
-  format: string = 'YYYY-MM-DD HH:mm:ss'
-): string {
+export function formatTimestamp(timestamp: Timestamp, format: string = 'YYYY-MM-DD HH:mm:ss'): string {
   return dayjs(timestamp).format(format);
 }
 
 /**
  * 格式化时间（formatTime 别名）
  */
-export function formatTime(
-  timestamp: Timestamp,
-  format: string = 'YYYY-MM-DD HH:mm:ss'
-): string {
+export function formatTime(timestamp: Timestamp, format: string = 'YYYY-MM-DD HH:mm:ss'): string {
   return formatTimestamp(timestamp, format);
 }
 

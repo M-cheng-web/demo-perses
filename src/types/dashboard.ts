@@ -28,8 +28,6 @@ export interface Dashboard {
   createdAt: Timestamp;
   /** 更新时间 */
   updatedAt: Timestamp;
-  /** 标签 */
-  tags?: string[];
 }
 
 /**
@@ -50,16 +48,12 @@ export interface DashboardVariable {
   current: string | string[];
   /** 是否支持多选 */
   multi?: boolean;
-  /** 是否支持全选 */
-  includeAll?: boolean;
-  /** 全选值 */
-  allValue?: string;
 }
 
 /**
  * 变量类型
  */
-export type VariableType = 'custom' | 'query' | 'textbox' | 'constant';
+export type VariableType = 'select' | 'input' | 'constant';
 
 /**
  * 变量选项
@@ -79,8 +73,6 @@ export interface CreateDashboardParams {
   name: string;
   /** 描述 */
   description?: string;
-  /** 标签 */
-  tags?: string[];
 }
 
 /**
@@ -91,8 +83,6 @@ export interface UpdateDashboardParams {
   name?: string;
   /** 描述 */
   description?: string;
-  /** 标签 */
-  tags?: string[];
 }
 
 /**
@@ -109,6 +99,4 @@ export interface DashboardListItem {
   createdAt: Timestamp;
   /** 更新时间 */
   updatedAt: Timestamp;
-  /** 标签 */
-  tags?: string[];
 }

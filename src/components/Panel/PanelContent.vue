@@ -20,6 +20,7 @@
   import { mockDataManager } from '@/mock';
   import TimeSeriesChart from '@/components/Charts/TimeSeriesChart.vue';
   import PieChart from '@/components/Charts/PieChart.vue';
+  import BarChart from '@/components/Charts/BarChart.vue';
   import StatPanel from '@/components/Charts/StatPanel.vue';
   import TableChart from '@/components/Charts/TableChart.vue';
   import GaugeChart from '@/components/Charts/GaugeChart.vue';
@@ -30,7 +31,7 @@
   }>();
 
   const timeRangeStore = useTimeRangeStore();
-  const { timeRange } = storeToRefs(timeRangeStore);
+  const { absoluteTimeRange } = storeToRefs(timeRangeStore);
 
   const loading = ref(false);
   const error = ref('');
@@ -41,8 +42,8 @@
     const typeMap: Record<string, any> = {
       timeseries: TimeSeriesChart,
       pie: PieChart,
+      bar: BarChart,
       stat: StatPanel,
-      bar: TimeSeriesChart,
       table: TableChart,
       gauge: GaugeChart,
       heatmap: HeatmapChart,
@@ -61,7 +62,11 @@
     error.value = '';
 
     try {
-      const results = await mockDataManager.executeQueries(props.panel.queries, timeRange.value);
+      const absRange = absoluteTimeRange.value;
+      const results = await mockDataManager.executeQueries(props.panel.queries, {
+        from: absRange.from,
+        to: absRange.to,
+      });
       queryResults.value = results;
     } catch (err) {
       error.value = err instanceof Error ? err.message : '查询失败';
@@ -72,7 +77,7 @@
   };
 
   // 监听时间范围和查询变化
-  watch([timeRange, () => props.panel.queries], executeQueries, { deep: true });
+  watch([absoluteTimeRange, () => props.panel.queries], executeQueries, { deep: true });
 
   onMounted(() => {
     executeQueries();

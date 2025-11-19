@@ -1,100 +1,49 @@
 /**
- * 查询 Mock 数据和执行器
+ * 查询执行 Mock - 直接返回假数据
+ * 使用默认数据池
  */
 
-import type { Query, QueryResult, TimeRange, TimeSeriesData } from '@/types';
-import {
-  generateCPUUsageData,
-  generateMemoryUsageData,
-  generateNetworkTrafficData,
-  generateDiskUsageData,
-  generateTimeSeriesData,
-} from './timeSeriesData';
-import { parseTimeRange } from '@/utils/time';
+import type { Query, QueryResult, TimeSeriesData } from '@/types';
+import { getDefaultDataByExpr } from './defaultDataPool';
 
 /**
- * 执行查询（模拟）
+ * 执行单个查询
  */
-export async function executeQuery(query: Query, timeRange: TimeRange): Promise<QueryResult> {
-  // 模拟网络延迟
-  await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 500));
+export async function executeQuery(query: Query, _timeRange: { from: number; to: number }): Promise<QueryResult> {
+  // 直接使用默认数据池返回假数据
+  const data: TimeSeriesData[] = getDefaultDataByExpr(query.expr);
 
-  const absoluteTimeRange = parseTimeRange(timeRange);
-  const step = query.minStep ? query.minStep * 1000 : 15000; // 默认 15 秒
+  const result: QueryResult = {
+    queryId: query.id,
+    expr: query.expr,
+    data,
+    error: undefined,
+    loading: false,
+  };
 
-  let data: TimeSeriesData[] = [];
-
-  try {
-    // 根据查询表达式生成不同的数据
-    const expr = query.expr.toLowerCase();
-
-    if (expr.includes('cpu') || expr.includes('processor')) {
-      data = generateCPUUsageData(absoluteTimeRange);
-    } else if (expr.includes('memory') || expr.includes('mem')) {
-      data = generateMemoryUsageData(absoluteTimeRange);
-    } else if (expr.includes('network') || expr.includes('traffic') || expr.includes('bytes')) {
-      data = generateNetworkTrafficData(absoluteTimeRange);
-    } else if (expr.includes('disk') || expr.includes('storage')) {
-      data = generateDiskUsageData(absoluteTimeRange);
-    } else {
-      // 默认生成单条时间序列
-      data = [
-        generateTimeSeriesData(
-          {
-            __name__: 'metric',
-            job: 'default',
-          },
-          absoluteTimeRange,
-          step
-        ),
-      ];
-    }
-
-    // 应用图例格式
-    if (query.legendFormat) {
-      data = data.map((series) => ({
-        ...series,
-        metric: {
-          ...series.metric,
-          __legend__: formatLegend(query.legendFormat!, series.metric),
-        },
-      }));
-    }
-
-    return {
-      queryId: query.id,
-      expr: query.expr,
-      data,
-      loading: false,
-    };
-  } catch (error) {
-    return {
-      queryId: query.id,
-      expr: query.expr,
-      data: [],
-      error: error instanceof Error ? error.message : '查询执行失败',
-      loading: false,
-    };
-  }
+  return result;
 }
 
 /**
  * 执行多个查询
  */
-export async function executeQueries(queries: Query[], timeRange: TimeRange): Promise<QueryResult[]> {
-  return Promise.all(queries.map((query) => executeQuery(query, timeRange)));
+export async function executeQueries(queries: Query[], timeRange: { from: number; to: number }): Promise<QueryResult[]> {
+  const promises = queries.map((query) => executeQuery(query, timeRange));
+  return Promise.all(promises);
 }
 
 /**
- * 格式化图例
+ * 清理过期的查询缓存（仅用于兼容性，不实际执行）
  */
-function formatLegend(template: string, metric: Record<string, string>): string {
-  let result = template;
+export function cleanExpiredQueryCache(): void {
+  // 不进行任何操作，仅用于兼容性
+  console.log('cleanExpiredQueryCache called (no-op in mock mode)');
+}
 
-  // 替换 {{label}} 格式
-  Object.entries(metric).forEach(([key, value]) => {
-    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
-  });
-
-  return result;
+/**
+ * 清空所有查询缓存（仅用于兼容性，不实际执行）
+ */
+export function clearAllQueryCache(): void {
+  // 不进行任何操作，仅用于兼容性
+  console.log('clearAllQueryCache called (no-op in mock mode)');
 }

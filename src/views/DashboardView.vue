@@ -13,7 +13,7 @@
 
   onMounted(async () => {
     // 加载默认 Dashboard
-    await dashboardStore.loadDashboard();
+    await dashboardStore.loadDashboard('default');
   });
 </script>
 

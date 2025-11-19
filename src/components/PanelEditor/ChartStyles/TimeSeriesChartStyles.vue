@@ -41,13 +41,7 @@
 
           <div class="style-row">
             <span class="style-label">显示值</span>
-            <a-select
-              v-model:value="localOptions.legend.values"
-              mode="multiple"
-              size="small"
-              style="width: 200px"
-              placeholder="最小值 +2"
-            >
+            <a-select v-model:value="localOptions.legend.values" mode="multiple" size="small" style="width: 200px" placeholder="最小值 +2">
               <a-select-option value="min">最小值</a-select-option>
               <a-select-option value="max">最大值</a-select-option>
               <a-select-option value="mean">平均值</a-select-option>
@@ -181,13 +175,7 @@
 
           <div class="style-row">
             <span class="style-label">线宽</span>
-            <a-slider
-              v-model:value="localOptions.chart.line.width"
-              :min="1"
-              :max="10"
-              :step="0.5"
-              style="width: 250px"
-            />
+            <a-slider v-model:value="localOptions.chart.line.width" :min="1" :max="10" :step="0.5" style="width: 250px" />
           </div>
 
           <div class="style-row">
@@ -219,163 +207,160 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
-import { deepClone } from '@/utils';
+  import { ref, watch } from 'vue';
+  import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
+  import { deepClone } from '@/utils';
 
-interface Props {
-  options: any;
-}
+  interface Props {
+    options: any;
+  }
 
-const props = defineProps<Props>();
+  const props = defineProps<Props>();
 
-const emit = defineEmits<{
-  (e: 'update:options', options: any): void;
-}>();
+  const emit = defineEmits<{
+    (e: 'update:options', options: any): void;
+  }>();
 
-const localOptions = ref(
-  deepClone({
-    legend: {
-      show: true,
-      position: 'bottom',
-      mode: 'list',
-      size: 'medium',
-      values: [],
-    },
-    axis: {
-      yAxis: {
+  const localOptions = ref(
+    deepClone({
+      legend: {
         show: true,
-        name: '',
-        min: undefined,
-        max: undefined,
+        position: 'bottom',
+        mode: 'list',
+        size: 'medium',
+        values: [],
       },
-    },
-    format: {
-      unit: 'none',
-      decimals: 'default',
-      shortValues: false,
-    },
-    thresholds: {
-      mode: 'absolute',
-      steps: [
-        { name: 'Default', value: null, color: '#52c41a' },
-      ],
-      showLegend: true,
-    },
-    chart: {
-      line: {
-        width: 2,
-        type: 'solid',
+      axis: {
+        yAxis: {
+          show: true,
+          name: '',
+          min: undefined,
+          max: undefined,
+        },
       },
-      connectNulls: false,
+      format: {
+        unit: 'none',
+        decimals: 'default',
+        shortValues: false,
+      },
+      thresholds: {
+        mode: 'absolute',
+        steps: [{ name: 'Default', value: null, color: '#52c41a' }],
+        showLegend: true,
+      },
+      chart: {
+        line: {
+          width: 2,
+          type: 'solid',
+        },
+        connectNulls: false,
+      },
+      specific: {
+        mode: 'line',
+        stackMode: 'none',
+        fillOpacity: 0.3,
+      },
+      ...props.options,
+    })
+  );
+
+  const addThreshold = () => {
+    const newIndex = localOptions.value.thresholds.steps.length;
+    localOptions.value.thresholds.steps.push({
+      name: `T${newIndex}`,
+      value: null,
+      color: newIndex === 1 ? '#faad14' : '#f5222d',
+    });
+  };
+
+  const removeThreshold = (index: number) => {
+    localOptions.value.thresholds.steps.splice(index, 1);
+  };
+
+  watch(
+    localOptions,
+    (newVal) => {
+      emit('update:options', deepClone(newVal));
     },
-    specific: {
-      mode: 'line',
-      stackMode: 'none',
-      fillOpacity: 0.3,
-    },
-    ...props.options,
-  })
-);
-
-const addThreshold = () => {
-  const newIndex = localOptions.value.thresholds.steps.length;
-  localOptions.value.thresholds.steps.push({
-    name: `T${newIndex}`,
-    value: null,
-    color: newIndex === 1 ? '#faad14' : '#f5222d',
-  });
-};
-
-const removeThreshold = (index: number) => {
-  localOptions.value.thresholds.steps.splice(index, 1);
-};
-
-watch(
-  localOptions,
-  (newVal) => {
-    emit('update:options', deepClone(newVal));
-  },
-  { deep: true }
-);
+    { deep: true }
+  );
 </script>
 
 <style scoped lang="less">
-.timeseries-chart-styles {
-  :deep(.ant-collapse) {
-    background: transparent;
-    border: none;
+  .timeseries-chart-styles {
+    :deep(.ant-collapse) {
+      background: transparent;
+      border: none;
 
-    .ant-collapse-item {
-      border-bottom: 1px solid @border-color;
+      .ant-collapse-item {
+        border-bottom: 1px solid @border-color;
 
-      &:last-child {
-        border-bottom: none;
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+
+      .ant-collapse-header {
+        padding: 12px 16px !important;
+        font-weight: 600;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        color: @text-color-secondary;
+      }
+
+      .ant-collapse-content-box {
+        padding: 12px 16px !important;
       }
     }
 
-    .ant-collapse-header {
-      padding: 12px 16px !important;
-      font-weight: 600;
-      font-size: 12px;
-      letter-spacing: 0.5px;
-      color: @text-color-secondary;
+    .style-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    .ant-collapse-content-box {
-      padding: 12px 16px !important;
-    }
-  }
+    .style-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
 
-  .style-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .style-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-
-    .style-label {
-      font-size: 13px;
-      color: @text-color;
-      flex-shrink: 0;
-      min-width: 100px;
-    }
-  }
-
-  .threshold-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .threshold-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    .threshold-color {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      flex-shrink: 0;
+      .style-label {
+        font-size: 13px;
+        color: @text-color;
+        flex-shrink: 0;
+        min-width: 100px;
+      }
     }
 
-    .threshold-name {
-      font-size: 13px;
-      min-width: 60px;
-      flex-shrink: 0;
+    .threshold-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
     }
 
-    :deep(.ant-input-number) {
-      flex: 1;
+    .threshold-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .threshold-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .threshold-name {
+        font-size: 13px;
+        min-width: 60px;
+        flex-shrink: 0;
+      }
+
+      :deep(.ant-input-number) {
+        flex: 1;
+      }
     }
   }
-}
 </style>
-

@@ -14,4 +14,3 @@ self.MonacoEnvironment = {
 };
 
 export default monaco;
-

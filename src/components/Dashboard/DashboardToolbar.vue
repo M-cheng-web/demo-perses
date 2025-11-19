@@ -66,8 +66,8 @@
     </div>
 
     <!-- JSON 查看/编辑模态框 -->
-    <a-modal v-model:open="jsonModalVisible" title="Dashboard JSON" :width="800" :footer="null">
-      <JsonEditor v-model="dashboardJson" :height="500" :read-only="jsonModalMode === 'view'" @validate="handleJsonValidate" />
+    <a-modal v-model:open="jsonModalVisible" title="Dashboard JSON" :width="800" destroyOnClose :maskClosable="false">
+      <JsonEditor v-model="dashboardJson" :read-only="jsonModalMode === 'view'" @validate="handleJsonValidate" />
       <template #footer>
         <a-space>
           <a-button @click="jsonModalVisible = false">取消</a-button>
@@ -106,7 +106,6 @@
   const dashboardName = computed(() => currentDashboard.value?.name || 'Dashboard');
 
   const selectedTimeRange = ref('now-1h');
-  const autoRefreshInterval = ref(0);
   let autoRefreshTimer: number | null = null;
 
   // JSON 相关
@@ -126,24 +125,6 @@
   const handleRefresh = () => {
     timeRangeStore.refresh();
     message.success('已刷新');
-  };
-
-  const handleAutoRefreshChange = (interval: number) => {
-    // 清除之前的定时器
-    if (autoRefreshTimer !== null) {
-      clearInterval(autoRefreshTimer);
-      autoRefreshTimer = null;
-    }
-
-    // 设置新的定时器
-    if (interval > 0) {
-      autoRefreshTimer = window.setInterval(() => {
-        timeRangeStore.refresh();
-      }, interval * 1000);
-      message.success(`已开启自动刷新，间隔 ${interval} 秒`);
-    } else {
-      message.info('已关闭自动刷新');
-    }
   };
 
   const handleToggleEditMode = () => {

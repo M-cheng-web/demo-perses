@@ -6,6 +6,7 @@
   import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
   import * as echarts from 'echarts';
   import type { EChartsOption } from 'echarts';
+  import type { EChartsType } from 'echarts/core';
   import type { Panel, QueryResult } from '@/types';
   import { formatValue } from '@/utils';
   import { useChartResize } from '@/composables/useChartResize';
@@ -16,7 +17,7 @@
   }>();
 
   const chartRef = ref<HTMLElement>();
-  const chartInstance = ref<echarts.ECharts | null>(null);
+  const chartInstance = ref<EChartsType | null>(null);
 
   // 使用响应式 resize
   useChartResize(chartInstance, chartRef);
@@ -24,11 +25,26 @@
   const initChart = () => {
     if (!chartRef.value) return;
 
-    chartInstance.value = echarts.init(chartRef.value);
+    // 只在有数据时才初始化图表
+    if (!props.queryResults || props.queryResults.length === 0 || props.queryResults.every((r) => !r.data || r.data.length === 0)) {
+      console.log('Waiting for data before initializing pie chart');
+      return;
+    }
+
+    chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
     updateChart();
   };
 
   const updateChart = () => {
+    // 如果图表还没初始化且有数据了，先初始化
+    if (!chartInstance.value && chartRef.value) {
+      if (props.queryResults && props.queryResults.length > 0 && !props.queryResults.every((r) => !r.data || r.data.length === 0)) {
+        chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
+      } else {
+        return; // 没有数据，不初始化
+      }
+    }
+
     if (!chartInstance.value) return;
 
     const option = getChartOption();
@@ -56,6 +72,21 @@
         }
       });
     });
+
+    // 如果没有数据，返回空配置
+    if (data.length === 0) {
+      return {
+        title: {
+          text: '暂无数据',
+          left: 'center',
+          top: 'center',
+          textStyle: {
+            color: '#999',
+            fontSize: 14,
+          },
+        },
+      };
+    }
 
     const isPie = specificOptions?.pieType !== 'doughnut';
 

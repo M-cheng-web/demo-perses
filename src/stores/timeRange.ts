@@ -43,8 +43,8 @@ export const useTimeRangeStore = defineStore('timeRange', {
      * 获取时间范围的时间戳（毫秒）
      */
     getTimeRangeTimestamps(): { start: number; end: number } {
-      const { start, end } = this.absoluteTimeRange;
-      return { start, end };
+      const { from, to } = this.absoluteTimeRange;
+      return { start: from, end: to };
     },
 
     /**

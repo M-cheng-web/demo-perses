@@ -27,7 +27,7 @@
   import { ref, onMounted, onUnmounted, watch } from 'vue';
   import { message } from 'ant-design-vue';
   import { FormatPainterOutlined, CheckCircleOutlined, CopyOutlined } from '@ant-design/icons-vue';
-  import * as monaco from '@/monaco-worker';
+  import monaco from '@/monaco-worker';
 
   interface Props {
     modelValue?: string | object;

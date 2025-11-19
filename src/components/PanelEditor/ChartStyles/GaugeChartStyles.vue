@@ -98,142 +98,141 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
-import { deepClone } from '@/utils';
+  import { ref, watch } from 'vue';
+  import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
+  import { deepClone } from '@/utils';
 
-interface Props {
-  options: any;
-}
+  interface Props {
+    options: any;
+  }
 
-const props = defineProps<Props>();
+  const props = defineProps<Props>();
 
-const emit = defineEmits<{
-  (e: 'update:options', options: any): void;
-}>();
+  const emit = defineEmits<{
+    (e: 'update:options', options: any): void;
+  }>();
 
-const localOptions = ref(
-  deepClone({
-    format: {
-      unit: 'percent',
-      decimals: 1,
-      shortValues: false,
+  const localOptions = ref(
+    deepClone({
+      format: {
+        unit: 'percent',
+        decimals: 1,
+        shortValues: false,
+      },
+      thresholds: {
+        mode: 'percent',
+        steps: [
+          { name: 'T2', value: 25, color: '#f5222d' },
+          { name: 'T1', value: 10, color: '#faad14' },
+          { name: 'Default', value: null, color: '#52c41a' },
+        ],
+        showLegend: true,
+      },
+      specific: {
+        calculation: 'last',
+        max: 100,
+      },
+      ...props.options,
+    })
+  );
+
+  const addThreshold = () => {
+    const newIndex = localOptions.value.thresholds.steps.length;
+    localOptions.value.thresholds.steps.splice(localOptions.value.thresholds.steps.length - 1, 0, {
+      name: `T${newIndex}`,
+      value: null,
+      color: newIndex === 1 ? '#faad14' : '#f5222d',
+    });
+  };
+
+  const removeThreshold = (index: number) => {
+    localOptions.value.thresholds.steps.splice(index, 1);
+  };
+
+  watch(
+    localOptions,
+    (newVal) => {
+      emit('update:options', deepClone(newVal));
     },
-    thresholds: {
-      mode: 'percent',
-      steps: [
-        { name: 'T2', value: 25, color: '#f5222d' },
-        { name: 'T1', value: 10, color: '#faad14' },
-        { name: 'Default', value: null, color: '#52c41a' },
-      ],
-      showLegend: true,
-    },
-    specific: {
-      calculation: 'last',
-      max: 100,
-    },
-    ...props.options,
-  })
-);
-
-const addThreshold = () => {
-  const newIndex = localOptions.value.thresholds.steps.length;
-  localOptions.value.thresholds.steps.splice(localOptions.value.thresholds.steps.length - 1, 0, {
-    name: `T${newIndex}`,
-    value: null,
-    color: newIndex === 1 ? '#faad14' : '#f5222d',
-  });
-};
-
-const removeThreshold = (index: number) => {
-  localOptions.value.thresholds.steps.splice(index, 1);
-};
-
-watch(
-  localOptions,
-  (newVal) => {
-    emit('update:options', deepClone(newVal));
-  },
-  { deep: true }
-);
+    { deep: true }
+  );
 </script>
 
 <style scoped lang="less">
-.gauge-chart-styles {
-  :deep(.ant-collapse) {
-    background: transparent;
-    border: none;
+  .gauge-chart-styles {
+    :deep(.ant-collapse) {
+      background: transparent;
+      border: none;
 
-    .ant-collapse-item {
-      border-bottom: 1px solid @border-color;
+      .ant-collapse-item {
+        border-bottom: 1px solid @border-color;
 
-      &:last-child {
-        border-bottom: none;
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+
+      .ant-collapse-header {
+        padding: 12px 16px !important;
+        font-weight: 600;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        color: @text-color-secondary;
+      }
+
+      .ant-collapse-content-box {
+        padding: 12px 16px !important;
       }
     }
 
-    .ant-collapse-header {
-      padding: 12px 16px !important;
-      font-weight: 600;
-      font-size: 12px;
-      letter-spacing: 0.5px;
-      color: @text-color-secondary;
+    .style-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    .ant-collapse-content-box {
-      padding: 12px 16px !important;
-    }
-  }
+    .style-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
 
-  .style-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .style-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-
-    .style-label {
-      font-size: 13px;
-      color: @text-color;
-      flex-shrink: 0;
-      min-width: 100px;
-    }
-  }
-
-  .threshold-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .threshold-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    .threshold-color {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      flex-shrink: 0;
+      .style-label {
+        font-size: 13px;
+        color: @text-color;
+        flex-shrink: 0;
+        min-width: 100px;
+      }
     }
 
-    .threshold-name {
-      font-size: 13px;
-      min-width: 60px;
-      flex-shrink: 0;
+    .threshold-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
     }
 
-    :deep(.ant-input-number) {
-      flex: 1;
+    .threshold-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .threshold-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .threshold-name {
+        font-size: 13px;
+        min-width: 60px;
+        flex-shrink: 0;
+      }
+
+      :deep(.ant-input-number) {
+        flex: 1;
+      }
     }
   }
-}
 </style>
-

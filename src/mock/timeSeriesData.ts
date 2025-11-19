@@ -1,30 +1,19 @@
 /**
  * 时间序列数据生成工具
+ * 注意：这里不再生成随机数据，让 queries.ts 使用默认数据池
  */
 
-import type { TimeSeriesData, DataPoint, KeyValue, Timestamp } from '@/types';
+import type { TimeSeriesData, KeyValue, Timestamp } from '@/types';
 
 /**
  * 生成时间序列数据
+ * 返回空数据，让 queries.ts 使用默认数据池
  */
-export function generateTimeSeriesData(
-  metric: KeyValue,
-  timeRange: { from: Timestamp; to: Timestamp },
-  step: number = 15000 // 默认 15 秒
-): TimeSeriesData {
-  const values: DataPoint[] = [];
-  const baseValue = Math.random() * 100;
-  const variance = 20;
-
-  for (let ts = timeRange.from; ts <= timeRange.to; ts += step) {
-    // 生成带波动的值
-    const noise = (Math.random() - 0.5) * variance;
-    const trend = Math.sin((ts - timeRange.from) / 1000000) * 10;
-    const value = Math.max(0, baseValue + noise + trend);
-    values.push([ts, Number(value.toFixed(2))]);
-  }
-
-  return { metric, values };
+export function generateTimeSeriesData(query: string, _from: Timestamp, _to: Timestamp, _step?: number): TimeSeriesData[] {
+  // 不再生成随机数据，返回空数组
+  // 这样 queries.ts 会使用默认数据池
+  console.log(`generateTimeSeriesData called for query: ${query}, returning empty array to use default data pool`);
+  return [];
 }
 
 /**
@@ -35,7 +24,13 @@ export function generateMultipleTimeSeries(
   timeRange: { from: Timestamp; to: Timestamp },
   step: number = 15000
 ): TimeSeriesData[] {
-  return metrics.map((metric) => generateTimeSeriesData(metric, timeRange, step));
+  return metrics
+    .map((metric) => {
+      // 将 KeyValue 转换为查询字符串（仅用于兼容性，实际不会使用）
+      const queryStr = JSON.stringify(metric);
+      return generateTimeSeriesData(queryStr, timeRange.from, timeRange.to, step);
+    })
+    .flat();
 }
 
 /**

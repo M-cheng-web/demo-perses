@@ -217,7 +217,7 @@ export function createMemoryDetailsPanel(): Panel {
         showSymbol: false,
         colors: [
           '#5470c6', // 蓝色 - Apps
-          '#91cc75', // 绿色 - PageTables  
+          '#91cc75', // 绿色 - PageTables
           '#fac858', // 黄色 - SwapCache
           '#ee6666', // 红色 - Slab
           '#73c0de', // 青色 - Cache
@@ -231,7 +231,8 @@ export function createMemoryDetailsPanel(): Panel {
       legend: {
         show: true,
         position: 'bottom',
-        mode: 'list', // 使用列表模式
+        // mode 不在 chart.ts 的 LegendOptions 中，但可以在运行时使用
+        ...({ mode: 'list' } as any),
       },
       format: {
         unit: 'bytes',
@@ -241,6 +242,70 @@ export function createMemoryDetailsPanel(): Panel {
         mode: 'area',
         stackMode: 'normal',
         fillOpacity: 0.6,
+      },
+    },
+  };
+}
+
+/**
+ * 创建 Bar Chart 面板示例
+ */
+export function createBarChartPanel(name: string, expr: string, unit: string = 'none'): Panel {
+  return {
+    id: uuidv4(),
+    name,
+    description: '柱状图面板',
+    type: 'bar' as PanelType,
+    queries: [createQuery(expr)],
+    options: {
+      chart: {
+        colors: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'],
+      },
+      axis: {
+        xAxis: { show: true },
+        yAxis: { show: true, min: 0 },
+      },
+      legend: {
+        show: true,
+        position: 'bottom',
+      },
+      format: {
+        unit: unit as any,
+        decimals: 2,
+      },
+      specific: {
+        orientation: 'vertical',
+        barMode: 'group',
+        barWidth: '60%',
+      },
+    },
+  };
+}
+
+/**
+ * 创建 Gauge 面板示例
+ */
+export function createGaugePanel(name: string, expr: string, min: number = 0, max: number = 100): Panel {
+  return {
+    id: uuidv4(),
+    name,
+    description: '仪表盘面板',
+    type: 'gauge' as PanelType,
+    queries: [createQuery(expr)],
+    options: {
+      format: {
+        unit: 'percent',
+        decimals: 1,
+      },
+      specific: {
+        min,
+        max,
+        showPointer: true,
+        thresholds: [
+          { value: 0, color: '#52c41a' }, // 绿色 0-60
+          { value: 60, color: '#faad14' }, // 黄色 60-80
+          { value: 80, color: '#ff4d4f' }, // 红色 80-100
+        ],
       },
     },
   };
