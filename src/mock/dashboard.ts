@@ -170,7 +170,8 @@ export function createDefaultDashboard(): Dashboard {
     id: uuidv4(),
     name: '系统监控 Dashboard',
     description: '完整的系统性能监控面板，包含 CPU、内存、网络、磁盘等多维度指标',
-    panelGroups: [cpuGroup, memoryGroup, networkDiskGroup, performanceGroup],
+    panelGroups: [cpuGroup],
+    // panelGroups: [cpuGroup, memoryGroup, networkDiskGroup, performanceGroup],
     timeRange: {
       from: 'now-1h',
       to: 'now',

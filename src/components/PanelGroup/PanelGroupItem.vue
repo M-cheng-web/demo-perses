@@ -3,7 +3,7 @@
     <PanelGroupHeader :group="group" :index="index" :is-last="isLast" @edit="$emit('edit', group)" />
 
     <Transition name="collapse">
-      <div v-show="!group.isCollapsed" class="panel-group-content">
+      <div v-if="!group.isCollapsed" class="panel-group-content">
         <GridLayout :group-id="group.id" :panels="group.panels" :layout="group.layout" />
       </div>
     </Transition>

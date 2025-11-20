@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+  import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
   import * as echarts from 'echarts';
   import type { EChartsOption } from 'echarts';
   import type { EChartsType } from 'echarts/core';
@@ -316,13 +316,6 @@
     },
     { deep: true }
   );
-
-  onMounted(() => {
-    // 延迟初始化，等待数据到达
-    nextTick(() => {
-      initChart();
-    });
-  });
 
   onUnmounted(() => {
     chartInstance.value?.dispose();

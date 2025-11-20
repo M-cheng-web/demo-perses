@@ -220,73 +220,39 @@
     }
   };
 
-  const handleMouseMove = (event: MouseEvent) => {
-    const target = event.target as HTMLElement;
+  // 由父组件调用，处理鼠标移动
+  const handleExternalMouseMove = (event: MouseEvent, offsetX: number, offsetY: number) => {
+    isMouseOverChart.value = true;
 
-    // 检查是否在当前图表容器内
-    if (props.chartContainerRef && target.tagName === 'CANVAS') {
-      const canvas = target;
-      const container = props.chartContainerRef;
-
-      // 检查 canvas 是否是当前容器的子元素
-      if (container.contains(canvas)) {
-        isMouseOverChart.value = true;
-
-        // 如果当前图表被固定，不更新位置和数据
-        if (isPinned.value) {
-          return;
-        }
-
-        // 更新鼠标位置和数据
-        mousePos.value = {
-          x: event.clientX,
-          y: event.clientY,
-          pageX: event.pageX,
-          pageY: event.pageY,
-        };
-
-        findNearbySeries();
-      } else {
-        // Canvas 不属于当前容器，清除状态
-        isMouseOverChart.value = false;
-        // 如果当前图表没有被固定，清除数据
-        if (!isPinned.value) {
-          nearbySeries.value = [];
-        }
-      }
-    } else {
-      // 如果不在 canvas 上，清除状态
-      isMouseOverChart.value = false;
-      // 如果当前图表没有被固定，清除数据
-      if (!isPinned.value) {
-        nearbySeries.value = [];
-      }
-    }
-  };
-
-  const handleScroll = () => {
-    // 滚动时取消固定
+    // 如果当前图表被固定，不更新位置和数据
     if (isPinned.value) {
-      handleUnpin();
-    }
-  };
-
-  const handleChartClick = (event: MouseEvent) => {
-    if (!props.enablePinning) return;
-
-    const target = event.target as HTMLElement;
-
-    // 检查是否在当前图表的 canvas 上
-    if (props.chartContainerRef && target.tagName === 'CANVAS') {
-      const canvas = target;
-      const container = props.chartContainerRef;
-
-      if (!container.contains(canvas)) {
-        return; // 不是当前图表的 canvas，忽略点击
-      }
-    } else if (target.tagName !== 'CANVAS') {
       return;
     }
+
+    // 更新鼠标位置和数据
+    // 注意：findNearbySeries 使用的是 x/y (相对于 canvas)，而 tooltipStyle 使用 pageX/pageY
+    // ECharts 的 convertFromPixel 默认处理相对于 canvas 的坐标
+    mousePos.value = {
+      x: offsetX,
+      y: offsetY,
+      pageX: event.pageX,
+      pageY: event.pageY,
+    };
+
+    findNearbySeries();
+  };
+
+  // 由父组件调用，处理鼠标移出
+  const handleExternalMouseLeave = () => {
+    isMouseOverChart.value = false;
+    if (!isPinned.value) {
+      nearbySeries.value = [];
+    }
+  };
+
+  // 由父组件调用，处理点击
+  const handleExternalClick = (event: MouseEvent, offsetX: number, offsetY: number) => {
+    if (!props.enablePinning) return;
 
     // 如果当前图表已经固定，忽略点击（不更新位置和内容）
     if (isPinned.value) {
@@ -298,16 +264,16 @@
 
     // 保存固定位置
     pinnedPos.value = {
-      x: event.clientX,
-      y: event.clientY,
+      x: offsetX,
+      y: offsetY,
       pageX: event.pageX,
       pageY: event.pageY,
     };
 
     // 更新鼠标位置（用于 tooltip 定位）
     mousePos.value = {
-      x: event.clientX,
-      y: event.clientY,
+      x: offsetX,
+      y: offsetY,
       pageX: event.pageX,
       pageY: event.pageY,
     };
@@ -316,6 +282,13 @@
     findNearbySeries();
 
     emit('pin', { x: event.pageX, y: event.pageY });
+  };
+
+  const handleScroll = () => {
+    // 滚动时取消固定
+    if (isPinned.value) {
+      handleUnpin();
+    }
   };
 
   const handleUnpin = () => {
@@ -327,18 +300,19 @@
 
   // Lifecycle
   onMounted(() => {
-    window.addEventListener('mousemove', handleMouseMove);
+    // 移除全局 mousemove 监听
     window.addEventListener('scroll', handleScroll, true); // 使用捕获阶段监听所有滚动
   });
 
   onUnmounted(() => {
-    window.removeEventListener('mousemove', handleMouseMove);
     window.removeEventListener('scroll', handleScroll, true);
   });
 
   // 暴露方法供父组件使用
   defineExpose({
-    handleChartClick,
+    handleExternalMouseMove,
+    handleExternalMouseLeave,
+    handleExternalClick,
     unpin: handleUnpin,
   });
 </script>

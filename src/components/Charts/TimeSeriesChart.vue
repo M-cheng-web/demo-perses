@@ -1,12 +1,12 @@
 <template>
   <div class="time-series-chart-container">
-    <div ref="chartRef" class="time-series-chart" @click="handleChartClick"></div>
+    <div ref="chartRef" class="time-series-chart"></div>
 
     <!-- 自定义 Tooltip -->
     <ChartTooltip
       ref="tooltipRef"
       :chart-id="chartId"
-      :chart-instance="chartInstance as any"
+      :chart-instance="chartInstance"
       :chart-container-ref="chartRef"
       :data="timeSeriesData"
       :format-options="panel.options.format"
@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+  import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
   import * as echarts from 'echarts';
   import type { EChartsOption } from 'echarts';
   import type { EChartsType } from 'echarts/core';
@@ -44,7 +44,7 @@
   }>();
 
   const chartRef = ref<HTMLElement>();
-  const chartInstance = ref<EChartsType | null>(null);
+  const chartInstance = ref<any | EChartsType | null>(null);
   const tooltipRef = ref();
 
   // 生成唯一的图表 ID
@@ -104,28 +104,50 @@
     }
 
     chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
+
+    // 绑定事件到 ZRender 层，以支持 Tooltip
+    const zr = chartInstance.value.getZr();
+
+    zr.on('mousemove', (params: any) => {
+      if (tooltipRef.value) {
+        tooltipRef.value.handleExternalMouseMove(params.event, params.offsetX, params.offsetY);
+      }
+    });
+
+    zr.on('mouseout', () => {
+      if (tooltipRef.value) {
+        tooltipRef.value.handleExternalMouseLeave();
+      }
+    });
+
+    zr.on('click', (params: any) => {
+      if (tooltipRef.value) {
+        tooltipRef.value.handleExternalClick(params.event, params.offsetX, params.offsetY);
+      }
+    });
+
     updateChart();
   };
 
   const updateChart = () => {
     // 如果图表还没初始化且有数据了，先初始化
     if (!chartInstance.value && chartRef.value) {
-      if (props.queryResults && props.queryResults.length > 0 && !props.queryResults.every((r) => !r.data || r.data.length === 0)) {
-        chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
-      } else {
-        return; // 没有数据，不初始化
-      }
+      initChart();
+      if (!chartInstance.value) return;
     }
 
-    if (!chartInstance.value) return;
-
     const option = getChartOption();
+
+    console.log('option', option);
+
     chartInstance.value.setOption(option, true);
   };
 
   const getChartOption = (): EChartsOption => {
     const { queryResults } = props;
     const { options } = props.panel;
+
+    console.log('queryResults', queryResults);
 
     // 检查是否有有效数据
     if (!queryResults || queryResults.length === 0 || queryResults.every((r) => !r.data || r.data.length === 0)) {
@@ -170,23 +192,26 @@
           name: legend,
           type: specificOptions?.mode === 'bar' ? 'bar' : 'line',
           data,
-          smooth: options.chart?.smooth ?? true,
-          showSymbol: options.chart?.showSymbol ?? false,
+          smooth: options.chart?.smooth ?? true, // 平滑曲线
+          showSymbol: options.chart?.showSymbol ?? false, // 显示数据点
+          // 区域的填充样式
           areaStyle:
             specificOptions?.mode === 'area'
               ? {
                   opacity: (specificOptions?.fillOpacity ?? 0.3) * (isVisible ? 1 : 0.15),
                 }
               : undefined,
-          stack: specificOptions?.stackMode !== 'none' ? 'total' : undefined,
+          stack: specificOptions?.stackMode !== 'none' ? 'total' : undefined, // 堆叠模式
           // 控制可见性
           silent: !isVisible,
+          // 线条样式
           lineStyle: {
             width: options.chart?.line?.width ?? 2,
             type: options.chart?.line?.type ?? 'solid',
             color: color,
             opacity: isVisible ? 1 : 0.15,
           },
+          // 数据点样式
           itemStyle: {
             color: color,
             opacity: isVisible ? 1 : 0.15,
@@ -218,7 +243,14 @@
         show: true,
         trigger: 'axis',
         axisPointer: {
-          type: 'line',
+          type: 'cross', // 轴线类型
+          label: {
+            show: false,
+          },
+          lineStyle: {
+            color: '#000',
+            width: 1,
+          },
         },
         // 不显示内容，由自定义 tooltip 处理
         formatter: () => '',
@@ -228,38 +260,23 @@
       legend: {
         show: false,
       },
-      // 添加 axisPointer - Y轴竖线跟随鼠标
-      axisPointer: {
-        link: [{ xAxisIndex: 'all' }],
-        label: {
-          backgroundColor: '#777',
-        },
-      },
       grid: {
-        left: '3%',
-        right: '4%',
-        bottom: legendOptions.value.show && legendOptions.value.position === 'bottom' ? '15%' : '3%',
-        top: '10%',
-        containLabel: true,
+        left: 10,
+        right: 10,
+        bottom: 0,
+        top: 0,
+        containLabel: false,
       },
       xAxis: {
         type: 'time',
         show: options.axis?.xAxis?.show ?? true,
         name: options.axis?.xAxis?.name,
+        alignTicks: true,
         splitLine: {
-          show: options.axis?.xAxis?.splitLine?.show ?? false,
+          show: true, // 分割线
         },
-        axisPointer: {
-          show: true,
-          type: 'line',
-          lineStyle: {
-            type: 'solid',
-            color: '#aaa',
-            width: 1,
-          },
-          label: {
-            show: false,
-          },
+        axisTick: {
+          show: false,
         },
       },
       yAxis: {
@@ -269,10 +286,20 @@
         min: options.axis?.yAxis?.min,
         max: options.axis?.yAxis?.max,
         splitLine: {
-          show: options.axis?.yAxis?.splitLine?.show ?? true,
+          show: true,
         },
         axisLabel: {
           formatter: (value: number) => formatValue(value, options.format || {}),
+        },
+        axisPointer: {
+          type: 'line', // 轴线类型
+          label: {
+            show: false,
+          },
+          lineStyle: {
+            color: '#000',
+            width: 1,
+          },
         },
       },
       series,
@@ -307,18 +334,15 @@
     });
   };
 
-  // Tooltip 交互处理
-  const handleChartClick = (event: MouseEvent) => {
-    tooltipRef.value?.handleChartClick(event);
-  };
-
   watch(
     () => props.queryResults,
     (newResults) => {
       nextTick(() => {
         // 如果之前没有数据现在有数据了，需要初始化图表
         if (!chartInstance.value && newResults && newResults.length > 0) {
-          initChart();
+          setTimeout(() => {
+            initChart();
+          }, 1000);
         } else {
           updateChart();
         }
@@ -336,13 +360,6 @@
     },
     { deep: true }
   );
-
-  onMounted(() => {
-    // 延迟初始化，等待数据到达
-    nextTick(() => {
-      initChart();
-    });
-  });
 
   onUnmounted(() => {
     chartInstance.value?.dispose();
