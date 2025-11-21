@@ -1,6 +1,18 @@
 <template>
   <div class="list-legend">
     <div class="legend-items">
+      <!-- 全局选择多选框 -->
+      <div class="legend-item global-selector" @click="handleGlobalToggle">
+        <a-checkbox
+          :checked="globalSelectionState === 'all'"
+          :indeterminate="globalSelectionState === 'indeterminate'"
+          @click.stop="handleGlobalToggle"
+        >
+          全部
+        </a-checkbox>
+      </div>
+
+      <!-- 各个 Legend 项 -->
       <div
         v-for="item in items"
         :key="item.id"
@@ -10,8 +22,8 @@
           'is-dimmed': !isSelected(item.id) && hasSelection,
         }"
         @click="handleClick($event, item.id)"
-        @mouseenter="emit('itemHover', item.id)"
-        @mouseleave="emit('itemLeave', item.id)"
+        @mouseenter="emit('item-hover', item.id)"
+        @mouseleave="emit('item-leave', item.id)"
       >
         <span class="item-color" :style="{ backgroundColor: item.color }"></span>
         <span class="item-label" :class="{ wrap: wrapLabels }" :title="item.label">
@@ -30,6 +42,7 @@
     items: LegendItem[];
     selection: LegendSelection;
     wrapLabels?: boolean;
+    globalSelectionState: 'all' | 'none' | 'indeterminate';
   }
 
   const props = withDefaults(defineProps<Props>(), {
@@ -37,9 +50,10 @@
   });
 
   const emit = defineEmits<{
-    (e: 'itemClick', id: string, isModified: boolean): void;
-    (e: 'itemHover', id: string): void;
-    (e: 'itemLeave', id: string): void;
+    (e: 'item-click', id: string, isModified: boolean): void;
+    (e: 'item-hover', id: string): void;
+    (e: 'item-leave', id: string): void;
+    (e: 'toggle-global-selection'): void;
   }>();
 
   const hasSelection = computed(() => props.selection !== 'ALL');
@@ -51,58 +65,78 @@
 
   const handleClick = (event: MouseEvent, id: string) => {
     const isModified = event.metaKey || event.ctrlKey || event.shiftKey;
-    emit('itemClick', id, isModified);
+    emit('item-click', id, isModified);
+  };
+
+  const handleGlobalToggle = () => {
+    emit('toggle-global-selection');
   };
 </script>
 
 <style scoped lang="less">
   .list-legend {
-    padding: 8px;
+    padding: 6px;
     max-height: 200px;
     overflow-y: auto;
 
     .legend-items {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 1px;
 
       .legend-item {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 6px 8px;
-        border-radius: 4px;
+        gap: 6px;
+        padding: 4px 6px;
+        border-radius: 3px;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.15s ease;
         user-select: none;
+        font-size: 11px;
 
         &:hover {
-          background-color: @background-light;
+          background-color: fade(@primary-color, 6%);
         }
 
         &.is-selected {
           background-color: fade(@primary-color, 10%);
-          font-weight: 500;
         }
 
         &.is-dimmed {
-          opacity: 0.35;
+          opacity: 0.3;
 
           &:hover {
-            opacity: 0.7;
+            opacity: 0.6;
+          }
+        }
+
+        &.global-selector {
+          font-weight: 500;
+          background-color: @background-light;
+          border-bottom: 1px solid @border-color;
+          margin-bottom: 2px;
+          padding: 5px 6px;
+
+          &:hover {
+            background-color: fade(@primary-color, 6%);
+          }
+
+          :deep(.ant-checkbox-wrapper) {
+            font-size: 12px;
           }
         }
 
         .item-color {
-          width: 10px;
-          height: 10px;
+          width: 8px;
+          height: 8px;
           border-radius: 2px;
           flex-shrink: 0;
-          box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+          box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
         }
 
         .item-label {
-          font-size: 12px;
+          font-size: 11px;
           flex: 1;
           min-width: 0;
           white-space: nowrap;

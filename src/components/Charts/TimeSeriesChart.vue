@@ -1,40 +1,44 @@
+<!-- 时间序列图 -->
 <template>
   <div class="time-series-chart-container">
-    <div ref="chartRef" class="time-series-chart"></div>
+    <a-spin :spinning="isLoading">
+      <div ref="chartRef" class="time-series-chart"></div>
 
-    <!-- 自定义 Tooltip -->
-    <ChartTooltip
-      ref="tooltipRef"
-      :chart-id="chartId"
-      :chart-instance="chartInstance"
-      :chart-container-ref="chartRef"
-      :data="timeSeriesData"
-      :format-options="panel.options.format"
-      :enable-pinning="true"
-    />
+      <!-- 自定义 Tooltip -->
+      <ChartTooltip
+        ref="tooltipRef"
+        :chart-id="chartId"
+        :chart-instance="chartInstance"
+        :chart-container-ref="chartRef"
+        :data="timeSeriesData"
+        :format-options="panel.options.format"
+        :enable-pinning="true"
+      />
 
-    <!-- 自定义 Legend -->
-    <Legend
-      v-if="legendItems.length > 0"
-      :items="legendItems"
-      :selection="legendSelection"
-      :options="legendOptions"
-      @item-click="handleLegendClick"
-      @item-hover="handleLegendHover"
-      @item-leave="handleLegendLeave"
-    />
+      <!-- 自定义 Legend -->
+      <Legend
+        v-if="legendItems.length > 0"
+        :items="legendItems"
+        :selection="selectedItems"
+        :options="legendOptions"
+        :global-selection-state="globalSelectionState"
+        @item-click="handleLegendClick"
+        @item-hover="handleLegendHover"
+        @item-leave="handleLegendLeave"
+        @toggle-global-selection="toggleGlobalSelection"
+      />
+    </a-spin>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
-  import * as echarts from 'echarts';
-  import type { EChartsOption } from 'echarts';
-  import type { EChartsType } from 'echarts/core';
-  import type { Panel, QueryResult, LegendItem } from '@/types';
+  import { ref, computed, nextTick } from 'vue';
+  import type { EChartsOption, ECharts } from 'echarts';
+  import type { Panel, QueryResult } from '@/types';
   import { formatValue } from '@/utils';
   import { useChartResize } from '@/composables/useChartResize';
-  import { useSeriesSelection } from '@/composables/useSeriesSelection';
+  import { useLegend } from '@/composables/useLegend';
+  import { useChartInit } from '@/composables/useChartInit';
   import ChartTooltip from '@/components/ChartTooltip/ChartTooltip.vue';
   import Legend from '@/components/ChartLegend/Legend.vue';
 
@@ -44,106 +48,99 @@
   }>();
 
   const chartRef = ref<HTMLElement>();
-  const chartInstance = ref<any | EChartsType | null>(null);
   const tooltipRef = ref();
 
   // 生成唯一的图表 ID
   const chartId = computed(() => `chart-${props.panel.id}`);
-
-  // Legend 选中管理
-  const { selectedItems: legendSelection, toggleSeries, isSeriesSelected } = useSeriesSelection();
-
-  // 使用响应式 resize
-  useChartResize(chartInstance, chartRef);
 
   // 时间序列数据
   const timeSeriesData = computed(() => {
     return props.queryResults.flatMap((result) => result.data);
   });
 
-  // Legend 项目
-  const legendItems = computed((): LegendItem[] => {
-    const items: LegendItem[] = [];
-    const colors = props.panel.options.chart?.colors || [];
-    let colorIndex = 0;
+  /**
+   * 使用图表初始化 Hook
+   * 等待 queryResults 和 panel.options 都有效后才初始化一次
+   */
+  const { chartInstance, isLoading } = useChartInit<ECharts>({
+    chartRef,
+    dependencies: [
+      {
+        value: computed(() => props.queryResults),
+        isValid: (results: QueryResult[]) => results && results.length > 0 && results.some((r) => r.data && r.data.length > 0),
+      },
+      {
+        value: computed(() => props.panel.options),
+        isValid: (options: any) => options && Object.keys(options).length > 0,
+      },
+    ],
+    onChartCreated: (instance) => {
+      // 绑定事件到 ZRender 层，以支持 Tooltip
+      const zr = instance.getZr();
 
-    props.queryResults.forEach((result) => {
-      result.data.forEach((timeSeries, index) => {
-        const label = timeSeries.metric.__legend__ || timeSeries.metric.__name__ || `Series ${index + 1}`;
-
-        const color = colors[colorIndex % colors.length] || `hsl(${(colorIndex * 137.5) % 360}, 70%, 50%)`;
-
-        items.push({
-          id: `series-${colorIndex}`,
-          label,
-          color,
-        });
-
-        colorIndex++;
+      zr.on('mousemove', (params: any) => {
+        if (tooltipRef.value) {
+          tooltipRef.value.handleExternalMouseMove(params.event, params.offsetX, params.offsetY);
+        }
       });
-    });
 
-    return items;
+      zr.on('mouseout', () => {
+        if (tooltipRef.value) {
+          tooltipRef.value.handleExternalMouseLeave();
+        }
+      });
+
+      zr.on('click', (params: any) => {
+        if (tooltipRef.value) {
+          tooltipRef.value.handleExternalClick(params.event, params.offsetX, params.offsetY);
+        }
+      });
+    },
+    onUpdate: (instance) => {
+      nextTick(() => {
+        updateChart(instance);
+      });
+    },
   });
 
-  // Legend 配置
-  const legendOptions = computed(() => ({
-    show: props.panel.options.legend?.show !== false,
-    mode: (props.panel.options.legend as any)?.mode || 'compact',
-    position: (props.panel.options.legend?.position || 'bottom') as 'bottom' | 'right',
-    size: 'medium' as const,
-  }));
-
-  const initChart = () => {
-    if (!chartRef.value) return;
-
-    // 只在有数据时才初始化图表
-    if (!props.queryResults || props.queryResults.length === 0 || props.queryResults.every((r) => !r.data || r.data.length === 0)) {
-      console.log('Waiting for data before initializing chart');
+  /**
+   * 更新图表配置和数据
+   */
+  function updateChart(instance?: ECharts) {
+    const chartInst = instance || chartInstance.value;
+    if (!chartInst) {
+      console.warn('Chart instance not initialized, skipping update');
       return;
     }
 
-    chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
-
-    // 绑定事件到 ZRender 层，以支持 Tooltip
-    const zr = chartInstance.value.getZr();
-
-    zr.on('mousemove', (params: any) => {
-      if (tooltipRef.value) {
-        tooltipRef.value.handleExternalMouseMove(params.event, params.offsetX, params.offsetY);
-      }
-    });
-
-    zr.on('mouseout', () => {
-      if (tooltipRef.value) {
-        tooltipRef.value.handleExternalMouseLeave();
-      }
-    });
-
-    zr.on('click', (params: any) => {
-      if (tooltipRef.value) {
-        tooltipRef.value.handleExternalClick(params.event, params.offsetX, params.offsetY);
-      }
-    });
-
-    updateChart();
-  };
-
-  const updateChart = () => {
-    // 如果图表还没初始化且有数据了，先初始化
-    if (!chartInstance.value && chartRef.value) {
-      initChart();
-      if (!chartInstance.value) return;
+    try {
+      const option = getChartOption();
+      console.log('Updating chart with option:', option);
+      chartInst.setOption(option, true);
+    } catch (error) {
+      console.error('Failed to update chart:', error);
     }
+  }
 
-    const option = getChartOption();
+  // 使用 Legend Hook（在 chartInstance 初始化后）
+  const {
+    selectedItems,
+    legendItems,
+    legendOptions,
+    globalSelectionState,
+    getSeriesVisibility,
+    handleLegendClick,
+    handleLegendHover,
+    handleLegendLeave,
+    toggleGlobalSelection,
+  } = useLegend({
+    panel: computed(() => props.panel),
+    queryResults: computed(() => props.queryResults),
+    chartInstance,
+    updateChart: () => updateChart(),
+  });
 
-    console.log('option', option);
-
-    chartInstance.value.setOption(option, true);
-  };
-
-  const getChartOption = (): EChartsOption => {
+  function getChartOption(): EChartsOption {
     const { queryResults } = props;
     const { options } = props.panel;
 
@@ -180,12 +177,22 @@
         const legend = timeSeries.metric.__legend__ || timeSeries.metric.__name__ || 'series';
         const seriesId = `series-${colorIndex}`;
 
-        // 检查该系列是否被选中
-        const isVisible = isSeriesSelected(seriesId);
+        // 获取该系列的显示状态
+        const visibility = getSeriesVisibility(seriesId);
+
+        // 如果是隐藏状态，直接跳过，不添加到 series 中
+        if (visibility === 'hidden') {
+          colorIndex++;
+          return;
+        }
 
         const data = timeSeries.values.map(([timestamp, value]) => [timestamp, value]);
 
         const color = colors[colorIndex % colors.length] || `hsl(${(colorIndex * 137.5) % 360}, 70%, 50%)`;
+
+        // 根据可见性状态设置透明度
+        const opacity = visibility === 'visible' ? 1 : 0.08;
+        const areaOpacity = visibility === 'visible' ? 0.3 : 0.03;
 
         series.push({
           id: seriesId,
@@ -194,27 +201,24 @@
           data,
           smooth: options.chart?.smooth ?? true, // 平滑曲线
           showSymbol: options.chart?.showSymbol ?? false, // 显示数据点
-          // 区域的填充样式
-          areaStyle:
-            specificOptions?.mode === 'area'
-              ? {
-                  opacity: (specificOptions?.fillOpacity ?? 0.3) * (isVisible ? 1 : 0.15),
-                }
-              : undefined,
-          stack: specificOptions?.stackMode !== 'none' ? 'total' : undefined, // 堆叠模式
+
+          // 堆叠图必须有 areaStyle 才能显示堆叠效果
+          areaStyle: {
+            opacity: areaOpacity,
+          },
           // 控制可见性
-          silent: !isVisible,
+          silent: false,
           // 线条样式
           lineStyle: {
             width: options.chart?.line?.width ?? 2,
             type: options.chart?.line?.type ?? 'solid',
             color: color,
-            opacity: isVisible ? 1 : 0.15,
+            opacity: opacity,
           },
           // 数据点样式
           itemStyle: {
             color: color,
-            opacity: isVisible ? 1 : 0.15,
+            opacity: opacity,
           },
         });
 
@@ -284,7 +288,7 @@
         show: options.axis?.yAxis?.show ?? true,
         name: options.axis?.yAxis?.name,
         min: options.axis?.yAxis?.min,
-        max: options.axis?.yAxis?.max,
+        // max: options.axis?.yAxis?.max,
         splitLine: {
           show: true,
         },
@@ -304,67 +308,10 @@
       },
       series,
     };
-  };
+  }
 
-  // Legend 交互处理
-  const handleLegendClick = (id: string, isModified: boolean) => {
-    toggleSeries(id, isModified);
-    nextTick(() => {
-      updateChart();
-    });
-  };
-
-  const handleLegendHover = (id: string) => {
-    if (!chartInstance.value) return;
-
-    // 高亮对应系列
-    chartInstance.value.dispatchAction({
-      type: 'highlight',
-      seriesId: id,
-    });
-  };
-
-  const handleLegendLeave = (id: string) => {
-    if (!chartInstance.value) return;
-
-    // 取消高亮
-    chartInstance.value.dispatchAction({
-      type: 'downplay',
-      seriesId: id,
-    });
-  };
-
-  watch(
-    () => props.queryResults,
-    (newResults) => {
-      nextTick(() => {
-        // 如果之前没有数据现在有数据了，需要初始化图表
-        if (!chartInstance.value && newResults && newResults.length > 0) {
-          setTimeout(() => {
-            initChart();
-          }, 1000);
-        } else {
-          updateChart();
-        }
-      });
-    },
-    { deep: true }
-  );
-
-  watch(
-    () => props.panel.options,
-    () => {
-      nextTick(() => {
-        updateChart();
-      });
-    },
-    { deep: true }
-  );
-
-  onUnmounted(() => {
-    chartInstance.value?.dispose();
-    chartInstance.value = null;
-  });
+  // 使用响应式 resize
+  useChartResize(chartInstance, chartRef);
 </script>
 
 <style scoped lang="less">
@@ -374,6 +321,12 @@
     width: 100%;
     height: 100%;
     position: relative;
+
+    :deep(.ant-spin-container) {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
   }
 
   .time-series-chart {

@@ -9,9 +9,11 @@
       :items="items"
       :selection="selection"
       :wrap-labels="wrapLabels"
+      :global-selection-state="globalSelectionState"
       @item-click="handleItemClick"
       @item-hover="handleItemHover"
       @item-leave="handleItemLeave"
+      @toggle-global-selection="handleToggleGlobalSelection"
     />
   </div>
 </template>
@@ -27,6 +29,7 @@
     selection: LegendSelection;
     options: LegendOptions;
     wrapLabels?: boolean;
+    globalSelectionState: 'all' | 'none' | 'indeterminate';
   }
 
   const props = withDefaults(defineProps<Props>(), {
@@ -34,9 +37,10 @@
   });
 
   const emit = defineEmits<{
-    (e: 'itemClick', id: string, isModified: boolean): void;
-    (e: 'itemHover', id: string): void;
-    (e: 'itemLeave', id: string): void;
+    (e: 'item-click', id: string, isModified: boolean): void;
+    (e: 'item-hover', id: string): void;
+    (e: 'item-leave', id: string): void;
+    (e: 'toggle-global-selection'): void;
   }>();
 
   // 计算有效的图例模式
@@ -57,22 +61,25 @@
   });
 
   const handleItemClick = (id: string, isModified: boolean) => {
-    emit('itemClick', id, isModified);
+    emit('item-click', id, isModified);
   };
 
   const handleItemHover = (id: string) => {
-    emit('itemHover', id);
+    emit('item-hover', id);
   };
 
   const handleItemLeave = (id: string) => {
-    emit('itemLeave', id);
+    emit('item-leave', id);
+  };
+
+  const handleToggleGlobalSelection = () => {
+    emit('toggle-global-selection');
   };
 </script>
 
 <style scoped lang="less">
   .chart-legend {
     background-color: @background-base;
-    border-top: 1px solid @border-color;
     transition: all 0.2s ease;
 
     &.legend-bottom {

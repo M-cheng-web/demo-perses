@@ -12,7 +12,7 @@ import {
   createDiskUsagePanel,
   createStatPanel,
   createTablePanel,
-  createBarChartPanel,
+  // createBarChartPanel,
   createGaugePanel,
 } from './panels';
 
@@ -31,15 +31,15 @@ export function createDefaultDashboard(): Dashboard {
     order: 0,
     panels: [
       createCPUUsagePanel(),
-      createStatPanel('CPU 平均使用率', 'avg(cpu_usage)', 'percent'),
-      createStatPanel('CPU 最大使用率', 'max(cpu_usage)', 'percent'),
-      createBarChartPanel('CPU 核心对比', 'cpu_usage', 'percent'),
+      // createStatPanel('CPU 平均使用率', 'avg(cpu_usage)', 'percent'),
+      // createStatPanel('CPU 最大使用率', 'max(cpu_usage)', 'percent'),
+      // createBarChartPanel('CPU 核心对比', 'cpu_usage', 'percent'),
     ],
     layout: [
       { i: '', x: 0, y: 0, w: 30, h: 10, minW: 12, minH: 6 }, // CPU 使用率图表
-      { i: '', x: 30, y: 0, w: 6, h: 5, minW: 4, minH: 4 }, // 平均使用率
-      { i: '', x: 36, y: 0, w: 6, h: 5, minW: 4, minH: 4 }, // 最大使用率
-      { i: '', x: 30, y: 5, w: 12, h: 5, minW: 8, minH: 4 }, // CPU 核心对比柱状图
+      // { i: '', x: 30, y: 0, w: 6, h: 5, minW: 4, minH: 4 }, // 平均使用率
+      // { i: '', x: 36, y: 0, w: 6, h: 5, minW: 4, minH: 4 }, // 最大使用率
+      // { i: '', x: 30, y: 5, w: 12, h: 5, minW: 8, minH: 4 }, // CPU 核心对比柱状图
     ],
   };
 

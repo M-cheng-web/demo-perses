@@ -1,29 +1,33 @@
+<!-- 柱状图 -->
 <template>
   <div class="bar-chart-container">
-    <div ref="chartRef" class="bar-chart"></div>
+    <a-spin :spinning="isLoading">
+      <div ref="chartRef" class="bar-chart"></div>
 
-    <!-- 自定义 Legend -->
-    <Legend
-      v-if="legendItems.length > 0"
-      :items="legendItems"
-      :selection="legendSelection"
-      :options="legendOptions"
-      @item-click="handleLegendClick"
-      @item-hover="handleLegendHover"
-      @item-leave="handleLegendLeave"
-    />
+      <!-- 自定义 Legend -->
+      <Legend
+        v-if="legendItems.length > 0"
+        :items="legendItems"
+        :selection="selectedItems"
+        :options="legendOptions"
+        :global-selection-state="globalSelectionState"
+        @item-click="handleLegendClick"
+        @item-hover="handleLegendHover"
+        @item-leave="handleLegendLeave"
+        @toggle-global-selection="toggleGlobalSelection"
+      />
+    </a-spin>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
-  import * as echarts from 'echarts';
-  import type { EChartsOption } from 'echarts';
-  import type { EChartsType } from 'echarts/core';
-  import type { Panel, QueryResult, LegendItem } from '@/types';
+  import { ref, computed, nextTick } from 'vue';
+  import type { EChartsOption, ECharts } from 'echarts';
+  import type { Panel, QueryResult } from '@/types';
   import { formatValue } from '@/utils';
   import { useChartResize } from '@/composables/useChartResize';
-  import { useSeriesSelection } from '@/composables/useSeriesSelection';
+  import { useLegend } from '@/composables/useLegend';
+  import { useChartInit } from '@/composables/useChartInit';
   import Legend from '@/components/ChartLegend/Legend.vue';
 
   const props = defineProps<{
@@ -32,75 +36,66 @@
   }>();
 
   const chartRef = ref<HTMLElement>();
-  const chartInstance = ref<EChartsType | null>(null);
 
-  // Legend 选中管理
-  const { selectedItems: legendSelection, toggleSeries, isSeriesSelected } = useSeriesSelection();
-
-  // 使用响应式 resize
-  useChartResize(chartInstance, chartRef);
-
-  // Legend 项目
-  const legendItems = computed((): LegendItem[] => {
-    const items: LegendItem[] = [];
-    const colors = props.panel.options.chart?.colors || [];
-    let colorIndex = 0;
-
-    props.queryResults.forEach((result) => {
-      result.data.forEach((timeSeries, index) => {
-        const label = timeSeries.metric.__legend__ || timeSeries.metric.__name__ || `Series ${index + 1}`;
-
-        const color = colors[colorIndex % colors.length] || `hsl(${(colorIndex * 137.5) % 360}, 70%, 50%)`;
-
-        items.push({
-          id: `series-${colorIndex}`,
-          label,
-          color,
-        });
-
-        colorIndex++;
+  /**
+   * 使用图表初始化 Hook
+   * 等待 queryResults 和 panel.options 都有效后才初始化一次
+   */
+  const { chartInstance, isLoading } = useChartInit<ECharts>({
+    chartRef,
+    dependencies: [
+      {
+        value: computed(() => props.queryResults),
+        isValid: (results: QueryResult[]) => results && results.length > 0 && results.some((r) => r.data && r.data.length > 0),
+      },
+      {
+        value: computed(() => props.panel.options),
+        isValid: (options: any) => options && Object.keys(options).length > 0,
+      },
+    ],
+    onUpdate: (instance) => {
+      console.log('[BarChart] Updating chart...');
+      nextTick(() => {
+        updateChart(instance);
       });
-    });
-
-    return items;
+    },
   });
 
-  // Legend 配置
-  const legendOptions = computed(() => ({
-    show: props.panel.options.legend?.show !== false,
-    mode: (props.panel.options.legend as any)?.mode || 'compact',
-    position: (props.panel.options.legend?.position || 'bottom') as 'bottom' | 'right',
-    size: 'medium' as const,
-  }));
-
-  const initChart = () => {
-    if (!chartRef.value) return;
-
-    // 只在有数据时才初始化图表
-    if (!props.queryResults || props.queryResults.length === 0 || props.queryResults.every((r) => !r.data || r.data.length === 0)) {
-      console.log('Waiting for data before initializing bar chart');
+  /**
+   * 更新图表配置和数据
+   */
+  const updateChart = (instance?: ECharts) => {
+    const chartInst = instance || chartInstance.value;
+    if (!chartInst) {
+      console.warn('Bar chart instance not initialized, skipping update');
       return;
     }
 
-    chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
-    updateChart();
-  };
-
-  const updateChart = () => {
-    // 如果图表还没初始化且有数据了，先初始化
-    if (!chartInstance.value && chartRef.value) {
-      if (props.queryResults && props.queryResults.length > 0 && !props.queryResults.every((r) => !r.data || r.data.length === 0)) {
-        chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
-      } else {
-        return; // 没有数据，不初始化
-      }
+    try {
+      const option = getChartOption();
+      chartInst.setOption(option, true);
+    } catch (error) {
+      console.error('Failed to update bar chart:', error);
     }
-
-    if (!chartInstance.value) return;
-
-    const option = getChartOption();
-    chartInstance.value.setOption(option, true);
   };
+
+  // 使用 Legend Hook（在 chartInstance 初始化后）
+  const {
+    selectedItems,
+    legendItems,
+    legendOptions,
+    globalSelectionState,
+    getSeriesVisibility,
+    handleLegendClick,
+    handleLegendHover,
+    handleLegendLeave,
+    toggleGlobalSelection,
+  } = useLegend({
+    panel: computed(() => props.panel),
+    queryResults: computed(() => props.queryResults),
+    chartInstance,
+    updateChart: () => updateChart(),
+  });
 
   const getChartOption = (): EChartsOption => {
     const { queryResults } = props;
@@ -175,14 +170,23 @@
         const legend = timeSeries.metric.__legend__ || timeSeries.metric.__name__ || 'series';
         const seriesId = `series-${colorIndex}`;
 
-        // 检查该系列是否被选中
-        const isVisible = isSeriesSelected(seriesId);
+        // 获取该系列的显示状态
+        const visibility = getSeriesVisibility(seriesId);
+
+        // 如果是隐藏状态，直接跳过，不添加到 series 中
+        if (visibility === 'hidden') {
+          colorIndex++;
+          return;
+        }
 
         // 为每个时间点创建数据
         const dataMap = new Map(timeSeries.values.map(([timestamp, value]) => [timestamp, value]));
         const data = sortedCategories.map((ts) => dataMap.get(ts) ?? 0);
 
         const color = colors[colorIndex % colors.length] || `hsl(${(colorIndex * 137.5) % 360}, 70%, 50%)`;
+
+        // 根据可见性状态设置透明度
+        const opacity = visibility === 'visible' ? 1 : 0.08;
 
         series.push({
           id: seriesId,
@@ -194,7 +198,7 @@
           // 控制可见性
           itemStyle: {
             color: color,
-            opacity: isVisible ? 1 : 0.15,
+            opacity: opacity,
           },
           emphasis: {
             focus: 'series',
@@ -266,61 +270,8 @@
     };
   };
 
-  // Legend 交互处理
-  const handleLegendClick = (id: string, isModified: boolean) => {
-    toggleSeries(id, isModified);
-    nextTick(() => {
-      updateChart();
-    });
-  };
-
-  const handleLegendHover = (id: string) => {
-    if (!chartInstance.value) return;
-
-    chartInstance.value.dispatchAction({
-      type: 'highlight',
-      seriesId: id,
-    });
-  };
-
-  const handleLegendLeave = (id: string) => {
-    if (!chartInstance.value) return;
-
-    chartInstance.value.dispatchAction({
-      type: 'downplay',
-      seriesId: id,
-    });
-  };
-
-  watch(
-    () => props.queryResults,
-    (newResults) => {
-      nextTick(() => {
-        // 如果之前没有数据现在有数据了，需要初始化图表
-        if (!chartInstance.value && newResults && newResults.length > 0) {
-          initChart();
-        } else {
-          updateChart();
-        }
-      });
-    },
-    { deep: true }
-  );
-
-  watch(
-    () => props.panel.options,
-    () => {
-      nextTick(() => {
-        updateChart();
-      });
-    },
-    { deep: true }
-  );
-
-  onUnmounted(() => {
-    chartInstance.value?.dispose();
-    chartInstance.value = null;
-  });
+  // 使用响应式 resize
+  useChartResize(chartInstance, chartRef);
 </script>
 
 <style scoped lang="less">
@@ -330,6 +281,12 @@
     width: 100%;
     height: 100%;
     position: relative;
+
+    :deep(.ant-spin-container) {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
   }
 
   .bar-chart {
