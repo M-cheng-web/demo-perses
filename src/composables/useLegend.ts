@@ -38,7 +38,7 @@ export function useLegend(options: UseLegendOptions) {
 
   /**
    * 切换系列选中状态
-   * 新逻辑：点击 = 切换显示/隐藏
+   * 点击 = 切换显示/隐藏
    */
   function toggleSeries(id: string) {
     if (selectedItems.value === 'ALL') {

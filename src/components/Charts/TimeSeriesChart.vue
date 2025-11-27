@@ -12,7 +12,7 @@
         :chart-container-ref="chartRef"
         :data="timeSeriesData"
         :format-options="panel.options.format"
-        :enable-pinning="true"
+        :is-series-visible="isSeriesSelected"
       />
 
       <!-- 自定义 Legend -->
@@ -128,6 +128,7 @@
     legendItems,
     legendOptions,
     globalSelectionState,
+    isSeriesSelected,
     getSeriesVisibility,
     handleLegendClick,
     handleLegendHover,

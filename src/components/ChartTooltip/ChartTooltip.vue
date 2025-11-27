@@ -54,11 +54,14 @@
     formatOptions?: any;
     enablePinning?: boolean;
     maxVisibleSeries?: number;
+    /** 用于判断系列是否被选中显示的函数 */
+    isSeriesVisible?: (seriesId: string) => boolean;
   }
 
   const props = withDefaults(defineProps<Props>(), {
     enablePinning: true,
     maxVisibleSeries: 10,
+    isSeriesVisible: () => true, // 默认所有系列都可见
   });
 
   const emit = defineEmits<{
@@ -78,6 +81,8 @@
   const currentTime = ref<number>(0);
   const showAllSeries = ref(false);
   const isMouseOverChart = ref(false);
+  let updatePending = false; // 防止重复更新
+  let rafId: number | null = null; // requestAnimationFrame ID
 
   // Computed
   const isPinned = computed(() => pinnedChartId.value === props.chartId);
@@ -146,21 +151,18 @@
   // Methods
   const findNearbySeries = () => {
     if (!props.chartInstance || !mousePos.value) {
-      nearbySeries.value = [];
       return;
     }
 
     try {
       // 检查 ECharts 实例是否已被销毁
       if (props.chartInstance.isDisposed()) {
-        nearbySeries.value = [];
         return;
       }
 
       // 检查 option 是否已设置（确保坐标系统已初始化）
       const option = props.chartInstance.getOption();
       if (!option || !option.series || (option.series as any[]).length === 0) {
-        nearbySeries.value = [];
         return;
       }
 
@@ -168,13 +170,11 @@
       const pointInGrid = props.chartInstance.convertFromPixel({ seriesIndex: 0 }, pointInPixel);
 
       if (!pointInGrid || !Array.isArray(pointInGrid)) {
-        nearbySeries.value = [];
         return;
       }
 
       const [xValue] = pointInGrid;
       if (xValue === undefined || typeof xValue !== 'number') {
-        nearbySeries.value = [];
         return;
       }
       currentTime.value = xValue;
@@ -182,7 +182,16 @@
       const series: NearbySeriesItem[] = [];
       const seriesOptions = option.series as any[];
 
-      props.data.forEach((timeSeries, index) => {
+      // 遍历所有数据，但只显示被选中的系列
+      let visibleSeriesIndex = 0;
+      props.data.forEach((timeSeries, dataIndex) => {
+        const seriesId = `series-${dataIndex}`;
+
+        // 检查该系列是否被选中（如果未选中，跳过）
+        if (props.isSeriesVisible && !props.isSeriesVisible(seriesId)) {
+          return;
+        }
+
         // 找到最接近的时间点
         let closestPoint: [number, number] | null = null;
         let minDistance = Infinity;
@@ -197,26 +206,30 @@
         });
 
         if (closestPoint) {
-          const seriesOption = seriesOptions?.[index];
+          // 从 ECharts option 中获取对应的系列配置
+          // 注意：由于隐藏的系列不在 option.series 中，需要使用 visibleSeriesIndex
+          const seriesOption = seriesOptions?.[visibleSeriesIndex];
           const color = seriesOption?.lineStyle?.color || seriesOption?.itemStyle?.color || '#5470c6';
 
-          const label = timeSeries.metric.__legend__ || timeSeries.metric.__name__ || `Series ${index + 1}`;
+          const label = timeSeries.metric.__legend__ || timeSeries.metric.__name__ || `Series ${dataIndex + 1}`;
 
           series.push({
-            id: `series-${index}`,
+            id: seriesId,
             label,
             color,
             value: closestPoint[1],
             formattedValue: formatValue(closestPoint[1], props.formatOptions || {}),
             timestamp: closestPoint[0],
           });
+
+          visibleSeriesIndex++;
         }
       });
 
       nearbySeries.value = series;
     } catch (error) {
       console.error('Error finding nearby series:', error);
-      nearbySeries.value = [];
+      // 出错时不清空数据，保持上一次的数据
     }
   };
 
@@ -229,9 +242,7 @@
       return;
     }
 
-    // 更新鼠标位置和数据
-    // 注意：findNearbySeries 使用的是 x/y (相对于 canvas)，而 tooltipStyle 使用 pageX/pageY
-    // ECharts 的 convertFromPixel 默认处理相对于 canvas 的坐标
+    // 更新鼠标位置
     mousePos.value = {
       x: offsetX,
       y: offsetY,
@@ -239,12 +250,27 @@
       pageY: event.pageY,
     };
 
-    findNearbySeries();
+    // 使用 requestAnimationFrame 来批量处理更新，避免频繁渲染导致闪烁
+    if (!updatePending) {
+      updatePending = true;
+      rafId = requestAnimationFrame(() => {
+        findNearbySeries();
+        updatePending = false;
+      });
+    }
   };
 
   // 由父组件调用，处理鼠标移出
   const handleExternalMouseLeave = () => {
     isMouseOverChart.value = false;
+
+    // 取消待处理的更新
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+      updatePending = false;
+    }
+
     if (!isPinned.value) {
       nearbySeries.value = [];
     }
@@ -306,6 +332,12 @@
 
   onUnmounted(() => {
     window.removeEventListener('scroll', handleScroll, true);
+
+    // 清理待处理的动画帧
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
   });
 
   // 暴露方法供父组件使用
