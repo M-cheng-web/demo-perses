@@ -4,17 +4,6 @@
     <a-spin :spinning="isLoading">
       <div ref="chartRef" class="time-series-chart"></div>
 
-      <!-- 自定义 Tooltip -->
-      <ChartTooltip
-        ref="tooltipRef"
-        :chart-id="chartId"
-        :chart-instance="chartInstance"
-        :chart-container-ref="chartRef"
-        :data="timeSeriesData"
-        :format-options="panel.options.format"
-        :is-series-visible="isSeriesSelected"
-      />
-
       <!-- 自定义 Legend -->
       <Legend
         v-if="legendItems.length > 0"
@@ -35,11 +24,11 @@
   import { ref, computed, nextTick } from 'vue';
   import type { EChartsOption, ECharts } from 'echarts';
   import type { Panel, QueryResult } from '@/types';
-  import { formatValue } from '@/utils';
+  import { formatValue, formatTime } from '@/utils';
   import { useChartResize } from '@/composables/useChartResize';
   import { useLegend } from '@/composables/useLegend';
   import { useChartInit } from '@/composables/useChartInit';
-  import ChartTooltip from '@/components/ChartTooltip/ChartTooltip.vue';
+  import { useChartTooltip, TooltipDataProviders, type TooltipData } from '@/composables/useChartTooltip';
   import Legend from '@/components/ChartLegend/Legend.vue';
 
   const props = defineProps<{
@@ -48,21 +37,22 @@
   }>();
 
   const chartRef = ref<HTMLElement>();
-  const tooltipRef = ref();
 
   // 生成唯一的图表 ID
   const chartId = computed(() => `chart-${props.panel.id}`);
 
   // 时间序列数据
   const timeSeriesData = computed(() => {
-    return props.queryResults.flatMap((result) => result.data);
+    const data = props.queryResults.flatMap((result) => result.data);
+    console.log('data', data);
+    return data;
   });
 
   /**
    * 使用图表初始化 Hook
    * 等待 queryResults 和 panel.options 都有效后才初始化一次
    */
-  const { chartInstance, isLoading } = useChartInit<ECharts>({
+  const { getInstance, isLoading } = useChartInit<ECharts>({
     chartRef,
     dependencies: [
       {
@@ -75,25 +65,8 @@
       },
     ],
     onChartCreated: (instance) => {
-      // 绑定事件到 ZRender 层，以支持 Tooltip
-      const zr = instance.getZr();
-
-      zr.on('mousemove', (params: any) => {
-        if (tooltipRef.value) {
-          tooltipRef.value.handleExternalMouseMove(params.event, params.offsetX, params.offsetY);
-        }
-      });
-
-      zr.on('mouseout', () => {
-        if (tooltipRef.value) {
-          tooltipRef.value.handleExternalMouseLeave();
-        }
-      });
-
-      zr.on('click', (params: any) => {
-        if (tooltipRef.value) {
-          tooltipRef.value.handleExternalClick(params.event, params.offsetX, params.offsetY);
-        }
+      nextTick(() => {
+        updateChart(instance);
       });
     },
     onUpdate: (instance) => {
@@ -107,7 +80,7 @@
    * 更新图表配置和数据
    */
   function updateChart(instance?: ECharts) {
-    const chartInst = instance || chartInstance.value;
+    const chartInst = instance;
     if (!chartInst) {
       console.warn('Chart instance not initialized, skipping update');
       return;
@@ -122,7 +95,7 @@
     }
   }
 
-  // 使用 Legend Hook（在 chartInstance 初始化后）
+  // 使用 Legend Hook
   const {
     selectedItems,
     legendItems,
@@ -137,8 +110,23 @@
   } = useLegend({
     panel: computed(() => props.panel),
     queryResults: computed(() => props.queryResults),
-    chartInstance,
+    chartInstance: computed(() => getInstance()),
     updateChart: () => updateChart(),
+  });
+
+  /**
+   * 使用 Tooltip 注册管理 Hook
+   * 自动处理图表的注册、更新和销毁
+   */
+  const { updateTooltipData } = useChartTooltip({
+    chartId,
+    chartInstance: computed(() => getInstance()),
+    chartContainerRef: chartRef,
+    dataProvider: TooltipDataProviders.timeSeries(
+      () => timeSeriesData.value,
+      () => props.panel.options.format,
+      isSeriesSelected
+    ),
   });
 
   function getChartOption(): EChartsOption {
@@ -243,10 +231,10 @@
     }
 
     return {
-      // 启用 ECharts 原生 tooltip，用于坐标转换
+      // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
-        show: true,
         trigger: 'axis',
+        triggerOn: 'mousemove',
         axisPointer: {
           type: 'cross', // 轴线类型
           label: {
@@ -257,9 +245,36 @@
             width: 1,
           },
         },
-        // 不显示内容，由自定义 tooltip 处理
-        formatter: () => '',
-        position: () => [-10000, -10000], // 移到屏幕外
+        formatter: (params: any) => {
+          console.log('params', params);
+
+          if (!Array.isArray(params) || params.length === 0) {
+            updateTooltipData(null);
+            return '';
+          }
+
+          // 过滤掉隐藏的系列
+          const visibleParams = params.filter((param: any) => isSeriesSelected(param.seriesId || `series-${param.seriesIndex}`));
+          if (visibleParams.length === 0) {
+            updateTooltipData(null);
+            return '';
+          }
+
+          const firstParam = visibleParams[0];
+          const tooltipData: TooltipData = {
+            time: formatTime(firstParam.axisValue, 'YYYY-MM-DD HH:mm:ss'),
+            series: visibleParams.map((param: any) => ({
+              id: param.seriesId || `series-${param.seriesIndex}`,
+              label: param.seriesName,
+              color: param.color,
+              value: param.value[1],
+              formattedValue: formatValue(param.value[1], options.format || {}),
+            })),
+          };
+
+          updateTooltipData(tooltipData);
+          return ''; // 返回空字符串，我们使用自定义 Tooltip 展示
+        },
       },
       // 禁用 ECharts 原生 legend，使用自定义
       legend: {
@@ -312,7 +327,10 @@
   }
 
   // 使用响应式 resize
-  useChartResize(chartInstance, chartRef);
+  useChartResize(
+    computed(() => getInstance()),
+    chartRef
+  );
 </script>
 
 <style scoped lang="less">

@@ -26,7 +26,9 @@ export function useChartInit<T = ECharts>(options: {
 }) {
   const { chartRef, dependencies, onChartCreated, onUpdate, onInitFailed } = options;
 
-  const chartInstance = ref<any | T | null>(null);
+  // 使用普通变量存储 ECharts 实例，避免响应式系统破坏其内部方法
+  let chartInstance: T | null = null;
+
   const isInitialized = ref(false);
   const isLoading = ref(true);
   const isInitializing = ref(false); // 防止重复初始化
@@ -54,12 +56,12 @@ export function useChartInit<T = ECharts>(options: {
 
       try {
         setTimeout(() => {
-          // 创建 ECharts 实例
-          chartInstance.value = echarts.init(chartRef.value) as any;
+          // 创建 ECharts 实例 - 存储在普通变量中
+          chartInstance = echarts.init(chartRef.value) as T;
 
           // 执行自定义配置回调（例如绑定事件）
-          if (onChartCreated && chartInstance.value) {
-            onChartCreated(chartInstance.value);
+          if (onChartCreated && chartInstance) {
+            onChartCreated(chartInstance);
           }
           resolve(true);
         }, 1000);
@@ -85,11 +87,11 @@ export function useChartInit<T = ECharts>(options: {
         try {
           const success = await initChartInstance();
 
-          if (success && chartInstance.value) {
+          if (success && chartInstance) {
             isInitialized.value = true;
             isLoading.value = false;
             // 初始化成功后立即执行一次更新
-            onUpdate(chartInstance.value);
+            onUpdate(chartInstance);
           } else {
             isLoading.value = false;
             onInitFailed?.();
@@ -105,8 +107,8 @@ export function useChartInit<T = ECharts>(options: {
       }
 
       // 如果已经初始化，只执行更新
-      if (isInitialized.value && allReady && chartInstance.value) {
-        onUpdate(chartInstance.value);
+      if (isInitialized.value && allReady && chartInstance) {
+        onUpdate(chartInstance);
       }
     },
     { deep: true, immediate: true }
@@ -116,15 +118,22 @@ export function useChartInit<T = ECharts>(options: {
    * 组件卸载时清理 ECharts 实例
    */
   onUnmounted(() => {
-    if (chartInstance.value) {
-      (chartInstance.value as ECharts).dispose();
-      chartInstance.value = null;
+    if (chartInstance) {
+      (chartInstance as unknown as ECharts).dispose();
+      chartInstance = null;
     }
   });
 
+  /**
+   * 获取 ECharts 实例（原始对象，无响应式包装）
+   */
+  const getInstance = (): T | null => {
+    return chartInstance;
+  };
+
   return {
-    /** ECharts 实例 */
-    chartInstance,
+    /** 获取原始 ECharts 实例的方法 */
+    getInstance,
     /** 是否已初始化 */
     isInitialized,
     /** 是否正在加载 */

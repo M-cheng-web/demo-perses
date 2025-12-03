@@ -17,6 +17,9 @@
 
     <!-- 全屏查看面板 -->
     <PanelFullscreenModal ref="fullscreenModalRef" />
+
+    <!-- 全局唯一的 Tooltip -->
+    <GlobalChartTooltip />
   </div>
 </template>
 
@@ -28,6 +31,7 @@
   import PanelGroupList from '@/components/PanelGroup/PanelGroupList.vue';
   import PanelEditorDrawer from '@/components/PanelEditor/PanelEditorDrawer.vue';
   import PanelFullscreenModal from '@/components/Panel/PanelFullscreenModal.vue';
+  import GlobalChartTooltip from '@/components/ChartTooltip/GlobalChartTooltip.vue';
 
   const dashboardStore = useDashboardStore();
   const { panelGroups, isEditMode, viewPanel } = storeToRefs(dashboardStore);
