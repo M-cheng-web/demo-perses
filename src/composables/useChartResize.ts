@@ -1,9 +1,11 @@
 /**
  * ECharts 响应式调整 Composable
  * 参考 Perses 项目的图表自适应实现
+ *
+ * todo : window.addEventListener('resize' 这种应该创建集中的事件机制
  */
 
-import { onMounted, onUnmounted, watch, type Ref } from 'vue';
+import { onUnmounted, type Ref } from 'vue';
 import type { EChartsType } from 'echarts/core';
 
 /**
@@ -53,9 +55,38 @@ export function useChartResize(
     }, 50); // 50ms 延迟，平衡响应速度和性能
   };
 
-  // 监听 chartInstance 变化，重新创建 observer
-  watch(chartInstance, (newInstance, oldInstance) => {
-    if (oldInstance && resizeObserver && chartRef.value) {
+  /**
+   * 初始化图表 resize
+   * 需要在图表初始化后调用
+   */
+  function initChartResize() {
+    // 需要延迟1s再初始化，确保容器大小已确定
+    setTimeout(() => {
+      // 监听窗口 resize
+      window.addEventListener('resize', debouncedResize);
+
+      // 监听容器 resize（用于 grid-layout 拖拽调整大小）
+      if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+        resizeObserver = new ResizeObserver(() => {
+          debouncedResize();
+        });
+        resizeObserver.observe(chartRef.value);
+      }
+
+      // 首次初始化时不需要调用
+      // if (chartInstance.value && !chartInstance.value.isDisposed()) {
+      //   chartInstance.value.resize();
+      // }
+    }, 1000);
+  }
+
+  /**
+   * 需要监听 chartInstance 变化，重新创建 observer
+   */
+  function watchChartInstance() {
+    const newInstance = chartInstance.value;
+
+    if (resizeObserver && chartRef.value) {
       resizeObserver.unobserve(chartRef.value);
     }
 
@@ -67,29 +98,12 @@ export function useChartResize(
       }
       resizeObserver.observe(chartRef.value);
     }
-  });
+  }
 
-  onMounted(() => {
-    // 监听窗口 resize
-    window.addEventListener('resize', debouncedResize);
-
-    // 监听容器 resize（用于 grid-layout 拖拽调整大小）
-    if (chartRef.value && typeof ResizeObserver !== 'undefined') {
-      resizeObserver = new ResizeObserver(() => {
-        debouncedResize();
-      });
-      resizeObserver.observe(chartRef.value);
-    }
-
-    // 延迟初始化 resize，确保容器大小已确定
-    setTimeout(() => {
-      if (chartInstance.value && !chartInstance.value.isDisposed()) {
-        chartInstance.value.resize();
-      }
-    }, 100);
-  });
-
-  onUnmounted(() => {
+  /**
+   * 销毁图表 resize
+   */
+  function destroyChartResize() {
     window.removeEventListener('resize', debouncedResize);
 
     if (timeoutId !== null) {
@@ -106,9 +120,15 @@ export function useChartResize(
       resizeObserver.disconnect();
       resizeObserver = null;
     }
+  }
+
+  onUnmounted(() => {
+    destroyChartResize();
   });
 
   return {
-    handleResize,
+    initChartResize,
+    watchChartInstance,
+    destroyChartResize,
   };
 }

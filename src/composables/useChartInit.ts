@@ -91,7 +91,7 @@ export function useChartInit<T = ECharts>(options: {
             isInitialized.value = true;
             isLoading.value = false;
             // 初始化成功后立即执行一次更新
-            onUpdate(chartInstance);
+            // onUpdate(chartInstance);
           } else {
             isLoading.value = false;
             onInitFailed?.();

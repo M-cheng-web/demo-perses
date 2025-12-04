@@ -67,6 +67,7 @@
       nextTick(() => {
         updateChart(instance);
         registerTooltip();
+        initChartResize();
       });
     },
     onUpdate: (instance) => {
@@ -76,6 +77,14 @@
       });
     },
   });
+
+  /**
+   * 使用图表 resize Hook
+   */
+  const { initChartResize } = useChartResize(
+    computed(() => getInstance()),
+    chartRef
+  );
 
   /**
    * 更新图表配置和数据
@@ -325,12 +334,6 @@
       series,
     };
   }
-
-  // 使用响应式 resize
-  useChartResize(
-    computed(() => getInstance()),
-    chartRef
-  );
 </script>
 
 <style scoped lang="less">
