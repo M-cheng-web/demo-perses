@@ -44,7 +44,6 @@
   // 时间序列数据
   const timeSeriesData = computed(() => {
     const data = props.queryResults.flatMap((result) => result.data);
-    console.log('data', data);
     return data;
   });
 
@@ -67,11 +66,13 @@
     onChartCreated: (instance) => {
       nextTick(() => {
         updateChart(instance);
+        registerTooltip();
       });
     },
     onUpdate: (instance) => {
       nextTick(() => {
         updateChart(instance);
+        updateTooltip();
       });
     },
   });
@@ -79,7 +80,7 @@
   /**
    * 更新图表配置和数据
    */
-  function updateChart(instance?: ECharts) {
+  function updateChart(instance?: ECharts | null) {
     const chartInst = instance;
     if (!chartInst) {
       console.warn('Chart instance not initialized, skipping update');
@@ -88,7 +89,6 @@
 
     try {
       const option = getChartOption();
-      console.log('Updating chart with option:', option);
       chartInst.setOption(option, true);
     } catch (error) {
       console.error('Failed to update chart:', error);
@@ -111,14 +111,18 @@
     panel: computed(() => props.panel),
     queryResults: computed(() => props.queryResults),
     chartInstance: computed(() => getInstance()),
-    updateChart: () => updateChart(),
+    updateChart: () => updateChart(getInstance()),
   });
 
   /**
    * 使用 Tooltip 注册管理 Hook
    * 自动处理图表的注册、更新和销毁
    */
-  const { updateTooltipData } = useChartTooltip({
+  const {
+    updateTooltipData,
+    register: registerTooltip,
+    update: updateTooltip,
+  } = useChartTooltip({
     chartId,
     chartInstance: computed(() => getInstance()),
     chartContainerRef: chartRef,
@@ -132,8 +136,6 @@
   function getChartOption(): EChartsOption {
     const { queryResults } = props;
     const { options } = props.panel;
-
-    console.log('queryResults', queryResults);
 
     // 检查是否有有效数据
     if (!queryResults || queryResults.length === 0 || queryResults.every((r) => !r.data || r.data.length === 0)) {
@@ -188,7 +190,7 @@
           name: legend,
           type: specificOptions?.mode === 'bar' ? 'bar' : 'line',
           data,
-          smooth: options.chart?.smooth ?? true, // 平滑曲线
+          // smooth: options.chart?.smooth ?? true, // 平滑曲线
           showSymbol: options.chart?.showSymbol ?? false, // 显示数据点
 
           // 堆叠图必须有 areaStyle 才能显示堆叠效果
@@ -246,8 +248,6 @@
           },
         },
         formatter: (params: any) => {
-          console.log('params', params);
-
           if (!Array.isArray(params) || params.length === 0) {
             updateTooltipData(null);
             return '';

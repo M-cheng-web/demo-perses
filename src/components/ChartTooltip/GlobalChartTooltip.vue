@@ -58,7 +58,8 @@
   });
 
   const isVisible = computed(() => {
-    return !!currentTooltipData.value && (isPinned.value || activeChartId.value !== null);
+    // 必须同时满足：有位置信息 && 有数据内容 && (已固定 || 有活跃图表)
+    return !!currentPosition.value && !!currentTooltipData.value && (isPinned.value || activeChartId.value !== null);
   });
 
   const formattedTime = computed(() => {
@@ -68,7 +69,6 @@
   const tooltipStyle = computed(() => {
     const pos = currentPosition.value;
 
-    console.log('pos', pos);
     if (!pos) return { visibility: 'hidden' as const };
 
     const padding = 16;
@@ -132,7 +132,7 @@
     position: fixed;
     top: 0;
     left: 0;
-    min-width: 220px;
+    min-width: 240px;
     max-width: 450px;
     background-color: rgba(40, 40, 40, 0.96);
     color: #fff;
@@ -153,7 +153,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 12px;
+      height: 40px;
+      padding: 0 12px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       gap: 8px;
 
@@ -224,6 +225,7 @@
         gap: 8px;
         padding: 5px 0;
         transition: background-color 0.2s;
+        cursor: pointer;
 
         &:hover {
           background-color: rgba(255, 255, 255, 0.05);

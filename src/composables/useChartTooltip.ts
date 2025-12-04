@@ -9,7 +9,7 @@
  * ```
  */
 
-import { watch, onUnmounted, type Ref, type ComputedRef } from 'vue';
+import { onUnmounted, type Ref, type ComputedRef } from 'vue';
 import type { ECharts } from 'echarts';
 import { useTooltipStore } from '@/stores';
 import type {
@@ -239,19 +239,9 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
 
     const chartId = getChartId();
 
-    // 鼠标移动事件
-    const mousemoveListener = (params: any) => {
-      const { offsetX, offsetY, event } = params;
-
-      // 更新鼠标位置
-      const position: MousePosition = {
-        x: offsetX,
-        y: offsetY,
-        pageX: event.pageX,
-        pageY: event.pageY,
-      };
-
-      tooltipStore.updateMousePosition(chartId, position);
+    // 鼠标移动事件（设置活跃图表，位置由 Dashboard 全局管理）
+    const mousemoveListener = () => {
+      tooltipStore.setActiveChart(chartId);
     };
 
     // 鼠标离开事件
@@ -387,34 +377,6 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
   };
 
   /**
-   * 监听图表实例变化，自动注册
-   */
-  watch(
-    [chartInstance, chartContainerRef],
-    ([instance, container]) => {
-      if (instance && container) {
-        registerChart();
-      }
-    },
-    { immediate: true }
-  );
-
-  /**
-   * 监听数据变化，自动更新注册信息
-   * 使用深度监听以捕获嵌套数据的变化
-   */
-  watch(
-    () => ({
-      data: dataProvider.getData(),
-      formatOptions: dataProvider.getFormatOptions?.(),
-    }),
-    () => {
-      updateRegistration();
-    },
-    { deep: true }
-  );
-
-  /**
    * 组件卸载时自动取消注册
    */
   onUnmounted(() => {
@@ -425,7 +387,6 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
    * 更新 Tooltip 数据（供 formatter 或自定义逻辑调用）
    */
   const updateTooltipData = (data: TooltipData | null, position?: MousePosition) => {
-    console.log('updateTooltipData', data, position);
     tooltipStore.updateTooltipData(getChartId(), data, position);
   };
 

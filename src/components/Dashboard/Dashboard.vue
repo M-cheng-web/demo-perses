@@ -24,9 +24,9 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
+  import { ref, watch, onMounted, onUnmounted } from 'vue';
   import { storeToRefs } from 'pinia';
-  import { useDashboardStore } from '@/stores';
+  import { useDashboardStore, useTooltipStore } from '@/stores';
   import DashboardToolbar from './DashboardToolbar.vue';
   import PanelGroupList from '@/components/PanelGroup/PanelGroupList.vue';
   import PanelEditorDrawer from '@/components/PanelEditor/PanelEditorDrawer.vue';
@@ -34,6 +34,7 @@
   import GlobalChartTooltip from '@/components/ChartTooltip/GlobalChartTooltip.vue';
 
   const dashboardStore = useDashboardStore();
+  const tooltipStore = useTooltipStore();
   const { panelGroups, isEditMode, viewPanel } = storeToRefs(dashboardStore);
   const fullscreenModalRef = ref<InstanceType<typeof PanelFullscreenModal>>();
 
@@ -46,6 +47,30 @@
     if (panel && fullscreenModalRef.value) {
       fullscreenModalRef.value.open(panel);
     }
+  });
+
+  /**
+   * 全局鼠标移动监听
+   * 实时更新鼠标位置到 tooltipStore
+   */
+  const handleGlobalMouseMove = (event: MouseEvent) => {
+    tooltipStore.updateGlobalMousePosition({
+      x: event.clientX,
+      y: event.clientY,
+      pageX: event.pageX,
+      pageY: event.pageY,
+    });
+  };
+
+  // 生命周期钩子
+  onMounted(() => {
+    // 监听整个 dashboard 的鼠标移动
+    window.addEventListener('mousemove', handleGlobalMouseMove, { passive: true });
+  });
+
+  onUnmounted(() => {
+    // 清理事件监听
+    window.removeEventListener('mousemove', handleGlobalMouseMove);
   });
 </script>
 

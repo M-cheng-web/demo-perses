@@ -57,7 +57,9 @@ interface TooltipState {
   pinnedChartId: string | null;
   /** 当前鼠标悬停的图表 ID */
   activeChartId: string | null;
-  /** 当前鼠标位置 */
+  /** 全局鼠标位置（Dashboard 层面监听） */
+  globalMousePosition: MousePosition | null;
+  /** 当前鼠标位置（图表内部监听，已废弃，保留用于兼容） */
   mousePosition: MousePosition | null;
   /** 固定时的鼠标位置 */
   pinnedPosition: MousePosition | null;
@@ -73,6 +75,7 @@ export const useTooltipStore = defineStore('tooltip', {
   state: (): TooltipState => ({
     pinnedChartId: null,
     activeChartId: null,
+    globalMousePosition: null,
     mousePosition: null,
     pinnedPosition: null,
     tooltipData: null,
@@ -103,10 +106,10 @@ export const useTooltipStore = defineStore('tooltip', {
     },
 
     /**
-     * 获取当前使用的鼠标位置（固定优先）
+     * 获取当前使用的鼠标位置（固定优先，否则使用全局位置）
      */
     currentPosition(): MousePosition | null {
-      return this.pinnedPosition || this.mousePosition;
+      return this.pinnedPosition || this.globalMousePosition;
     },
 
     /**
@@ -118,6 +121,24 @@ export const useTooltipStore = defineStore('tooltip', {
   },
 
   actions: {
+    /**
+     * 更新全局鼠标位置（由 Dashboard 调用）
+     */
+    updateGlobalMousePosition(position: MousePosition) {
+      this.globalMousePosition = position;
+    },
+
+    /**
+     * 设置活跃图表（由图表的 mousemove 事件调用）
+     */
+    setActiveChart(chartId: string) {
+      // 如果有固定的 tooltip，且不是当前固定的图表，则不更新
+      if (this.pinnedChartId && this.pinnedChartId !== chartId) {
+        return;
+      }
+      this.activeChartId = chartId;
+    },
+
     /**
      * 注册图表到 tooltip 系统
      */
@@ -241,6 +262,7 @@ export const useTooltipStore = defineStore('tooltip', {
     reset() {
       this.pinnedChartId = null;
       this.activeChartId = null;
+      this.globalMousePosition = null;
       this.mousePosition = null;
       this.pinnedPosition = null;
       this.tooltipData = null;
