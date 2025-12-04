@@ -27,9 +27,15 @@ export function useChartResize(
     }
 
     animationFrameId = requestAnimationFrame(() => {
-      if (chartInstance.value && !chartInstance.value.isDisposed()) {
+      if (chartInstance.value && !chartInstance.value.isDisposed() && chartRef.value) {
         try {
+          // 获取容器的当前宽高，确保图表按照新的比例进行渲染
+          const containerWidth = chartRef.value.offsetWidth;
+          const containerHeight = chartRef.value.offsetHeight;
+
           chartInstance.value.resize({
+            width: containerWidth,
+            height: containerHeight,
             animation: {
               duration: 300,
               easing: 'cubicOut',

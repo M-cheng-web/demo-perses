@@ -1,6 +1,8 @@
 <template>
   <div class="panel-content">
-    <a-spin :spinning="loading" tip="加载中...">
+    <a-spin v-if="loading" class="loading-spinner" :spinning="true" tip="加载中..." />
+
+    <div class="panel-content-wrapper">
       <div v-if="error" class="panel-error">
         <a-result status="error" :title="error" />
       </div>
@@ -8,7 +10,7 @@
       <div v-else class="panel-empty">
         <a-empty description="未配置图表类型" />
       </div>
-    </a-spin>
+    </div>
   </div>
 </template>
 
@@ -86,10 +88,31 @@
 
 <style scoped lang="less">
   .panel-content {
+    position: relative;
     flex: 1;
-    padding: @spacing-md;
+    padding: @spacing-sm-2;
     overflow: hidden;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  .panel-content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
   }
 
   .panel-error,

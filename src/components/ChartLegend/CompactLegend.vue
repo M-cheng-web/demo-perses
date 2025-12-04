@@ -71,7 +71,6 @@
 
 <style scoped lang="less">
   .compact-legend {
-    padding: 6px 8px;
     max-height: 150px;
     overflow-y: auto;
 

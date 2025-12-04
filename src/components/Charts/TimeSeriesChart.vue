@@ -1,7 +1,9 @@
 <!-- 时间序列图 -->
 <template>
   <div class="time-series-chart-container">
-    <a-spin :spinning="isLoading">
+    <a-spin v-if="isLoading" class="loading-spinner" :spinning="true" />
+
+    <div class="chart-wrapper">
       <div ref="chartRef" class="time-series-chart"></div>
 
       <!-- 自定义 Legend -->
@@ -16,7 +18,7 @@
         @item-leave="handleLegendLeave"
         @toggle-global-selection="toggleGlobalSelection"
       />
-    </a-spin>
+    </div>
   </div>
 </template>
 
@@ -338,22 +340,35 @@
 
 <style scoped lang="less">
   .time-series-chart-container {
+    position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;
     height: 100%;
-    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
 
-    :deep(.ant-spin-container) {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
+  .loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  .chart-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
   .time-series-chart {
     flex: 1;
     width: 100%;
-    min-height: 200px;
+    min-height: 0;
   }
 </style>

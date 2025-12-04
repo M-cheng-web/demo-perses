@@ -81,6 +81,7 @@
   .chart-legend {
     background-color: @background-base;
     transition: all 0.2s ease;
+    margin-top: @spacing-md;
 
     &.legend-bottom {
       width: 100%;
@@ -118,11 +119,11 @@
 
     // 不同模式的样式
     &.legend-mode-compact {
-      padding: @spacing-xs @spacing-sm;
+      // padding: @spacing-xs @spacing-sm;
     }
 
     &.legend-mode-list {
-      padding: @spacing-sm;
+      // padding: @spacing-sm;
     }
   }
 </style>
