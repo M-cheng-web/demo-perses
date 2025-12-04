@@ -243,6 +243,9 @@ export const useTooltipStore = defineStore('tooltip', {
       this.pinnedChartId = null;
       this.pinnedPosition = null;
       this.pinnedTooltipData = null;
+
+      // 重置所有状态，防止用户在图表外部点击取消固定后，图表内部仍然显示 tooltip
+      this.reset();
     },
 
     /**
