@@ -74,73 +74,76 @@
 
 <style scoped lang="less">
   .compact-legend {
-    max-height: 150px;
+    max-height: 120px;
     overflow-y: auto;
+    padding: 4px 0;
 
     .legend-items {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 4px;
       align-items: center;
 
       .legend-item {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        padding: 3px 8px;
-        background-color: transparent;
+        padding: 2px 7px;
+        background-color: fade(@background-light, 50%);
         border: 1px solid transparent;
         border-radius: 3px;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all 0.12s ease;
         user-select: none;
-        max-width: 300px;
-        font-size: 12px;
+        max-width: 280px;
+        font-size: 11px;
 
         &:hover {
           background-color: fade(@primary-color, 8%);
-          border-color: fade(@primary-color, 30%);
+          border-color: fade(@primary-color, 25%);
         }
 
         &.is-selected {
           background-color: fade(@primary-color, 10%);
-          border-color: fade(@primary-color, 40%);
+          border-color: fade(@primary-color, 35%);
         }
 
         &.is-dimmed {
-          opacity: 0.3;
+          opacity: 0.25;
 
           &:hover {
-            opacity: 0.6;
+            opacity: 0.5;
           }
         }
 
         &.global-selector {
           font-weight: 500;
-          background-color: @background-light;
-          margin-right: 4px;
-          padding: 0;
+          background-color: transparent;
+          border: 1px solid @border-color;
+          margin-right: 2px;
+          padding: 2px 6px;
 
           &:hover {
-            background-color: transparent;
-            border-color: transparent;
+            background-color: fade(@primary-color, 5%);
+            border-color: @primary-color;
           }
 
           :deep(.ant-checkbox-wrapper) {
-            font-size: 12px;
+            font-size: 11px;
           }
         }
 
         .item-color {
-          width: 10px;
-          height: 10px;
+          width: 8px;
+          height: 8px;
           border-radius: 2px;
           flex-shrink: 0;
-          box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+          box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
         }
 
         .item-label {
           font-size: 11px;
+          line-height: 1.4;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -155,21 +158,21 @@
 
     /* 滚动条样式 */
     &::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
 
     &::-webkit-scrollbar-track {
-      background: @background-light;
+      background: transparent;
       border-radius: 3px;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: @border-color;
+      background: fade(@border-color, 60%);
       border-radius: 3px;
 
       &:hover {
-        background: darken(@border-color, 10%);
+        background: @border-color;
       }
     }
   }

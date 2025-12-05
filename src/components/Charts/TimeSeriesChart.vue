@@ -3,7 +3,7 @@
   <div class="time-series-chart-container">
     <a-spin v-if="isLoading" class="loading-spinner" :spinning="true" />
 
-    <div class="chart-wrapper">
+    <div class="chart-wrapper" :class="{ 'is-legend-right': legendOptions.position === 'right' }">
       <div ref="chartRef" class="time-series-chart"></div>
 
       <!-- 自定义 Legend -->
@@ -194,9 +194,11 @@
 
         // 根据可见性状态设置透明度
         const opacity = visibility === 'visible' ? 1 : 0.08;
-        const areaOpacity = visibility === 'visible' ? 0.3 : 0.03;
+        // 使用配置中的填充透明度
+        const baseFillOpacity = specificOptions?.fillOpacity ?? 0.3;
+        const areaOpacity = visibility === 'visible' ? baseFillOpacity : baseFillOpacity * 0.1;
 
-        series.push({
+        const seriesConfig: any = {
           id: seriesId,
           name: legend,
           type: specificOptions?.mode === 'bar' ? 'bar' : 'line',
@@ -222,7 +224,18 @@
             color: color,
             opacity: opacity,
           },
-        });
+        };
+
+        // 堆叠配置：为柱状图和折线图添加堆叠支持
+        if (specificOptions?.stackMode && specificOptions.stackMode !== 'none') {
+          seriesConfig.stack = 'total'; // 所有系列使用相同的 stack 值才能堆叠
+          // 百分比堆叠
+          if (specificOptions.stackMode === 'percent') {
+            seriesConfig.stack = 'percent';
+          }
+        }
+
+        series.push(seriesConfig);
 
         colorIndex++;
       });
@@ -364,6 +377,25 @@
     width: 100%;
     height: 100%;
     min-height: 0;
+
+    // 当图例在右侧时，改为横向布局
+    &.is-legend-right {
+      flex-direction: row;
+
+      .time-series-chart {
+        flex: 1;
+        width: 0; // 重要：让 flex 能正确计算宽度
+        min-width: 0;
+      }
+
+      :deep(.chart-legend) {
+        flex-shrink: 0;
+        width: 300px; // 固定宽度
+        max-width: 300px;
+        margin-top: 0;
+        margin-left: @spacing-md;
+      }
+    }
   }
 
   .time-series-chart {

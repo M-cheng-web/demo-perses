@@ -19,7 +19,6 @@ export interface TimeSeriesOptions {
   format: {
     unit: string;
     decimals: 'default' | number;
-    shortValues: boolean;
   };
   chart: {
     line: {
@@ -56,7 +55,6 @@ export const getDefaultTimeSeriesOptions = (): TimeSeriesOptions => ({
   format: {
     unit: 'none',
     decimals: 'default',
-    shortValues: false,
   },
   chart: {
     line: {

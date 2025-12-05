@@ -51,15 +51,7 @@
         <div class="section">
           <div class="section-header">视觉</div>
           <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">堆叠模式</span>
-              <a-select v-model:value="localOptions.specific.stackMode" size="small" style="width: 200px">
-                <a-select-option value="none">无</a-select-option>
-                <a-select-option value="normal">普通</a-select-option>
-                <a-select-option value="percent">百分比</a-select-option>
-              </a-select>
-            </div>
-
+            <!-- 显示类型 - 放在第一行 -->
             <div class="style-row">
               <span class="style-label">显示类型</span>
               <a-segmented
@@ -72,39 +64,54 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">线宽</span>
-              <div style="flex: 1; display: flex; align-items: center; gap: 12px">
-                <a-slider v-model:value="localOptions.chart.line.width" :min="1" :max="10" :step="0.5" style="flex: 1" />
-                <span class="slider-value">{{ localOptions.chart.line.width }}</span>
+            <!-- 柱状图模式：显示堆叠开关 -->
+            <template v-if="localOptions.specific.mode === 'bar'">
+              <div class="style-row">
+                <span class="style-label">开启堆叠</span>
+                <a-switch
+                  :checked="localOptions.specific.stackMode !== 'none'"
+                  @change="(checked: boolean) => (localOptions.specific.stackMode = checked ? 'normal' : 'none')"
+                  size="small"
+                />
               </div>
-            </div>
+            </template>
 
-            <div class="style-row">
-              <span class="style-label">线条样式</span>
-              <a-segmented
-                v-model:value="localOptions.chart.line.type"
-                :options="[
-                  { label: '实线', value: 'solid' },
-                  { label: '虚线', value: 'dashed' },
-                  { label: '点线', value: 'dotted' },
-                ]"
-                size="small"
-              />
-            </div>
-
-            <div class="style-row">
-              <span class="style-label">区域透明度</span>
-              <div style="flex: 1; display: flex; align-items: center; gap: 12px">
-                <a-slider v-model:value="localOptions.specific.fillOpacity" :min="0" :max="1" :step="0.1" style="flex: 1" />
-                <span class="slider-value">{{ localOptions.specific.fillOpacity.toFixed(1) }}</span>
+            <!-- 折线图模式：显示线条相关配置 -->
+            <template v-else>
+              <div class="style-row">
+                <span class="style-label">线宽</span>
+                <div style="flex: 1; display: flex; align-items: center; gap: 12px">
+                  <a-slider v-model:value="localOptions.chart.line.width" :min="1" :max="10" :step="0.5" style="flex: 1" />
+                  <span class="slider-value">{{ localOptions.chart.line.width }}</span>
+                </div>
               </div>
-            </div>
 
-            <div class="style-row">
-              <span class="style-label">连接空值</span>
-              <a-switch v-model:checked="localOptions.chart.connectNulls" size="small" />
-            </div>
+              <div class="style-row">
+                <span class="style-label">线条样式</span>
+                <a-segmented
+                  v-model:value="localOptions.chart.line.type"
+                  :options="[
+                    { label: '实线', value: 'solid' },
+                    { label: '虚线', value: 'dashed' },
+                    { label: '点线', value: 'dotted' },
+                  ]"
+                  size="small"
+                />
+              </div>
+
+              <div class="style-row">
+                <span class="style-label">区域透明度</span>
+                <div style="flex: 1; display: flex; align-items: center; gap: 12px">
+                  <a-slider v-model:value="localOptions.specific.fillOpacity" :min="0" :max="1" :step="0.1" style="flex: 1" />
+                  <span class="slider-value">{{ localOptions.specific.fillOpacity.toFixed(1) }}</span>
+                </div>
+              </div>
+
+              <div class="style-row">
+                <span class="style-label">连接空值</span>
+                <a-switch v-model:checked="localOptions.chart.connectNulls" size="small" />
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -117,11 +124,6 @@
             <div class="style-row">
               <span class="style-label">显示</span>
               <a-switch v-model:checked="localOptions.axis.yAxis.show" size="small" />
-            </div>
-
-            <div class="style-row">
-              <span class="style-label">缩写数值</span>
-              <a-switch v-model:checked="localOptions.format.shortValues" size="small" />
             </div>
 
             <div class="style-row">
