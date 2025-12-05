@@ -1,3 +1,4 @@
+<!-- 紧凑模式图例 -->
 <template>
   <div class="compact-legend">
     <div class="legend-items">
@@ -38,11 +39,13 @@
     items: LegendItem[];
     selection: LegendSelection;
     wrapLabels?: boolean;
+    displayColumns?: string[]; // 表格模式专用，列表模式不使用
     globalSelectionState: 'all' | 'none' | 'indeterminate';
   }
 
   const props = withDefaults(defineProps<Props>(), {
     wrapLabels: false,
+    displayColumns: () => [],
   });
 
   const emit = defineEmits<{

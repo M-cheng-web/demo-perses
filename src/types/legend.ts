@@ -11,7 +11,7 @@ export interface LegendOptions {
   mode?: LegendMode;
   position?: LegendPosition;
   size?: LegendSize;
-  values?: LegendValue[];
+  values?: string[]; // 表格模式下显示的列，如 ['min', 'max', 'mean', 'last', 'first']
 }
 
 export type LegendValue = 'mean' | 'first' | 'last' | 'min' | 'max' | 'sum';

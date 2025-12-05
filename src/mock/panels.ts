@@ -4,6 +4,8 @@
 
 import type { Panel, PanelType, Query } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { deepClone } from '@/utils';
+import { getDefaultTimeSeriesOptions } from '@/components/PanelEditor/ChartStyles/timeSeriesDefaultOptions';
 
 /**
  * 创建查询
@@ -23,7 +25,7 @@ function createQuery(expr: string, legendFormat?: string): Query {
 /**
  * 创建 CPU 使用率面板
  */
-export function createCPUUsagePanel(): Panel {
+export function createCPUUsagePanel(): any {
   return {
     id: uuidv4(),
     name: 'CPU 使用率',
@@ -31,22 +33,7 @@ export function createCPUUsagePanel(): Panel {
     type: 'timeseries' as PanelType,
     queries: [createQuery('cpu_usage', 'CPU {{cpu}}')],
     options: {
-      chart: {
-        smooth: true,
-        showSymbol: false,
-      },
-      axis: {
-        xAxis: { show: true, type: 'time' },
-        yAxis: { show: true, min: 0, max: 100 },
-      },
-      legend: {
-        show: true,
-        position: 'bottom',
-      },
-      format: {
-        unit: 'percent',
-        decimals: 2,
-      },
+      ...deepClone(getDefaultTimeSeriesOptions()),
     },
   };
 }

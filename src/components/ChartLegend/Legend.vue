@@ -9,6 +9,7 @@
       :items="items"
       :selection="selection"
       :wrap-labels="wrapLabels"
+      :display-columns="displayColumns"
       :global-selection-state="globalSelectionState"
       @item-click="handleItemClick"
       @item-hover="handleItemHover"
@@ -22,7 +23,7 @@
   import { computed } from 'vue';
   import type { LegendItem, LegendOptions, LegendSelection } from '@/types/legend';
   import CompactLegend from './CompactLegend.vue';
-  import ListLegend from './ListLegend.vue';
+  import TableLegend from './TableLegend.vue';
 
   interface Props {
     items: LegendItem[];
@@ -45,19 +46,21 @@
 
   // 计算有效的图例模式
   const effectiveMode = computed(() => {
-    const mode = props.options.mode || 'compact';
-
-    // 如果系列很多（>50），自动切换到列表模式以支持滚动
-    if (props.items.length > 50 && mode === 'compact') {
-      return 'list';
-    }
-
+    const mode = props.options.mode || 'list';
     return mode;
+  });
+
+  // 表格模式下显示的列
+  const displayColumns = computed(() => {
+    if (effectiveMode.value === 'table' && props.options.values) {
+      return props.options.values;
+    }
+    return [];
   });
 
   // 根据配置选择 Legend 组件
   const legendComponent = computed(() => {
-    return effectiveMode.value === 'list' ? ListLegend : CompactLegend;
+    return effectiveMode.value === 'table' ? TableLegend : CompactLegend;
   });
 
   const handleItemClick = (id: string, isModified: boolean) => {

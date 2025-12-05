@@ -4,10 +4,9 @@
 export interface TimeSeriesOptions {
   legend: {
     show: boolean;
-    position: 'bottom' | 'top' | 'left' | 'right';
+    position: 'bottom' | 'right';
     mode: 'list' | 'table';
-    size: 'small' | 'medium';
-    values: string[];
+    values: string[]; // 表格模式下显示的列
   };
   axis: {
     yAxis: {
@@ -21,15 +20,6 @@ export interface TimeSeriesOptions {
     unit: string;
     decimals: 'default' | number;
     shortValues: boolean;
-  };
-  thresholds: {
-    mode: 'absolute' | 'percent';
-    steps: Array<{
-      name: string;
-      value: number | null;
-      color: string;
-    }>;
-    showLegend: boolean;
   };
   chart: {
     line: {
@@ -52,9 +42,8 @@ export const getDefaultTimeSeriesOptions = (): TimeSeriesOptions => ({
   legend: {
     show: true,
     position: 'bottom',
-    mode: 'list',
-    size: 'medium',
-    values: [],
+    mode: 'list', // 默认为列表模式（tag样式）
+    values: [], // 表格模式下显示的列，如 ['min', 'max', 'mean', 'last', 'first']
   },
   axis: {
     yAxis: {
@@ -68,11 +57,6 @@ export const getDefaultTimeSeriesOptions = (): TimeSeriesOptions => ({
     unit: 'none',
     decimals: 'default',
     shortValues: false,
-  },
-  thresholds: {
-    mode: 'absolute',
-    steps: [{ name: 'Default', value: null, color: '#52c41a' }],
-    showLegend: true,
   },
   chart: {
     line: {

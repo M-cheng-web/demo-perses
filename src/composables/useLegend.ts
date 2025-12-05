@@ -163,9 +163,10 @@ export function useLegend(options: UseLegendOptions) {
   // ============ Legend Options 计算 ============
   const legendOptions = computed(() => ({
     show: panel.value.options.legend?.show !== false,
-    mode: (panel.value.options.legend as any)?.mode || 'compact',
+    mode: (panel.value.options.legend as any)?.mode || 'list',
     position: (panel.value.options.legend?.position || 'bottom') as 'bottom' | 'right',
     size: 'medium' as const,
+    values: (panel.value.options.legend as any)?.values || [], // 表格模式下显示的列
   }));
 
   // ============ Legend 交互处理 ============

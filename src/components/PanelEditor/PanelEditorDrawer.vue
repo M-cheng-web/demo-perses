@@ -122,6 +122,7 @@
   import type { Panel } from '@/types';
   import JsonEditor from '@/components/Common/JsonEditor.vue';
   import PanelPreview from './PanelPreview.vue';
+  import { getDefaultTimeSeriesOptions } from './ChartStyles/timeSeriesDefaultOptions';
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
@@ -138,21 +139,14 @@
   const panelGroups = computed(() => currentDashboard.value?.panelGroups || []);
 
   // 表单数据
-  const formData = reactive<Panel>({
+  const formData = reactive<any>({
     id: '',
     name: '',
     description: '',
     type: 'timeseries' as any,
     queries: [],
     options: {
-      chart: {
-        smooth: true,
-        showSymbol: false,
-        line: { width: 2, type: 'solid' },
-        colors: [],
-      },
-      legend: { show: true, position: 'bottom', orient: 'horizontal' },
-      format: { unit: 'none', decimals: 2 },
+      ...deepClone(getDefaultTimeSeriesOptions()),
     },
   });
 

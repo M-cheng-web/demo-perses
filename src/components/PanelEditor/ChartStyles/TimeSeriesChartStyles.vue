@@ -4,7 +4,7 @@
     <div class="styles-grid">
       <!-- 左侧列：图例 + 视觉 -->
       <div class="styles-column">
-        <!-- LEGEND -->
+        <!-- 图例 -->
         <div class="section">
           <div class="section-header">图例</div>
           <div class="section-content">
@@ -17,8 +17,6 @@
               <span class="style-label">位置</span>
               <a-select v-model:value="localOptions.legend.position" size="small" style="width: 200px">
                 <a-select-option value="bottom">底部</a-select-option>
-                <a-select-option value="top">顶部</a-select-option>
-                <a-select-option value="left">左侧</a-select-option>
                 <a-select-option value="right">右侧</a-select-option>
               </a-select>
             </div>
@@ -35,17 +33,10 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">大小</span>
-              <a-select v-model:value="localOptions.legend.size" size="small" style="width: 200px">
-                <a-select-option value="small">小</a-select-option>
-                <a-select-option value="medium">中</a-select-option>
-              </a-select>
-            </div>
-
-            <div class="style-row">
+            <!-- 表格模式下显示"显示值"选项 -->
+            <div v-if="localOptions.legend.mode === 'table'" class="style-row">
               <span class="style-label">显示值</span>
-              <a-select v-model:value="localOptions.legend.values" mode="multiple" size="small" style="width: 200px" placeholder="最小值 +2">
+              <a-select v-model:value="localOptions.legend.values" mode="multiple" size="small" style="width: 200px" placeholder="请选择">
                 <a-select-option value="min">最小值</a-select-option>
                 <a-select-option value="max">最大值</a-select-option>
                 <a-select-option value="mean">平均值</a-select-option>
@@ -56,7 +47,7 @@
           </div>
         </div>
 
-        <!-- VISUAL -->
+        <!-- 视觉 -->
         <div class="section">
           <div class="section-header">视觉</div>
           <div class="section-content">
@@ -83,7 +74,10 @@
 
             <div class="style-row">
               <span class="style-label">线宽</span>
-              <a-slider v-model:value="localOptions.chart.line.width" :min="1" :max="10" :step="0.5" style="width: 250px" />
+              <div style="flex: 1; display: flex; align-items: center; gap: 12px">
+                <a-slider v-model:value="localOptions.chart.line.width" :min="1" :max="10" :step="0.5" style="flex: 1" />
+                <span class="slider-value">{{ localOptions.chart.line.width }}</span>
+              </div>
             </div>
 
             <div class="style-row">
@@ -101,7 +95,10 @@
 
             <div class="style-row">
               <span class="style-label">区域透明度</span>
-              <a-slider v-model:value="localOptions.specific.fillOpacity" :min="0" :max="1" :step="0.1" style="width: 250px" />
+              <div style="flex: 1; display: flex; align-items: center; gap: 12px">
+                <a-slider v-model:value="localOptions.specific.fillOpacity" :min="0" :max="1" :step="0.1" style="flex: 1" />
+                <span class="slider-value">{{ localOptions.specific.fillOpacity.toFixed(1) }}</span>
+              </div>
             </div>
 
             <div class="style-row">
@@ -112,7 +109,7 @@
         </div>
       </div>
 
-      <!-- 中间列：Y 轴 -->
+      <!-- 右侧列：Y 轴 -->
       <div class="styles-column">
         <div class="section">
           <div class="section-header">Y 轴</div>
@@ -153,68 +150,22 @@
 
             <div class="style-row">
               <span class="style-label">标签</span>
-              <a-input v-model:value="localOptions.axis.yAxis.name" size="small" placeholder="出 (-) / 入 (+)" />
+              <a-input v-model:value="localOptions.axis.yAxis.name" size="small" placeholder="Y 轴标签" style="width: 200px" />
             </div>
 
             <div class="style-row">
               <span class="style-label">最小值</span>
-              <a-input-number v-model:value="localOptions.axis.yAxis.min" size="small" style="width: 200px" placeholder="默认" />
+              <a-input-number v-model:value="localOptions.axis.yAxis.min" size="small" style="width: 200px" placeholder="自动" />
             </div>
 
             <div class="style-row">
               <span class="style-label">最大值</span>
-              <a-input-number v-model:value="localOptions.axis.yAxis.max" size="small" style="width: 200px" placeholder="默认" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 右侧列：阈值 -->
-      <div class="styles-column">
-        <div class="section">
-          <div class="section-header">阈值</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">模式</span>
-              <a-segmented
-                v-model:value="localOptions.thresholds.mode"
-                :options="[
-                  { label: '绝对值', value: 'absolute' },
-                  { label: '百分比', value: 'percent' },
-                ]"
-                size="small"
-              />
-            </div>
-
-            <div class="threshold-list">
-              <div v-for="(threshold, index) in localOptions.thresholds.steps" :key="index" class="threshold-item">
-                <span class="threshold-color" :style="{ backgroundColor: threshold.color }"></span>
-                <span class="threshold-name">{{ threshold.name || `T${localOptions.thresholds.steps.length - index}` }}</span>
-                <a-input-number
-                  v-model:value="threshold.value"
-                  size="small"
-                  style="width: 200px"
-                  :placeholder="threshold.name === 'Default' ? '' : '25'"
-                />
-                <a-button v-if="index > 0" type="text" size="small" @click="removeThreshold(index)">
-                  <template #icon><DeleteOutlined /></template>
-                </a-button>
-              </div>
-            </div>
-
-            <a-button type="dashed" size="small" block @click="addThreshold">
-              <template #icon><PlusOutlined /></template>
-              添加阈值
-            </a-button>
-
-            <div class="style-row" style="margin-top: 16px">
-              <span class="style-label">显示图例</span>
-              <a-switch v-model:checked="localOptions.thresholds.showLegend" size="small" />
+              <a-input-number v-model:value="localOptions.axis.yAxis.max" size="small" style="width: 200px" placeholder="自动" />
             </div>
           </div>
         </div>
 
-        <!-- 恢复默认设置 -->
+        <!-- 重置设置 -->
         <div class="section">
           <div class="section-header">重置设置</div>
           <div class="section-content">
@@ -228,7 +179,6 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
   import { deepClone } from '@/utils';
   import { getDefaultTimeSeriesOptions } from './timeSeriesDefaultOptions';
 
@@ -245,23 +195,10 @@
   // 合并默认配置和传入的配置
   const localOptions = ref(
     deepClone({
-      ...props.options,
       ...getDefaultTimeSeriesOptions(),
+      ...props.options,
     })
   );
-
-  const addThreshold = () => {
-    const newIndex = localOptions.value.thresholds.steps.length;
-    localOptions.value.thresholds.steps.push({
-      name: `T${newIndex}`,
-      value: null,
-      color: newIndex === 1 ? '#faad14' : '#f5222d',
-    });
-  };
-
-  const removeThreshold = (index: number) => {
-    localOptions.value.thresholds.steps.splice(index, 1);
-  };
 
   // 恢复默认设置
   const resetToDefaults = () => {
@@ -282,10 +219,12 @@
 <style scoped lang="less">
   .timeseries-chart-styles {
     padding: 16px;
+    height: 100%;
+    overflow-y: auto;
 
     .styles-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 24px;
     }
 
@@ -299,23 +238,24 @@
       border: 1px solid @border-color;
       border-radius: 4px;
       overflow: hidden;
+      background: @background-light;
 
       .section-header {
         padding: 12px 16px;
-        // background: @bg-color-light;
         border-bottom: 1px solid @border-color;
         font-weight: 600;
         font-size: 12px;
         letter-spacing: 0.5px;
         color: @text-color-secondary;
         text-transform: uppercase;
+        background: @background-base;
       }
 
       .section-content {
         padding: 16px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 16px;
       }
     }
 
@@ -329,37 +269,15 @@
         font-size: 13px;
         color: @text-color;
         flex-shrink: 0;
-        min-width: 100px;
-      }
-    }
-
-    .threshold-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .threshold-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-
-      .threshold-color {
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        flex-shrink: 0;
+        min-width: 90px;
+        font-weight: 500;
       }
 
-      .threshold-name {
+      .slider-value {
         font-size: 13px;
-        min-width: 60px;
-        flex-shrink: 0;
-      }
-
-      :deep(.ant-input-number) {
-        flex: 1;
+        color: @text-color-secondary;
+        min-width: 30px;
+        text-align: right;
       }
     }
   }

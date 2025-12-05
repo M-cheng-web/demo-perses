@@ -1,3 +1,4 @@
+<!-- 列表模式图例 -->
 <template>
   <div class="list-legend">
     <div class="legend-items">
