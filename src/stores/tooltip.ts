@@ -252,6 +252,10 @@ export const useTooltipStore = defineStore('tooltip', {
      * 切换固定状态
      */
     togglePin(chartId: string, position?: MousePosition) {
+      if (!this.activeChartId || this.activeChartId !== chartId) {
+        return;
+      }
+
       if (this.pinnedChartId === chartId) {
         this.unpinTooltip();
       } else {

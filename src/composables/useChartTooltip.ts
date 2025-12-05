@@ -245,7 +245,8 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
     };
 
     // 鼠标离开事件
-    const mouseoutListener = () => {
+    const mouseoutListener = (params: any) => {
+      if (params.type !== 'globalout' && params.target) return;
       tooltipStore.handleMouseLeave(chartId);
     };
 
@@ -264,7 +265,8 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
 
     // 绑定事件
     zr.on('mousemove', mousemoveListener);
-    zr.on('mouseout', mouseoutListener);
+    zr.on('mousemove', mouseoutListener);
+    zr.on('globalout', mouseoutListener);
     zr.on('click', clickListener);
 
     // 保存事件监听器引用，用于后续清理
