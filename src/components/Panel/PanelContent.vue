@@ -42,13 +42,13 @@
   // 根据面板类型选择组件
   const chartComponent = computed(() => {
     const typeMap: Record<string, any> = {
-      timeseries: TimeSeriesChart,
-      pie: PieChart,
-      bar: BarChart,
-      stat: StatPanel,
-      table: TableChart,
-      gauge: GaugeChart,
-      heatmap: HeatmapChart,
+      timeseries: TimeSeriesChart, // 时间序列图
+      bar: BarChart, // 柱状图
+      pie: PieChart, // 饼图
+      stat: StatPanel, // 统计图
+      table: TableChart, // 表格
+      gauge: GaugeChart, // 仪表盘
+      heatmap: HeatmapChart, // 热力图
     };
     return typeMap[props.panel.type];
   });

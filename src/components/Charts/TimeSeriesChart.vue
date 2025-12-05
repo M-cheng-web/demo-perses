@@ -88,24 +88,6 @@
     chartRef
   );
 
-  /**
-   * 更新图表配置和数据
-   */
-  function updateChart(instance?: ECharts | null) {
-    const chartInst = instance;
-    if (!chartInst) {
-      console.warn('Chart instance not initialized, skipping update');
-      return;
-    }
-
-    try {
-      const option = getChartOption();
-      chartInst.setOption(option, true);
-    } catch (error) {
-      console.error('Failed to update chart:', error);
-    }
-  }
-
   // 使用 Legend Hook
   const {
     selectedItems,
@@ -143,6 +125,24 @@
       isSeriesSelected
     ),
   });
+
+  /**
+   * 更新图表配置和数据
+   */
+  function updateChart(instance?: ECharts | null) {
+    const chartInst = instance;
+    if (!chartInst) {
+      console.warn('Chart instance not initialized, skipping update');
+      return;
+    }
+
+    try {
+      const option = getChartOption();
+      chartInst.setOption(option, true);
+    } catch (error) {
+      console.error('Failed to update chart:', error);
+    }
+  }
 
   function getChartOption(): EChartsOption {
     const { queryResults } = props;
