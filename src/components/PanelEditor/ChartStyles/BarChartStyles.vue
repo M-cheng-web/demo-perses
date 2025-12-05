@@ -1,3 +1,4 @@
+<!-- 图表样式配置 - 柱状图 -->
 <template>
   <div class="bar-chart-styles">
     <a-divider>柱状图配置</a-divider>

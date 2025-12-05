@@ -1,3 +1,4 @@
+<!-- 图表样式配置 - 时间序列图 -->
 <template>
   <div class="timeseries-chart-styles">
     <!-- Legend 配置 -->

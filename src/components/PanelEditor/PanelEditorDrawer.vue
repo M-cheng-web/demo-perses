@@ -1,5 +1,6 @@
+<!-- 面板编辑器 -->
 <template>
-  <a-drawer v-model:open="isOpen" title="面板编辑器" :width="800" :body-style="{ paddingBottom: '80px' }" @close="handleClose">
+  <a-drawer v-model:open="isOpen" title="面板编辑器" :width="900" @close="handleClose">
     <a-form :model="formData" layout="vertical">
       <!-- 顶部表单 -->
       <div class="editor-header">
@@ -19,11 +20,10 @@
             </a-form-item>
           </a-col>
         </a-row>
-
         <a-row :gutter="16">
           <a-col :span="12">
             <a-form-item label="面板描述">
-              <a-textarea v-model:value="formData.description" placeholder="请输入面板描述" :rows="2" :auto-size="{ minRows: 2, maxRows: 4 }" />
+              <a-textarea v-model:value="formData.description" placeholder="请输入面板描述" :rows="1" :auto-size="{ minRows: 1, maxRows: 4 }" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -101,10 +101,10 @@
 
     <!-- 底部按钮 -->
     <template #footer>
-      <a-space>
+      <a-flex :gap="16" justify="end">
         <a-button @click="handleClose">取消</a-button>
         <a-button type="primary" @click="handleSave">保存</a-button>
-      </a-space>
+      </a-flex>
     </template>
   </a-drawer>
 </template>
@@ -257,7 +257,7 @@
 <style scoped lang="less">
   .editor-header {
     margin-bottom: @spacing-lg;
-    padding-bottom: @spacing-md;
+    // padding-bottom: @spacing-md;
     border-bottom: 1px solid @border-color;
   }
 

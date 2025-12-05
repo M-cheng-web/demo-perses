@@ -1,3 +1,4 @@
+<!-- 图表样式配置 - 仪表盘 -->
 <template>
   <div class="gauge-chart-styles">
     <!-- Misc 配置 -->

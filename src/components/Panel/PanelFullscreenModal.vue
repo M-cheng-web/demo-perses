@@ -1,3 +1,4 @@
+<!-- 全屏查看面板 -->
 <template>
   <a-modal
     v-model:open="isOpen"

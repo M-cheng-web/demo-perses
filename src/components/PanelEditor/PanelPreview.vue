@@ -1,3 +1,4 @@
+<!-- 图表预览 -->
 <template>
   <div class="panel-preview">
     <div class="preview-header">
@@ -113,7 +114,7 @@
   .panel-preview {
     border: 1px solid @border-color;
     border-radius: @border-radius;
-    background: @background-light;
+    // background: @background-light;
     overflow: hidden;
 
     .preview-header {
