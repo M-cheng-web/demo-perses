@@ -38,28 +38,27 @@ export function useLegend(options: UseLegendOptions) {
 
   /**
    * 切换系列选中状态
-   * 点击 = 切换显示/隐藏
+   * 优化后的点击逻辑：
+   * 1. 全选状态下，点击某个 label，只激活该 label，其他取消
+   * 2. 部分选中状态下，点击未激活的 label，激活该 label（保持其他状态）
+   * 3. 部分选中状态下，点击已激活的 label，取消该 label（保持其他状态）
    */
   function toggleSeries(id: string) {
     if (selectedItems.value === 'ALL') {
-      // 当前所有项都显示，点击后将该项设为隐藏
-      // 需要创建一个包含所有其他项的对象
-      const allIds = legendItems.value.map((item) => item.id);
-      const newSelection: Record<string, boolean> = {};
-      allIds.forEach((itemId) => {
-        if (itemId !== id) {
-          newSelection[itemId] = true;
-        }
-      });
+      // 全选状态：点击某个 label，只激活该 label
+      const newSelection: Record<string, boolean> = {
+        [id]: true,
+      };
       selectedItems.value = newSelection;
     } else {
-      // 当前是部分选中状态，切换该项的状态
+      // 部分选中状态：切换该项的状态
       const newSelection = { ...selectedItems.value };
+
       if (newSelection[id]) {
-        // 当前是显示的，点击后隐藏
+        // 当前是激活的，点击后取消激活
         delete newSelection[id];
       } else {
-        // 当前是隐藏的，点击后显示
+        // 当前是未激活的，点击后激活
         newSelection[id] = true;
       }
 

@@ -1,6 +1,6 @@
 <template>
   <div class="table-chart">
-    <a-table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" :scroll="{ y: 'calc(100% - 55px)' }" size="small">
+    <Table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" :scroll="{ y: 'calc(100% - 55px)' }" size="small">
       <template #bodyCell="{ column, text }">
         <template v-if="column.key !== 'time'">
           {{ formatValue(text, panel.options.format || {}) }}
@@ -9,7 +9,7 @@
           {{ text }}
         </template>
       </template>
-    </a-table>
+    </Table>
   </div>
 </template>
 
@@ -18,6 +18,7 @@
   import type { TableColumnType } from 'ant-design-vue';
   import type { Panel, QueryResult, TableOptions } from '@/types';
   import { formatValue, formatTime } from '@/utils';
+  import { Table } from 'ant-design-vue';
 
   const props = defineProps<{
     panel: Panel;

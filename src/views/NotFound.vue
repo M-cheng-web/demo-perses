@@ -1,15 +1,16 @@
 <template>
   <div class="not-found">
-    <a-result status="404" title="404" sub-title="页面不存在">
+    <Result status="404" title="404" sub-title="页面不存在">
       <template #extra>
-        <a-button type="primary" @click="goHome">返回首页</a-button>
+        <Button type="primary" @click="goHome">返回首页</Button>
       </template>
-    </a-result>
+    </Result>
   </div>
 </template>
 
 <script setup lang="ts">
   import { useRouter } from 'vue-router';
+  import { Result, Button } from 'ant-design-vue';
 
   const router = useRouter();
 

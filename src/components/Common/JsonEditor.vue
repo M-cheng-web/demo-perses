@@ -1,31 +1,31 @@
 <template>
   <div class="json-editor">
     <div class="editor-toolbar" v-if="showToolbar">
-      <a-space>
-        <a-button size="small" @click="formatJson">
+      <Space>
+        <Button size="small" @click="formatJson">
           <template #icon><FormatPainterOutlined /></template>
           格式化
-        </a-button>
-        <a-button size="small" @click="validateJson">
+        </Button>
+        <Button size="small" @click="() => validateJson(true)">
           <template #icon><CheckCircleOutlined /></template>
           验证
-        </a-button>
-        <a-button v-if="showCopy" size="small" @click="copyToClipboard">
+        </Button>
+        <Button v-if="showCopy" size="small" @click="copyToClipboard">
           <template #icon><CopyOutlined /></template>
           复制
-        </a-button>
-      </a-space>
+        </Button>
+      </Space>
     </div>
     <div ref="editorContainer" class="editor-container"></div>
     <div v-if="errorMessage" class="error-message">
-      <a-alert :message="errorMessage" type="error" closable @close="errorMessage = ''" />
+      <Alert :message="errorMessage" type="error" closable @close="errorMessage = ''" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
   import { ref, onMounted, onUnmounted, watch } from 'vue';
-  import { message } from 'ant-design-vue';
+  import { message, Button, Space, Alert } from 'ant-design-vue';
   import { FormatPainterOutlined, CheckCircleOutlined, CopyOutlined } from '@ant-design/icons-vue';
   import monaco from '@/monaco-worker';
 

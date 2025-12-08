@@ -1,7 +1,7 @@
 <!-- 时间序列图 -->
 <template>
   <div class="time-series-chart-container">
-    <a-spin v-if="isLoading" class="loading-spinner" :spinning="true" />
+    <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
 
     <div class="chart-wrapper" :class="{ 'is-legend-right': legendOptions.position === 'right' }">
       <div ref="chartRef" class="time-series-chart"></div>
@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
   import { ref, computed, nextTick } from 'vue';
+  import { Spin } from 'ant-design-vue';
   import type { EChartsOption, ECharts } from 'echarts';
   import type { Panel, QueryResult } from '@/types';
   import { formatValue, formatTime } from '@/utils';

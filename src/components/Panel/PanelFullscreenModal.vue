@@ -1,6 +1,6 @@
 <!-- 全屏查看面板 -->
 <template>
-  <a-modal
+  <Modal
     v-model:open="isOpen"
     :title="panelTitle"
     :width="'90%'"
@@ -12,7 +12,7 @@
     <div class="fullscreen-panel">
       <PanelContent v-if="currentPanel" :panel="currentPanel" />
     </div>
-  </a-modal>
+  </Modal>
 </template>
 
 <script setup lang="ts">
@@ -20,6 +20,7 @@
   import type { Panel } from '@/types';
   import { useDashboardStore } from '@/stores';
   import PanelContent from './PanelContent.vue';
+  import { Modal } from 'ant-design-vue';
 
   const dashboardStore = useDashboardStore();
 

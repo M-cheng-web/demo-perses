@@ -1,7 +1,7 @@
 <template>
   <div class="panel-group-header" @click="handleHeaderClick">
     <div class="header-content">
-      <a-button
+      <Button
         type="text"
         :icon="h(group.isCollapsed ? RightOutlined : DownOutlined)"
         size="small"
@@ -9,29 +9,29 @@
         @click.stop="handleToggleCollapse"
       />
       <h3 class="group-title">{{ group.title || '未命名面板组' }}</h3>
-      <a-tooltip v-if="group.description" :title="group.description">
+      <Tooltip v-if="group.description" :title="group.description">
         <InfoCircleOutlined class="info-icon" />
-      </a-tooltip>
+      </Tooltip>
     </div>
 
     <div v-if="isEditMode" class="header-actions" @click.stop>
-      <a-tooltip title="添加面板">
-        <a-button type="text" size="small" :icon="h(PlusOutlined)" @click="handleAddPanel" />
-      </a-tooltip>
-      <a-tooltip title="编辑面板组">
-        <a-button type="text" size="small" :icon="h(EditOutlined)" @click="handleEdit" />
-      </a-tooltip>
-      <a-tooltip title="上移">
-        <a-button type="text" size="small" :icon="h(ArrowUpOutlined)" :disabled="index === 0" @click="handleMoveUp" />
-      </a-tooltip>
-      <a-tooltip title="下移">
-        <a-button type="text" size="small" :icon="h(ArrowDownOutlined)" :disabled="isLast" @click="handleMoveDown" />
-      </a-tooltip>
-      <a-popconfirm title="确定要删除这个面板组吗？" ok-text="确定" cancel-text="取消" @confirm="handleDelete">
-        <a-tooltip title="删除面板组">
-          <a-button type="text" size="small" danger :icon="h(DeleteOutlined)" />
-        </a-tooltip>
-      </a-popconfirm>
+      <Tooltip title="添加面板">
+        <Button type="text" size="small" :icon="h(PlusOutlined)" @click="handleAddPanel" />
+      </Tooltip>
+      <Tooltip title="编辑面板组">
+        <Button type="text" size="small" :icon="h(EditOutlined)" @click="handleEdit" />
+      </Tooltip>
+      <Tooltip title="上移">
+        <Button type="text" size="small" :icon="h(ArrowUpOutlined)" :disabled="index === 0" @click="handleMoveUp" />
+      </Tooltip>
+      <Tooltip title="下移">
+        <Button type="text" size="small" :icon="h(ArrowDownOutlined)" :disabled="isLast" @click="handleMoveDown" />
+      </Tooltip>
+      <Popconfirm title="确定要删除这个面板组吗？" ok-text="确定" cancel-text="取消" @confirm="handleDelete">
+        <Tooltip title="删除面板组">
+          <Button type="text" size="small" danger :icon="h(DeleteOutlined)" />
+        </Tooltip>
+      </Popconfirm>
     </div>
   </div>
 </template>
@@ -39,6 +39,7 @@
 <script setup lang="ts">
   import { h } from 'vue';
   import { storeToRefs } from 'pinia';
+  import { Button, Tooltip, Popconfirm } from 'ant-design-vue';
   import {
     RightOutlined,
     DownOutlined,

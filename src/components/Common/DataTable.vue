@@ -7,7 +7,7 @@
         <div class="table-row">
           <!-- Checkbox 列 -->
           <div v-if="showCheckbox" class="table-cell col-checkbox">
-            <a-checkbox :checked="isAllChecked" :indeterminate="isIndeterminate" @click.stop="handleToggleAll" />
+            <Checkbox :checked="isAllChecked" :indeterminate="isIndeterminate" @click.stop="handleToggleAll" />
           </div>
 
           <!-- 其他列 -->
@@ -47,7 +47,7 @@
         >
           <!-- Checkbox 列 -->
           <div v-if="showCheckbox" class="table-cell col-checkbox">
-            <a-checkbox :checked="isRowSelected(row.id)" @click.stop />
+            <Checkbox :checked="isRowSelected(row.id)" @click.stop />
           </div>
 
           <!-- 其他列 -->
@@ -74,6 +74,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons-vue';
+  import { Checkbox } from 'ant-design-vue';
 
   interface Column {
     key: string;

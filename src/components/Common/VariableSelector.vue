@@ -4,23 +4,23 @@
       <label class="variable-label">{{ variable.label }}:</label>
 
       <!-- 选择 -->
-      <a-select
+      <Select
         v-if="variable.type === 'select'"
         v-model:value="variableValues[variable.name]"
         :mode="variable.multi ? 'multiple' : undefined"
         :style="{ minWidth: '150px' }"
         :placeholder="`请选择 ${variable.label}`"
         :options="variable.options"
-        @change="handleVariableChange(variable.name, $event)"
+        @change="(value: any) => handleVariableChange(variable.name, value)"
       />
 
       <!-- 输入 -->
-      <a-input
+      <Input
         v-else-if="variable.type === 'input'"
         v-model:value="variableValues[variable.name]"
         :style="{ width: '150px' }"
         :placeholder="`请输入 ${variable.label}`"
-        @change="handleVariableChange(variable.name, $event.target.value)"
+        @change="(value: any) => handleVariableChange(variable.name, value)"
       />
 
       <!-- 常量 -->
@@ -34,6 +34,7 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
   import type { DashboardVariable } from '@/types';
+  import { Select, Input } from 'ant-design-vue';
 
   const props = defineProps<{
     variables?: DashboardVariable[];
@@ -43,7 +44,7 @@
     (e: 'change', variables: Record<string, string | string[]>): void;
   }>();
 
-  const variableValues = ref<Record<string, string | string[]>>({});
+  const variableValues = ref<Record<string, string | string[] | any>>({});
 
   // 初始化变量值
   const initializeValues = () => {

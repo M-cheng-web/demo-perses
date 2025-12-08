@@ -8,26 +8,23 @@
       :is-last="index === panelGroups.length - 1"
       @edit="handleEditGroup"
     />
-
-    <!-- 面板组编辑对话框 -->
-    <PanelGroupDialog ref="panelGroupDialogRef" />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
   import type { PanelGroup } from '@/types';
   import PanelGroupItem from './PanelGroupItem.vue';
-  import PanelGroupDialog from './PanelGroupDialog.vue';
 
   defineProps<{
     panelGroups: PanelGroup[];
   }>();
 
-  const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
+  const emit = defineEmits<{
+    (e: 'edit-group', group: PanelGroup): void;
+  }>();
 
   const handleEditGroup = (group: PanelGroup) => {
-    panelGroupDialogRef.value?.openEdit(group);
+    emit('edit-group', group);
   };
 </script>
 

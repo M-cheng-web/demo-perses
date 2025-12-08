@@ -1,7 +1,7 @@
 <!-- 柱状图 -->
 <template>
   <div class="bar-chart-container">
-    <a-spin :spinning="isLoading">
+    <Spin :spinning="isLoading">
       <div ref="chartRef" class="bar-chart"></div>
 
       <!-- 自定义 Legend -->
@@ -16,7 +16,7 @@
         @item-leave="handleLegendLeave"
         @toggle-global-selection="toggleGlobalSelection"
       />
-    </a-spin>
+    </Spin>
   </div>
 </template>
 
@@ -29,6 +29,7 @@
   import { useLegend } from '@/composables/useLegend';
   import { useChartInit } from '@/composables/useChartInit';
   import Legend from '@/components/ChartLegend/Legend.vue';
+  import { Spin } from 'ant-design-vue';
 
   const props = defineProps<{
     panel: Panel;

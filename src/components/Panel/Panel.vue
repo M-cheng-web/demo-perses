@@ -4,13 +4,14 @@
     <PanelContent :panel="panel" />
   </div>
   <div v-else class="panel panel-error">
-    <a-result status="error" title="面板加载失败" sub-title="未找到面板数据" />
+    <Result status="error" title="面板加载失败" sub-title="未找到面板数据" />
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed } from 'vue';
   import type { ID } from '@/types';
+  import { Result } from 'ant-design-vue';
   import { useDashboardStore } from '@/stores';
   import PanelHeader from './PanelHeader.vue';
   import PanelContent from './PanelContent.vue';

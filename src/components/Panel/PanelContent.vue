@@ -1,14 +1,14 @@
 <template>
   <div class="panel-content">
-    <a-spin v-if="loading" class="loading-spinner" :spinning="true" tip="加载中..." />
+    <Spin v-if="loading" class="loading-spinner" :spinning="true" tip="加载中..." />
 
     <div class="panel-content-wrapper">
       <div v-if="error" class="panel-error">
-        <a-result status="error" :title="error" />
+        <Result status="error" :title="error" />
       </div>
       <component v-else-if="chartComponent" :is="chartComponent" :panel="panel" :query-results="queryResults" />
       <div v-else class="panel-empty">
-        <a-empty description="未配置图表类型" />
+        <Empty description="未配置图表类型" />
       </div>
     </div>
   </div>
@@ -16,6 +16,7 @@
 
 <script setup lang="ts">
   import { computed, ref, watch, onMounted } from 'vue';
+  import { Spin, Result, Empty } from 'ant-design-vue';
   import { storeToRefs } from 'pinia';
   import type { Panel, QueryResult } from '@/types';
   import { useTimeRangeStore } from '@/stores';

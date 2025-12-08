@@ -2,62 +2,77 @@
 <template>
   <div class="gauge-chart-styles">
     <!-- Misc 配置 -->
-    <a-collapse :bordered="false" default-active-key="misc" expand-icon-position="end">
-      <a-collapse-panel key="misc" header="其他">
+    <Collapse :bordered="false" default-active-key="misc" expand-icon-position="end">
+      <CollapsePanel key="misc" header="其他">
         <div class="style-section">
           <div class="style-row">
             <span class="style-label">缩写数值</span>
-            <a-switch v-model:checked="localOptions.format.shortValues" size="small" />
+            <Switch v-model:checked="localOptions.format.shortValues" size="small" />
           </div>
 
           <div class="style-row">
             <span class="style-label">单位</span>
-            <a-select v-model:value="localOptions.format.unit" size="small" style="width: 200px">
-              <a-select-option value="none">无</a-select-option>
-              <a-select-option value="percent">百分比 (0-100)</a-select-option>
-              <a-select-option value="percent-decimal">百分比 (0.0-1.0)</a-select-option>
-              <a-select-option value="bytes">字节</a-select-option>
-              <a-select-option value="milliseconds">毫秒</a-select-option>
-              <a-select-option value="seconds">秒</a-select-option>
-            </a-select>
+            <Select
+              :options="[
+                { label: '无', value: 'none' },
+                { label: '百分比 (0-100)', value: 'percent' },
+                { label: '百分比 (0.0-1.0)', value: 'percent-decimal' },
+                { label: '字节', value: 'bytes' },
+                { label: '毫秒', value: 'milliseconds' },
+                { label: '秒', value: 'seconds' },
+              ]"
+              v-model:value="localOptions.format.unit"
+              size="small"
+              style="width: 200px"
+            />
           </div>
 
           <div class="style-row">
             <span class="style-label">小数位数</span>
-            <a-select v-model:value="localOptions.format.decimals" size="small" style="width: 200px">
-              <a-select-option value="default">默认</a-select-option>
-              <a-select-option :value="0">0</a-select-option>
-              <a-select-option :value="1">1</a-select-option>
-              <a-select-option :value="2">2</a-select-option>
-              <a-select-option :value="3">3</a-select-option>
-              <a-select-option :value="4">4</a-select-option>
-            </a-select>
+            <Select
+              :options="[
+                { label: '默认', value: 'default' },
+                { label: '0', value: 0 },
+                { label: '1', value: 1 },
+                { label: '2', value: 2 },
+                { label: '3', value: 3 },
+                { label: '4', value: 4 },
+              ]"
+              v-model:value="localOptions.format.decimals"
+              size="small"
+              style="width: 200px"
+            />
           </div>
 
           <div class="style-row">
             <span class="style-label">计算方式</span>
-            <a-select v-model:value="localOptions.specific.calculation" size="small" style="width: 200px">
-              <a-select-option value="last">最新值 *</a-select-option>
-              <a-select-option value="first">首值</a-select-option>
-              <a-select-option value="mean">平均值</a-select-option>
-              <a-select-option value="min">最小值</a-select-option>
-              <a-select-option value="max">最大值</a-select-option>
-            </a-select>
+            <Select
+              :options="[
+                { label: '最新值 *', value: 'last' },
+                { label: '首值', value: 'first' },
+                { label: '平均值', value: 'mean' },
+                { label: '最小值', value: 'min' },
+                { label: '最大值', value: 'max' },
+              ]"
+              v-model:value="localOptions.specific.calculation"
+              size="small"
+              style="width: 200px"
+            />
           </div>
 
           <div class="style-row">
             <span class="style-label">最大值</span>
-            <a-input-number v-model:value="localOptions.specific.max" size="small" style="width: 200px" placeholder="100" />
+            <InputNumber v-model:value="localOptions.specific.max" size="small" style="width: 200px" placeholder="100" />
           </div>
         </div>
-      </a-collapse-panel>
+      </CollapsePanel>
 
       <!-- Thresholds 配置 -->
-      <a-collapse-panel key="thresholds" header="阈值">
+      <CollapsePanel key="thresholds" header="阈值">
         <div class="style-section">
           <div class="style-row">
             <span class="style-label">模式</span>
-            <a-segmented
+            <Segmented
               v-model:value="localOptions.thresholds.mode"
               :options="[
                 { label: '绝对值', value: 'absolute' },
@@ -71,30 +86,30 @@
             <div v-for="(threshold, index) in localOptions.thresholds.steps" :key="index" class="threshold-item">
               <span class="threshold-color" :style="{ backgroundColor: threshold.color }"></span>
               <span class="threshold-name">{{ threshold.name || `T${localOptions.thresholds.steps.length - index}` }}</span>
-              <a-input-number
+              <InputNumber
                 v-model:value="threshold.value"
                 size="small"
                 style="width: 200px"
                 :placeholder="threshold.name === 'Default' ? '' : '10'"
               />
-              <a-button v-if="index > 0" type="text" size="small" @click="removeThreshold(index)">
+              <Button v-if="index > 0" type="text" size="small" @click="removeThreshold(index)">
                 <template #icon><DeleteOutlined /></template>
-              </a-button>
+              </Button>
             </div>
           </div>
 
-          <a-button type="dashed" size="small" block @click="addThreshold">
+          <Button type="dashed" size="small" block @click="addThreshold">
             <template #icon><PlusOutlined /></template>
             添加阈值
-          </a-button>
+          </Button>
 
           <div class="style-row" style="margin-top: 16px">
             <span class="style-label">显示图例</span>
-            <a-switch v-model:checked="localOptions.thresholds.showLegend" size="small" />
+            <Switch v-model:checked="localOptions.thresholds.showLegend" size="small" />
           </div>
         </div>
-      </a-collapse-panel>
-    </a-collapse>
+      </CollapsePanel>
+    </Collapse>
   </div>
 </template>
 
@@ -102,6 +117,7 @@
   import { ref, watch } from 'vue';
   import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
   import { deepClone } from '@/utils';
+  import { Switch, Segmented, Button, InputNumber, Select } from 'ant-design-vue';
 
   interface Props {
     options: any;

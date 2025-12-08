@@ -1,22 +1,23 @@
 <template>
-  <a-modal v-model:open="isOpen" :title="isEditMode ? '编辑面板组' : '创建面板组'" :width="600" @ok="handleSubmit" @cancel="handleCancel">
-    <a-form :model="formData" layout="vertical" :label-col="{ span: 24 }">
-      <a-form-item label="标题" required>
-        <a-input v-model:value="formData.title" placeholder="请输入面板组标题" @press-enter="handleSubmit" />
-      </a-form-item>
+  <Modal v-model:open="isOpen" :title="isEditMode ? '编辑面板组' : '创建面板组'" :width="600" @ok="handleSubmit" @cancel="handleCancel">
+    <Form :model="formData" layout="vertical" :label-col="{ span: 24 }">
+      <FormItem label="标题" required>
+        <Input v-model:value="formData.title" placeholder="请输入面板组标题" @press-enter="handleSubmit" />
+      </FormItem>
 
-      <a-form-item label="描述">
-        <a-textarea v-model:value="formData.description" placeholder="请输入面板组描述" :rows="3" :auto-size="{ minRows: 3, maxRows: 6 }" />
-      </a-form-item>
+      <FormItem label="描述">
+        <Textarea v-model:value="formData.description" placeholder="请输入面板组描述" :rows="3" :auto-size="{ minRows: 3, maxRows: 6 }" />
+      </FormItem>
 
-      <a-form-item label="默认折叠">
-        <a-switch v-model:checked="formData.isCollapsed" />
-      </a-form-item>
-    </a-form>
-  </a-modal>
+      <FormItem label="默认折叠">
+        <Switch v-model:checked="formData.isCollapsed" />
+      </FormItem>
+    </Form>
+  </Modal>
 </template>
 
 <script setup lang="ts">
+  import { Modal, Form, FormItem, Input, Textarea, Switch } from 'ant-design-vue';
   import { ref } from 'vue';
   import { message } from 'ant-design-vue';
   import { useDashboardStore } from '@/stores';

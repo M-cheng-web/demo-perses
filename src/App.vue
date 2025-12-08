@@ -1,12 +1,13 @@
 <template>
-  <a-config-provider :locale="locale">
+  <ConfigProvider :locale="locale">
     <div id="app">
       <router-view />
     </div>
-  </a-config-provider>
+  </ConfigProvider>
 </template>
 
 <script setup lang="ts">
+  import { ConfigProvider } from 'ant-design-vue';
   import zhCN from 'ant-design-vue/es/locale/zh_CN';
   // App 根组件
   const locale = zhCN;

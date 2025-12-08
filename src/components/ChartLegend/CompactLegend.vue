@@ -4,7 +4,7 @@
     <div class="legend-items">
       <!-- 全局选择多选框 -->
       <div class="legend-item global-selector">
-        <a-checkbox
+        <Checkbox
           :checked="globalSelectionState === 'all'"
           :indeterminate="globalSelectionState === 'indeterminate'"
           @click.stop="handleGlobalToggle"
@@ -34,6 +34,7 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   import type { LegendItem, LegendSelection } from '@/types/legend';
+  import { Checkbox } from 'ant-design-vue';
 
   interface Props {
     items: LegendItem[];

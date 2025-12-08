@@ -27,14 +27,15 @@
       </grid-item>
     </grid-layout>
 
-    <a-empty v-else description="暂无面板">
-      <a-button v-if="isEditMode" type="primary" @click="handleAddPanel">添加面板</a-button>
-    </a-empty>
+    <Empty v-else description="暂无面板">
+      <Button v-if="isEditMode" type="primary" @click="handleAddPanel">添加面板</Button>
+    </Empty>
   </div>
 </template>
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
+  import { Empty, Button } from 'ant-design-vue';
   import { storeToRefs } from 'pinia';
   import { GridLayout, GridItem } from 'vue-grid-layout-v3';
   import type { PanelLayout, Panel as PanelType, ID } from '@/types';

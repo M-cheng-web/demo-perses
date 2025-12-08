@@ -5,13 +5,13 @@
       <div class="tooltip-header">
         <span class="tooltip-time">{{ formattedTime }}</span>
         <div class="tooltip-actions">
-          <a-button v-if="isPinned" type="text" size="small" class="unpin-btn" @click="handleUnpin">
+          <Button v-if="isPinned" type="text" size="small" class="unpin-btn" @click="handleUnpin">
             <PushpinFilled />
-          </a-button>
+          </Button>
           <span v-else class="tooltip-hint">点击图表固定</span>
-          <a-button v-if="totalSeries > visibleSeriesCount && !showAllSeries" type="text" size="small" @click="showAllSeries = true">
+          <Button v-if="totalSeries > visibleSeriesCount && !showAllSeries" type="text" size="small" @click="showAllSeries = true">
             显示全部 ({{ totalSeries }})
-          </a-button>
+          </Button>
         </div>
       </div>
 
@@ -30,6 +30,7 @@
 
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted } from 'vue';
+  import { Button } from 'ant-design-vue';
   import { storeToRefs } from 'pinia';
   import { PushpinFilled } from '@ant-design/icons-vue';
   import type { ECharts } from 'echarts';

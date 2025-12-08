@@ -2,34 +2,34 @@
   <div class="panel-header">
     <div class="header-content">
       <h4 class="panel-title">{{ panel.name }}</h4>
-      <a-tooltip v-if="panel.description" :title="panel.description">
+      <Tooltip v-if="panel.description" :title="panel.description">
         <InfoCircleOutlined class="info-icon" />
-      </a-tooltip>
+      </Tooltip>
     </div>
 
     <div class="header-actions">
       <!-- 非编辑模式：只在 hover 时显示放大按钮 -->
       <template v-if="!isEditMode">
-        <a-tooltip title="全屏查看">
-          <a-button type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen" />
-        </a-tooltip>
+        <Tooltip title="全屏查看">
+          <Button type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen" />
+        </Tooltip>
       </template>
       <!-- 编辑模式：显示所有操作按钮 -->
       <template v-else>
-        <a-tooltip title="编辑">
-          <a-button type="text" size="small" :icon="h(EditOutlined)" @click="handleEdit" />
-        </a-tooltip>
-        <a-tooltip title="复制">
-          <a-button type="text" size="small" :icon="h(CopyOutlined)" @click="handleDuplicate" />
-        </a-tooltip>
-        <a-tooltip title="全屏查看">
-          <a-button type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen" />
-        </a-tooltip>
-        <a-popconfirm title="确定要删除这个面板吗？" ok-text="确定" cancel-text="取消" @confirm="handleDelete">
-          <a-tooltip title="删除">
-            <a-button type="text" size="small" danger :icon="h(DeleteOutlined)" />
-          </a-tooltip>
-        </a-popconfirm>
+        <Tooltip title="编辑">
+          <Button type="text" size="small" :icon="h(EditOutlined)" @click="handleEdit" />
+        </Tooltip>
+        <Tooltip title="复制">
+          <Button type="text" size="small" :icon="h(CopyOutlined)" @click="handleDuplicate" />
+        </Tooltip>
+        <Tooltip title="全屏查看">
+          <Button type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen" />
+        </Tooltip>
+        <Popconfirm title="确定要删除这个面板吗？" ok-text="确定" cancel-text="取消" @confirm="handleDelete">
+          <Tooltip title="删除">
+            <Button type="text" size="small" danger :icon="h(DeleteOutlined)" />
+          </Tooltip>
+        </Popconfirm>
       </template>
     </div>
   </div>
@@ -38,10 +38,10 @@
 <script setup lang="ts">
   import { h } from 'vue';
   import { storeToRefs } from 'pinia';
+  import { Button, Tooltip, Popconfirm, message } from 'ant-design-vue';
   import { EditOutlined, CopyOutlined, DeleteOutlined, FullscreenOutlined, InfoCircleOutlined } from '@ant-design/icons-vue';
   import type { Panel, ID } from '@/types';
   import { useDashboardStore, useEditorStore } from '@/stores';
-  import { message } from 'ant-design-vue';
 
   const props = defineProps<{
     groupId: ID;

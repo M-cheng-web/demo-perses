@@ -1,109 +1,122 @@
 <!-- 图表样式配置 - 柱状图 -->
 <template>
   <div class="bar-chart-styles">
-    <a-divider>柱状图配置</a-divider>
+    <Divider>柱状图配置</Divider>
 
     <!-- 方向 -->
-    <a-form-item label="方向">
-      <a-radio-group v-model:value="specificOptions.orientation">
-        <a-radio-button value="vertical">垂直</a-radio-button>
-        <a-radio-button value="horizontal">水平</a-radio-button>
-      </a-radio-group>
-    </a-form-item>
+    <FormItem label="方向">
+      <RadioGroup
+        :options="[
+          { label: '垂直', value: 'vertical' },
+          { label: '水平', value: 'horizontal' },
+        ]"
+        v-model:value="specificOptions.orientation"
+      />
+    </FormItem>
 
     <!-- 柱状图模式 -->
-    <a-form-item label="柱状图模式">
-      <a-radio-group v-model:value="specificOptions.barMode">
-        <a-radio-button value="group">分组</a-radio-button>
-        <a-radio-button value="stack">堆叠</a-radio-button>
-      </a-radio-group>
-    </a-form-item>
+    <FormItem mItem label="柱状图模式">
+      <RadioGroup
+        :options="[
+          { label: '分组', value: 'group' },
+          { label: '堆叠', value: 'stack' },
+        ]"
+        v-model:value="specificOptions.barMode"
+      />
+    </FormItem>
 
     <!-- 柱宽度 -->
-    <a-form-item label="柱宽度">
-      <a-input v-model:value="specificOptions.barWidth" placeholder="例如：60% 或 auto" />
-    </a-form-item>
+    <FormItem label="柱宽度">
+      <Input v-model:value="specificOptions.barWidth" placeholder="例如：60% 或 auto" />
+    </FormItem>
 
-    <a-divider>坐标轴配置</a-divider>
+    <Divider>坐标轴配置</Divider>
 
     <!-- X 轴 -->
-    <a-form-item label="显示 X 轴">
-      <a-switch v-model:checked="axisOptions.xAxis.show" />
-    </a-form-item>
+    <FormItem label="显示 X 轴">
+      <Switch v-model:checked="axisOptions.xAxis.show" />
+    </FormItem>
 
-    <a-form-item v-if="axisOptions.xAxis.show" label="X 轴名称">
-      <a-input v-model:value="axisOptions.xAxis.name" placeholder="X 轴名称" />
-    </a-form-item>
+    <FormItem v-if="axisOptions.xAxis.show" label="X 轴名称">
+      <Input v-model:value="axisOptions.xAxis.name" placeholder="X 轴名称" />
+    </FormItem>
 
     <!-- Y 轴 -->
-    <a-form-item label="显示 Y 轴">
-      <a-switch v-model:checked="axisOptions.yAxis.show" />
-    </a-form-item>
+    <FormItem label="显示 Y 轴">
+      <Switch v-model:checked="axisOptions.yAxis.show" />
+    </FormItem>
 
-    <a-form-item v-if="axisOptions.yAxis.show" label="Y 轴名称">
-      <a-input v-model:value="axisOptions.yAxis.name" placeholder="Y 轴名称" />
-    </a-form-item>
+    <FormItem v-if="axisOptions.yAxis.show" label="Y 轴名称">
+      <Input v-model:value="axisOptions.yAxis.name" placeholder="Y 轴名称" />
+    </FormItem>
 
-    <a-row v-if="axisOptions.yAxis.show" :gutter="16">
-      <a-col :span="12">
-        <a-form-item label="Y 轴最小值">
-          <a-input-number v-model:value="axisOptions.yAxis.min" style="width: 100%" placeholder="自动" />
-        </a-form-item>
-      </a-col>
-      <a-col :span="12">
-        <a-form-item label="Y 轴最大值">
-          <a-input-number v-model:value="axisOptions.yAxis.max" style="width: 100%" placeholder="自动" />
-        </a-form-item>
-      </a-col>
-    </a-row>
+    <Row v-if="axisOptions.yAxis.show" :gutter="16">
+      <Col :span="12">
+        <FormItem label="Y 轴最小值">
+          <InputNumber v-model:value="axisOptions.yAxis.min" style="width: 100%" placeholder="自动" />
+        </FormItem>
+      </Col>
+      <Col :span="12">
+        <FormItem label="Y 轴最大值">
+          <InputNumber v-model:value="axisOptions.yAxis.max" style="width: 100%" placeholder="自动" />
+        </FormItem>
+      </Col>
+    </Row>
 
-    <a-divider>图例配置</a-divider>
+    <Divider>图例配置</Divider>
 
     <!-- 图例显示 -->
-    <a-form-item label="显示图例">
-      <a-switch v-model:checked="legendOptions.show" />
-    </a-form-item>
+    <FormItem label="显示图例">
+      <Switch v-model:checked="legendOptions.show" />
+    </FormItem>
 
-    <a-form-item v-if="legendOptions.show" label="图例位置">
-      <a-select v-model:value="legendOptions.position">
-        <a-select-option value="top">顶部</a-select-option>
-        <a-select-option value="bottom">底部</a-select-option>
-        <a-select-option value="left">左侧</a-select-option>
-        <a-select-option value="right">右侧</a-select-option>
-      </a-select>
-    </a-form-item>
+    <FormItem v-if="legendOptions.show" label="图例位置">
+      <Select
+        :options="[
+          { label: '顶部', value: 'top' },
+          { label: '底部', value: 'bottom' },
+          { label: '左侧', value: 'left' },
+          { label: '右侧', value: 'right' },
+        ]"
+        v-model:value="legendOptions.position"
+      />
+    </FormItem>
 
-    <a-divider>格式化配置</a-divider>
+    <Divider>格式化配置</Divider>
 
     <!-- 单位 -->
-    <a-form-item label="数值单位">
-      <a-select v-model:value="formatOptions.unit">
-        <a-select-option value="none">无</a-select-option>
-        <a-select-option value="percent">百分比 (%)</a-select-option>
-        <a-select-option value="bytes">字节 (B)</a-select-option>
-        <a-select-option value="short">短单位 (K/M/B)</a-select-option>
-        <a-select-option value="ms">毫秒 (ms)</a-select-option>
-        <a-select-option value="s">秒 (s)</a-select-option>
-      </a-select>
-    </a-form-item>
+    <FormItem label="数值单位">
+      <Select
+        :options="[
+          { label: '无', value: 'none' },
+          { label: '百分比', value: 'percent' },
+          { label: '字节', value: 'bytes' },
+          { label: '短单位', value: 'short' },
+          { label: '毫秒', value: 'ms' },
+          { label: '秒', value: 's' },
+        ]"
+        v-model:value="formatOptions.unit"
+      />
+    </FormItem>
 
     <!-- 小数位数 -->
-    <a-form-item label="小数位数">
-      <a-input-number v-model:value="formatOptions.decimals" :min="0" :max="6" style="width: 100%" />
-    </a-form-item>
+    <FormItem label="小数位数">
+      <InputNumber v-model:value="formatOptions.decimals" :min="0" :max="6" style="width: 100%" />
+    </FormItem>
 
-    <a-divider>颜色配置</a-divider>
+    <Divider>颜色配置</Divider>
 
     <!-- 自定义颜色 -->
-    <a-form-item label="颜色列表（每行一个颜色）">
-      <a-textarea v-model:value="colorsText" placeholder="#5470c6&#10;#91cc75&#10;#fac858" :rows="4" />
-    </a-form-item>
+    <FormItem label="颜色列表（每行一个颜色）">
+      <Textarea v-model:value="colorsText" placeholder="#5470c6&#10;#91cc75&#10;#fac858" :rows="4" />
+    </FormItem>
   </div>
 </template>
 
 <script setup lang="ts">
   import { reactive, watch, computed } from 'vue';
   import type { PanelOptions } from '@/types';
+  import { FormItem, RadioGroup, Input, InputNumber, Select, Textarea, Row, Col, Divider } from 'ant-design-vue';
 
   const props = defineProps<{
     options: PanelOptions;

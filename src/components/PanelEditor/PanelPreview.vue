@@ -6,14 +6,14 @@
     </div>
     <div class="preview-content" ref="previewRef">
       <component v-if="panel && queryResults.length > 0" :is="chartComponent" :panel="panel" :query-results="queryResults" />
-      <a-empty v-else description="暂无数据" />
+      <Empty v-else description="暂无数据" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
   import { ref, computed, watch, onMounted } from 'vue';
-  import { Empty as AEmpty } from 'ant-design-vue';
+  import { Empty } from 'ant-design-vue';
   import TimeSeriesChart from '@/components/Charts/TimeSeriesChart.vue';
   import PieChart from '@/components/Charts/PieChart.vue';
   import BarChart from '@/components/Charts/BarChart.vue';

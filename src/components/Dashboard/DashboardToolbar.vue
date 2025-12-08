@@ -6,15 +6,15 @@
       <div class="toolbar-actions">
         <template v-if="isEditMode">
           <!-- 编辑模式下的操作按钮 -->
-          <a-button @click="handleAddPanelGroup">
+          <Button @click="handleAddPanelGroup">
             <template #icon><PlusOutlined /></template>
             添加面板组
-          </a-button>
-          <a-button @click="handleSave" type="primary" :loading="isSaving"> 保存 </a-button>
-          <a-button @click="handleToggleEditMode"> 取消 </a-button>
+          </Button>
+          <Button @click="handleSave" type="primary" :loading="isSaving"> 保存 </Button>
+          <Button @click="handleToggleEditMode"> 取消 </Button>
         </template>
         <template v-else>
-          <a-button @click="handleToggleEditMode" type="primary"> 编辑 </a-button>
+          <Button @click="handleToggleEditMode" type="primary"> 编辑 </Button>
         </template>
       </div>
     </div>
@@ -26,55 +26,51 @@
       </div>
       <div class="controls-right">
         <!-- 时间范围选择器 -->
-        <a-select v-model:value="selectedTimeRange" style="width: 160px" size="small" @change="handleTimeRangeChange">
-          <a-select-option value="now-5m">最近 5 分钟</a-select-option>
-          <a-select-option value="now-15m">最近 15 分钟</a-select-option>
-          <a-select-option value="now-1h">最近 1 小时</a-select-option>
-          <a-select-option value="now-6h">最近 6 小时</a-select-option>
-          <a-select-option value="now-24h">最近 24 小时</a-select-option>
-        </a-select>
+        <Select
+          v-model:value="selectedTimeRange"
+          style="width: 160px"
+          size="small"
+          :options="[
+            { label: '最近 5 分钟', value: 'now-5m' },
+            { label: '最近 15 分钟', value: 'now-15m' },
+            { label: '最近 1 小时', value: 'now-1h' },
+            { label: '最近 6 小时', value: 'now-6h' },
+            { label: '最近 24 小时', value: 'now-24h' },
+          ]"
+          @change="(value: any) => handleTimeRangeChange(value as string)"
+        />
 
         <!-- 刷新按钮 -->
-        <a-button :icon="h(ReloadOutlined)" size="small" @click="handleRefresh" />
+        <Button :icon="h(ReloadOutlined)" size="small" @click="handleRefresh" />
 
         <!-- 更多操作 -->
-        <a-dropdown>
-          <a-button :icon="h(MoreOutlined)" size="small" />
+        <Dropdown n>
+          <Button :icon="h(MoreOutlined)" size="small" />
           <template #overlay>
-            <a-menu @click="handleMenuClick">
-              <a-menu-item key="manageVariables">
-                <SettingOutlined />
-                管理变量
-              </a-menu-item>
-              <a-menu-divider />
-              <a-menu-item key="export">
-                <DownloadOutlined />
-                导出 JSON
-              </a-menu-item>
-              <a-menu-item key="import">
-                <UploadOutlined />
-                导入 JSON
-              </a-menu-item>
-              <a-menu-item key="viewJson">
-                <FileTextOutlined />
-                查看 JSON
-              </a-menu-item>
-            </a-menu>
+            <Menu
+              :items="[
+                { key: 'manageVariables', label: '管理变量', icon: h(SettingOutlined) },
+                { key: 'export', label: '导出 JSON', icon: h(DownloadOutlined) },
+                { key: 'import', label: '导入 JSON', icon: h(UploadOutlined) },
+                { key: 'viewJson', label: '查看 JSON', icon: h(FileTextOutlined) },
+              ]"
+              @click="(info) => handleMenuClick(info as any)"
+            />
           </template>
-        </a-dropdown>
+        </Dropdown>
       </div>
     </div>
 
     <!-- JSON 查看/编辑模态框 -->
-    <a-modal v-model:open="jsonModalVisible" title="Dashboard JSON" :width="800" destroyOnClose :maskClosable="false">
+    <Modal v-model:open="jsonModalVisible" title="Dashboard JSON" :width="800" destroyOnClose :maskClosable="false">
       <JsonEditor v-model="dashboardJson" :read-only="jsonModalMode === 'view'" @validate="handleJsonValidate" />
       <template #footer>
-        <a-space>
-          <a-button @click="jsonModalVisible = false">取消</a-button>
-          <a-button v-if="jsonModalMode === 'edit'" type="primary" @click="handleApplyJson" :disabled="!isJsonValid"> 应用 </a-button>
-        </a-space>
+        <Space>
+          <Button @click="jsonModalVisible = false">取消</Button>
+          <Button v-if="jsonModalMode === 'edit'" type="primary" @click="handleApplyJson" :disabled="!isJsonValid"> 应用 </Button>
+        </Space>
       </template>
-    </a-modal>
+    </Modal>
 
     <!-- 隐藏的文件输入 -->
     <input ref="fileInputRef" type="file" accept=".json" style="display: none" @change="handleFileChange" />
@@ -83,6 +79,7 @@
 
 <script setup lang="ts">
   import { ref, computed, h, onUnmounted } from 'vue';
+  import { Button, Select, Dropdown, Menu, Space, Modal } from 'ant-design-vue';
   import { storeToRefs } from 'pinia';
   import {
     ReloadOutlined,
