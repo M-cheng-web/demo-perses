@@ -1,3 +1,4 @@
+<!-- 饼图 -->
 <template>
   <div class="pie-chart-container">
     <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
@@ -29,6 +30,7 @@
   import { useChartResize } from '@/composables/useChartResize';
   import { useLegend } from '@/composables/useLegend';
   import { useChartInit } from '@/composables/useChartInit';
+  import { useChartTooltip, TooltipDataProviders, type TooltipData } from '@/composables/useChartTooltip';
   import Legend from '@/components/ChartLegend/Legend.vue';
   import { Spin } from 'ant-design-vue';
 
@@ -38,6 +40,9 @@
   }>();
 
   const chartRef = ref<HTMLElement>();
+
+  // 生成唯一的图表 ID
+  const chartId = computed(() => `chart-${props.panel.id}`);
 
   /**
    * 使用图表初始化 Hook
@@ -57,12 +62,14 @@
     onChartCreated: (instance) => {
       nextTick(() => {
         updateChart(instance);
+        registerTooltip();
         initChartResize();
       });
     },
     onUpdate: (instance) => {
       nextTick(() => {
         updateChart(instance);
+        updateTooltip();
       });
     },
   });
@@ -92,6 +99,25 @@
     queryResults: computed(() => props.queryResults),
     chartInstance: computed(() => getInstance()),
     updateChart: () => updateChart(getInstance()),
+  });
+
+  /**
+   * 使用 Tooltip 注册管理 Hook
+   * 自动处理图表的注册、更新和销毁
+   */
+  const {
+    updateTooltipData,
+    register: registerTooltip,
+    update: updateTooltip,
+  } = useChartTooltip({
+    chartId,
+    chartInstance: computed(() => getInstance()),
+    chartContainerRef: chartRef,
+    dataProvider: TooltipDataProviders.pie(
+      () => props.queryResults,
+      () => props.panel.options.format,
+      isSeriesSelected
+    ),
   });
 
   /**
@@ -191,11 +217,40 @@
     const isPie = specificOptions?.pieType !== 'doughnut';
 
     return {
+      // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
         trigger: 'item',
+        triggerOn: 'mousemove',
         formatter: (params: any) => {
-          const value = formatValue(params.value, options.format || {});
-          return `${params.marker} ${params.name}: ${value} (${params.percent}%)`;
+          if (!params || !params.data) {
+            updateTooltipData(null);
+            return '';
+          }
+
+          const seriesId = `series-${params.dataIndex}`;
+
+          // 检查该系列是否被选中（未被隐藏）
+          if (!isSeriesSelected(seriesId)) {
+            updateTooltipData(null);
+            return '';
+          }
+
+          const tooltipData: TooltipData = {
+            time: params.name,
+            series: [
+              {
+                id: seriesId,
+                label: params.name,
+                color: params.color,
+                value: params.value,
+                formattedValue: formatValue(params.value, options.format || {}),
+                percent: params.percent,
+              },
+            ],
+          };
+
+          updateTooltipData(tooltipData);
+          return ''; // 返回空字符串，我们使用自定义 Tooltip 展示
         },
       },
       legend: {

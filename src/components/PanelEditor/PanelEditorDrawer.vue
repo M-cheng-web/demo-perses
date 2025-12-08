@@ -24,18 +24,7 @@
           </Col>
           <Col :span="12">
             <FormItem label="图表类型" required>
-              <Select
-                :options="[
-                  { label: '时间序列图', value: 'timeseries' },
-                  { label: '柱状图', value: 'bar' },
-                  { label: '饼图', value: 'pie' },
-                  { label: '统计值', value: 'stat' },
-                  { label: '仪表盘', value: 'gauge' },
-                  { label: '表格', value: 'table' },
-                  { label: '热力图', value: 'heatmap' },
-                ]"
-                v-model:value="formData.type"
-              />
+              <Select :options="panelTypeOptions" v-model:value="formData.type" />
             </FormItem>
           </Col>
         </Row>
@@ -81,15 +70,7 @@
         <!-- 图表样式 -->
         <TabPane key="style" tab="图表样式">
           <!-- 根据面板类型显示不同的样式配置 -->
-          <TimeSeriesChartStyles v-if="formData.type === 'timeseries'" v-model:options="formData.options" />
-          <BarChartStyles v-else-if="formData.type === 'bar'" v-model:options="formData.options" />
-          <PieChartStyles v-else-if="formData.type === 'pie'" v-model:options="formData.options" />
-          <GaugeChartStyles v-else-if="formData.type === 'gauge'" v-model:options="formData.options" />
-          <HeatmapChartStyles v-else-if="formData.type === 'heatmap'" v-model:options="formData.options" />
-          <StatPanelStyles v-else-if="formData.type === 'stat'" v-model:options="formData.options" />
-          <TableChartStyles v-else-if="formData.type === 'table'" v-model:options="formData.options" />
-
-          <!-- 其他类型暂无特定配置 -->
+          <component v-if="styleComponent" :is="styleComponent" v-model:options="formData.options" />
           <div v-else>
             <Empty description="此面板类型暂无特定样式配置" />
           </div>
@@ -120,6 +101,7 @@
   import { message } from 'ant-design-vue';
   import { useDashboardStore, useEditorStore } from '@/stores';
   import { generateId, deepClone } from '@/utils';
+  import { PanelType, PANEL_TYPE_OPTIONS } from '@/enums/panelType';
   import TimeSeriesChartStyles from './ChartStyles/TimeSeriesChartStyles.vue';
   import BarChartStyles from './ChartStyles/BarChartStyles.vue';
   import PieChartStyles from './ChartStyles/PieChartStyles.vue';
@@ -130,7 +112,7 @@
   import type { Panel } from '@/types';
   import JsonEditor from '@/components/Common/JsonEditor.vue';
   import PanelPreview from './PanelPreview.vue';
-  import { getDefaultTimeSeriesOptions } from './ChartStyles/timeSeriesDefaultOptions';
+  import { getDefaultTimeSeriesOptions } from './ChartStylesDefaultOptions/timeSeriesDefaultOptions';
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
@@ -145,6 +127,23 @@
 
   // 获取面板组列表
   const panelGroups = computed(() => currentDashboard.value?.panelGroups || []);
+
+  // 面板类型选项
+  const panelTypeOptions = PANEL_TYPE_OPTIONS;
+
+  // 样式配置组件映射
+  const styleComponentMap: Record<string, any> = {
+    [PanelType.TIMESERIES]: TimeSeriesChartStyles,
+    [PanelType.BAR]: BarChartStyles,
+    [PanelType.PIE]: PieChartStyles,
+    [PanelType.STAT]: StatPanelStyles,
+    [PanelType.TABLE]: TableChartStyles,
+    [PanelType.GAUGE]: GaugeChartStyles,
+    [PanelType.HEATMAP]: HeatmapChartStyles,
+  };
+
+  // 根据面板类型获取样式配置组件
+  const styleComponent = computed(() => styleComponentMap[formData.type]);
 
   // 表单数据
   const formData = reactive<any>({

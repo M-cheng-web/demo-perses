@@ -21,6 +21,7 @@
   import type { Panel, QueryResult } from '@/types';
   import { useTimeRangeStore } from '@/stores';
   import { mockDataManager } from '@/mock';
+  import { PanelType } from '@/enums/panelType';
   import TimeSeriesChart from '@/components/Charts/TimeSeriesChart.vue';
   import PieChart from '@/components/Charts/PieChart.vue';
   import BarChart from '@/components/Charts/BarChart.vue';
@@ -43,13 +44,13 @@
   // 根据面板类型选择组件
   const chartComponent = computed(() => {
     const typeMap: Record<string, any> = {
-      timeseries: TimeSeriesChart, // 时间序列图
-      bar: BarChart, // 柱状图
-      pie: PieChart, // 饼图
-      stat: StatPanel, // 统计图
-      table: TableChart, // 表格
-      gauge: GaugeChart, // 仪表盘
-      heatmap: HeatmapChart, // 热力图
+      [PanelType.TIMESERIES]: TimeSeriesChart,
+      [PanelType.BAR]: BarChart,
+      [PanelType.PIE]: PieChart,
+      [PanelType.STAT]: StatPanel,
+      [PanelType.TABLE]: TableChart,
+      [PanelType.GAUGE]: GaugeChart,
+      [PanelType.HEATMAP]: HeatmapChart,
     };
     return typeMap[props.panel.type];
   });

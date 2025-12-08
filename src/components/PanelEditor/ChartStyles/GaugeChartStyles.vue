@@ -117,6 +117,7 @@
   import { ref, watch } from 'vue';
   import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
   import { deepClone } from '@/utils';
+  import { getDefaultGaugeChartOptions } from '../ChartStylesDefaultOptions/gaugeChartDefaultOptions';
   import { Switch, Segmented, Button, InputNumber, Select } from 'ant-design-vue';
 
   interface Props {
@@ -131,24 +132,7 @@
 
   const localOptions = ref(
     deepClone({
-      format: {
-        unit: 'percent',
-        decimals: 1,
-        shortValues: false,
-      },
-      thresholds: {
-        mode: 'percent',
-        steps: [
-          { name: 'T2', value: 25, color: '#f5222d' },
-          { name: 'T1', value: 10, color: '#faad14' },
-          { name: 'Default', value: null, color: '#52c41a' },
-        ],
-        showLegend: true,
-      },
-      specific: {
-        calculation: 'last',
-        max: 100,
-      },
+      ...getDefaultGaugeChartOptions(),
       ...props.options,
     })
   );
@@ -166,10 +150,25 @@
     localOptions.value.thresholds.steps.splice(index, 1);
   };
 
+  // 监听 localOptions 变化，发送事件更新外部
   watch(
     localOptions,
     (newVal) => {
       emit('update:options', deepClone(newVal));
+    },
+    { deep: true }
+  );
+
+  // 监听外部 props.options 变化，更新 localOptions
+  watch(
+    () => props.options,
+    (newVal) => {
+      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
+        localOptions.value = deepClone({
+          ...getDefaultGaugeChartOptions(),
+          ...newVal,
+        });
+      }
     },
     { deep: true }
   );

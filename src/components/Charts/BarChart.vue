@@ -1,7 +1,9 @@
 <!-- 柱状图 -->
 <template>
   <div class="bar-chart-container">
-    <Spin :spinning="isLoading">
+    <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
+
+    <div class="chart-wrapper" :class="{ 'is-legend-right': legendOptions.position === 'right' }">
       <div ref="chartRef" class="bar-chart"></div>
 
       <!-- 自定义 Legend -->
@@ -16,7 +18,7 @@
         @item-leave="handleLegendLeave"
         @toggle-global-selection="toggleGlobalSelection"
       />
-    </Spin>
+    </div>
   </div>
 </template>
 
@@ -28,6 +30,7 @@
   import { useChartResize } from '@/composables/useChartResize';
   import { useLegend } from '@/composables/useLegend';
   import { useChartInit } from '@/composables/useChartInit';
+  import { useChartTooltip, TooltipDataProviders, type TooltipData } from '@/composables/useChartTooltip';
   import Legend from '@/components/ChartLegend/Legend.vue';
   import { Spin } from 'ant-design-vue';
 
@@ -38,11 +41,14 @@
 
   const chartRef = ref<HTMLElement>();
 
+  // 生成唯一的图表 ID
+  const chartId = computed(() => `chart-${props.panel.id}`);
+
   /**
    * 使用图表初始化 Hook
    * 等待 queryResults 和 panel.options 都有效后才初始化一次
    */
-  const { chartInstance, isLoading } = useChartInit<ECharts>({
+  const { getInstance, isLoading } = useChartInit<ECharts>({
     chartRef,
     dependencies: [
       {
@@ -54,19 +60,72 @@
         isValid: (options: any) => options && Object.keys(options).length > 0,
       },
     ],
-    onUpdate: (instance) => {
-      console.log('[BarChart] Updating chart...');
+    onChartCreated: (instance) => {
       nextTick(() => {
         updateChart(instance);
+        registerTooltip();
+        initChartResize();
+      });
+    },
+    onUpdate: (instance) => {
+      nextTick(() => {
+        updateChart(instance);
+        updateTooltip();
       });
     },
   });
 
   /**
+   * 使用图表 resize Hook
+   */
+  const { initChartResize } = useChartResize(
+    computed(() => getInstance()),
+    chartRef
+  );
+
+  // 使用 Legend Hook
+  const {
+    selectedItems,
+    legendItems,
+    legendOptions,
+    globalSelectionState,
+    isSeriesSelected,
+    getSeriesVisibility,
+    handleLegendClick,
+    handleLegendHover,
+    handleLegendLeave,
+    toggleGlobalSelection,
+  } = useLegend({
+    panel: computed(() => props.panel),
+    queryResults: computed(() => props.queryResults),
+    chartInstance: computed(() => getInstance()),
+    updateChart: () => updateChart(getInstance()),
+  });
+
+  /**
+   * 使用 Tooltip 注册管理 Hook
+   * 自动处理图表的注册、更新和销毁
+   */
+  const {
+    updateTooltipData,
+    register: registerTooltip,
+    update: updateTooltip,
+  } = useChartTooltip({
+    chartId,
+    chartInstance: computed(() => getInstance()),
+    chartContainerRef: chartRef,
+    dataProvider: TooltipDataProviders.bar(
+      () => props.queryResults,
+      () => props.panel.options.format,
+      isSeriesSelected
+    ),
+  });
+
+  /**
    * 更新图表配置和数据
    */
-  const updateChart = (instance?: ECharts) => {
-    const chartInst = instance || chartInstance.value;
+  function updateChart(instance?: ECharts | null) {
+    const chartInst = instance;
     if (!chartInst) {
       console.warn('Bar chart instance not initialized, skipping update');
       return;
@@ -78,25 +137,7 @@
     } catch (error) {
       console.error('Failed to update bar chart:', error);
     }
-  };
-
-  // 使用 Legend Hook（在 chartInstance 初始化后）
-  const {
-    selectedItems,
-    legendItems,
-    legendOptions,
-    globalSelectionState,
-    getSeriesVisibility,
-    handleLegendClick,
-    handleLegendHover,
-    handleLegendLeave,
-    toggleGlobalSelection,
-  } = useLegend({
-    panel: computed(() => props.panel),
-    queryResults: computed(() => props.queryResults),
-    chartInstance,
-    updateChart: () => updateChart(),
-  });
+  }
 
   const getChartOption = (): EChartsOption => {
     const { queryResults } = props;
@@ -214,30 +255,67 @@
       formatter: (value: number) => formatValue(value, options.format || {}),
     };
 
+    // 如果没有系列数据，返回空配置
+    if (series.length === 0) {
+      return {
+        title: {
+          text: '暂无数据',
+          left: 'center',
+          top: 'center',
+          textStyle: {
+            color: '#999',
+            fontSize: 14,
+          },
+        },
+      };
+    }
+
     return {
+      // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
         trigger: 'axis',
+        triggerOn: 'mousemove',
         axisPointer: {
           type: 'shadow',
         },
         formatter: (params: any) => {
-          if (!Array.isArray(params)) return '';
-          let result = `<div style="font-weight: bold;">${params[0].axisValueLabel}</div>`;
-          params.forEach((param: any) => {
-            result += `<div>${param.marker} ${param.seriesName}: ${formatValue(param.value, options.format || {})}</div>`;
-          });
-          return result;
+          if (!Array.isArray(params) || params.length === 0) {
+            updateTooltipData(null);
+            return '';
+          }
+
+          // 过滤掉隐藏的系列
+          const visibleParams = params.filter((param: any) => isSeriesSelected(param.seriesId || `series-${param.seriesIndex}`));
+          if (visibleParams.length === 0) {
+            updateTooltipData(null);
+            return '';
+          }
+
+          const firstParam = visibleParams[0];
+          const tooltipData: TooltipData = {
+            time: firstParam.axisValueLabel || firstParam.name,
+            series: visibleParams.map((param: any) => ({
+              id: param.seriesId || `series-${param.seriesIndex}`,
+              label: param.seriesName,
+              color: param.color,
+              value: param.value,
+              formattedValue: formatValue(param.value, options.format || {}),
+            })),
+          };
+
+          updateTooltipData(tooltipData);
+          return ''; // 返回空字符串，我们使用自定义 Tooltip 展示
         },
       },
       legend: {
         show: false,
       },
       grid: {
-        left: '3%',
-        right: '4%',
-        bottom: legendOptions.value.show && legendOptions.value.position === 'bottom' ? '15%' : '3%',
-        top: '10%',
-        containLabel: true,
+        left: 10,
+        right: 10,
+        bottom: 0,
+        top: 0,
+        containLabel: false,
       },
       xAxis: isHorizontal
         ? {
@@ -270,29 +348,58 @@
       series,
     };
   };
-
-  // 使用响应式 resize
-  useChartResize(chartInstance, chartRef);
 </script>
 
 <style scoped lang="less">
   .bar-chart-container {
+    position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;
     height: 100%;
-    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
 
-    :deep(.ant-spin-container) {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
+  .loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  .chart-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+
+    // 当图例在右侧时，改为横向布局
+    &.is-legend-right {
+      flex-direction: row;
+
+      .bar-chart {
+        flex: 1;
+        width: 0; // 重要：让 flex 能正确计算宽度
+        min-width: 0;
+      }
+
+      :deep(.chart-legend) {
+        flex-shrink: 0;
+        width: 300px; // 固定宽度
+        max-width: 300px;
+        margin-top: 0;
+        margin-left: @spacing-md;
+      }
     }
   }
 
   .bar-chart {
     flex: 1;
     width: 100%;
-    min-height: 200px;
+    min-height: 0;
   }
 </style>

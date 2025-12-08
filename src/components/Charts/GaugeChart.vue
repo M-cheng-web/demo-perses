@@ -1,15 +1,22 @@
+<!-- 仪表盘 -->
 <template>
-  <div ref="chartRef" class="gauge-chart"></div>
+  <div class="gauge-chart-container">
+    <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
+
+    <div class="chart-wrapper">
+      <div ref="chartRef" class="gauge-chart"></div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
-  import * as echarts from 'echarts';
-  import type { EChartsOption } from 'echarts';
-  import type { EChartsType } from 'echarts/core';
+  import { ref, computed, nextTick } from 'vue';
+  import { Spin } from 'ant-design-vue';
+  import type { EChartsOption, ECharts } from 'echarts';
   import type { Panel, QueryResult, GaugeOptions } from '@/types';
   import { formatValue } from '@/utils';
   import { useChartResize } from '@/composables/useChartResize';
+  import { useChartInit } from '@/composables/useChartInit';
 
   const props = defineProps<{
     panel: Panel;
@@ -17,10 +24,6 @@
   }>();
 
   const chartRef = ref<HTMLElement>();
-  const chartInstance = ref<EChartsType | null>(null);
-
-  // 使用响应式 resize
-  useChartResize(chartInstance, chartRef);
 
   const gaugeOptions = computed(() => (props.panel.options.specific as GaugeOptions) || {});
 
@@ -39,8 +42,63 @@
     return lastValue ? lastValue[1] : 0;
   });
 
+  /**
+   * 使用图表初始化 Hook
+   * 等待 queryResults 和 panel.options 都有效后才初始化一次
+   */
+  const { getInstance, isLoading } = useChartInit<ECharts>({
+    chartRef,
+    dependencies: [
+      {
+        value: computed(() => props.queryResults),
+        isValid: (results: QueryResult[]) => results && results.length > 0 && results.some((r) => r.data && r.data.length > 0),
+      },
+      {
+        value: computed(() => props.panel.options),
+        isValid: (options: any) => options && Object.keys(options).length > 0,
+      },
+    ],
+    onChartCreated: (instance) => {
+      nextTick(() => {
+        updateChart(instance);
+        initChartResize();
+      });
+    },
+    onUpdate: (instance) => {
+      nextTick(() => {
+        updateChart(instance);
+      });
+    },
+  });
+
+  /**
+   * 使用图表 resize Hook
+   */
+  const { initChartResize } = useChartResize(
+    computed(() => getInstance()),
+    chartRef
+  );
+
+  /**
+   * 更新图表配置和数据
+   */
+  function updateChart(instance?: ECharts | null) {
+    const chartInst = instance;
+    if (!chartInst) {
+      console.warn('Gauge chart instance not initialized, skipping update');
+      return;
+    }
+
+    try {
+      const option = getChartOption();
+      chartInst.setOption(option, true);
+    } catch (error) {
+      console.error('Failed to update gauge chart:', error);
+    }
+  }
+
   // 根据阈值获取颜色
-  const getColor = (value: number): string => {
+  function getColor(value: number): string {
     const thresholds = gaugeOptions.value.thresholds || [];
     if (!thresholds.length) {
       return '#5470c6';
@@ -59,38 +117,9 @@
 
     const firstThreshold = sortedThresholds[0];
     return firstThreshold?.color || '#5470c6';
-  };
+  }
 
-  const initChart = () => {
-    if (!chartRef.value) return;
-
-    // 只在有数据时才初始化图表
-    if (!props.queryResults || props.queryResults.length === 0 || props.queryResults.every((r) => !r.data || r.data.length === 0)) {
-      console.log('Waiting for data before initializing gauge chart');
-      return;
-    }
-
-    chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
-    updateChart();
-  };
-
-  const updateChart = () => {
-    // 如果图表还没初始化且有数据了，先初始化
-    if (!chartInstance.value && chartRef.value) {
-      if (props.queryResults && props.queryResults.length > 0 && !props.queryResults.every((r) => !r.data || r.data.length === 0)) {
-        chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
-      } else {
-        return; // 没有数据，不初始化
-      }
-    }
-
-    if (!chartInstance.value) return;
-
-    const option = getChartOption();
-    chartInstance.value.setOption(option, true);
-  };
-
-  const getChartOption = (): EChartsOption => {
+  function getChartOption(): EChartsOption {
     const min = gaugeOptions.value.min ?? 0;
     const max = gaugeOptions.value.max ?? 100;
     const value = currentValue.value;
@@ -183,50 +212,40 @@
         },
       ],
     };
-  };
-
-  watch(
-    () => props.queryResults,
-    (newResults) => {
-      nextTick(() => {
-        // 如果之前没有数据现在有数据了，需要初始化图表
-        if (!chartInstance.value && newResults && newResults.length > 0) {
-          initChart();
-        } else {
-          updateChart();
-        }
-      });
-    },
-    { deep: true }
-  );
-
-  watch(
-    () => props.panel.options,
-    () => {
-      nextTick(() => {
-        updateChart();
-      });
-    },
-    { deep: true }
-  );
-
-  onMounted(() => {
-    // 延迟初始化，等待数据到达
-    nextTick(() => {
-      initChart();
-    });
-  });
-
-  onUnmounted(() => {
-    chartInstance.value?.dispose();
-    chartInstance.value = null;
-  });
+  }
 </script>
 
 <style scoped lang="less">
-  .gauge-chart {
+  .gauge-chart-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
-    min-height: 200px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  .chart-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .gauge-chart {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
   }
 </style>

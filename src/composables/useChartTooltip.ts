@@ -18,7 +18,7 @@ import type {
   TooltipData as StoreTooltipData,
   TooltipSeriesItem as StoreTooltipSeriesItem,
 } from '@/stores/tooltip';
-import type { TimeSeriesData } from '@/types';
+import type { TimeSeriesData, QueryResult } from '@/types';
 
 /**
  * 重新导出 Store 中定义的类型，供业务代码使用
@@ -265,14 +265,15 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
 
     // 绑定事件
     zr.on('mousemove', mousemoveListener);
-    zr.on('mousemove', mouseoutListener);
+    // zr.on('mousemove', mouseoutListener);
     zr.on('globalout', mouseoutListener);
     zr.on('click', clickListener);
 
     // 保存事件监听器引用，用于后续清理
     (instance as any).__tooltipListeners__ = {
       mousemove: mousemoveListener,
-      mouseout: mouseoutListener,
+      // mouseout: mouseoutListener,
+      globalout: mouseoutListener,
       click: clickListener,
     };
   };
@@ -460,6 +461,42 @@ export const TooltipDataProviders = {
     getData,
     getFormatOptions,
     isSeriesVisible,
+  }),
+
+  /**
+   * 柱状图数据提供者
+   * 将 QueryResult 转换为 TimeSeriesData[]
+   */
+  bar: (
+    getQueryResults: () => QueryResult[],
+    getFormatOptions?: () => any,
+    isSeriesVisible?: (seriesId: string) => boolean
+  ): TooltipDataProvider<QueryResult[]> => ({
+    getData: getQueryResults,
+    getFormatOptions,
+    isSeriesVisible,
+    transformData: (queryResults: QueryResult[]) => {
+      // 将 QueryResult[] 转换为 TimeSeriesData[]
+      return queryResults.flatMap((result) => result.data || []);
+    },
+  }),
+
+  /**
+   * 饼图数据提供者
+   * 将 QueryResult 转换为 TimeSeriesData[]
+   */
+  pie: (
+    getQueryResults: () => QueryResult[],
+    getFormatOptions?: () => any,
+    isSeriesVisible?: (seriesId: string) => boolean
+  ): TooltipDataProvider<QueryResult[]> => ({
+    getData: getQueryResults,
+    getFormatOptions,
+    isSeriesVisible,
+    transformData: (queryResults: QueryResult[]) => {
+      // 将 QueryResult[] 转换为 TimeSeriesData[]
+      return queryResults.flatMap((result) => result.data || []);
+    },
   }),
 
   /**

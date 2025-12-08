@@ -1,24 +1,29 @@
+<!-- 表格 -->
 <template>
-  <div class="table-chart">
-    <Table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" :scroll="{ y: 'calc(100% - 55px)' }" size="small">
-      <template #bodyCell="{ column, text }">
-        <template v-if="column.key !== 'time'">
-          {{ formatValue(text, panel.options.format || {}) }}
+  <div class="table-chart-container">
+    <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
+
+    <div class="table-wrapper">
+      <Table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" :scroll="{ y: 'calc(100% - 55px)' }" size="small">
+        <template #bodyCell="{ column, text }">
+          <template v-if="column.key !== 'time'">
+            {{ formatValue(text, panel.options.format || {}) }}
+          </template>
+          <template v-else>
+            {{ text }}
+          </template>
         </template>
-        <template v-else>
-          {{ text }}
-        </template>
-      </template>
-    </Table>
+      </Table>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed } from 'vue';
+  import { Spin, Table } from 'ant-design-vue';
   import type { TableColumnType } from 'ant-design-vue';
   import type { Panel, QueryResult, TableOptions } from '@/types';
   import { formatValue, formatTime } from '@/utils';
-  import { Table } from 'ant-design-vue';
 
   const props = defineProps<{
     panel: Panel;
@@ -26,6 +31,11 @@
   }>();
 
   const tableOptions = computed(() => (props.panel.options.specific as TableOptions) || {});
+
+  // 判断是否正在加载
+  const isLoading = computed(() => {
+    return !props.queryResults || props.queryResults.length === 0;
+  });
 
   const columns = computed<TableColumnType[]>(() => {
     if (!props.queryResults.length || !props.queryResults[0]?.data?.length) {
@@ -116,10 +126,30 @@
 </script>
 
 <style scoped lang="less">
-  .table-chart {
+  .table-chart-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
-    padding: 12px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  .table-wrapper {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: @spacing-sm-2;
     overflow: hidden;
 
     :deep(.ant-table-wrapper) {

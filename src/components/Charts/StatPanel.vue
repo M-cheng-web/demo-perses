@@ -1,11 +1,16 @@
+<!-- 统计图 -->
 <template>
-  <div class="stat-panel">
-    <div class="stat-content" :style="contentStyle">
-      <div class="stat-value">{{ formattedValue }}</div>
-      <div v-if="showName" class="stat-name">{{ panel.name }}</div>
-      <div v-if="showTrend" class="stat-trend" :class="trendClass">
-        <component :is="trendIcon" />
-        <span>{{ trendText }}</span>
+  <div class="stat-panel-container">
+    <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
+
+    <div class="stat-wrapper">
+      <div class="stat-content" :style="contentStyle">
+        <div class="stat-value">{{ formattedValue }}</div>
+        <div v-if="showName" class="stat-name">{{ panel.name }}</div>
+        <div v-if="showTrend" class="stat-trend" :class="trendClass">
+          <component :is="trendIcon" />
+          <span>{{ trendText }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -13,6 +18,7 @@
 
 <script setup lang="ts">
   import { computed, h } from 'vue';
+  import { Spin } from 'ant-design-vue';
   import { ArrowUpOutlined, ArrowDownOutlined, MinusOutlined } from '@ant-design/icons-vue';
   import type { Panel, QueryResult } from '@/types';
   import { formatValue } from '@/utils';
@@ -24,6 +30,11 @@
 
   const specificOptions = computed(() => props.panel.options.specific as any);
   const formatOptions = computed(() => props.panel.options.format || {});
+
+  // 判断是否正在加载
+  const isLoading = computed(() => {
+    return !props.queryResults || props.queryResults.length === 0;
+  });
 
   // 获取当前值
   const currentValue = computed(() => {
@@ -103,12 +114,32 @@
 </script>
 
 <style scoped lang="less">
-  .stat-panel {
+  .stat-panel-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  .stat-wrapper {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
     height: 100%;
+    min-height: 0;
     padding: @spacing-lg;
   }
 

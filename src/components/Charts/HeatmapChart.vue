@@ -1,15 +1,23 @@
+<!-- 热力图 -->
 <template>
-  <div ref="chartRef" class="heatmap-chart"></div>
+  <div class="heatmap-chart-container">
+    <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
+
+    <div class="chart-wrapper">
+      <div ref="chartRef" class="heatmap-chart"></div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
-  import * as echarts from 'echarts';
-  import type { EChartsOption } from 'echarts';
-  import type { EChartsType } from 'echarts/core';
+  import { ref, computed, nextTick } from 'vue';
+  import { Spin } from 'ant-design-vue';
+  import type { EChartsOption, ECharts } from 'echarts';
   import type { Panel, QueryResult, HeatmapOptions } from '@/types';
   import { formatValue, formatTime } from '@/utils';
   import { useChartResize } from '@/composables/useChartResize';
+  import { useChartInit } from '@/composables/useChartInit';
+  import { useChartTooltip, type TooltipData } from '@/composables/useChartTooltip';
 
   const props = defineProps<{
     panel: Panel;
@@ -17,10 +25,9 @@
   }>();
 
   const chartRef = ref<HTMLElement>();
-  const chartInstance = ref<EChartsType | null>(null);
 
-  // 使用响应式 resize
-  useChartResize(chartInstance, chartRef);
+  // 生成唯一的图表 ID
+  const chartId = computed(() => `chart-${props.panel.id}`);
 
   const heatmapOptions = computed(() => (props.panel.options.specific as HeatmapOptions) || {});
 
@@ -33,36 +40,79 @@
     purple: ['#f3e5f5', '#6a1b9a'],
   };
 
-  const initChart = () => {
-    if (!chartRef.value) return;
+  /**
+   * 使用图表初始化 Hook
+   * 等待 queryResults 和 panel.options 都有效后才初始化一次
+   */
+  const { getInstance, isLoading } = useChartInit<ECharts>({
+    chartRef,
+    dependencies: [
+      {
+        value: computed(() => props.queryResults),
+        isValid: (results: QueryResult[]) => results && results.length > 0 && results.some((r) => r.data && r.data.length > 0),
+      },
+      {
+        value: computed(() => props.panel.options),
+        isValid: (options: any) => options && Object.keys(options).length > 0,
+      },
+    ],
+    onChartCreated: (instance) => {
+      nextTick(() => {
+        updateChart(instance);
+        registerTooltip();
+        initChartResize();
+      });
+    },
+    onUpdate: (instance) => {
+      nextTick(() => {
+        updateChart(instance);
+        updateTooltip();
+      });
+    },
+  });
 
-    // 只在有数据时才初始化图表
-    if (!props.queryResults || props.queryResults.length === 0 || props.queryResults.every((r) => !r.data || r.data.length === 0)) {
-      console.log('Waiting for data before initializing heatmap chart');
+  /**
+   * 使用图表 resize Hook
+   */
+  const { initChartResize } = useChartResize(
+    computed(() => getInstance()),
+    chartRef
+  );
+
+  /**
+   * 使用 Tooltip 注册管理 Hook
+   * 自动处理图表的注册、更新和销毁
+   */
+  const {
+    updateTooltipData,
+    register: registerTooltip,
+    update: updateTooltip,
+  } = useChartTooltip({
+    chartId,
+    chartInstance: computed(() => getInstance()),
+    chartContainerRef: chartRef,
+    dataProvider: () => null, // 热力图使用自定义数据提供器
+  });
+
+  /**
+   * 更新图表配置和数据
+   */
+  function updateChart(instance?: ECharts | null) {
+    const chartInst = instance;
+    if (!chartInst) {
+      console.warn('Heatmap chart instance not initialized, skipping update');
       return;
     }
 
-    chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
-    updateChart();
-  };
-
-  const updateChart = () => {
-    // 如果图表还没初始化且有数据了，先初始化
-    if (!chartInstance.value && chartRef.value) {
-      if (props.queryResults && props.queryResults.length > 0 && !props.queryResults.every((r) => !r.data || r.data.length === 0)) {
-        chartInstance.value = echarts.init(chartRef.value) as unknown as EChartsType;
-      } else {
-        return; // 没有数据，不初始化
-      }
+    try {
+      const option = getChartOption();
+      chartInst.setOption(option, true);
+    } catch (error) {
+      console.error('Failed to update heatmap chart:', error);
     }
+  }
 
-    if (!chartInstance.value) return;
-
-    const option = getChartOption();
-    chartInstance.value.setOption(option, true);
-  };
-
-  const getChartOption = (): EChartsOption => {
+  function getChartOption(): EChartsOption {
     if (!props.queryResults.length || props.queryResults.every((r) => !r.data || r.data.length === 0)) {
       return {
         title: {
@@ -125,25 +175,51 @@
     const maxColor = colorRange?.[1] || '#1565c0';
 
     return {
+      // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
         position: 'top',
+        triggerOn: 'mousemove',
         formatter: (params: any) => {
+          if (!params || !params.data) {
+            updateTooltipData(null);
+            return '';
+          }
+
           const { data } = params;
           const [xIndex, yIndex, value] = data;
           const timestamp = timePoints[xIndex];
-          if (timestamp === undefined) return '';
+          if (timestamp === undefined) {
+            updateTooltipData(null);
+            return '';
+          }
+
           const time = formatTime(timestamp, 'YYYY-MM-DD HH:mm:ss');
-          const series = seriesNames[yIndex] || 'unknown';
+          const seriesName = seriesNames[yIndex] || 'unknown';
           const formattedValue = formatValue(value, props.panel.options.format || {});
-          return `${time}<br/>${series}: ${formattedValue}`;
+
+          const tooltipData: TooltipData = {
+            time: time,
+            series: [
+              {
+                id: `series-${yIndex}`,
+                label: seriesName,
+                color: params.color,
+                value: value,
+                formattedValue: formattedValue,
+              },
+            ],
+          };
+
+          updateTooltipData(tooltipData);
+          return ''; // 返回空字符串，我们使用自定义 Tooltip 展示
         },
       },
       grid: {
-        left: '10%',
-        right: '10%',
-        top: '10%',
-        bottom: '15%',
-        containLabel: true,
+        left: 10,
+        right: 10,
+        bottom: 0,
+        top: 0,
+        containLabel: false,
       },
       xAxis: {
         type: 'category',
@@ -202,50 +278,40 @@
         },
       ],
     };
-  };
-
-  watch(
-    () => props.queryResults,
-    (newResults) => {
-      nextTick(() => {
-        // 如果之前没有数据现在有数据了，需要初始化图表
-        if (!chartInstance.value && newResults && newResults.length > 0) {
-          initChart();
-        } else {
-          updateChart();
-        }
-      });
-    },
-    { deep: true }
-  );
-
-  watch(
-    () => props.panel.options,
-    () => {
-      nextTick(() => {
-        updateChart();
-      });
-    },
-    { deep: true }
-  );
-
-  onMounted(() => {
-    // 延迟初始化，等待数据到达
-    nextTick(() => {
-      initChart();
-    });
-  });
-
-  onUnmounted(() => {
-    chartInstance.value?.dispose();
-    chartInstance.value = null;
-  });
+  }
 </script>
 
 <style scoped lang="less">
-  .heatmap-chart {
+  .heatmap-chart-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
-    min-height: 300px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  .chart-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .heatmap-chart {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
   }
 </style>

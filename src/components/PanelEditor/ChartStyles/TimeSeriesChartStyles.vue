@@ -23,7 +23,8 @@
                   { label: '底部', value: 'bottom' },
                   { label: '右侧', value: 'right' },
                 ]"
-            /></div>
+              />
+            </div>
 
             <div class="style-row">
               <span class="style-label">模式</span>
@@ -203,7 +204,7 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
   import { deepClone } from '@/utils';
-  import { getDefaultTimeSeriesOptions } from './timeSeriesDefaultOptions';
+  import { getDefaultTimeSeriesOptions } from '../ChartStylesDefaultOptions/timeSeriesDefaultOptions';
   import { Switch, Select, Segmented, Button, Input, InputNumber, Slider } from 'ant-design-vue';
 
   interface Props {
@@ -231,10 +232,25 @@
     emit('update:options', deepClone(defaults));
   };
 
+  // 监听 localOptions 变化，发送事件更新外部
   watch(
     localOptions,
     (newVal) => {
       emit('update:options', deepClone(newVal));
+    },
+    { deep: true }
+  );
+
+  // 监听外部 props.options 变化，更新 localOptions
+  watch(
+    () => props.options,
+    (newVal) => {
+      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
+        localOptions.value = deepClone({
+          ...getDefaultTimeSeriesOptions(),
+          ...newVal,
+        });
+      }
     },
     { deep: true }
   );

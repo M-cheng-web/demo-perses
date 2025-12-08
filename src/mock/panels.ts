@@ -5,7 +5,7 @@
 import type { Panel, PanelType, Query } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { deepClone } from '@/utils';
-import { getDefaultTimeSeriesOptions } from '@/components/PanelEditor/ChartStyles/timeSeriesDefaultOptions';
+import { getDefaultTimeSeriesOptions } from '@/components/PanelEditor/ChartStylesDefaultOptions/timeSeriesDefaultOptions';
 
 /**
  * 创建查询

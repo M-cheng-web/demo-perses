@@ -147,6 +147,7 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
   import { deepClone } from '@/utils';
+  import { getDefaultPieChartOptions } from '../ChartStylesDefaultOptions/pieChartDefaultOptions';
   import { Switch, Select, Segmented, Slider, Button } from 'ant-design-vue';
 
   interface Props {
@@ -159,46 +160,40 @@
     (e: 'update:options', options: any): void;
   }>();
 
-  const getDefaultOptions = () => ({
-    legend: {
-      show: true,
-      position: 'bottom',
-      mode: 'list',
-      values: [],
-    },
-    specific: {
-      pieType: 'pie',
-      innerRadius: 40,
-      showPercentage: true,
-    },
-    format: {
-      unit: 'none',
-      decimals: 'default',
-    },
-    chart: {
-      colors: [],
-    },
-  });
-
   // 合并默认配置和传入的配置
   const localOptions = ref(
     deepClone({
-      ...getDefaultOptions(),
+      ...getDefaultPieChartOptions(),
       ...props.options,
     })
   );
 
   // 恢复默认设置
   const resetToDefaults = () => {
-    const defaults = getDefaultOptions();
+    const defaults = getDefaultPieChartOptions();
     localOptions.value = deepClone(defaults);
     emit('update:options', deepClone(defaults));
   };
 
+  // 监听 localOptions 变化，发送事件更新外部
   watch(
     localOptions,
     (newVal) => {
       emit('update:options', deepClone(newVal));
+    },
+    { deep: true }
+  );
+
+  // 监听外部 props.options 变化，更新 localOptions
+  watch(
+    () => props.options,
+    (newVal) => {
+      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
+        localOptions.value = deepClone({
+          ...getDefaultPieChartOptions(),
+          ...newVal,
+        });
+      }
     },
     { deep: true }
   );

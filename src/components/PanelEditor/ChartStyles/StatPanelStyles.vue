@@ -108,6 +108,7 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
   import { deepClone } from '@/utils';
+  import { getDefaultStatPanelOptions } from '../ChartStylesDefaultOptions/statPanelDefaultOptions';
   import { Switch, Select, Segmented, Button } from 'ant-design-vue';
 
   interface Props {
@@ -120,38 +121,40 @@
     (e: 'update:options', options: any): void;
   }>();
 
-  const getDefaultOptions = () => ({
-    specific: {
-      displayMode: 'value-only',
-      orientation: 'vertical',
-      textAlign: 'center',
-      showTrend: false,
-    },
-    format: {
-      unit: 'none',
-      decimals: 'default',
-    },
-  });
-
   // 合并默认配置和传入的配置
   const localOptions = ref(
     deepClone({
-      ...getDefaultOptions(),
+      ...getDefaultStatPanelOptions(),
       ...props.options,
     })
   );
 
   // 恢复默认设置
   const resetToDefaults = () => {
-    const defaults = getDefaultOptions();
+    const defaults = getDefaultStatPanelOptions();
     localOptions.value = deepClone(defaults);
     emit('update:options', deepClone(defaults));
   };
 
+  // 监听 localOptions 变化，发送事件更新外部
   watch(
     localOptions,
     (newVal) => {
       emit('update:options', deepClone(newVal));
+    },
+    { deep: true }
+  );
+
+  // 监听外部 props.options 变化，更新 localOptions
+  watch(
+    () => props.options,
+    (newVal) => {
+      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
+        localOptions.value = deepClone({
+          ...getDefaultStatPanelOptions(),
+          ...newVal,
+        });
+      }
     },
     { deep: true }
   );
