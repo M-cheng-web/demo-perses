@@ -201,12 +201,13 @@
       }
 
       .table-cell {
+        font-size: 14px;
         font-weight: 600;
         color: @text-color-secondary;
         white-space: nowrap;
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 2px;
 
         &.sortable {
           cursor: pointer;
@@ -225,11 +226,19 @@
         .cell-content {
           flex: 1;
           min-width: 0;
+
+          border: 1px solid red;
+
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .sort-icon {
           font-size: 10px;
           color: @text-color-secondary;
+
+          border: 1px solid red;
 
           .sort-default {
             opacity: 0.3;
