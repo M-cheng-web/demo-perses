@@ -106,6 +106,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    height: 40px;
     padding: 8px 16px;
     background-color: @background-base;
     border-bottom: 1px solid @border-color;
