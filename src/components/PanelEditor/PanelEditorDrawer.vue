@@ -1,6 +1,6 @@
 <!-- 面板编辑器 -->
 <template>
-  <Drawer v-model:open="isOpen" title="面板编辑器" :width="900" @close="handleClose">
+  <Drawer v-model:open="isOpen" title="面板编辑器" :width="900" :maskClosable="false" @close="handleClose">
     <Form :model="formData" layout="vertical">
       <!-- 顶部表单 -->
       <div class="editor-header">

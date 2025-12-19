@@ -16,7 +16,7 @@
       </template>
       <!-- 编辑模式：显示所有操作按钮 -->
       <template v-else>
-        <Tooltip title="编辑">
+        <!-- <Tooltip title="编辑">
           <Button type="text" size="small" :icon="h(EditOutlined)" @click="handleEdit" />
         </Tooltip>
         <Tooltip title="复制">
@@ -29,8 +29,25 @@
           <Tooltip title="删除">
             <Button type="text" size="small" danger :icon="h(DeleteOutlined)" />
           </Tooltip>
-        </Popconfirm>
+        </Popconfirm> -->
       </template>
+    </div>
+
+    <div class="header-actions-edit" v-if="isEditMode">
+      <Tooltip title="编辑">
+        <Button type="text" size="small" :icon="h(EditOutlined)" @click="handleEdit" />
+      </Tooltip>
+      <Tooltip title="复制">
+        <Button type="text" size="small" :icon="h(CopyOutlined)" @click="handleDuplicate" />
+      </Tooltip>
+      <Tooltip title="全屏查看">
+        <Button type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen" />
+      </Tooltip>
+      <Popconfirm title="确定要删除这个面板吗？" ok-text="确定" cancel-text="取消" @confirm="handleDelete">
+        <Tooltip title="删除">
+          <Button type="text" size="small" danger :icon="h(DeleteOutlined)" />
+        </Tooltip>
+      </Popconfirm>
     </div>
   </div>
 </template>
@@ -108,6 +125,14 @@
         flex-shrink: 0;
         cursor: help;
       }
+    }
+
+    .header-actions-edit {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+      margin-left: auto;
     }
 
     .header-actions {
