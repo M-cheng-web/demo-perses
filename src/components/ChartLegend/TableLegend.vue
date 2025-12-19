@@ -74,11 +74,11 @@
 
   // 表格列定义
   const tableColumns = computed(() => {
-    const columns = [
+    const columns: any[] = [
       {
         key: 'series',
         label: '系列',
-        width: '180px',
+        // 不设置 width，让其自动填充剩余空间
         minWidth: '120px',
         sortable: true,
         ellipsis: true,
@@ -90,8 +90,8 @@
       columns.push({
         key: col,
         label: getColumnLabel(col),
-        width: '70px',
-        minWidth: '60px',
+        width: '80px', // 固定宽度
+        minWidth: '70px',
         sortable: true,
         ellipsis: false,
       });
@@ -135,8 +135,8 @@
       min-width: 0;
 
       .item-color {
-        width: 8px;
-        height: 8px;
+        width: 12px;
+        height: 12px;
         border-radius: 2px;
         flex-shrink: 0;
         box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
@@ -144,11 +144,12 @@
 
       .item-label {
         flex: 1;
+        color: @text-color;
         min-width: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        font-size: 11px;
+        font-size: 12px;
       }
     }
   }

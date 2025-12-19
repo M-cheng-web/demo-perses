@@ -84,7 +84,7 @@
   .chart-legend {
     background-color: @background-base;
     transition: all 0.2s ease;
-    margin-top: @spacing-md;
+    margin-top: @spacing-sm;
 
     &.legend-bottom {
       width: 100%;
