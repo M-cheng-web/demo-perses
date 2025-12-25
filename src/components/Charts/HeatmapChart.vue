@@ -91,7 +91,9 @@
     chartId,
     chartInstance: computed(() => getInstance()),
     chartContainerRef: chartRef,
-    dataProvider: () => null, // 热力图使用自定义数据提供器
+    dataProvider: {
+      getData: () => null, // 热力图使用自定义数据提供器
+    },
   });
 
   /**
@@ -177,12 +179,15 @@
     return {
       // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
+        // showContent: false,
         position: 'top',
         triggerOn: 'mousemove',
-        formatter: (params: any) => {
+        padding: 10,
+        // renderMode: 'text',
+        formatter: (params: any): any => {
           if (!params || !params.data) {
             updateTooltipData(null);
-            return '';
+            return null;
           }
 
           const { data } = params;
@@ -190,7 +195,7 @@
           const timestamp = timePoints[xIndex];
           if (timestamp === undefined) {
             updateTooltipData(null);
-            return '';
+            return null;
           }
 
           const time = formatTime(timestamp, 'YYYY-MM-DD HH:mm:ss');
@@ -211,7 +216,7 @@
           };
 
           updateTooltipData(tooltipData);
-          return ''; // 返回空字符串，我们使用自定义 Tooltip 展示
+          return null; // 返回空字符串，我们使用自定义 Tooltip 展示
         },
       },
       grid: {

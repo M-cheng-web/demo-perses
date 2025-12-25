@@ -1,6 +1,6 @@
 <!-- 面板编辑器 -->
 <template>
-  <Drawer v-model:open="isOpen" title="面板编辑器" :width="900" :maskClosable="false" @close="handleClose">
+  <Drawer v-model:open="isOpen" title="面板编辑器" :width="900" :keyboard="false" :maskClosable="false" @close="handleClose">
     <Form :model="formData" layout="vertical">
       <!-- 顶部表单 -->
       <div class="editor-header">
@@ -113,6 +113,12 @@
   import JsonEditor from '@/components/Common/JsonEditor.vue';
   import PanelPreview from './PanelPreview.vue';
   import { getDefaultTimeSeriesOptions } from './ChartStylesDefaultOptions/timeSeriesDefaultOptions';
+  import { getDefaultBarChartOptions } from './ChartStylesDefaultOptions/barChartDefaultOptions';
+  import { getDefaultPieChartOptions } from './ChartStylesDefaultOptions/pieChartDefaultOptions';
+  import { getDefaultGaugeChartOptions } from './ChartStylesDefaultOptions/gaugeChartDefaultOptions';
+  import { getDefaultStatPanelOptions } from './ChartStylesDefaultOptions/statPanelDefaultOptions';
+  import { getDefaultTableChartOptions } from './ChartStylesDefaultOptions/tableChartDefaultOptions';
+  import { getDefaultHeatmapChartOptions } from './ChartStylesDefaultOptions/heatmapChartDefaultOptions';
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
@@ -144,6 +150,22 @@
 
   // 根据面板类型获取样式配置组件
   const styleComponent = computed(() => styleComponentMap[formData.type]);
+
+  // 根据面板类型获取默认配置
+  const getDefaultOptionsByType = (type: string): any => {
+    const defaultOptionsMap: Record<string, any> = {
+      [PanelType.TIMESERIES]: getDefaultTimeSeriesOptions,
+      [PanelType.BAR]: getDefaultBarChartOptions,
+      [PanelType.PIE]: getDefaultPieChartOptions,
+      [PanelType.GAUGE]: getDefaultGaugeChartOptions,
+      [PanelType.STAT]: getDefaultStatPanelOptions,
+      [PanelType.TABLE]: getDefaultTableChartOptions,
+      [PanelType.HEATMAP]: getDefaultHeatmapChartOptions,
+    };
+
+    const getDefaultFn = defaultOptionsMap[type];
+    return getDefaultFn ? getDefaultFn() : {};
+  };
 
   // 表单数据
   const formData = reactive<any>({
@@ -188,6 +210,19 @@
       selectedGroupId.value = targetGroupId.value || '';
     }
   });
+
+  // 监听面板类型变化，自动切换到对应的默认配置
+  watch(
+    () => formData.type,
+    (newType, oldType) => {
+      // 只有在类型真正改变时才重置配置
+      if (newType && newType !== oldType) {
+        const defaultOptions = getDefaultOptionsByType(newType);
+        // 使用 deepClone 确保是独立的对象
+        formData.options = deepClone(defaultOptions);
+      }
+    }
+  );
 
   // 添加查询
   const addQuery = () => {
