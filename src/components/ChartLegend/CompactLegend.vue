@@ -3,12 +3,9 @@
   <div class="compact-legend">
     <div class="legend-items">
       <!-- 全局选择多选框 -->
-      <div class="legend-item global-selector">
-        <Checkbox
-          :checked="globalSelectionState === 'all'"
-          :indeterminate="globalSelectionState === 'indeterminate'"
-          @click.stop="handleGlobalToggle"
-        />
+      <div class="legend-item global-selector" @click.stop="handleGlobalToggle">
+        <Checkbox :checked="globalSelectionState === 'all'" :indeterminate="globalSelectionState === 'indeterminate'" />
+        全选
       </div>
 
       <!-- 各个 Legend 项 -->

@@ -391,10 +391,10 @@
 
       :deep(.chart-legend) {
         flex-shrink: 0;
-        width: 300px; // 固定宽度
-        max-width: 300px;
+        width: 200px; // 固定宽度
+        max-width: 200px;
         margin-top: 0;
-        margin-left: @spacing-md;
+        // margin-left: @spacing-md;
       }
     }
   }
