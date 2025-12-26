@@ -1,6 +1,6 @@
 <!-- 紧凑模式图例 -->
 <template>
-  <div class="compact-legend">
+  <div class="compact-legend" :class="{ 'is-position-right': position === 'right' }">
     <div class="legend-items">
       <!-- 全局选择多选框 -->
       <div class="legend-item global-selector" @click.stop="handleGlobalToggle">
@@ -39,11 +39,13 @@
     wrapLabels?: boolean;
     displayColumns?: string[]; // 表格模式专用，列表模式不使用
     globalSelectionState: 'all' | 'none' | 'indeterminate';
+    position?: 'top' | 'right' | 'bottom' | 'left';
   }
 
   const props = withDefaults(defineProps<Props>(), {
     wrapLabels: false,
     displayColumns: () => [],
+    position: 'bottom',
   });
 
   const emit = defineEmits<{
@@ -75,6 +77,23 @@
     max-height: 120px;
     overflow-y: auto;
     padding: 4px 0;
+
+    // 当图例在右侧时，改为垂直布局
+    &.is-position-right {
+      max-height: none;
+      height: 100%;
+      overflow-y: auto;
+
+      .legend-items {
+        flex-direction: column;
+        align-items: stretch;
+
+        .legend-item {
+          width: 100%;
+          max-width: none;
+        }
+      }
+    }
 
     .legend-items {
       display: flex;

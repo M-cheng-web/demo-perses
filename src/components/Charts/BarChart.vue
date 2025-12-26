@@ -386,14 +386,6 @@
         width: 0; // 重要：让 flex 能正确计算宽度
         min-width: 0;
       }
-
-      :deep(.chart-legend) {
-        flex-shrink: 0;
-        width: 300px; // 固定宽度
-        max-width: 300px;
-        margin-top: 0;
-        margin-left: @spacing-md;
-      }
     }
   }
 

@@ -11,6 +11,7 @@
       :wrap-labels="wrapLabels"
       :display-columns="displayColumns"
       :global-selection-state="globalSelectionState"
+      :position="options.position"
       @item-click="handleItemClick"
       @item-hover="handleItemHover"
       @item-leave="handleItemLeave"
@@ -94,6 +95,11 @@
       height: 100%;
       border-top: none;
       border-left: 1px solid @border-color;
+      flex-shrink: 0;
+      width: 200px;
+      max-width: 200px;
+      margin-top: 0;
+      padding-left: @spacing-sm;
     }
 
     &.legend-top {

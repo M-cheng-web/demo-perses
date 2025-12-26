@@ -322,14 +322,6 @@
         width: 0;
         min-width: 0;
       }
-
-      :deep(.chart-legend) {
-        flex-shrink: 0;
-        width: 300px;
-        max-width: 300px;
-        margin-top: 0;
-        margin-left: @spacing-md;
-      }
     }
   }
 
