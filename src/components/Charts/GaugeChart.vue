@@ -26,8 +26,34 @@
   const chartRef = ref<HTMLElement>();
 
   const gaugeOptions = computed(() => (props.panel.options.specific as GaugeOptions) || {});
+  const thresholdsConfig = computed(() => props.panel.options.thresholds || { steps: [], mode: 'absolute' as const });
+  const formatOptions = computed(() => props.panel.options.format || {});
 
-  // 获取最后一个值
+  /**
+   * 根据计算方式获取值
+   */
+  const calculateValue = (values: [number, number][], calculation: string = 'last'): number => {
+    if (!values || values.length === 0) return 0;
+
+    switch (calculation) {
+      case 'first':
+        return values[0]?.[1] || 0;
+      case 'last':
+        return values[values.length - 1]?.[1] || 0;
+      case 'mean': {
+        const sum = values.reduce((acc, val) => acc + (val?.[1] || 0), 0);
+        return sum / values.length;
+      }
+      case 'min':
+        return Math.min(...values.map((val) => val?.[1] || 0));
+      case 'max':
+        return Math.max(...values.map((val) => val?.[1] || 0));
+      default:
+        return values[values.length - 1]?.[1] || 0;
+    }
+  };
+
+  // 获取当前值
   const currentValue = computed(() => {
     if (!props.queryResults.length || !props.queryResults[0]?.data?.length) {
       return 0;
@@ -38,8 +64,7 @@
       return 0;
     }
 
-    const lastValue = timeSeries.values[timeSeries.values.length - 1];
-    return lastValue ? lastValue[1] : 0;
+    return calculateValue(timeSeries.values, gaugeOptions.value.calculation || 'last');
   });
 
   /**
@@ -99,29 +124,39 @@
 
   // 根据阈值获取颜色
   function getColor(value: number): string {
-    const thresholds = gaugeOptions.value.thresholds || [];
+    const thresholds = thresholdsConfig.value.steps || [];
     if (!thresholds.length) {
       return '#5470c6';
     }
 
-    // 按值排序阈值
-    const sortedThresholds = [...thresholds].sort((a, b) => a.value - b.value);
+    // 过滤掉 value 为 null 的阈值，并按值排序
+    const validThresholds = thresholds.filter((t: any) => t.value !== null).sort((a: any, b: any) => (a.value || 0) - (b.value || 0));
 
     // 找到适用的阈值
-    for (let i = sortedThresholds.length - 1; i >= 0; i--) {
-      const threshold = sortedThresholds[i];
-      if (threshold && value >= threshold.value) {
+    for (let i = validThresholds.length - 1; i >= 0; i--) {
+      const threshold = validThresholds[i];
+      if (threshold && value >= (threshold.value || 0)) {
         return threshold.color;
       }
     }
 
-    const firstThreshold = sortedThresholds[0];
+    // 如果没有匹配的阈值，返回 Default 的颜色或第一个阈值的颜色
+    const defaultThreshold = thresholds.find((t: any) => t.value === null);
+    if (defaultThreshold) {
+      return defaultThreshold.color;
+    }
+
+    const firstThreshold = validThresholds[0];
     return firstThreshold?.color || '#5470c6';
   }
 
   function getChartOption(): EChartsOption {
     const min = gaugeOptions.value.min ?? 0;
     const max = gaugeOptions.value.max ?? 100;
+    const startAngle = gaugeOptions.value.startAngle ?? 225;
+    const endAngle = gaugeOptions.value.endAngle ?? -45;
+    const splitNumber = gaugeOptions.value.splitNumber ?? 10;
+    const pointer = gaugeOptions.value.pointer ?? { show: true, length: '60%', width: 8 };
     const value = currentValue.value;
     const color = getColor(value);
 
@@ -132,27 +167,39 @@
       },
     };
 
-    if (gaugeOptions.value.thresholds && gaugeOptions.value.thresholds.length > 0) {
-      const sortedThresholds = [...gaugeOptions.value.thresholds].sort((a, b) => a.value - b.value);
-      const colorStops: [number, string][] = [];
+    const thresholds = thresholdsConfig.value.steps || [];
+    if (thresholds.length > 0) {
+      // 按值排序阈值
+      const validThresholds = [...thresholds].sort((a: any, b: any) => (a.value || 0) - (b.value || 0));
 
-      sortedThresholds.forEach((threshold, index) => {
-        const percent = (threshold.value - min) / (max - min);
-        colorStops.push([percent, threshold.color]);
+      if (validThresholds.length > 0) {
+        const colorStops: [number, string][] = [];
 
-        if (index === sortedThresholds.length - 1 && percent < 1) {
-          colorStops.push([1, threshold.color]);
+        // 添加各个阈值的颜色
+        validThresholds.forEach((threshold: any) => {
+          const percent = ((threshold.value || 0) - min) / (max - min);
+          if (percent >= 0 && percent <= 1) {
+            colorStops.push([percent, threshold.color]);
+          }
+        });
+
+        // 确保最后一个颜色延伸到 100%
+        if (colorStops.length > 0) {
+          const lastStop = colorStops[colorStops.length - 1];
+          if (lastStop && lastStop[0] < 1) {
+            colorStops.push([1, lastStop[1]]);
+          }
         }
-      });
 
-      if (colorStops.length > 0) {
-        const firstStop = colorStops[0];
-        if (firstStop && firstStop[0] > 0) {
-          colorStops.unshift([0, firstStop[1]]);
+        // 如果第一个阈值不是从0开始，补充起始颜色
+        if (colorStops.length > 0 && colorStops[0] && colorStops[0][0] > 0) {
+          colorStops.unshift([0, colorStops[0][1]]);
         }
+
+        axisLine.lineStyle.color = colorStops;
+      } else {
+        axisLine.lineStyle.color = [[1, color]];
       }
-
-      axisLine.lineStyle.color = colorStops;
     } else {
       axisLine.lineStyle.color = [[1, color]];
     }
@@ -163,13 +210,16 @@
           type: 'gauge',
           min,
           max,
-          splitNumber: 5,
-          radius: '80%',
+          startAngle,
+          endAngle,
+          splitNumber,
+          radius: '75%',
+          center: ['50%', '50%'],
           axisLine,
           pointer: {
-            show: gaugeOptions.value.showPointer !== false,
-            length: '60%',
-            width: 8,
+            show: pointer.show !== false,
+            length: pointer.length || '60%',
+            width: pointer.width || 8,
             itemStyle: {
               color: 'auto',
             },
@@ -183,7 +233,7 @@
             },
           },
           splitLine: {
-            distance: -30,
+            distance: -2,
             length: 15,
             lineStyle: {
               color: '#fff',
@@ -191,22 +241,22 @@
             },
           },
           axisLabel: {
-            distance: 10,
-            color: 'auto',
-            fontSize: 12,
+            distance: -45,
+            color: '#999',
+            fontSize: 11,
             formatter: (value: number) => {
-              return formatValue(value, props.panel.options.format || {});
+              return formatValue(value, formatOptions.value || {});
             },
           },
           detail: {
             valueAnimation: true,
             formatter: (value: number) => {
-              return formatValue(value, props.panel.options.format || {});
+              return formatValue(value, formatOptions.value || {});
             },
             color: 'auto',
-            fontSize: 24,
+            fontSize: 28,
             fontWeight: 'bold',
-            offsetCenter: [0, '60%'],
+            offsetCenter: [0, '70%'],
           },
           data: [{ value }],
         },

@@ -45,6 +45,15 @@ export interface PanelOptions {
   legend?: LegendOptions;
   /** 格式化选项 */
   format?: FormatOptions;
+  /** 阈值配置 */
+  thresholds?: {
+    mode: 'absolute' | 'percent';
+    steps: Array<{
+      name: string;
+      value: number | null;
+      color: string;
+    }>;
+  };
   /** 特定于面板类型的选项 */
   specific?: TimeSeriesOptions | PieOptions | BarOptions | TableOptions | StatOptions | GaugeOptions | HeatmapOptions;
 }
@@ -119,14 +128,27 @@ export interface StatOptions {
  * 仪表盘特定选项
  */
 export interface GaugeOptions {
+  /** 计算方式 */
+  calculation?: 'last' | 'first' | 'mean' | 'min' | 'max';
   /** 最小值 */
   min?: number;
   /** 最大值 */
   max?: number;
-  /** 阈值 */
-  thresholds?: ThresholdConfig[];
-  /** 显示指针 */
-  showPointer?: boolean;
+  /** 起始角度（度） */
+  startAngle?: number;
+  /** 结束角度（度） */
+  endAngle?: number;
+  /** 刻度分割段数 */
+  splitNumber?: number;
+  /** 指针配置 */
+  pointer?: {
+    /** 是否显示指针 */
+    show?: boolean;
+    /** 指针长度（百分比） */
+    length?: string;
+    /** 指针宽度（像素） */
+    width?: number;
+  };
 }
 
 /**

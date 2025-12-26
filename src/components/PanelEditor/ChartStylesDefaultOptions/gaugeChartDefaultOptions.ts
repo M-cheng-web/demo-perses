@@ -14,11 +14,19 @@ export interface GaugeChartOptions {
       value: number | null;
       color: string;
     }>;
-    showLegend: boolean;
   };
   specific: {
     calculation: 'last' | 'first' | 'mean' | 'min' | 'max';
+    min: number;
     max: number;
+    startAngle: number;
+    endAngle: number;
+    splitNumber: number;
+    pointer: {
+      show: boolean;
+      length: string;
+      width: number;
+    };
   };
 }
 
@@ -27,21 +35,29 @@ export interface GaugeChartOptions {
  */
 export const getDefaultGaugeChartOptions = (): GaugeChartOptions => ({
   format: {
-    unit: 'percent',
+    unit: 'none',
     decimals: 1,
     shortValues: false,
   },
   thresholds: {
     mode: 'percent',
     steps: [
-      { name: 'T2', value: 25, color: '#f5222d' },
-      { name: 'T1', value: 10, color: '#faad14' },
-      { name: 'Default', value: null, color: '#52c41a' },
+      { name: '正常', value: 0, color: '#52c41a' },
+      { name: '警告', value: 60, color: '#faad14' },
+      { name: '严重', value: 80, color: '#ff4d4f' },
     ],
-    showLegend: true,
   },
   specific: {
     calculation: 'last',
+    min: 0,
     max: 100,
+    startAngle: 225,
+    endAngle: -45,
+    splitNumber: 10,
+    pointer: {
+      show: true,
+      length: '60%',
+      width: 8,
+    },
   },
 });

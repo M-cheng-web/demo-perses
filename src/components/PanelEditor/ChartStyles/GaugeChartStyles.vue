@@ -2,8 +2,9 @@
 <template>
   <div class="gauge-chart-styles">
     <div class="styles-grid">
-      <!-- 左侧列：格式配置 -->
+      <!-- 左侧列：格式配置 & 仪表盘配置 -->
       <div class="styles-column">
+        <!-- 格式配置 -->
         <div class="section">
           <div class="section-header">格式</div>
           <div class="section-content">
@@ -61,10 +62,76 @@
                 style="width: 200px"
               />
             </div>
+          </div>
+        </div>
+
+        <!-- 仪表盘配置 -->
+        <div class="section">
+          <div class="section-header">仪表盘</div>
+          <div class="section-content">
+            <div class="style-row">
+              <span class="style-label">最小值</span>
+              <InputNumber v-model:value="localOptions.specific.min" size="small" style="width: 200px" placeholder="0" />
+            </div>
 
             <div class="style-row">
               <span class="style-label">最大值</span>
               <InputNumber v-model:value="localOptions.specific.max" size="small" style="width: 200px" placeholder="100" />
+            </div>
+
+            <div class="style-row">
+              <span class="style-label">起始角度</span>
+              <InputNumber
+                v-model:value="localOptions.specific.startAngle"
+                :min="-360"
+                :max="360"
+                size="small"
+                style="width: 200px"
+                placeholder="225"
+              />
+            </div>
+
+            <div class="style-row">
+              <span class="style-label">结束角度</span>
+              <InputNumber
+                v-model:value="localOptions.specific.endAngle"
+                :min="-360"
+                :max="360"
+                size="small"
+                style="width: 200px"
+                placeholder="-45"
+              />
+            </div>
+
+            <div class="style-row">
+              <span class="style-label">刻度数量</span>
+              <InputNumber v-model:value="localOptions.specific.splitNumber" :min="2" :max="20" size="small" style="width: 200px" placeholder="10" />
+            </div>
+
+            <div class="style-row">
+              <span class="style-label">显示指针</span>
+              <Switch v-model:checked="localOptions.specific.pointer.show" size="small" />
+            </div>
+
+            <div v-if="localOptions.specific.pointer.show" class="style-row">
+              <span class="style-label">指针长度</span>
+              <Select
+                :options="[
+                  { label: '40%', value: '40%' },
+                  { label: '50%', value: '50%' },
+                  { label: '60%', value: '60%' },
+                  { label: '70%', value: '70%' },
+                  { label: '80%', value: '80%' },
+                ]"
+                v-model:value="localOptions.specific.pointer.length"
+                size="small"
+                style="width: 200px"
+              />
+            </div>
+
+            <div v-if="localOptions.specific.pointer.show" class="style-row">
+              <span class="style-label">指针宽度</span>
+              <InputNumber v-model:value="localOptions.specific.pointer.width" :min="2" :max="20" size="small" style="width: 200px" placeholder="8" />
             </div>
           </div>
         </div>
@@ -88,16 +155,19 @@
             </div>
 
             <div class="threshold-list">
+              <div class="threshold-header">
+                <span style="width: 28px"></span>
+                <span style="width: 80px; font-size: 12px; color: #999">名称</span>
+                <span style="width: 110px; font-size: 12px; color: #999">颜色</span>
+                <span style="width: 110px; font-size: 12px; color: #999">阈值</span>
+                <span style="width: 32px"></span>
+              </div>
               <div v-for="(threshold, index) in localOptions.thresholds.steps" :key="index" class="threshold-item">
                 <span class="threshold-color" :style="{ backgroundColor: threshold.color }"></span>
-                <span class="threshold-name">{{ threshold.name || `T${localOptions.thresholds.steps.length - index}` }}</span>
-                <InputNumber
-                  v-model:value="threshold.value"
-                  size="small"
-                  style="width: 130px"
-                  :placeholder="threshold.name === 'Default' ? '' : '10'"
-                />
-                <Button v-if="index > 0" type="text" size="small" @click="removeThreshold(index)">
+                <Input v-model:value="threshold.name" size="small" placeholder="阈值名称" style="width: 80px" />
+                <Input v-model:value="threshold.color" size="small" placeholder="#52c41a" style="width: 110px" />
+                <InputNumber v-model:value="threshold.value" size="small" style="width: 110px" placeholder="0" />
+                <Button v-if="localOptions.thresholds.steps.length > 1" type="text" size="small" danger @click="removeThreshold(index)">
                   <template #icon><DeleteOutlined /></template>
                 </Button>
               </div>
@@ -107,11 +177,14 @@
               <template #icon><PlusOutlined /></template>
               添加阈值
             </Button>
+          </div>
+        </div>
 
-            <div class="style-row" style="margin-top: 12px">
-              <span class="style-label">显示图例</span>
-              <Switch v-model:checked="localOptions.thresholds.showLegend" size="small" />
-            </div>
+        <!-- 重置设置 -->
+        <div class="section">
+          <div class="section-header">重置设置</div>
+          <div class="section-content">
+            <Button type="default" size="middle" block @click="resetToDefaults"> 恢复默认设置 </Button>
           </div>
         </div>
       </div>
@@ -124,7 +197,7 @@
   import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
   import { deepClone } from '@/utils';
   import { getDefaultGaugeChartOptions } from '../ChartStylesDefaultOptions/gaugeChartDefaultOptions';
-  import { Switch, Segmented, Button, InputNumber, Select } from 'ant-design-vue';
+  import { Switch, Segmented, Button, InputNumber, Select, Input } from 'ant-design-vue';
 
   interface Props {
     options: any;
@@ -143,17 +216,69 @@
     })
   );
 
+  /**
+   * 将颜色从一种色调偏移到另一种色调（往危险色偏移）
+   * @param color - 当前颜色（hex格式）
+   * @returns 偏移后的颜色
+   */
+  const shiftColorToDanger = (color: string): string => {
+    // 将 hex 转换为 RGB
+    const hex = color.replace('#', '');
+    let r = parseInt(hex.substring(0, 2), 16);
+    let g = parseInt(hex.substring(2, 4), 16);
+    let b = parseInt(hex.substring(4, 6), 16);
+
+    // 往红色方向偏移：增加红色，减少绿色和蓝色
+    r = Math.min(255, r + 40);
+    g = Math.max(0, g - 25);
+    b = Math.max(0, b - 25);
+
+    // 转换回 hex
+    const toHex = (n: number) => {
+      const hex = Math.round(n).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  };
+
   const addThreshold = () => {
-    const newIndex = localOptions.value.thresholds.steps.length;
-    localOptions.value.thresholds.steps.splice(localOptions.value.thresholds.steps.length - 1, 0, {
-      name: `T${newIndex}`,
-      value: null,
-      color: newIndex === 1 ? '#faad14' : '#f5222d',
+    const steps = localOptions.value.thresholds.steps;
+
+    // 获取最后一个阈值的颜色和数值
+    const lastThreshold = steps[steps.length - 1];
+    let newColor = '#52c41a'; // 默认绿色
+    let newValue = 0;
+
+    if (lastThreshold) {
+      // 基于最后一个阈值的颜色加深（往危险色偏移）
+      newColor = shiftColorToDanger(lastThreshold.color);
+      // 基于最后一个阈值的数值增加
+      if (lastThreshold.value !== null && lastThreshold.value !== undefined) {
+        newValue = lastThreshold.value + 20; // 增加20作为新阈值
+      }
+    }
+
+    // 添加新阈值到列表末尾
+    localOptions.value.thresholds.steps.push({
+      name: `阈值${steps.length + 1}`,
+      value: newValue,
+      color: newColor,
     });
   };
 
   const removeThreshold = (index: number) => {
-    localOptions.value.thresholds.steps.splice(index, 1);
+    // 确保至少保留一个阈值
+    if (localOptions.value.thresholds.steps.length > 1) {
+      localOptions.value.thresholds.steps.splice(index, 1);
+    }
+  };
+
+  // 恢复默认设置
+  const resetToDefaults = () => {
+    const defaults = getDefaultGaugeChartOptions();
+    localOptions.value = deepClone(defaults);
+    emit('update:options', deepClone(defaults));
   };
 
   // 监听 localOptions 变化，发送事件更新外部
@@ -243,6 +368,14 @@
       flex-direction: column;
       gap: 8px;
       margin-bottom: 8px;
+
+      .threshold-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+        font-weight: 500;
+      }
     }
 
     .threshold-item {
@@ -251,20 +384,19 @@
       gap: 8px;
 
       .threshold-color {
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
         flex-shrink: 0;
-      }
-
-      .threshold-name {
-        font-size: 13px;
-        min-width: 50px;
-        flex-shrink: 0;
+        border: 1px solid @border-color;
       }
 
       :deep(.ant-input-number) {
-        flex: 1;
+        flex-shrink: 0;
+      }
+
+      :deep(.ant-input) {
+        flex-shrink: 0;
       }
     }
   }
