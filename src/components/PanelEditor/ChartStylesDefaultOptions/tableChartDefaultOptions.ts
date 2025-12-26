@@ -19,7 +19,7 @@ export interface TableChartOptions {
 export const getDefaultTableChartOptions = (): TableChartOptions => ({
   specific: {
     showPagination: true,
-    pageSize: 20,
+    pageSize: 10,
     sortable: true,
   },
   format: {

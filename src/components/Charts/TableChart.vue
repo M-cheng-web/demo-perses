@@ -121,6 +121,7 @@
       showQuickJumper: true,
       showTotal: (total: number) => `共 ${total} 条`,
       pageSizeOptions: ['10', '20', '50', '100'],
+      hideOnSinglePage: true,
     };
   });
 </script>
@@ -149,8 +150,8 @@
     width: 100%;
     height: 100%;
     min-height: 0;
-    padding: @spacing-sm-2;
-    overflow: hidden;
+    // padding: @spacing-sm-2;
+    overflow: auto;
 
     :deep(.ant-table-wrapper) {
       height: 100%;

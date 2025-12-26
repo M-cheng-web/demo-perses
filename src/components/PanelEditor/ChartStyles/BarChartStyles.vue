@@ -20,9 +20,7 @@
                 size="small"
                 style="width: 200px"
                 :options="[
-                  { label: '顶部', value: 'top' },
                   { label: '底部', value: 'bottom' },
-                  { label: '左侧', value: 'left' },
                   { label: '右侧', value: 'right' },
                 ]"
               />
@@ -64,45 +62,6 @@
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 右侧列：坐标轴 + 格式化 -->
-      <div class="styles-column">
-        <!-- 坐标轴 -->
-        <div class="section">
-          <div class="section-header">坐标轴</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">显示 X 轴</span>
-              <Switch v-model:checked="localOptions.axis.xAxis.show" size="small" />
-            </div>
-
-            <div v-if="localOptions.axis.xAxis.show" class="style-row">
-              <span class="style-label">X 轴名称</span>
-              <Input v-model:value="localOptions.axis.xAxis.name" size="small" placeholder="X 轴名称" style="width: 200px" />
-            </div>
-
-            <div class="style-row">
-              <span class="style-label">显示 Y 轴</span>
-              <Switch v-model:checked="localOptions.axis.yAxis.show" size="small" />
-            </div>
-
-            <div v-if="localOptions.axis.yAxis.show" class="style-row">
-              <span class="style-label">Y 轴名称</span>
-              <Input v-model:value="localOptions.axis.yAxis.name" size="small" placeholder="Y 轴名称" style="width: 200px" />
-            </div>
-
-            <div v-if="localOptions.axis.yAxis.show" class="style-row">
-              <span class="style-label">Y 轴最小值</span>
-              <InputNumber v-model:value="localOptions.axis.yAxis.min" size="small" style="width: 200px" placeholder="自动" />
-            </div>
-
-            <div v-if="localOptions.axis.yAxis.show" class="style-row">
-              <span class="style-label">Y 轴最大值</span>
-              <InputNumber v-model:value="localOptions.axis.yAxis.max" size="small" style="width: 200px" placeholder="自动" />
-            </div>
-          </div>
-        </div>
 
         <!-- 格式化 -->
         <div class="section">
@@ -140,6 +99,45 @@
                   { label: '4', value: 4 },
                 ]"
               />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧列：坐标轴 + 格式化 -->
+      <div class="styles-column">
+        <!-- 坐标轴 -->
+        <div class="section">
+          <div class="section-header">坐标轴</div>
+          <div class="section-content">
+            <div class="style-row">
+              <span class="style-label">显示 X 轴</span>
+              <Switch v-model:checked="localOptions.axis.xAxis.show" size="small" />
+            </div>
+
+            <div v-if="localOptions.axis.xAxis.show" class="style-row">
+              <span class="style-label">X 轴名称</span>
+              <Input v-model:value="localOptions.axis.xAxis.name" size="small" placeholder="X 轴名称" style="width: 200px" />
+            </div>
+
+            <div class="style-row">
+              <span class="style-label">显示 Y 轴</span>
+              <Switch v-model:checked="localOptions.axis.yAxis.show" size="small" />
+            </div>
+
+            <div v-if="localOptions.axis.yAxis.show" class="style-row">
+              <span class="style-label">Y 轴名称</span>
+              <Input v-model:value="localOptions.axis.yAxis.name" size="small" placeholder="Y 轴名称" style="width: 200px" />
+            </div>
+
+            <div v-if="localOptions.axis.yAxis.show" class="style-row">
+              <span class="style-label">Y 轴最小值</span>
+              <InputNumber v-model:value="localOptions.axis.yAxis.min" size="small" style="width: 200px" placeholder="自动" />
+            </div>
+
+            <div v-if="localOptions.axis.yAxis.show" class="style-row">
+              <span class="style-label">Y 轴最大值</span>
+              <InputNumber v-model:value="localOptions.axis.yAxis.max" size="small" style="width: 200px" placeholder="自动" />
             </div>
           </div>
         </div>

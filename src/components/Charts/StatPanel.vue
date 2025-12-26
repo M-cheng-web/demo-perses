@@ -100,6 +100,12 @@
     return Math.abs(trend.value).toFixed(2);
   });
 
+  const alignItemsMap: any = {
+    left: 'flex-start',
+    center: 'center',
+    right: 'flex-end',
+  };
+
   // 内容样式
   const contentStyle = computed(() => {
     const orientation = specificOptions.value?.orientation || 'vertical';
@@ -107,8 +113,8 @@
 
     return {
       flexDirection: orientation === 'horizontal' ? ('row' as const) : ('column' as const),
-      alignItems: (orientation === 'horizontal' ? 'center' : textAlign) as string,
-      textAlign: textAlign as 'left' | 'center' | 'right',
+      alignItems: (orientation === 'horizontal' ? 'center' : alignItemsMap[textAlign] || 'center') as string,
+      // textAlign: textAlign as 'left' | 'center' | 'right',
     };
   });
 </script>
