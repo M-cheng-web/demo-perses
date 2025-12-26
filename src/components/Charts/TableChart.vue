@@ -4,7 +4,7 @@
     <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
 
     <div class="table-wrapper">
-      <Table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" :scroll="{ y: 'calc(100% - 55px)' }" size="small">
+      <Table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" size="small">
         <template #bodyCell="{ column, text }">
           <template v-if="column.key !== 'time'">
             {{ formatValue(text, panel.options.format || {}) }}

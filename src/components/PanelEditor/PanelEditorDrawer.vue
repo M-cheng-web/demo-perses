@@ -157,9 +157,9 @@
       [PanelType.TIMESERIES]: getDefaultTimeSeriesOptions,
       [PanelType.BAR]: getDefaultBarChartOptions,
       [PanelType.PIE]: getDefaultPieChartOptions,
-      [PanelType.GAUGE]: getDefaultGaugeChartOptions,
       [PanelType.STAT]: getDefaultStatPanelOptions,
       [PanelType.TABLE]: getDefaultTableChartOptions,
+      [PanelType.GAUGE]: getDefaultGaugeChartOptions,
       [PanelType.HEATMAP]: getDefaultHeatmapChartOptions,
     };
 
