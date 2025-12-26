@@ -233,7 +233,7 @@
             },
           },
           splitLine: {
-            distance: -2,
+            distance: 6,
             length: 15,
             lineStyle: {
               color: '#fff',
