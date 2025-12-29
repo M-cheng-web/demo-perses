@@ -96,9 +96,25 @@
 <script setup lang="ts">
   import { ref, reactive, watch, computed } from 'vue';
   import { storeToRefs } from 'pinia';
-  import { Drawer, Form, FormItem, Select, Input, Textarea, InputNumber, Button, Card, Tabs, TabPane, Empty, Row, Col, Flex } from 'ant-design-vue';
+  import {
+    Drawer,
+    Form,
+    FormItem,
+    Select,
+    Input,
+    Textarea,
+    InputNumber,
+    Button,
+    Card,
+    Tabs,
+    TabPane,
+    Empty,
+    Row,
+    Col,
+    Flex,
+    message,
+  } from 'ant-design-vue';
   import { PlusOutlined } from '@ant-design/icons-vue';
-  import { message } from 'ant-design-vue';
   import { useDashboardStore, useEditorStore } from '@/stores';
   import { generateId, deepClone } from '@/utils';
   import { PanelType, PANEL_TYPE_OPTIONS } from '@/enums/panelType';
