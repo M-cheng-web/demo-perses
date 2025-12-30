@@ -1,20 +1,20 @@
 <template>
-  <div class="panel-group-header" @click="handleHeaderClick">
-    <div class="header-content">
+  <div :class="bem()" @click="handleHeaderClick">
+    <div :class="bem('content')">
       <Button
         type="text"
         :icon="h(group.isCollapsed ? RightOutlined : DownOutlined)"
         size="small"
-        class="collapse-btn"
+        :class="bem('collapse-btn')"
         @click.stop="handleToggleCollapse"
       />
-      <h3 class="group-title">{{ group.title || '未命名面板组' }}</h3>
+      <h3 :class="bem('title')">{{ group.title || '未命名面板组' }}</h3>
       <Tooltip v-if="group.description" :title="group.description">
-        <InfoCircleOutlined class="info-icon" />
+        <InfoCircleOutlined :class="bem('info-icon')" />
       </Tooltip>
     </div>
 
-    <div v-if="isEditMode" class="header-actions" @click.stop>
+    <div v-if="isEditMode" :class="bem('actions')" @click.stop>
       <Tooltip title="添加面板">
         <Button type="text" size="small" :icon="h(PlusOutlined)" @click="handleAddPanel" />
       </Tooltip>
@@ -52,6 +52,9 @@
   } from '@ant-design/icons-vue';
   import type { PanelGroup } from '@/types';
   import { useDashboardStore, useEditorStore } from '@/stores';
+  import { createNamespace } from '@/utils';
+
+  const [_, bem] = createNamespace('panel-group-header');
 
   const props = defineProps<{
     group: PanelGroup;
@@ -102,7 +105,7 @@
 </script>
 
 <style scoped lang="less">
-  .panel-group-header {
+  .dp-panel-group-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -117,38 +120,38 @@
       background-color: @background-light;
     }
 
-    .header-content {
+    &__content {
       display: flex;
       align-items: center;
       gap: 8px;
       flex: 1;
       min-width: 0;
-
-      .collapse-btn {
-        flex-shrink: 0;
-        padding: 0;
-        width: 24px;
-        height: 24px;
-      }
-
-      .group-title {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 500;
-        color: @text-color;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .info-icon {
-        color: @text-color-secondary;
-        font-size: 14px;
-        cursor: help;
-      }
     }
 
-    .header-actions {
+    &__collapse-btn {
+      flex-shrink: 0;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+    }
+
+    &__title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 500;
+      color: @text-color;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &__info-icon {
+      color: @text-color-secondary;
+      font-size: 14px;
+      cursor: help;
+    }
+
+    &__actions {
       display: flex;
       align-items: center;
       gap: 4px;

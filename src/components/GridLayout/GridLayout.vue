@@ -1,5 +1,5 @@
 <template>
-  <div class="grid-layout">
+  <div :class="bem()">
     <grid-layout
       v-if="layout.length > 0"
       v-model:layout="localLayout"
@@ -41,6 +41,9 @@
   import type { PanelLayout, Panel as PanelType, ID } from '@/types';
   import { useDashboardStore, useEditorStore } from '@/stores';
   import Panel from '@/components/Panel/Panel.vue';
+  import { createNamespace } from '@/utils';
+
+  const [_, bem] = createNamespace('grid-layout');
 
   const props = defineProps<{
     groupId: ID;
@@ -73,7 +76,7 @@
 </script>
 
 <style scoped lang="less">
-  .grid-layout {
+  .dp-grid-layout {
     min-height: 200px;
   }
 </style>

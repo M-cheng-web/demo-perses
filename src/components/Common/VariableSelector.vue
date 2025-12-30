@@ -1,7 +1,7 @@
 <template>
-  <div v-if="variables && variables.length > 0" class="variable-selector">
-    <div v-for="variable in variables" :key="variable.id" class="variable-item">
-      <label class="variable-label">{{ variable.label }}:</label>
+  <div v-if="variables && variables.length > 0" :class="bem()">
+    <div v-for="variable in variables" :key="variable.id" :class="bem('item')">
+      <label :class="bem('label')">{{ variable.label }}:</label>
 
       <!-- 选择 -->
       <Select
@@ -24,7 +24,7 @@
       />
 
       <!-- 常量 -->
-      <span v-else-if="variable.type === 'constant'" class="variable-constant">
+      <span v-else-if="variable.type === 'constant'" :class="bem('constant')">
         {{ variable.current }}
       </span>
     </div>
@@ -35,6 +35,9 @@
   import { ref, watch } from 'vue';
   import type { DashboardVariable } from '@/types';
   import { Select, Input } from 'ant-design-vue';
+  import { createNamespace } from '@/utils';
+
+  const [_, bem] = createNamespace('variable-selector');
 
   const props = defineProps<{
     variables?: DashboardVariable[];
@@ -77,31 +80,31 @@
 </script>
 
 <style scoped lang="less">
-  .variable-selector {
+  .dp-variable-selector {
     display: flex;
     align-items: center;
     gap: 16px;
     flex-wrap: wrap;
-  }
 
-  .variable-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+    &__item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-  .variable-label {
-    font-size: 13px;
-    color: rgba(0, 0, 0, 0.65);
-    white-space: nowrap;
-  }
+    &__label {
+      font-size: 13px;
+      color: rgba(0, 0, 0, 0.65);
+      white-space: nowrap;
+    }
 
-  .variable-constant {
-    padding: 4px 11px;
-    font-size: 13px;
-    color: rgba(0, 0, 0, 0.45);
-    background: #fafafa;
-    border: 1px solid #d9d9d9;
-    border-radius: 4px;
+    &__constant {
+      padding: 4px 11px;
+      font-size: 13px;
+      color: rgba(0, 0, 0, 0.45);
+      background: #fafafa;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+    }
   }
 </style>

@@ -1,14 +1,14 @@
 <template>
   <Teleport to="body">
-    <div v-if="isVisible" ref="tooltipRef" class="chart-tooltip" :class="{ 'is-pinned': isPinned }" :style="tooltipStyle">
+    <div v-if="isVisible" ref="tooltipRef" :class="[bem(), bem({ pinned: isPinned })]" :style="tooltipStyle">
       <!-- Tooltip 头部 -->
-      <div class="tooltip-header">
-        <span class="tooltip-time">{{ formattedTime }}</span>
-        <div class="tooltip-actions">
-          <Button v-if="isPinned" type="text" size="small" class="unpin-btn" @click="handleUnpin">
+      <div :class="bem('header')">
+        <span :class="bem('time')">{{ formattedTime }}</span>
+        <div :class="bem('actions')">
+          <Button v-if="isPinned" type="text" size="small" :class="bem('unpin-btn')" @click="handleUnpin">
             <PushpinFilled />
           </Button>
-          <span v-else class="tooltip-hint">点击图表固定</span>
+          <span v-else :class="bem('hint')">点击图表固定</span>
           <Button v-if="totalSeries > visibleSeriesCount && !showAllSeries" type="text" size="small" @click="showAllSeries = true">
             显示全部 ({{ totalSeries }})
           </Button>
@@ -16,13 +16,13 @@
       </div>
 
       <!-- Tooltip 内容 -->
-      <div class="tooltip-content">
-        <div v-for="series in displayedSeries" :key="series.id" class="tooltip-series-item">
-          <span class="series-color" :style="{ backgroundColor: series.color }"></span>
-          <span class="series-label" :title="series.label">{{ series.label }}</span>
-          <span class="series-value">{{ series.formattedValue }}</span>
+      <div :class="bem('content')">
+        <div v-for="series in displayedSeries" :key="series.id" :class="bem('series-item')">
+          <span :class="bem('series-color')" :style="{ backgroundColor: series.color }"></span>
+          <span :class="bem('series-label')" :title="series.label">{{ series.label }}</span>
+          <span :class="bem('series-value')">{{ series.formattedValue }}</span>
         </div>
-        <div v-if="displayedSeries.length === 0" class="tooltip-empty"> 暂无数据 </div>
+        <div v-if="displayedSeries.length === 0" :class="bem('empty')"> 暂无数据 </div>
       </div>
     </div>
   </Teleport>
@@ -34,9 +34,11 @@
   import { storeToRefs } from 'pinia';
   import { PushpinFilled } from '@ant-design/icons-vue';
   import type { ECharts } from 'echarts';
-  import { formatValue, formatTime } from '@/utils';
+  import { formatValue, formatTime, createNamespace } from '@/utils';
   import type { TimeSeriesData } from '@/types';
   import { useTooltipStore } from '@/stores';
+
+  const [_, bem] = createNamespace('chart-tooltip');
 
   interface NearbySeriesItem {
     id: string;
@@ -351,7 +353,7 @@
 </script>
 
 <style scoped lang="less">
-  .chart-tooltip {
+  .dp-chart-tooltip {
     position: fixed;
     top: 0;
     left: 0;
@@ -366,62 +368,63 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
 
-    &.is-pinned {
+    &.dp-chart-tooltip--pinned {
       pointer-events: auto;
       background-color: rgba(40, 40, 40, 0.98);
     }
 
-    .tooltip-header {
+    &__header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 10px 12px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       gap: 8px;
+    }
 
-      .tooltip-time {
-        font-weight: 500;
-        font-size: 13px;
-        flex-shrink: 0;
-      }
+    &__time {
+      font-weight: 500;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
 
-      .tooltip-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        min-width: 0;
+    &__actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
 
-        .tooltip-hint {
-          font-size: 11px;
-          color: rgba(255, 255, 255, 0.5);
-          white-space: nowrap;
-        }
+      :deep(.ant-btn) {
+        color: #fff;
+        padding: 0 4px;
+        height: 20px;
+        font-size: 11px;
 
-        :deep(.ant-btn) {
-          color: #fff;
-          padding: 0 4px;
-          height: 20px;
-          font-size: 11px;
-
-          &:hover {
-            color: @primary-color;
-            background-color: rgba(255, 255, 255, 0.1);
-          }
-
-          &.unpin-btn {
-            padding: 0;
-            width: 20px;
-          }
+        &:hover {
+          color: @primary-color;
+          background-color: rgba(255, 255, 255, 0.1);
         }
       }
     }
 
-    .tooltip-content {
+    &__hint {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      white-space: nowrap;
+    }
+
+    &__unpin-btn {
+      :deep(.ant-btn) {
+        padding: 0;
+        width: 20px;
+      }
+    }
+
+    &__content {
       padding: 8px 12px;
       max-height: 400px;
       overflow-y: auto;
 
-      /* 自定义滚动条 */
       &::-webkit-scrollbar {
         width: 6px;
       }
@@ -439,52 +442,52 @@
           background: rgba(255, 255, 255, 0.3);
         }
       }
+    }
 
-      .tooltip-series-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 5px 0;
-        transition: background-color 0.2s;
+    &__series-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+      transition: background-color 0.2s;
 
-        &:hover {
-          background-color: rgba(255, 255, 255, 0.05);
-          margin: 0 -4px;
-          padding: 5px 4px;
-          border-radius: 3px;
-        }
-
-        .series-color {
-          width: 12px;
-          height: 12px;
-          border-radius: 2px;
-          flex-shrink: 0;
-        }
-
-        .series-label {
-          flex: 1;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-size: 12px;
-          min-width: 0;
-        }
-
-        .series-value {
-          font-weight: 600;
-          font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-          font-size: 12px;
-          color: #fff;
-          flex-shrink: 0;
-        }
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        margin: 0 -4px;
+        padding: 5px 4px;
+        border-radius: 3px;
       }
+    }
 
-      .tooltip-empty {
-        padding: 20px;
-        text-align: center;
-        color: rgba(255, 255, 255, 0.5);
-        font-size: 12px;
-      }
+    &__series-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    &__series-label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      min-width: 0;
+    }
+
+    &__series-value {
+      font-weight: 600;
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      font-size: 12px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    &__empty {
+      padding: 20px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 12px;
     }
   }
 </style>

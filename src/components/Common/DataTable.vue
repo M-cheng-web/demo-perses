@@ -1,12 +1,12 @@
 <!-- 可复用的数据表格组件 -->
 <template>
-  <div class="data-table">
-    <div class="table-container">
+  <div :class="bem()">
+    <div :class="bem('container')">
       <!-- 表头 -->
-      <div class="table-header">
-        <div class="table-row">
+      <div :class="bem('header')">
+        <div :class="bem('row')">
           <!-- Checkbox 列 -->
-          <div v-if="showCheckbox" class="table-cell col-checkbox">
+          <div v-if="showCheckbox" :class="[bem('cell'), bem('cell', { checkbox: true })]">
             <Checkbox :checked="isAllChecked" :indeterminate="isIndeterminate" @click.stop="handleToggleAll" />
           </div>
 
@@ -14,8 +14,7 @@
           <div
             v-for="column in columns"
             :key="column.key"
-            class="table-cell"
-            :class="[`col-${column.key}`, { sortable: column.sortable }]"
+            :class="[bem('cell'), bem('cell', { [`col-${column.key}`]: true }), bem('cell', { sortable: column.sortable })]"
             :style="{
               width: column.width || undefined,
               minWidth: column.minWidth || 'auto',
@@ -23,10 +22,10 @@
             }"
             @click="column.sortable ? handleSort(column.key) : null"
           >
-            <span class="cell-content">
+            <span :class="bem('cell-content')">
               {{ column.label }}
             </span>
-            <span v-if="column.sortable" class="sort-icon" @click.stop="handleSort(column.key)">
+            <span v-if="column.sortable" :class="bem('sort-icon')" @click.stop="handleSort(column.key)">
               <CaretUpOutlined
                 :class="{
                   active: sortBy === column.key && sortOrder === 'asc',
@@ -45,21 +44,21 @@
       </div>
 
       <!-- 表体 -->
-      <div class="table-body">
+      <div :class="bem('body')">
         <div
           v-for="row in sortedData"
           :key="row.id"
-          class="table-row"
-          :class="{
-            'is-selected': isRowSelected(row.id),
-            'is-dimmed': isDimmed && !isRowSelected(row.id),
-          }"
+          :class="[
+            bem('row'),
+            bem('row', { selected: isRowSelected(row.id) }),
+            bem('row', { dimmed: isDimmed && !isRowSelected(row.id) }),
+          ]"
           @click="handleRowClick(row)"
           @mouseenter="emit('row-hover', row.id)"
           @mouseleave="emit('row-leave', row.id)"
         >
           <!-- Checkbox 列 -->
-          <div v-if="showCheckbox" class="table-cell col-checkbox">
+          <div v-if="showCheckbox" :class="[bem('cell'), bem('cell', { checkbox: true })]">
             <Checkbox :checked="isRowSelected(row.id)" />
           </div>
 
@@ -67,15 +66,14 @@
           <div
             v-for="column in columns"
             :key="column.key"
-            class="table-cell"
-            :class="`col-${column.key}`"
+            :class="[bem('cell'), bem('cell', { [`col-${column.key}`]: true })]"
             :style="{
               width: column.width || undefined,
               minWidth: column.minWidth || 'auto',
               flex: column.width ? '0 0 auto' : '1 1 0',
             }"
           >
-            <div class="cell-content" :class="{ ellipsis: column.ellipsis !== false }">
+            <div :class="[bem('cell-content'), bem('cell-content', { ellipsis: column.ellipsis !== false })]">
               <!-- 使用插槽，如果没有插槽则显示默认值 -->
               <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]">
                 {{ row[column.key] }}
@@ -92,6 +90,9 @@
   import { computed, ref } from 'vue';
   import { CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons-vue';
   import { Checkbox } from 'ant-design-vue';
+  import { createNamespace } from '@/utils';
+
+  const [_, bem] = createNamespace('data-table');
 
   interface Column {
     key: string;
@@ -202,32 +203,32 @@
 </script>
 
 <style scoped lang="less">
-  .data-table {
+  .dp-data-table {
     width: 100%;
     font-size: 12px;
     max-height: 300px;
     overflow-y: auto;
     border-radius: 4px;
 
-    .table-container {
+    &__container {
       width: 100%;
     }
 
-    .table-header {
+    &__header {
       position: sticky;
       top: 0;
       background: @background-base;
       z-index: 1;
       border-bottom: 1px solid @border-color;
 
-      .table-row {
+      .dp-data-table__row {
         display: flex;
         align-items: center;
         height: 28px;
         padding: 0 12px;
       }
 
-      .table-cell {
+      .dp-data-table__cell {
         font-size: 14px;
         font-weight: 500;
         color: @text-color;
@@ -238,8 +239,7 @@
         position: relative;
         padding-right: 12px;
 
-        // 添加垂直分割线（除了 checkbox 列和最后一列）
-        &:not(.col-checkbox):not(:last-child)::after {
+        &:not(.dp-data-table__cell--checkbox):not(:last-child)::after {
           content: '';
           position: absolute;
           right: 6px;
@@ -250,7 +250,7 @@
           background-color: fade(@border-color, 60%);
         }
 
-        &.sortable {
+        &.dp-data-table__cell--sortable {
           cursor: pointer;
           user-select: none;
           transition: color 0.2s ease;
@@ -258,58 +258,56 @@
           &:hover {
             color: @primary-color;
 
-            .sort-icon {
+            .dp-data-table__sort-icon {
               opacity: 1;
             }
           }
         }
 
-        &.col-checkbox {
+        &.dp-data-table__cell--checkbox {
           width: 32px;
           flex-shrink: 0;
           padding-right: 0;
         }
+      }
 
-        .cell-content {
-          flex: 1;
-          min-width: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
+      .dp-data-table__cell-content {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
 
-        .sort-icon {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          // margin-left: auto;
-          font-size: 9px;
-          // opacity: 0.8;
-          transition: opacity 0.2s ease;
-          flex-shrink: 0;
+      .dp-data-table__sort-icon {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        transition: opacity 0.2s ease;
+        flex-shrink: 0;
 
-          :deep(.anticon) {
-            line-height: 0.8;
-            display: block;
-            transition: all 0.2s ease;
+        :deep(.anticon) {
+          line-height: 0.8;
+          display: block;
+          transition: all 0.2s ease;
 
-            &.active {
-              color: @primary-color;
-              opacity: 1;
-            }
+          &.active {
+            color: @primary-color;
+            opacity: 1;
+          }
 
-            &.inactive {
-              color: @text-color-secondary;
-              opacity: 0.3;
-            }
+          &.inactive {
+            color: @text-color-secondary;
+            opacity: 0.3;
           }
         }
       }
     }
 
-    .table-body {
-      .table-row {
+    &__body {
+      .dp-data-table__row {
         display: flex;
         align-items: center;
         height: 28px;
@@ -326,7 +324,7 @@
           background-color: fade(@primary-color, 5%);
         }
 
-        &.is-selected {
+        &.dp-data-table__row--selected {
           background-color: fade(@primary-color, 8%);
 
           &:hover {
@@ -334,7 +332,7 @@
           }
         }
 
-        &.is-dimmed {
+        &.dp-data-table__row--dimmed {
           opacity: 0.35;
 
           &:hover {
@@ -342,23 +340,23 @@
           }
         }
 
-        .table-cell {
+        .dp-data-table__cell {
           color: @text-color;
           display: flex;
           align-items: center;
           padding-right: 12px;
 
-          &.col-checkbox {
+          &.dp-data-table__cell--checkbox {
             width: 32px;
             flex-shrink: 0;
             padding-right: 0;
           }
 
-          .cell-content {
+          .dp-data-table__cell-content {
             width: 100%;
             min-width: 0;
 
-            &.ellipsis {
+            &.dp-data-table__cell-content--ellipsis {
               white-space: nowrap;
               overflow: hidden;
               text-overflow: ellipsis;

@@ -1,5 +1,5 @@
 <template>
-  <div class="panel-group-list">
+  <div :class="bem()">
     <PanelGroupItem
       v-for="(group, index) in panelGroups"
       :key="group.id"
@@ -13,7 +13,10 @@
 
 <script setup lang="ts">
   import type { PanelGroup } from '@/types';
+  import { createNamespace } from '@/utils';
   import PanelGroupItem from './PanelGroupItem.vue';
+
+  const [_, bem] = createNamespace('panel-group-list');
 
   defineProps<{
     panelGroups: PanelGroup[];
@@ -29,7 +32,7 @@
 </script>
 
 <style scoped lang="less">
-  .panel-group-list {
+  .dp-panel-group-list {
     display: flex;
     flex-direction: column;
     gap: @spacing-md;

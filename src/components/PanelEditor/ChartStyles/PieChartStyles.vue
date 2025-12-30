@@ -1,20 +1,20 @@
 <!-- 图表样式配置 - 饼图 -->
 <template>
   <div class="pie-chart-styles">
-    <div class="styles-grid">
+    <div :class="bem('grid')">
       <!-- 左侧列：图例 + 视觉 -->
-      <div class="styles-column">
+      <div :class="bem('column')">
         <!-- 图例 -->
-        <div class="section">
-          <div class="section-header">图例</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">显示</span>
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">图例</div>
+          <div :class="bem('section-content')">
+            <div :class="bem('row')">
+              <span :class="bem('label')">显示</span>
               <Switch v-model:checked="localOptions.legend.show" size="small" />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">位置</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">位置</span>
               <Select
                 :options="[
                   { label: '底部', value: 'bottom' },
@@ -26,8 +26,8 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">模式</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">模式</span>
               <Segmented
                 v-model:value="localOptions.legend.mode"
                 :options="[
@@ -39,8 +39,8 @@
             </div>
 
             <!-- 表格模式下显示"显示值"选项 -->
-            <div v-if="localOptions.legend.mode === 'table'" class="style-row">
-              <span class="style-label">显示值</span>
+            <div v-if="localOptions.legend.mode === 'table'" :class="bem('row')">
+              <span :class="bem('label')">显示值</span>
               <Select
                 :options="[
                   { label: '最小值', value: 'min' },
@@ -60,11 +60,11 @@
         </div>
 
         <!-- 视觉 -->
-        <div class="section">
-          <div class="section-header">视觉</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">饼图类型</span>
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">视觉</div>
+          <div :class="bem('section-content')">
+            <div :class="bem('row')">
+              <span :class="bem('label')">饼图类型</span>
               <Segmented
                 v-model:value="localOptions.specific.pieType"
                 :options="[
@@ -75,16 +75,16 @@
               />
             </div>
 
-            <div v-if="localOptions.specific.pieType === 'doughnut'" class="style-row">
-              <span class="style-label">内圆半径</span>
+            <div v-if="localOptions.specific.pieType === 'doughnut'" :class="bem('row')">
+              <span :class="bem('label')">内圆半径</span>
               <div style="flex: 1; display: flex; align-items: center; gap: 12px">
                 <Slider v-model:value="localOptions.specific.innerRadius" :min="0" :max="80" :step="5" style="flex: 1" />
                 <span class="slider-value">{{ localOptions.specific.innerRadius }}%</span>
               </div>
             </div>
 
-            <div class="style-row">
-              <span class="style-label">显示百分比</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">显示百分比</span>
               <Switch v-model:checked="localOptions.specific.showPercentage" size="small" />
             </div>
           </div>
@@ -92,12 +92,12 @@
       </div>
 
       <!-- 右侧列：格式化 -->
-      <div class="styles-column">
-        <div class="section">
-          <div class="section-header">格式化</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">单位</span>
+      <div :class="bem('column')">
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">格式化</div>
+          <div :class="bem('section-content')">
+            <div :class="bem('row')">
+              <span :class="bem('label')">单位</span>
               <Select
                 :options="[
                   { label: '无', value: 'none' },
@@ -113,8 +113,8 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">小数位数</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">小数位数</span>
               <Select
                 :options="[
                   { label: '默认', value: 'default' },
@@ -133,9 +133,9 @@
         </div>
 
         <!-- 重置设置 -->
-        <div class="section">
-          <div class="section-header">重置设置</div>
-          <div class="section-content">
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">重置设置</div>
+          <div :class="bem('section-content')">
             <Button type="default" size="middle" block @click="resetToDefaults"> 恢复默认设置 </Button>
           </div>
         </div>
@@ -146,9 +146,11 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { deepClone } from '@/utils';
+  import { deepClone, createNamespace } from '@/utils';
   import { getDefaultPieChartOptions } from '../ChartStylesDefaultOptions/pieChartDefaultOptions';
   import { Switch, Select, Segmented, Slider, Button } from 'ant-design-vue';
+
+  const [_, bem] = createNamespace('pie-chart-styles');
 
   interface Props {
     options: any;
@@ -200,30 +202,30 @@
 </script>
 
 <style scoped lang="less">
-  .pie-chart-styles {
+  .dp-pie-chart-styles {
     padding: 16px;
     height: 100%;
     overflow-y: auto;
 
-    .styles-grid {
+    &__grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 24px;
     }
 
-    .styles-column {
+    &__column {
       display: flex;
       flex-direction: column;
       gap: 24px;
     }
 
-    .section {
+    &__section {
       border: 1px solid @border-color;
       border-radius: 4px;
       overflow: hidden;
       background: @background-light;
 
-      .section-header {
+    &__section-header {
         padding: 12px 16px;
         border-bottom: 1px solid @border-color;
         font-weight: 600;
@@ -234,7 +236,7 @@
         background: @background-base;
       }
 
-      .section-content {
+    &__section-content {
         padding: 16px;
         display: flex;
         flex-direction: column;
@@ -242,13 +244,13 @@
       }
     }
 
-    .style-row {
+    &__row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
 
-      .style-label {
+    &__label {
         font-size: 13px;
         color: @text-color;
         flex-shrink: 0;
@@ -256,7 +258,7 @@
         font-weight: 500;
       }
 
-      .slider-value {
+    &__slider-value {
         font-size: 13px;
         color: @text-color-secondary;
         min-width: 40px;

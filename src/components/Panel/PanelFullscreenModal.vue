@@ -6,10 +6,11 @@
     :width="'90%'"
     :footer="null"
     :body-style="{ padding: 0, height: '80vh' }"
+    :class="bem()"
     centered
     @cancel="handleClose"
   >
-    <div class="fullscreen-panel">
+    <div :class="bem('content')">
       <PanelContent v-if="currentPanel" :panel="currentPanel" />
     </div>
   </Modal>
@@ -19,8 +20,11 @@
   import { ref, computed } from 'vue';
   import type { Panel } from '@/types';
   import { useDashboardStore } from '@/stores';
+  import { createNamespace } from '@/utils';
   import PanelContent from './PanelContent.vue';
   import { Modal } from 'ant-design-vue';
+
+  const [_, bem] = createNamespace('panel-fullscreen-modal');
 
   const dashboardStore = useDashboardStore();
 
@@ -47,15 +51,17 @@
 </script>
 
 <style scoped lang="less">
-  .fullscreen-panel {
-    width: 100%;
-    height: 80vh;
-    padding: @spacing-md;
-    overflow: auto;
-  }
+  .dp-panel-fullscreen-modal {
+    &__content {
+      width: 100%;
+      height: 80vh;
+      padding: @spacing-md;
+      overflow: auto;
+    }
 
-  :deep(.ant-modal-body) {
-    display: flex;
-    flex-direction: column;
+    :deep(.ant-modal-body) {
+      display: flex;
+      flex-direction: column;
+    }
   }
 </style>

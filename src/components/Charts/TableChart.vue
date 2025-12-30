@@ -1,9 +1,9 @@
 <!-- 表格 -->
 <template>
-  <div class="table-chart-container">
-    <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
+  <div :class="bem()">
+    <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
 
-    <div class="table-wrapper">
+    <div :class="bem('wrapper')">
       <Table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" size="small">
         <template #bodyCell="{ column, text }">
           <template v-if="column.key !== 'time'">
@@ -23,7 +23,9 @@
   import { Spin, Table } from 'ant-design-vue';
   import type { TableColumnType } from 'ant-design-vue';
   import type { Panel, QueryResult, TableOptions } from '@/types';
-  import { formatValue, formatTime } from '@/utils';
+  import { formatValue, formatTime, createNamespace } from '@/utils';
+
+  const [_, bem] = createNamespace('table-chart');
 
   const props = defineProps<{
     panel: Panel;
@@ -127,7 +129,7 @@
 </script>
 
 <style scoped lang="less">
-  .table-chart-container {
+  .dp-table-chart {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -135,35 +137,35 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-  }
 
-  .loading-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-  }
+    &__loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
 
-  .table-wrapper {
-    flex: 1;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    // padding: @spacing-sm-2;
-    overflow: auto;
-
-    :deep(.ant-table-wrapper) {
+    &__wrapper {
+      flex: 1;
+      width: 100%;
       height: 100%;
-    }
+      min-height: 0;
+      // padding: @spacing-sm-2;
+      overflow: auto;
 
-    :deep(.ant-table) {
-      font-size: 12px;
-    }
+      :deep(.ant-table-wrapper) {
+        height: 100%;
+      }
 
-    :deep(.ant-table-thead > tr > th) {
-      background: #fafafa;
-      font-weight: 600;
+      :deep(.ant-table) {
+        font-size: 12px;
+      }
+
+      :deep(.ant-table-thead > tr > th) {
+        background: #fafafa;
+        font-weight: 600;
+      }
     }
   }
 </style>

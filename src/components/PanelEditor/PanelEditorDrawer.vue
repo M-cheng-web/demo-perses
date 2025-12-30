@@ -3,7 +3,7 @@
   <Drawer v-model:open="isOpen" title="面板编辑器" :width="900" :keyboard="false" :maskClosable="false" @close="handleClose">
     <Form :model="formData" layout="vertical">
       <!-- 顶部表单 -->
-      <div class="editor-header">
+      <div :class="bem('header')">
         <Row :gutter="16">
           <Col :span="12">
             <FormItem label="面板组" required>
@@ -31,15 +31,15 @@
       </div>
 
       <!-- 面板预览 -->
-      <div class="editor-preview">
+      <div :class="bem('preview')">
         <PanelPreview :panel="formData" />
       </div>
 
       <!-- Tabs -->
-      <Tabs v-model:activeKey="activeTab" class="editor-tabs">
+      <Tabs v-model:activeKey="activeTab" :class="bem('tabs')">
         <!-- 数据查询 -->
         <TabPane key="query" tab="数据查询">
-          <div v-for="(query, index) in formData.queries" :key="query.id" class="query-item">
+          <div v-for="(query, index) in formData.queries" :key="query.id" :class="bem('query-item')">
             <Card size="small" :title="`查询 ${index + 1}`">
               <template #extra>
                 <Button type="text" danger size="small" @click="removeQuery(index)"> 删除 </Button>
@@ -116,7 +116,7 @@
   } from 'ant-design-vue';
   import { PlusOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useEditorStore } from '@/stores';
-  import { generateId, deepClone } from '@/utils';
+  import { generateId, deepClone, createNamespace } from '@/utils';
   import { PanelType, PANEL_TYPE_OPTIONS } from '@/enums/panelType';
   import TimeSeriesChartStyles from './ChartStyles/TimeSeriesChartStyles.vue';
   import BarChartStyles from './ChartStyles/BarChartStyles.vue';
@@ -135,6 +135,8 @@
   import { getDefaultStatPanelOptions } from './ChartStylesDefaultOptions/statPanelDefaultOptions';
   import { getDefaultTableChartOptions } from './ChartStylesDefaultOptions/tableChartDefaultOptions';
   import { getDefaultHeatmapChartOptions } from './ChartStylesDefaultOptions/heatmapChartDefaultOptions';
+
+  const [_, bem] = createNamespace('panel-editor-drawer');
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
@@ -310,23 +312,25 @@
 </script>
 
 <style scoped lang="less">
-  .editor-header {
-    margin-bottom: @spacing-lg;
-    // padding-bottom: @spacing-md;
-    border-bottom: 1px solid @border-color;
-  }
+  .dp-panel-editor-drawer {
+    &__header {
+      margin-bottom: @spacing-lg;
+      // padding-bottom: @spacing-md;
+      border-bottom: 1px solid @border-color;
+    }
 
-  .editor-preview {
-    margin-bottom: @spacing-lg;
-  }
+    &__preview {
+      margin-bottom: @spacing-lg;
+    }
 
-  .editor-tabs {
-    :deep(.ant-tabs-nav) {
+    &__tabs {
+      :deep(.ant-tabs-nav) {
+        margin-bottom: @spacing-md;
+      }
+    }
+
+    &__query-item {
       margin-bottom: @spacing-md;
     }
-  }
-
-  .query-item {
-    margin-bottom: @spacing-md;
   }
 </style>

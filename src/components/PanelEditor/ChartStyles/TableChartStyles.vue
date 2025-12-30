@@ -1,19 +1,19 @@
 <!-- 图表样式配置 - 表格 -->
 <template>
   <div class="table-chart-styles">
-    <div class="styles-grid">
+    <div :class="bem('grid')">
       <!-- 左侧列：表格配置 -->
-      <div class="styles-column">
-        <div class="section">
-          <div class="section-header">表格配置</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">显示分页</span>
+      <div :class="bem('column')">
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">表格配置</div>
+          <div :class="bem('section-content')">
+            <div :class="bem('row')">
+              <span :class="bem('label')">显示分页</span>
               <Switch v-model:checked="localOptions.specific.showPagination" size="small" />
             </div>
 
-            <div v-if="localOptions.specific.showPagination" class="style-row">
-              <span class="style-label">每页行数</span>
+            <div v-if="localOptions.specific.showPagination" :class="bem('row')">
+              <span :class="bem('label')">每页行数</span>
               <Select
                 v-model:value="localOptions.specific.pageSize"
                 size="small"
@@ -27,8 +27,8 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">可排序</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">可排序</span>
               <Switch v-model:checked="localOptions.specific.sortable" size="small" />
             </div>
           </div>
@@ -36,12 +36,12 @@
       </div>
 
       <!-- 右侧列：格式化 -->
-      <div class="styles-column">
-        <div class="section">
-          <div class="section-header">格式化</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">单位</span>
+      <div :class="bem('column')">
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">格式化</div>
+          <div :class="bem('section-content')">
+            <div :class="bem('row')">
+              <span :class="bem('label')">单位</span>
               <Select
                 v-model:value="localOptions.format.unit"
                 size="small"
@@ -57,8 +57,8 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">小数位数</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">小数位数</span>
               <Select
                 v-model:value="localOptions.format.decimals"
                 size="small"
@@ -77,9 +77,9 @@
         </div>
 
         <!-- 重置设置 -->
-        <div class="section">
-          <div class="section-header">重置设置</div>
-          <div class="section-content">
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">重置设置</div>
+          <div :class="bem('section-content')">
             <Button type="default" size="middle" block @click="resetToDefaults"> 恢复默认设置 </Button>
           </div>
         </div>
@@ -90,9 +90,11 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { deepClone } from '@/utils';
+  import { deepClone, createNamespace } from '@/utils';
   import { getDefaultTableChartOptions } from '../ChartStylesDefaultOptions/tableChartDefaultOptions';
   import { Switch, Select, Button } from 'ant-design-vue';
+
+  const [_, bem] = createNamespace('table-chart-styles');
 
   interface Props {
     options: any;
@@ -144,30 +146,30 @@
 </script>
 
 <style scoped lang="less">
-  .table-chart-styles {
+  .dp-table-chart-styles {
     padding: 16px;
     height: 100%;
     overflow-y: auto;
 
-    .styles-grid {
+    &__grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 24px;
     }
 
-    .styles-column {
+    &__column {
       display: flex;
       flex-direction: column;
       gap: 24px;
     }
 
-    .section {
+    &__section {
       border: 1px solid @border-color;
       border-radius: 4px;
       overflow: hidden;
       background: @background-light;
 
-      .section-header {
+    &__section-header {
         padding: 12px 16px;
         border-bottom: 1px solid @border-color;
         font-weight: 600;
@@ -178,7 +180,7 @@
         background: @background-base;
       }
 
-      .section-content {
+    &__section-content {
         padding: 16px;
         display: flex;
         flex-direction: column;
@@ -186,13 +188,13 @@
       }
     }
 
-    .style-row {
+    &__row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
 
-      .style-label {
+    &__label {
         font-size: 13px;
         color: @text-color;
         flex-shrink: 0;

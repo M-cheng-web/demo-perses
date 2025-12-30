@@ -1,6 +1,6 @@
 <!-- 表格模式图例 -->
 <template>
-  <div class="table-legend">
+  <div :class="bem()">
     <DataTable
       :columns="tableColumns"
       :data="tableData"
@@ -13,9 +13,9 @@
     >
       <!-- 系列列的自定义内容 -->
       <template #cell-series="{ row }">
-        <div class="series-cell">
-          <span class="item-color" :style="{ backgroundColor: row.color }"></span>
-          <span class="item-label" :title="row.label">{{ row.label }}</span>
+        <div :class="bem('series-cell')">
+          <span :class="bem('color')" :style="{ backgroundColor: row.color }"></span>
+          <span :class="bem('label')" :title="row.label">{{ row.label }}</span>
         </div>
       </template>
     </DataTable>
@@ -24,8 +24,11 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
+  import { createNamespace } from '@/utils';
   import type { LegendItem, LegendSelection } from '@/types/legend';
   import DataTable from '@/components/Common/DataTable.vue';
+
+  const [_, bem] = createNamespace('table-legend');
 
   interface Props {
     items: LegendItem[];
@@ -126,31 +129,31 @@
 </script>
 
 <style scoped lang="less">
-  .table-legend {
-    .series-cell {
+  .dp-table-legend {
+    &__series-cell {
       display: flex;
       align-items: center;
       gap: 6px;
       width: 100%;
       min-width: 0;
+    }
 
-      .item-color {
-        width: 12px;
-        height: 12px;
-        border-radius: 2px;
-        flex-shrink: 0;
-        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-      }
+    &__color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+    }
 
-      .item-label {
-        flex: 1;
-        color: @text-color;
-        min-width: 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 12px;
-      }
+    &__label {
+      flex: 1;
+      color: @text-color;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 12px;
     }
   }
 </style>

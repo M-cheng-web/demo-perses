@@ -1,20 +1,20 @@
 <!-- 图表样式配置 - 时间序列图 -->
 <template>
-  <div class="timeseries-chart-styles">
-    <div class="styles-grid">
+  <div :class="bem()">
+    <div :class="bem('grid')">
       <!-- 左侧列：图例 + 视觉 -->
-      <div class="styles-column">
+      <div :class="bem('column')">
         <!-- 图例 -->
-        <div class="section">
-          <div class="section-header">图例</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">显示</span>
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">图例</div>
+          <div :class="bem('section-content')">
+            <div :class="bem('row')">
+              <span :class="bem('label')">显示</span>
               <Switch v-model:checked="localOptions.legend.show" size="small" />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">位置</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">位置</span>
               <Select
                 v-model:value="localOptions.legend.position"
                 size="small"
@@ -26,8 +26,8 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">模式</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">模式</span>
               <Segmented
                 v-model:value="localOptions.legend.mode"
                 :options="[
@@ -39,8 +39,8 @@
             </div>
 
             <!-- 表格模式下显示"显示值"选项 -->
-            <div v-if="localOptions.legend.mode === 'table'" class="style-row">
-              <span class="style-label">显示值</span>
+            <div v-if="localOptions.legend.mode === 'table'" :class="bem('row')">
+              <span :class="bem('label')">显示值</span>
               <Select
                 v-model:value="localOptions.legend.values"
                 mode="multiple"
@@ -60,12 +60,12 @@
         </div>
 
         <!-- 视觉 -->
-        <div class="section">
-          <div class="section-header">视觉</div>
-          <div class="section-content">
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">视觉</div>
+          <div :class="bem('section-content')">
             <!-- 显示类型 - 放在第一行 -->
-            <div class="style-row">
-              <span class="style-label">显示类型</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">显示类型</span>
               <Segmented
                 v-model:value="localOptions.specific.mode"
                 :options="[
@@ -78,8 +78,8 @@
 
             <!-- 柱状图模式：显示堆叠开关 -->
             <template v-if="localOptions.specific.mode === 'bar'">
-              <div class="style-row">
-                <span class="style-label">开启堆叠</span>
+              <div :class="bem('row')">
+                <span :class="bem('label')">开启堆叠</span>
                 <Switch
                   :checked="localOptions.specific.stackMode !== 'none'"
                   @change="(checked: any) => (localOptions.specific.stackMode = checked ? 'normal' : 'none')"
@@ -90,16 +90,16 @@
 
             <!-- 折线图模式：显示线条相关配置 -->
             <template v-else>
-              <div class="style-row">
-                <span class="style-label">线宽</span>
+              <div :class="bem('row')">
+                <span :class="bem('label')">线宽</span>
                 <div style="flex: 1; display: flex; align-items: center; gap: 12px">
                   <Slider v-model:value="localOptions.chart.line.width" :min="1" :max="10" :step="0.5" style="flex: 1" />
-                  <span class="slider-value">{{ localOptions.chart.line.width }}</span>
+                  <span :class="bem('slider-value')">{{ localOptions.chart.line.width }}</span>
                 </div>
               </div>
 
-              <div class="style-row">
-                <span class="style-label">线条样式</span>
+              <div :class="bem('row')">
+                <span :class="bem('label')">线条样式</span>
                 <Segmented
                   v-model:value="localOptions.chart.line.type"
                   :options="[
@@ -111,16 +111,16 @@
                 />
               </div>
 
-              <div class="style-row">
-                <span class="style-label">区域透明度</span>
+              <div :class="bem('row')">
+                <span :class="bem('label')">区域透明度</span>
                 <div style="flex: 1; display: flex; align-items: center; gap: 12px">
                   <Slider v-model:value="localOptions.specific.fillOpacity" :min="0" :max="1" :step="0.1" style="flex: 1" />
-                  <span class="slider-value">{{ localOptions.specific.fillOpacity.toFixed(1) }}</span>
+                  <span :class="bem('slider-value')">{{ localOptions.specific.fillOpacity.toFixed(1) }}</span>
                 </div>
               </div>
 
-              <div class="style-row">
-                <span class="style-label">连接空值</span>
+              <div :class="bem('row')">
+                <span :class="bem('label')">连接空值</span>
                 <Switch v-model:checked="localOptions.chart.connectNulls" size="small" />
               </div>
             </template>
@@ -129,17 +129,17 @@
       </div>
 
       <!-- 右侧列：Y 轴 -->
-      <div class="styles-column">
-        <div class="section">
-          <div class="section-header">Y 轴</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">显示</span>
+      <div :class="bem('column')">
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">Y 轴</div>
+          <div :class="bem('section-content')">
+            <div :class="bem('row')">
+              <span :class="bem('label')">显示</span>
               <Switch v-model:checked="localOptions.axis.yAxis.show" size="small" />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">单位</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">单位</span>
               <Select
                 v-model:value="localOptions.format.unit"
                 size="small"
@@ -155,8 +155,8 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">小数位数</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">小数位数</span>
               <Select
                 v-model:value="localOptions.format.decimals"
                 size="small"
@@ -172,27 +172,27 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">标签</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">标签</span>
               <Input v-model:value="localOptions.axis.yAxis.name" size="small" placeholder="Y 轴标签" style="width: 200px" />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">最小值</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">最小值</span>
               <InputNumber v-model:value="localOptions.axis.yAxis.min" size="small" style="width: 200px" placeholder="自动" />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">最大值</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">最大值</span>
               <InputNumber v-model:value="localOptions.axis.yAxis.max" size="small" style="width: 200px" placeholder="自动" />
             </div>
           </div>
         </div>
 
         <!-- 重置设置 -->
-        <div class="section">
-          <div class="section-header">重置设置</div>
-          <div class="section-content">
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">重置设置</div>
+          <div :class="bem('section-content')">
             <Button type="default" size="middle" block @click="resetToDefaults"> 恢复默认设置 </Button>
           </div>
         </div>
@@ -203,9 +203,11 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { deepClone } from '@/utils';
+  import { deepClone, createNamespace } from '@/utils';
   import { getDefaultTimeSeriesOptions } from '../ChartStylesDefaultOptions/timeSeriesDefaultOptions';
   import { Switch, Select, Segmented, Button, Input, InputNumber, Slider } from 'ant-design-vue';
+
+  const [_, bem] = createNamespace('timeseries-chart-styles');
 
   interface Props {
     options: any;
@@ -257,68 +259,68 @@
 </script>
 
 <style scoped lang="less">
-  .timeseries-chart-styles {
+  .dp-timeseries-chart-styles {
     padding: 16px;
     height: 100%;
     overflow-y: auto;
 
-    .styles-grid {
+    &__grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 24px;
     }
 
-    .styles-column {
+    &__column {
       display: flex;
       flex-direction: column;
       gap: 24px;
     }
 
-    .section {
+    &__section {
       border: 1px solid @border-color;
       border-radius: 4px;
       overflow: hidden;
       background: @background-light;
-
-      .section-header {
-        padding: 12px 16px;
-        border-bottom: 1px solid @border-color;
-        font-weight: 600;
-        font-size: 12px;
-        letter-spacing: 0.5px;
-        color: @text-color-secondary;
-        text-transform: uppercase;
-        background: @background-base;
-      }
-
-      .section-content {
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
     }
 
-    .style-row {
+    &__section-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid @border-color;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: @text-color-secondary;
+      text-transform: uppercase;
+      background: @background-base;
+    }
+
+    &__section-content {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    &__row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+    }
 
-      .style-label {
-        font-size: 13px;
-        color: @text-color;
-        flex-shrink: 0;
-        min-width: 90px;
-        font-weight: 500;
-      }
+    &__label {
+      font-size: 13px;
+      color: @text-color;
+      flex-shrink: 0;
+      min-width: 90px;
+      font-weight: 500;
+    }
 
-      .slider-value {
-        font-size: 13px;
-        color: @text-color-secondary;
-        min-width: 30px;
-        text-align: right;
-      }
+    &__slider-value {
+      font-size: 13px;
+      color: @text-color-secondary;
+      min-width: 30px;
+      text-align: right;
     }
   }
 </style>

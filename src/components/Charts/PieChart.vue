@@ -1,10 +1,10 @@
 <!-- 饼图 -->
 <template>
-  <div class="pie-chart-container">
-    <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
+  <div :class="bem()">
+    <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
 
-    <div class="chart-wrapper" :class="{ 'is-legend-right': legendOptions.position === 'right' }">
-      <div ref="chartRef" class="pie-chart"></div>
+    <div :class="bem('wrapper', { 'legend-right': legendOptions.position === 'right' })">
+      <div ref="chartRef" :class="bem('chart')"></div>
 
       <!-- 自定义 Legend -->
       <Legend
@@ -26,13 +26,15 @@
   import { ref, computed, nextTick } from 'vue';
   import type { EChartsOption, ECharts } from 'echarts';
   import type { Panel, QueryResult } from '@/types';
-  import { formatValue } from '@/utils';
+  import { formatValue, createNamespace } from '@/utils';
   import { useChartResize } from '@/composables/useChartResize';
   import { useLegend } from '@/composables/useLegend';
   import { useChartInit } from '@/composables/useChartInit';
   import { useChartTooltip, TooltipDataProviders, type TooltipData } from '@/composables/useChartTooltip';
   import Legend from '@/components/ChartLegend/Legend.vue';
   import { Spin } from 'ant-design-vue';
+
+  const [_, bem] = createNamespace('pie-chart');
 
   const props = defineProps<{
     panel: Panel;
@@ -287,7 +289,7 @@
 </script>
 
 <style scoped lang="less">
-  .pie-chart-container {
+  .dp-pie-chart {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -295,39 +297,39 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-  }
 
-  .loading-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-  }
+    &__loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
 
-  .chart-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
+    &__wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
 
-    // 当图例在右侧时，改为横向布局
-    &.is-legend-right {
-      flex-direction: row;
+      // 当图例在右侧时，改为横向布局
+      &--legend-right {
+        flex-direction: row;
 
-      .pie-chart {
-        flex: 1;
-        width: 0;
-        min-width: 0;
+        .dp-pie-chart__chart {
+          flex: 1;
+          width: 0;
+          min-width: 0;
+        }
       }
     }
-  }
 
-  .pie-chart {
-    flex: 1;
-    width: 100%;
-    min-height: 0;
+    &__chart {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+    }
   }
 </style>

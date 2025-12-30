@@ -1,9 +1,9 @@
 <template>
-  <div class="dashboard-toolbar">
+  <div :class="bem()">
     <!-- 第一层：标题和编辑模式按钮 -->
-    <div class="toolbar-header" :class="{ 'edit-mode': isEditMode }">
-      <h2 class="dashboard-title">{{ dashboardName }}</h2>
-      <div class="toolbar-actions">
+    <div :class="[bem('header'), bem('header', { 'edit-mode': isEditMode })]">
+      <h2 :class="bem('title')">{{ dashboardName }}</h2>
+      <div :class="bem('actions')">
         <template v-if="isEditMode">
           <!-- 编辑模式下的操作按钮 -->
           <Button @click="handleAddPanelGroup">
@@ -20,11 +20,11 @@
     </div>
 
     <!-- 第二层：变量选择器和控制按钮 -->
-    <div class="toolbar-controls">
-      <div class="controls-left">
+    <div :class="bem('controls')">
+      <div :class="bem('controls-left')">
         <VariableSelector :variables="currentDashboard?.variables" @change="handleVariableChange" />
       </div>
-      <div class="controls-right">
+      <div :class="bem('controls-right')">
         <!-- 时间范围选择器 -->
         <Select
           v-model:value="selectedTimeRange"
@@ -94,6 +94,9 @@
   import { message } from 'ant-design-vue';
   import JsonEditor from '@/components/Common/JsonEditor.vue';
   import VariableSelector from '@/components/Common/VariableSelector.vue';
+  import { createNamespace } from '@/utils';
+
+  const [_, bem] = createNamespace('dashboard-toolbar');
 
   const dashboardStore = useDashboardStore();
   const timeRangeStore = useTimeRangeStore();
@@ -258,54 +261,52 @@
 </script>
 
 <style scoped lang="less">
-  .dashboard-toolbar {
+  .dp-dashboard-toolbar {
     background-color: @background-base;
     border-bottom: 1px solid @border-color;
-  }
 
-  // 第一层：标题栏
-  .toolbar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    background-color: @background-base;
-    transition: background-color 0.3s;
+    &__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background-color: @background-base;
+      transition: background-color 0.3s;
 
-    &.edit-mode {
-      background-color: fade(@primary-color, 15%);
+      &.dp-dashboard-toolbar__header--edit-mode {
+        background-color: fade(@primary-color, 15%);
+      }
     }
 
-    .dashboard-title {
+    &__title {
       margin: 0;
       font-size: 18px;
       font-weight: 500;
       color: @text-color;
     }
 
-    .toolbar-actions {
+    &__actions {
       display: flex;
       align-items: center;
       gap: 8px;
       margin-left: auto;
     }
-  }
 
-  // 第二层：控制栏
-  .toolbar-controls {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 8px 16px 0;
-    gap: 12px;
+    &__controls {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 8px 16px 0;
+      gap: 12px;
+    }
 
-    .controls-left {
+    &__controls-left {
       flex: 1;
       min-width: 0;
       padding-bottom: 8px;
     }
 
-    .controls-right {
+    &__controls-right {
       display: flex;
       align-items: center;
       gap: 8px;

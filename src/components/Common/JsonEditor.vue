@@ -1,6 +1,6 @@
 <template>
-  <div class="json-editor">
-    <div class="editor-toolbar" v-if="showToolbar">
+  <div :class="bem()">
+    <div :class="bem('toolbar')" v-if="showToolbar">
       <Space>
         <Button size="small" @click="formatJson">
           <template #icon><FormatPainterOutlined /></template>
@@ -16,8 +16,8 @@
         </Button>
       </Space>
     </div>
-    <div ref="editorContainer" class="editor-container"></div>
-    <div v-if="errorMessage" class="error-message">
+    <div ref="editorContainer" :class="bem('container')"></div>
+    <div v-if="errorMessage" :class="bem('error')">
       <Alert :message="errorMessage" type="error" closable @close="errorMessage = ''" />
     </div>
   </div>
@@ -28,6 +28,9 @@
   import { message, Button, Space, Alert } from 'ant-design-vue';
   import { FormatPainterOutlined, CheckCircleOutlined, CopyOutlined } from '@ant-design/icons-vue';
   import monaco from '@/monaco-worker';
+  import { createNamespace } from '@/utils';
+
+  const [_, bem] = createNamespace('json-editor');
 
   interface Props {
     modelValue?: string | object;
@@ -194,29 +197,29 @@
 </script>
 
 <style scoped lang="less">
-  .json-editor {
+  .dp-json-editor {
     display: flex;
     flex-direction: column;
     border: 1px solid #d9d9d9;
     border-radius: 4px;
     overflow: hidden;
-  }
 
-  .editor-toolbar {
-    padding: 8px 12px;
-    background: #fafafa;
-    border-bottom: 1px solid #d9d9d9;
-  }
+    &__toolbar {
+      padding: 8px 12px;
+      background: #fafafa;
+      border-bottom: 1px solid #d9d9d9;
+    }
 
-  .editor-container {
-    flex: 1;
-    min-height: v-bind(height);
-    overflow: hidden;
-  }
+    &__container {
+      flex: 1;
+      min-height: v-bind(height);
+      overflow: hidden;
+    }
 
-  .error-message {
-    padding: 8px 12px;
-    background: #fff;
-    border-top: 1px solid #d9d9d9;
+    &__error {
+      padding: 8px 12px;
+      background: #fff;
+      border-top: 1px solid #d9d9d9;
+    }
   }
 </style>

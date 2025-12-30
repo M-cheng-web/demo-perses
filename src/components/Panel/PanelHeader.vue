@@ -1,13 +1,13 @@
 <template>
-  <div class="panel-header">
-    <div class="header-content">
-      <h4 class="panel-title">{{ panel.name }}</h4>
+  <div :class="bem()">
+    <div :class="bem('content')">
+      <h4 :class="bem('title')">{{ panel.name }}</h4>
       <Tooltip v-if="panel.description" :title="panel.description">
-        <InfoCircleOutlined class="info-icon" />
+        <InfoCircleOutlined :class="bem('info-icon')" />
       </Tooltip>
     </div>
 
-    <div class="header-actions">
+    <div :class="bem('actions')">
       <!-- 非编辑模式：只在 hover 时显示放大按钮 -->
       <template v-if="!isEditMode">
         <Tooltip title="全屏查看">
@@ -33,7 +33,7 @@
       </template>
     </div>
 
-    <div class="header-actions-edit" v-if="isEditMode">
+    <div :class="bem('actions-edit')" v-if="isEditMode">
       <Tooltip title="编辑">
         <Button type="text" size="small" :icon="h(EditOutlined)" @click="handleEdit" />
       </Tooltip>
@@ -59,6 +59,9 @@
   import { EditOutlined, CopyOutlined, DeleteOutlined, FullscreenOutlined, InfoCircleOutlined } from '@ant-design/icons-vue';
   import type { Panel, ID } from '@/types';
   import { useDashboardStore, useEditorStore } from '@/stores';
+  import { createNamespace } from '@/utils';
+
+  const [_, bem] = createNamespace('panel-header');
 
   const props = defineProps<{
     groupId: ID;
@@ -89,7 +92,7 @@
 </script>
 
 <style scoped lang="less">
-  .panel-header {
+  .dp-panel-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -99,35 +102,35 @@
     background-color: @background-base;
     flex-shrink: 0;
 
-    .header-content {
+    &__content {
       display: flex;
       align-items: center;
       gap: 8px;
       flex: 1;
       min-width: 0;
       overflow: hidden;
-
-      .panel-title {
-        margin: 0;
-        font-size: 13px;
-        font-weight: 500;
-        line-height: 24px;
-        min-height: 26px;
-        color: @text-color;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .info-icon {
-        color: @text-color-secondary;
-        font-size: 12px;
-        flex-shrink: 0;
-        cursor: help;
-      }
     }
 
-    .header-actions-edit {
+    &__title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 24px;
+      min-height: 26px;
+      color: @text-color;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &__info-icon {
+      color: @text-color-secondary;
+      font-size: 12px;
+      flex-shrink: 0;
+      cursor: help;
+    }
+
+    &__actions-edit {
       display: flex;
       align-items: center;
       gap: 2px;
@@ -135,7 +138,7 @@
       margin-left: auto;
     }
 
-    .header-actions {
+    &__actions {
       display: var(--panel-hover, none);
       align-items: center;
       gap: 2px;

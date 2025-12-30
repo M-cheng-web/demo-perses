@@ -1,20 +1,20 @@
 <!-- 图表样式配置 - 仪表盘 -->
 <template>
-  <div class="gauge-chart-styles">
-    <div class="styles-grid">
+  <div :class="bem()">
+    <div :class="bem('grid')">
       <!-- 左侧列：格式配置 & 仪表盘配置 -->
-      <div class="styles-column">
+      <div :class="bem('column')">
         <!-- 格式配置 -->
-        <div class="section">
-          <div class="section-header">格式</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">缩写数值</span>
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">格式</div>
+          <div :class="bem('section-content')">
+            <div :class="bem('row')">
+              <span :class="bem('label')">缩写数值</span>
               <Switch v-model:checked="localOptions.format.shortValues" size="small" />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">单位</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">单位</span>
               <Select
                 :options="[
                   { label: '无', value: 'none' },
@@ -30,8 +30,8 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">小数位数</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">小数位数</span>
               <Select
                 :options="[
                   { label: '默认', value: 'default' },
@@ -47,8 +47,8 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">计算方式</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">计算方式</span>
               <Select
                 :options="[
                   { label: '最新值 *', value: 'last' },
@@ -66,21 +66,21 @@
         </div>
 
         <!-- 仪表盘配置 -->
-        <div class="section">
-          <div class="section-header">仪表盘</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">最小值</span>
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">仪表盘</div>
+          <div :class="bem('section-content')">
+            <div :class="bem('row')">
+              <span :class="bem('label')">最小值</span>
               <InputNumber v-model:value="localOptions.specific.min" size="small" style="width: 200px" placeholder="0" />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">最大值</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">最大值</span>
               <InputNumber v-model:value="localOptions.specific.max" size="small" style="width: 200px" placeholder="100" />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">起始角度</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">起始角度</span>
               <InputNumber
                 v-model:value="localOptions.specific.startAngle"
                 :min="-360"
@@ -91,8 +91,8 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">结束角度</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">结束角度</span>
               <InputNumber
                 v-model:value="localOptions.specific.endAngle"
                 :min="-360"
@@ -103,18 +103,18 @@
               />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">刻度数量</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">刻度数量</span>
               <InputNumber v-model:value="localOptions.specific.splitNumber" :min="2" :max="20" size="small" style="width: 200px" placeholder="10" />
             </div>
 
-            <div class="style-row">
-              <span class="style-label">显示指针</span>
+            <div :class="bem('row')">
+              <span :class="bem('label')">显示指针</span>
               <Switch v-model:checked="localOptions.specific.pointer.show" size="small" />
             </div>
 
-            <div v-if="localOptions.specific.pointer.show" class="style-row">
-              <span class="style-label">指针长度</span>
+            <div v-if="localOptions.specific.pointer.show" :class="bem('row')">
+              <span :class="bem('label')">指针长度</span>
               <Select
                 :options="[
                   { label: '40%', value: '40%' },
@@ -129,8 +129,8 @@
               />
             </div>
 
-            <div v-if="localOptions.specific.pointer.show" class="style-row">
-              <span class="style-label">指针宽度</span>
+            <div v-if="localOptions.specific.pointer.show" :class="bem('row')">
+              <span :class="bem('label')">指针宽度</span>
               <InputNumber v-model:value="localOptions.specific.pointer.width" :min="2" :max="20" size="small" style="width: 200px" placeholder="8" />
             </div>
           </div>
@@ -138,12 +138,12 @@
       </div>
 
       <!-- 右侧列：阈值配置 -->
-      <div class="styles-column">
-        <div class="section">
-          <div class="section-header">阈值</div>
-          <div class="section-content">
-            <div class="style-row">
-              <span class="style-label">模式</span>
+      <div :class="bem('column')">
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">阈值</div>
+          <div :class="bem('section-content')">
+            <div :class="bem('row')">
+              <span :class="bem('label')">模式</span>
               <Segmented
                 v-model:value="localOptions.thresholds.mode"
                 :options="[
@@ -154,16 +154,16 @@
               />
             </div>
 
-            <div class="threshold-list">
-              <div class="threshold-header">
+            <div :class="bem('threshold-list')">
+              <div :class="bem('threshold-header')">
                 <span style="width: 28px"></span>
                 <span style="width: 80px; font-size: 12px; color: #999">名称</span>
                 <span style="width: 110px; font-size: 12px; color: #999">颜色</span>
                 <span style="width: 110px; font-size: 12px; color: #999">阈值</span>
                 <span style="width: 32px"></span>
               </div>
-              <div v-for="(threshold, index) in localOptions.thresholds.steps" :key="index" class="threshold-item">
-                <span class="threshold-color" :style="{ backgroundColor: threshold.color }"></span>
+              <div v-for="(threshold, index) in localOptions.thresholds.steps" :key="index" :class="bem('threshold-item')">
+                <span :class="bem('threshold-color')" :style="{ backgroundColor: threshold.color }"></span>
                 <Input v-model:value="threshold.name" size="small" placeholder="阈值名称" style="width: 80px" />
                 <Input v-model:value="threshold.color" size="small" placeholder="#52c41a" style="width: 110px" />
                 <InputNumber v-model:value="threshold.value" size="small" style="width: 110px" placeholder="0" />
@@ -181,9 +181,9 @@
         </div>
 
         <!-- 重置设置 -->
-        <div class="section">
-          <div class="section-header">重置设置</div>
-          <div class="section-content">
+        <div :class="bem('section')">
+          <div :class="bem('section-header')">重置设置</div>
+          <div :class="bem('section-content')">
             <Button type="default" size="middle" block @click="resetToDefaults"> 恢复默认设置 </Button>
           </div>
         </div>
@@ -195,9 +195,11 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
   import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
-  import { deepClone } from '@/utils';
+  import { deepClone, createNamespace } from '@/utils';
   import { getDefaultGaugeChartOptions } from '../ChartStylesDefaultOptions/gaugeChartDefaultOptions';
   import { Switch, Segmented, Button, InputNumber, Select, Input } from 'ant-design-vue';
+
+  const [_, bem] = createNamespace('gauge-chart-styles');
 
   interface Props {
     options: any;
@@ -306,90 +308,82 @@
 </script>
 
 <style scoped lang="less">
-  .gauge-chart-styles {
+  .dp-gauge-chart-styles {
     padding: 16px;
     height: 100%;
     overflow-y: auto;
 
-    .styles-grid {
+    &__grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 24px;
     }
 
-    .styles-column {
+    &__column {
       display: flex;
       flex-direction: column;
       gap: 24px;
     }
 
-    .section {
+    &__section {
       border: 1px solid @border-color;
       border-radius: 4px;
       overflow: hidden;
       background: @background-light;
-
-      .section-header {
-        padding: 12px 16px;
-        border-bottom: 1px solid @border-color;
-        font-weight: 600;
-        font-size: 12px;
-        letter-spacing: 0.5px;
-        color: @text-color-secondary;
-        text-transform: uppercase;
-        background: @background-base;
-      }
-
-      .section-content {
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
     }
 
-    .style-row {
+    &__section-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid @border-color;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: @text-color-secondary;
+      text-transform: uppercase;
+      background: @background-base;
+    }
+
+    &__section-content {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    &__row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-
-      .style-label {
-        font-size: 13px;
-        color: @text-color;
-        flex-shrink: 0;
-        min-width: 90px;
-        font-weight: 500;
-      }
     }
 
-    .threshold-list {
+    &__label {
+      font-size: 13px;
+      color: @text-color;
+      flex-shrink: 0;
+      min-width: 90px;
+      font-weight: 500;
+    }
+
+    &__threshold-list {
       display: flex;
       flex-direction: column;
       gap: 8px;
       margin-bottom: 8px;
-
-      .threshold-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 4px 0;
-        font-weight: 500;
-      }
     }
 
-    .threshold-item {
+    &__threshold-header {
       display: flex;
       align-items: center;
       gap: 8px;
+      padding: 4px 0;
+      font-weight: 500;
+    }
 
-      .threshold-color {
-        width: 20px;
-        height: 20px;
-        border-radius: 4px;
-        flex-shrink: 0;
-        border: 1px solid @border-color;
-      }
+    &__threshold-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
 
       :deep(.ant-input-number) {
         flex-shrink: 0;
@@ -398,6 +392,14 @@
       :deep(.ant-input) {
         flex-shrink: 0;
       }
+    }
+
+    &__threshold-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      border: 1px solid @border-color;
     }
   }
 </style>

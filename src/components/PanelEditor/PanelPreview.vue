@@ -1,10 +1,10 @@
 <!-- 图表预览 -->
 <template>
-  <div class="panel-preview">
-    <div class="preview-header">
+  <div :class="bem()">
+    <div :class="bem('header')">
       <h4>预览</h4>
     </div>
-    <div class="preview-content" ref="previewRef">
+    <div :class="bem('content')" ref="previewRef">
       <component v-if="panel && queryResults.length > 0" :is="chartComponent" :panel="panel" :query-results="queryResults" />
       <Empty v-else description="暂无数据" />
     </div>
@@ -24,6 +24,9 @@
   import type { Panel, QueryResult } from '@/types';
   import { useTimeRangeStore } from '@/stores';
   import { executeQueries } from '@/mock/queries';
+  import { createNamespace } from '@/utils';
+
+  const [_, bem] = createNamespace('panel-preview');
 
   const props = defineProps<{
     panel: Panel;
@@ -111,13 +114,13 @@
 </script>
 
 <style scoped lang="less">
-  .panel-preview {
+  .dp-panel-preview {
     border: 1px solid @border-color;
     border-radius: @border-radius;
     // background: @background-light;
     overflow: hidden;
 
-    .preview-header {
+    &__header {
       padding: @spacing-sm @spacing-md;
       background: @background-base;
       border-bottom: 1px solid @border-color;
@@ -129,7 +132,7 @@
       }
     }
 
-    .preview-content {
+    &__content {
       height: 300px;
       padding: @spacing-md;
       display: flex;

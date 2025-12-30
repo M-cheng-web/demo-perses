@@ -7,3 +7,4 @@ export * from './format';
 export * from './color';
 export * from './common';
 export * from './storage';
+export * from './bem';

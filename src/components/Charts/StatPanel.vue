@@ -1,13 +1,13 @@
 <!-- 统计图 -->
 <template>
-  <div class="stat-panel-container">
-    <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
+  <div :class="bem()">
+    <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
 
-    <div class="stat-wrapper">
-      <div class="stat-content" :style="contentStyle">
-        <div class="stat-value">{{ formattedValue }}</div>
-        <div v-if="showName" class="stat-name">{{ panel.name }}</div>
-        <div v-if="showTrend" class="stat-trend" :class="trendClass">
+    <div :class="bem('wrapper')">
+      <div :class="bem('content')" :style="contentStyle">
+        <div :class="bem('value')">{{ formattedValue }}</div>
+        <div v-if="showName" :class="bem('name')">{{ panel.name }}</div>
+        <div v-if="showTrend" :class="[bem('trend'), trendClass]">
           <component :is="trendIcon" />
           <span>{{ trendText }}</span>
         </div>
@@ -21,7 +21,9 @@
   import { Spin } from 'ant-design-vue';
   import { ArrowUpOutlined, ArrowDownOutlined, MinusOutlined } from '@ant-design/icons-vue';
   import type { Panel, QueryResult } from '@/types';
-  import { formatValue } from '@/utils';
+  import { formatValue, createNamespace } from '@/utils';
+
+  const [_, bem] = createNamespace('stat-panel');
 
   const props = defineProps<{
     panel: Panel;
@@ -120,7 +122,7 @@
 </script>
 
 <style scoped lang="less">
-  .stat-panel-container {
+  .dp-stat-panel {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -128,9 +130,8 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-  }
 
-  .loading-spinner {
+    &__loading {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -138,7 +139,7 @@
     z-index: 10;
   }
 
-  .stat-wrapper {
+    &__wrapper {
     flex: 1;
     display: flex;
     align-items: center;
@@ -149,25 +150,25 @@
     padding: @spacing-lg;
   }
 
-  .stat-content {
+    &__content {
     display: flex;
     gap: @spacing-sm;
   }
 
-  .stat-value {
+    &__value {
     font-size: 32px;
     font-weight: 600;
     color: rgba(0, 0, 0, 0.85);
     line-height: 1.2;
   }
 
-  .stat-name {
+    &__name {
     font-size: 14px;
     color: rgba(0, 0, 0, 0.45);
     margin-top: @spacing-xs;
   }
 
-  .stat-trend {
+    &__trend {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -185,6 +186,7 @@
 
     &.trend-neutral {
       color: rgba(0, 0, 0, 0.45);
+      }
     }
   }
 </style>

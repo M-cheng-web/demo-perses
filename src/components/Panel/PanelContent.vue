@@ -1,13 +1,13 @@
 <template>
-  <div class="panel-content">
-    <Spin v-if="loading" class="loading-spinner" :spinning="true" tip="加载中..." />
+  <div :class="bem()">
+    <Spin v-if="loading" :class="bem('loading')" :spinning="true" tip="加载中..." />
 
-    <div class="panel-content-wrapper">
-      <div v-if="error" class="panel-error">
+    <div :class="bem('wrapper')">
+      <div v-if="error" :class="bem('error')">
         <Result status="error" :title="error" />
       </div>
       <component v-else-if="chartComponent" :is="chartComponent" :panel="panel" :query-results="queryResults" />
-      <div v-else class="panel-empty">
+      <div v-else :class="bem('empty')">
         <Empty description="未配置图表类型" />
       </div>
     </div>
@@ -22,6 +22,7 @@
   import { useTimeRangeStore } from '@/stores';
   import { mockDataManager } from '@/mock';
   import { PanelType } from '@/enums/panelType';
+  import { createNamespace } from '@/utils';
   import TimeSeriesChart from '@/components/Charts/TimeSeriesChart.vue';
   import PieChart from '@/components/Charts/PieChart.vue';
   import BarChart from '@/components/Charts/BarChart.vue';
@@ -29,6 +30,8 @@
   import TableChart from '@/components/Charts/TableChart.vue';
   import GaugeChart from '@/components/Charts/GaugeChart.vue';
   import HeatmapChart from '@/components/Charts/HeatmapChart.vue';
+
+  const [_, bem] = createNamespace('panel-content');
 
   const props = defineProps<{
     panel: Panel;
@@ -89,7 +92,7 @@
 </script>
 
 <style scoped lang="less">
-  .panel-content {
+  .dp-panel-content {
     position: relative;
     flex: 1;
     padding: @spacing-sm-2;
@@ -98,30 +101,30 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-  }
 
-  .loading-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-  }
+    &__loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
 
-  .panel-content-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    width: 100%;
-    height: 100%;
-  }
+    &__wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      width: 100%;
+      height: 100%;
+    }
 
-  .panel-error,
-  .panel-empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
+    &__error,
+    &__empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
   }
 </style>

@@ -1,10 +1,10 @@
 <template>
-  <div class="dashboard">
+  <div :class="bem()">
     <!-- 工具栏 -->
     <DashboardToolbar />
 
     <!-- 面板组列表 -->
-    <div class="dashboard-content">
+    <div :class="bem('content')">
       <Empty v-if="!panelGroups.length" description="暂无面板组">
         <Button v-if="isEditMode" type="primary" @click="handleAddPanelGroup"> 创建面板组 </Button>
       </Empty>
@@ -31,6 +31,7 @@
   import { storeToRefs } from 'pinia';
   import { Empty, Button } from 'ant-design-vue';
   import { useDashboardStore, useTooltipStore } from '@/stores';
+  import { createNamespace } from '@/utils';
   import DashboardToolbar from './DashboardToolbar.vue';
   import PanelGroupList from '@/components/PanelGroup/PanelGroupList.vue';
   import PanelEditorDrawer from '@/components/PanelEditor/PanelEditorDrawer.vue';
@@ -38,6 +39,8 @@
   import GlobalChartTooltip from '@/components/ChartTooltip/GlobalChartTooltip.vue';
   import PanelGroupDialog from '@/components/PanelGroup/PanelGroupDialog.vue';
   import type { PanelGroup } from '@/types';
+
+  const [_, bem] = createNamespace('dashboard');
 
   const dashboardStore = useDashboardStore();
   const tooltipStore = useTooltipStore();
@@ -86,17 +89,17 @@
 </script>
 
 <style scoped lang="less">
-  .dashboard {
+  .dp-dashboard {
     display: flex;
     flex-direction: column;
     width: 100%;
     height: 100%;
     background-color: @background-light;
-  }
 
-  .dashboard-content {
-    flex: 1;
-    overflow: auto;
-    padding: @spacing-md;
+    &__content {
+      flex: 1;
+      overflow: auto;
+      padding: @spacing-md;
+    }
   }
 </style>

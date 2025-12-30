@@ -21,7 +21,10 @@
   import { ref } from 'vue';
   import { message } from 'ant-design-vue';
   import { useDashboardStore } from '@/stores';
+  import { createNamespace } from '@/utils';
   import type { PanelGroup } from '@/types';
+
+  const [_, bem] = createNamespace('panel-group-dialog');
 
   const dashboardStore = useDashboardStore();
 

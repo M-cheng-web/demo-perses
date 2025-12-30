@@ -1,8 +1,12 @@
 <template>
   <div
     v-if="options.show !== false && items.length > 0"
-    class="chart-legend"
-    :class="[`legend-${options.position || 'bottom'}`, `legend-${options.size || 'medium'}`, `legend-mode-${effectiveMode}`]"
+    :class="[
+      bem(),
+      bem(options.position || 'bottom'),
+      bem(options.size || 'medium'),
+      bem({ mode: effectiveMode }),
+    ]"
   >
     <component
       :is="legendComponent"
@@ -22,9 +26,12 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
+  import { createNamespace } from '@/utils';
   import type { LegendItem, LegendOptions, LegendSelection } from '@/types/legend';
   import CompactLegend from './CompactLegend.vue';
   import TableLegend from './TableLegend.vue';
+
+  const [_, bem] = createNamespace('chart-legend');
 
   interface Props {
     items: LegendItem[];
@@ -82,16 +89,16 @@
 </script>
 
 <style scoped lang="less">
-  .chart-legend {
+  .dp-chart-legend {
     background-color: @background-base;
     transition: all 0.2s ease;
     margin-top: @spacing-sm;
 
-    &.legend-bottom {
+    &.dp-chart-legend--bottom {
       width: 100%;
     }
 
-    &.legend-right {
+    &.dp-chart-legend--right {
       height: 100%;
       border-top: none;
       border-left: 1px solid @border-color;
@@ -102,36 +109,35 @@
       padding-left: @spacing-sm;
     }
 
-    &.legend-top {
+    &.dp-chart-legend--top {
       width: 100%;
       border-top: none;
       border-bottom: 1px solid @border-color;
     }
 
-    &.legend-left {
+    &.dp-chart-legend--left {
       height: 100%;
       border-top: none;
       border-right: 1px solid @border-color;
     }
 
-    &.legend-small {
+    &.dp-chart-legend--small {
       font-size: 11px;
     }
 
-    &.legend-medium {
+    &.dp-chart-legend--medium {
       font-size: 12px;
     }
 
-    &.legend-large {
+    &.dp-chart-legend--large {
       font-size: 14px;
     }
 
-    // 不同模式的样式
-    &.legend-mode-compact {
+    &.dp-chart-legend--mode-compact {
       // padding: @spacing-xs @spacing-sm;
     }
 
-    &.legend-mode-list {
+    &.dp-chart-legend--mode-list {
       // padding: @spacing-sm;
     }
   }

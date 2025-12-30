@@ -1,9 +1,9 @@
 <template>
-  <div class="panel-group-item">
+  <div :class="bem()">
     <PanelGroupHeader :group="group" :index="index" :is-last="isLast" @edit="$emit('edit', group)" />
 
     <Transition name="collapse">
-      <div v-if="!group.isCollapsed" class="panel-group-content">
+      <div v-if="!group.isCollapsed" :class="bem('content')">
         <GridLayout :group-id="group.id" :panels="group.panels" :layout="group.layout" />
       </div>
     </Transition>
@@ -12,8 +12,11 @@
 
 <script setup lang="ts">
   import type { PanelGroup } from '@/types';
+  import { createNamespace } from '@/utils';
   import PanelGroupHeader from './PanelGroupHeader.vue';
   import GridLayout from '@/components/GridLayout/GridLayout.vue';
+
+  const [_, bem] = createNamespace('panel-group-item');
 
   defineProps<{
     group: PanelGroup;
@@ -27,15 +30,15 @@
 </script>
 
 <style scoped lang="less">
-  .panel-group-item {
+  .dp-panel-group-item {
     background-color: @background-base;
     border-radius: @border-radius-base;
     overflow: hidden;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
 
-  .panel-group-content {
-    padding: @spacing-md;
+    &__content {
+      padding: @spacing-md;
+    }
   }
 
   // 折叠过渡动画

@@ -1,10 +1,10 @@
 <!-- 仪表盘 -->
 <template>
-  <div class="gauge-chart-container">
-    <Spin v-if="isLoading" class="loading-spinner" :spinning="true" />
+  <div :class="bem()">
+    <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
 
-    <div class="chart-wrapper">
-      <div ref="chartRef" class="gauge-chart"></div>
+    <div :class="bem('wrapper')">
+      <div ref="chartRef" :class="bem('chart')"></div>
     </div>
   </div>
 </template>
@@ -14,9 +14,11 @@
   import { Spin } from 'ant-design-vue';
   import type { EChartsOption, ECharts } from 'echarts';
   import type { Panel, QueryResult, GaugeOptions } from '@/types';
-  import { formatValue } from '@/utils';
+  import { formatValue, createNamespace } from '@/utils';
   import { useChartResize } from '@/composables/useChartResize';
   import { useChartInit } from '@/composables/useChartInit';
+
+  const [_, bem] = createNamespace('gauge-chart');
 
   const props = defineProps<{
     panel: Panel;
@@ -266,7 +268,7 @@
 </script>
 
 <style scoped lang="less">
-  .gauge-chart-container {
+  .dp-gauge-chart {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -274,28 +276,28 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-  }
 
-  .loading-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-  }
+    &__loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
 
-  .chart-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-  }
+    &__wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
 
-  .gauge-chart {
-    flex: 1;
-    width: 100%;
-    min-height: 0;
+    &__chart {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+    }
   }
 </style>

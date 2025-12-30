@@ -1,9 +1,9 @@
 <template>
-  <div v-if="panel" class="panel">
+  <div v-if="panel" :class="bem()">
     <PanelHeader :group-id="groupId" :panel="panel" />
     <PanelContent :panel="panel" />
   </div>
-  <div v-else class="panel panel-error">
+  <div v-else :class="bem({ error: true })">
     <Result status="error" title="面板加载失败" sub-title="未找到面板数据" />
   </div>
 </template>
@@ -13,8 +13,11 @@
   import type { ID } from '@/types';
   import { Result } from 'ant-design-vue';
   import { useDashboardStore } from '@/stores';
+  import { createNamespace } from '@/utils';
   import PanelHeader from './PanelHeader.vue';
   import PanelContent from './PanelContent.vue';
+
+  const [_, bem] = createNamespace('panel');
 
   const props = defineProps<{
     groupId: ID;
@@ -27,7 +30,7 @@
 </script>
 
 <style scoped lang="less">
-  .panel {
+  .dp-panel {
     --panel-hover: none;
 
     display: flex;
@@ -44,11 +47,11 @@
       --panel-hover: flex;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
-  }
 
-  .panel-error {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    &--error {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   }
 </style>
