@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch, onMounted } from 'vue';
+  import { ref, computed, watch, onMounted, withDefaults } from 'vue';
   import { Empty } from 'ant-design-vue';
   import TimeSeriesChart from '@/components/Charts/TimeSeriesChart.vue';
   import PieChart from '@/components/Charts/PieChart.vue';
@@ -28,9 +28,15 @@
 
   const [_, bem] = createNamespace('panel-preview');
 
-  const props = defineProps<{
-    panel: Panel;
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      panel: Panel;
+      autoExecute?: boolean; // 是否自动执行查询
+    }>(),
+    {
+      autoExecute: true, // 默认自动执行，保持向后兼容
+    }
+  );
 
   const timeRangeStore = useTimeRangeStore();
   const queryResults = ref<QueryResult[]>([]);
@@ -79,7 +85,9 @@
   watch(
     () => props.panel,
     () => {
-      executeQueriesInternal();
+      if (props.autoExecute) {
+        executeQueriesInternal();
+      }
     },
     { deep: true, immediate: false }
   );
@@ -103,13 +111,22 @@
   watch(
     () => timeRangeStore.timeRange,
     () => {
-      executeQueriesInternal();
+      if (props.autoExecute) {
+        executeQueriesInternal();
+      }
     },
     { deep: true }
   );
 
   onMounted(() => {
-    executeQueriesInternal();
+    if (props.autoExecute) {
+      executeQueriesInternal();
+    }
+  });
+
+  // 暴露方法给父组件调用
+  defineExpose({
+    executeQueries: executeQueriesInternal,
   });
 </script>
 

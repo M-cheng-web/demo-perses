@@ -32,13 +32,23 @@
 
       <!-- 面板预览 -->
       <div :class="bem('preview')">
-        <PanelPreview :panel="formData" />
+        <PanelPreview ref="panelPreviewRef" :panel="formData" :auto-execute="false" />
       </div>
 
       <!-- Tabs -->
       <Tabs v-model:activeKey="activeTab" :class="bem('tabs')">
         <!-- 数据查询 -->
         <TabPane key="query" tab="数据查询">
+          <!-- 查询按钮 -->
+          <div :class="bem('query-actions')">
+            <Button type="primary" @click="handleExecuteQuery">
+              <template #icon>
+                <SearchOutlined />
+              </template>
+              执行查询
+            </Button>
+          </div>
+
           <div v-for="(query, index) in formData.queries" :key="query.id" :class="bem('query-item')">
             <Card size="small" :title="`查询 ${index + 1}`">
               <template #extra>
@@ -114,7 +124,7 @@
     Flex,
     message,
   } from 'ant-design-vue';
-  import { PlusOutlined } from '@ant-design/icons-vue';
+  import { PlusOutlined, SearchOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useEditorStore } from '@/stores';
   import { generateId, deepClone, createNamespace } from '@/utils';
   import { PanelType, PANEL_TYPE_OPTIONS } from '@/enums/panelType';
@@ -148,6 +158,7 @@
   const activeTab = ref('query'); // 默认选中数据查询
   const isJsonValid = ref(true);
   const selectedGroupId = ref<string>('');
+  const panelPreviewRef = ref<InstanceType<typeof PanelPreview>>();
 
   // 获取面板组列表
   const panelGroups = computed(() => currentDashboard.value?.panelGroups || []);
@@ -226,6 +237,14 @@
       }
       // 初始化选中的面板组
       selectedGroupId.value = targetGroupId.value || '';
+
+      // 如果是编辑模式且有查询配置，初始化时自动执行一次查询
+      if (editingMode.value === 'edit' && formData.queries && formData.queries.length > 0) {
+        // 使用 nextTick 确保组件已完全渲染
+        setTimeout(() => {
+          panelPreviewRef.value?.executeQueries();
+        }, 100);
+      }
     }
   });
 
@@ -258,6 +277,41 @@
   // 删除查询
   const removeQuery = (index: number) => {
     formData.queries.splice(index, 1);
+  };
+
+  // 执行查询
+  const handleExecuteQuery = () => {
+    // 基本校验
+    if (!formData.queries || formData.queries.length === 0) {
+      message.warning('请至少添加一个查询');
+      return;
+    }
+
+    // 校验每个查询的 PromQL 表达式
+    const invalidQueries = formData.queries.filter((query: any, index: number) => {
+      if (!query.expr || query.expr.trim() === '') {
+        message.error(`查询 ${index + 1} 的 PromQL 表达式不能为空`);
+        return true;
+      }
+      return false;
+    });
+
+    if (invalidQueries.length > 0) {
+      return;
+    }
+
+    // 执行查询并更新预览
+    message.loading({ content: '正在执行查询...', key: 'executeQuery', duration: 0 });
+
+    // 调用预览组件的查询方法
+    panelPreviewRef.value
+      ?.executeQueries()
+      .then(() => {
+        message.success({ content: '查询执行成功', key: 'executeQuery', duration: 2 });
+      })
+      .catch((error) => {
+        message.error({ content: `查询执行失败: ${error.message || '未知错误'}`, key: 'executeQuery', duration: 3 });
+      });
   };
 
   // 关闭
@@ -327,6 +381,12 @@
       :deep(.ant-tabs-nav) {
         margin-bottom: @spacing-md;
       }
+    }
+
+    &__query-actions {
+      margin-bottom: @spacing-md;
+      display: flex;
+      justify-content: flex-end;
     }
 
     &__query-item {
