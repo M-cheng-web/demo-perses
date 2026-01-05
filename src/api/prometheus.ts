@@ -16,7 +16,7 @@ export interface PrometheusQueryParams {
  * 查询 Prometheus 数据（模拟）
  * 返回空数组，让 queries.ts 使用默认数据池
  */
-export async function queryPrometheus(params: PrometheusQueryParams): Promise<TimeSeriesData[]> {
+export async function queryPrometheus(_params: PrometheusQueryParams): Promise<TimeSeriesData[]> {
   // 模拟网络延迟
   await new Promise((resolve) => setTimeout(resolve, 30 + Math.random() * 50));
 

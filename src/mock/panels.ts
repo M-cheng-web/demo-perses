@@ -287,7 +287,6 @@ export function createGaugePanel(name: string, expr: string, min: number = 0, ma
       specific: {
         min,
         max,
-        showPointer: true,
         thresholds: [
           { value: 0, color: '#52c41a' }, // 绿色 0-60
           { value: 60, color: '#faad14' }, // 黄色 60-80

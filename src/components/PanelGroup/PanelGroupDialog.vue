@@ -24,7 +24,7 @@
   import { createNamespace } from '@/utils';
   import type { PanelGroup } from '@/types';
 
-  const [_, bem] = createNamespace('panel-group-dialog');
+  const [_, _bem] = createNamespace('panel-group-dialog');
 
   const dashboardStore = useDashboardStore();
 

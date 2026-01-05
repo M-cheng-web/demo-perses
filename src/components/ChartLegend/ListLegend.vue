@@ -41,7 +41,7 @@
   import type { LegendItem, LegendSelection } from '@/types/legend';
   import { Checkbox } from 'ant-design-vue';
 
-  const [_, bem] = createNamespace('list-legend');
+  const [_, _bem] = createNamespace('list-legend');
 
   interface Props {
     items: LegendItem[];

@@ -1,6 +1,7 @@
 /**
  * 面板类型枚举
  */
+// @ts-ignore
 export enum PanelType {
   /** 时间序列图 */
   TIMESERIES = 'timeseries',
