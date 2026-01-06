@@ -39,42 +39,7 @@
       <Tabs v-model:activeKey="activeTab" :class="bem('tabs')">
         <!-- 数据查询 -->
         <TabPane key="query" tab="数据查询">
-          <!-- 查询按钮 -->
-          <div :class="bem('query-actions')">
-            <Button type="primary" @click="handleExecuteQuery">
-              <template #icon>
-                <SearchOutlined />
-              </template>
-              执行查询
-            </Button>
-          </div>
-
-          <div v-for="(query, index) in formData.queries" :key="query.id" :class="bem('query-item')">
-            <Card size="small" :title="`查询 ${index + 1}`">
-              <template #extra>
-                <Button type="text" danger size="small" @click="removeQuery(index)"> 删除 </Button>
-              </template>
-
-              <FormItem label="PromQL 表达式">
-                <Textarea v-model:value="query.expr" placeholder="例如：cpu_usage" :rows="2" />
-              </FormItem>
-
-              <FormItem label="图例格式">
-                <Input v-model:value="query.legendFormat" placeholder="例如：{{instance}}" />
-              </FormItem>
-
-              <FormItem label="最小步长（秒）">
-                <InputNumber v-model:value="query.minStep" :min="1" :max="300" style="width: 100%" />
-              </FormItem>
-            </Card>
-          </div>
-
-          <Button type="dashed" block @click="addQuery">
-            <template #icon>
-              <PlusOutlined />
-            </template>
-            添加查询
-          </Button>
+          <DataQueryTab ref="dataQueryTabRef" :queries="formData.queries" @update:queries="handleQueriesUpdate" @execute="handleExecuteQuery" />
         </TabPane>
 
         <!-- 图表样式 -->
@@ -106,25 +71,7 @@
 <script setup lang="ts">
   import { ref, reactive, watch, computed } from 'vue';
   import { storeToRefs } from 'pinia';
-  import {
-    Drawer,
-    Form,
-    FormItem,
-    Select,
-    Input,
-    Textarea,
-    InputNumber,
-    Button,
-    Card,
-    Tabs,
-    TabPane,
-    Empty,
-    Row,
-    Col,
-    Flex,
-    message,
-  } from 'ant-design-vue';
-  import { PlusOutlined, SearchOutlined } from '@ant-design/icons-vue';
+  import { Drawer, Form, FormItem, Select, Input, Textarea, Button, Tabs, TabPane, Empty, Row, Col, Flex, message } from 'ant-design-vue';
   import { useDashboardStore, useEditorStore } from '@/stores';
   import { generateId, deepClone, createNamespace } from '@/utils';
   import { PanelType, PANEL_TYPE_OPTIONS } from '@/enums/panelType';
@@ -138,6 +85,7 @@
   import type { Panel } from '@/types';
   import JsonEditor from '@/components/Common/JsonEditor.vue';
   import PanelPreview from './PanelPreview.vue';
+  import DataQueryTab from './DataQueryTab.vue';
   import { getDefaultTimeSeriesOptions } from './ChartStylesDefaultOptions/timeSeriesDefaultOptions';
   import { getDefaultBarChartOptions } from './ChartStylesDefaultOptions/barChartDefaultOptions';
   import { getDefaultPieChartOptions } from './ChartStylesDefaultOptions/pieChartDefaultOptions';
@@ -159,6 +107,7 @@
   const isJsonValid = ref(true);
   const selectedGroupId = ref<string>('');
   const panelPreviewRef = ref<InstanceType<typeof PanelPreview>>();
+  const dataQueryTabRef = ref<InstanceType<typeof DataQueryTab>>();
 
   // 获取面板组列表
   const panelGroups = computed(() => currentDashboard.value?.panelGroups || []);
@@ -261,44 +210,29 @@
     }
   );
 
-  // 添加查询
-  const addQuery = () => {
-    formData.queries.push({
-      id: generateId(),
-      datasource: 'Prometheus',
-      expr: '',
-      legendFormat: '',
-      minStep: 15,
-      format: 'time_series',
-      instant: false,
-    });
-  };
-
-  // 删除查询
-  const removeQuery = (index: number) => {
-    formData.queries.splice(index, 1);
+  // 处理查询更新
+  const handleQueriesUpdate = (queries: any[]) => {
+    formData.queries = queries;
   };
 
   // 执行查询
   const handleExecuteQuery = () => {
+    // 获取最新的查询数据（但不更新 formData.queries，避免触发重新初始化）
+    let queries: any[] = [];
+    if (dataQueryTabRef.value) {
+      queries = dataQueryTabRef.value.getQueries();
+    }
+
     // 基本校验
-    if (!formData.queries || formData.queries.length === 0) {
+    if (!queries || queries.length === 0) {
       message.warning('请至少添加一个查询');
       return;
     }
 
-    // 校验每个查询的 PromQL 表达式
-    const invalidQueries = formData.queries.filter((query: any, index: number) => {
-      if (!query.expr || query.expr.trim() === '') {
-        message.error(`查询 ${index + 1} 的 PromQL 表达式不能为空`);
-        return true;
-      }
-      return false;
-    });
-
-    if (invalidQueries.length > 0) {
-      return;
-    }
+    // 临时更新 formData.queries 用于查询执行，但不触发 watch
+    // 使用 Object.defineProperty 直接赋值，避免响应式触发
+    const tempQueries = formData.queries;
+    formData.queries = queries;
 
     // 执行查询并更新预览
     message.loading({ content: '正在执行查询...', key: 'executeQuery', duration: 0 });
@@ -308,9 +242,12 @@
       ?.executeQueries()
       .then(() => {
         message.success({ content: '查询执行成功', key: 'executeQuery', duration: 2 });
+        // 查询成功后，保留更新的 queries
       })
       .catch((error) => {
         message.error({ content: `查询执行失败: ${error.message || '未知错误'}`, key: 'executeQuery', duration: 3 });
+        // 查询失败时，恢复原来的 queries
+        formData.queries = tempQueries;
       });
   };
 
@@ -381,16 +318,6 @@
       :deep(.ant-tabs-nav) {
         margin-bottom: @spacing-md;
       }
-    }
-
-    &__query-actions {
-      margin-bottom: @spacing-md;
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    &__query-item {
-      margin-bottom: @spacing-md;
     }
   }
 </style>
