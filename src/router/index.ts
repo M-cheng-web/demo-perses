@@ -2,14 +2,18 @@
  * 路由配置
  */
 
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 
 const routes: RouteRecordRaw[] = [
   {
-    path: '/',
+    path: '/home',
     name: 'Dashboard',
     component: () => import('@/views/DashboardView.vue'),
+  },
+  {
+    path: '/',
+    redirect: '/home',
   },
   {
     path: '/:pathMatch(.*)*',
@@ -19,7 +23,7 @@ const routes: RouteRecordRaw[] = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes,
 });
 
