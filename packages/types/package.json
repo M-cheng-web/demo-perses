@@ -1,0 +1,33 @@
+{
+  "name": "@grafana-fast/types",
+  "version": "0.0.1",
+  "description": "TypeScript type definitions for grafana-fast",
+  "main": "./index.cjs",
+  "module": "./index.mjs",
+  "types": "./index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.cjs",
+      "import": "./index.mjs"
+    },
+    "./*": "./*"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grafana-fast/grafana-fast.git",
+    "directory": "packages/types"
+  },
+  "author": "grafana-fast",
+  "keywords": [
+    "grafana-fast",
+    "types",
+    "typescript"
+  ],
+  "bugs": {
+    "url": "https://github.com/grafana-fast/grafana-fast/issues"
+  },
+  "homepage": "https://github.com/grafana-fast/grafana-fast#readme"
+}

@@ -1,0 +1,43 @@
+{
+  "packages": {
+    "component": {
+      "name": "component",
+      "display": "Component",
+      "description": "Dashboard components for fast visualization",
+      "dir": "packages/component"
+    },
+    "hooks": {
+      "name": "hooks",
+      "display": "Hooks",
+      "description": "Core hooks for dashboard mounting and management",
+      "dir": "packages/hooks"
+    },
+    "types": {
+      "name": "types",
+      "display": "Types",
+      "description": "TypeScript type definitions",
+      "dir": "packages/types"
+    }
+  },
+  "categories": [
+    "Dashboard",
+    "Hooks",
+    "Components",
+    "Utils"
+  ],
+  "functions": [
+    {
+      "name": "Dashboard",
+      "package": "component",
+      "category": "Dashboard",
+      "description": "主仪表板组件"
+    },
+    {
+      "name": "useDashboard",
+      "package": "hooks",
+      "category": "Hooks",
+      "description": "核心 Dashboard Hook，用于挂载和管理仪表板"
+    }
+  ]
+}
+

@@ -1,0 +1,11 @@
+{
+  "name": "@grafana-fast/metadata",
+  "version": "0.0.1",
+  "description": "Metadata for grafana-fast packages",
+  "main": "index.js",
+  "scripts": {
+    "update": "esno scripts/update.ts"
+  },
+  "author": "grafana-fast",
+  "license": "MIT"
+}

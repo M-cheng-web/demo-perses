@@ -1,263 +1,289 @@
-# Demo Perses - 监控面板系统
+# Grafana Fast
 
-一个功能完整的监控面板系统，基于 Vue 3 + TypeScript + Ant Design Vue 构建。
+基于 Vue 3 的现代化仪表板可视化库，采用 monorepo 架构。
 
-## ✨ 主要功能
+## ✨ 特性
 
-### 📊 图表类型
-- 时间序列图 (TimeSeries)
-- 柱状图 (Bar Chart)
-- 饼图 (Pie Chart)
-- 仪表盘 (Gauge)
-- 热力图 (Heatmap)
-- 统计面板 (Stat Panel)
-- 表格 (Table)
+- 🚀 **快速集成**: 通过简单的 Hook 即可将仪表板集成到任何项目中
+- 🎨 **丰富的图表类型**: 支持时序图、柱状图、饼图、仪表盘等多种图表类型
+- 📊 **实时数据**: 支持实时数据更新，轻松构建动态仪表板
+- 🔧 **灵活配置**: 提供完整的 TypeScript 类型定义，配置更灵活
+- 🌈 **现代化 UI**: 基于 Ant Design Vue，提供美观的用户界面
+- ⚡️ **高性能**: 基于 ECharts 和 Vue 3，性能卓越
 
-### 🔍 QueryBuilder 查询构建器（新增）
-- **可视化查询构建**：无需了解 PromQL 语法即可构建复杂查询
-- **70+ 种操作**：聚合、范围函数、数学函数、三角函数、时间函数等
-- **智能提示**：自动分析查询并给出优化建议
-- **查询解释**：步骤化展示查询构建过程
-- **快速开始**：10+ 种预设查询模板
-- **二元查询**：支持查询间的算术和比较运算
-- **双模式**：可视化构建或手动输入 PromQL
+## 📦 包结构
 
-### 🎨 面板编辑器
-- 拖拽式布局调整
-- 实时预览
-- 丰富的样式配置选项
-- 支持 QueryBuilder 和手动 PromQL 两种查询方式
-- JSON 编辑模式
-
-### 📈 仪表板功能
-- 多面板组管理
-- 面板分组折叠/展开
-- 全局时间范围控制
-- 自动刷新
-- 响应式布局
+```
+@grafana-fast/
+├── @grafana-fast/component   # 可视化组件
+├── @grafana-fast/hooks        # 核心 Hooks
+├── @grafana-fast/types        # 类型定义
+└── @grafana-fast/metadata     # 元数据
+```
 
 ## 🚀 快速开始
+
+### 安装
+
+```bash
+pnpm add @grafana-fast/hooks @grafana-fast/component
+```
+
+### 使用
+
+```vue
+<template>
+  <div>
+    <button @click="mount">挂载 Dashboard</button>
+    <div ref="containerRef" style="width: 100%; height: 600px"></div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useDashboard } from '@grafana-fast/hooks'
+
+const containerRef = ref<HTMLElement>()
+
+const { mount } = useDashboard({
+  container: containerRef,
+  dashboard: {
+    id: 'my-dashboard',
+    title: 'My Dashboard'
+  }
+})
+</script>
+```
+
+## 🏗️ 项目结构
+
+```
+demo-perses/
+├── packages/                   # Monorepo 子包
+│   ├── component/             # 组件包
+│   │   ├── Dashboard/         # Dashboard 组件
+│   │   ├── Charts/            # 图表组件
+│   │   ├── Panel/             # 面板组件
+│   │   └── ...
+│   ├── hooks/                 # Hooks 包
+│   │   └── useDashboard/      # 核心 Hook
+│   ├── types/                 # 类型定义包
+│   ├── metadata/              # 元数据包
+│   ├── .vitepress/            # 文档系统
+│   ├── guide/                 # 文档指南
+│   └── index.md               # 文档首页
+├── playground/                # 开发测试环境
+├── scripts/                   # 构建脚本
+├── meta/                      # 包配置
+└── pnpm-workspace.yaml        # Workspace 配置
+```
+
+## 📝 开发
 
 ### 安装依赖
 
 ```bash
-npm install
-# 或
-yarn install
+pnpm install
 ```
 
-### 开发模式
+### 启动文档
 
 ```bash
-npm run dev
+pnpm run docs
 ```
 
-访问 http://localhost:5173
-
-### 构建生产版本
+### 启动 Playground
 
 ```bash
-npm run build
+pnpm run playground
 ```
 
-### 预览生产版本
+### 构建
 
 ```bash
-npm run preview
+pnpm run build
 ```
 
-## 📁 项目结构
-
-```
-demo-perses/
-├── src/
-│   ├── components/
-│   │   ├── Charts/           # 图表组件
-│   │   ├── Dashboard/        # 仪表板组件
-│   │   ├── Panel/            # 面板组件
-│   │   ├── PanelEditor/      # 面板编辑器
-│   │   │   ├── DataQueryTab.vue      # 数据查询标签页（新增）
-│   │   │   ├── ChartStyles/          # 图表样式配置
-│   │   │   └── PanelEditorDrawer.vue # 编辑器主组件
-│   │   ├── QueryBuilder/     # QueryBuilder 组件（新增）
-│   │   │   ├── QueryBuilder.vue      # 主查询构建器
-│   │   │   ├── MetricSelector.vue    # 指标选择器
-│   │   │   ├── LabelFilters.vue      # 标签过滤器
-│   │   │   ├── MetricsModal.vue      # 指标浏览器
-│   │   │   └── query-builder/        # 子组件
-│   │   ├── ChartLegend/      # 图例组件
-│   │   └── Common/           # 通用组件
-│   ├── stores/               # Pinia 状态管理
-│   ├── types/                # TypeScript 类型定义
-│   │   ├── queryBuilder.ts   # QueryBuilder 类型（新增）
-│   │   └── prometheus.ts     # Prometheus 类型（新增）
-│   ├── lib/                  # 核心库（新增）
-│   │   └── prometheus-querybuilder/  # PromQL 查询建模器
-│   ├── api/                  # API 接口
-│   │   ├── prometheus.ts     # Prometheus API
-│   │   └── querybuilder/     # QueryBuilder API（新增）
-│   ├── utils/                # 工具函数
-│   ├── views/                # 页面视图
-│   └── router/               # 路由配置
-├── public/
-└── dist/                     # 构建输出
-```
-
-## 📚 使用文档
-
-### QueryBuilder 使用指南
-
-详细的 QueryBuilder 使用指南请查看：[QUERYBUILDER_GUIDE.md](./QUERYBUILDER_GUIDE.md)
-
-主要功能：
-1. **指标选择**：从 Prometheus 指标列表中选择或搜索
-2. **标签过滤**：添加标签过滤条件（=, !=, =~, !~）
-3. **操作管理**：添加聚合、函数等操作，支持拖拽排序
-4. **查询预览**：实时查看生成的 PromQL
-5. **快速开始**：使用预设模板快速构建查询
-6. **查询提示**：获取智能优化建议
-
-### QueryBuilder 移植说明
-
-完整的移植文档请查看：[QUERYBUILDER_MIGRATION.md](./QUERYBUILDER_MIGRATION.md)
-
-### 创建面板
-
-1. 在仪表板页面点击"添加面板"
-2. 选择图表类型
-3. 在"数据查询"Tab中配置查询：
-   - 切换到 QueryBuilder 模式进行可视化构建
-   - 或使用 PromQL 模式直接输入表达式
-4. 在"图表样式"Tab中配置图表样式
-5. 点击"保存"
-
-### QueryBuilder 模式示例
-
-**计算 CPU 使用率**：
-```
-1. 选择指标: node_cpu_seconds_total
-2. 添加标签: mode = "idle"
-3. 添加操作:
-   - rate [5m]
-   - sum by (instance)
-4. 执行查询
-```
-
-**计算错误率**：
-```
-1. 选择快速开始模板: "Error Rate"
-2. 第一个查询选择: http_requests_total, status=~"5.."
-3. 第二个查询选择: http_requests_total
-4. 执行查询
-```
-
-## 🛠️ 技术栈
-
-- **框架**: Vue 3.5 + TypeScript
-- **UI 库**: Ant Design Vue 4.x
-- **图表库**: ECharts 6.0
-- **状态管理**: Pinia 3.0
-- **路由**: Vue Router 4.x
-- **构建工具**: Vite 7.x
-- **样式**: Less
-- **其他**: 
-  - vue-grid-layout-v3 (拖拽布局)
-  - vuedraggable (拖拽排序)
-  - dayjs (时间处理)
-  - axios (HTTP 请求)
-
-## 📝 开发说明
-
-### 代码规范
-
-项目使用 ESLint + Prettier 进行代码规范检查和格式化。
+### 发布
 
 ```bash
-# 检查代码规范
-npm run lint:check
-
-# 自动修复
-npm run lint
-
-# 格式化代码
-npm run format
+pnpm run publish
 ```
 
-### 添加新的图表类型
+## 📚 文档
 
-1. 在 `src/enums/panelType.ts` 中添加新类型
-2. 在 `src/components/Charts/` 中创建新的图表组件
-3. 在 `src/components/PanelEditor/ChartStyles/` 中创建样式配置组件
-4. 在 `PanelEditorDrawer.vue` 中注册新组件
+查看 [完整文档](https://grafana-fast.com) 了解更多信息。
 
-### 自定义 QueryBuilder 操作
+## 🔗 相关链接
 
-在 `src/lib/prometheus-querybuilder/operations.ts` 中添加新的操作定义：
+- [快速开始](./packages/guide/getting-started.md)
+- [useDashboard Hook](./packages/hooks/useDashboard/index.md)
+- [Dashboard 组件](./packages/component/Dashboard/index.md)
 
-```typescript
-{
-  id: 'my_custom_operation',
-  name: 'My Custom Operation',
-  params: [
-    { name: 'Parameter', type: 'number' }
-  ],
-  defaultParams: [1],
-  category: PromVisualQueryOperationCategory.Functions,
-  renderer: functionRendererLeft,
-  addOperationHandler: defaultAddOperationHandler,
-  explainHandler: (op) => `Custom operation with param ${op.params[0]}`,
-}
-```
+## 🤝 贡献
 
-## 🔌 对接真实 Prometheus
-
-当前项目使用 mock 数据。要对接真实的 Prometheus API：
-
-1. 修改 `src/api/querybuilder/prometheusApi.ts`
-2. 将模拟函数替换为真实的 API 调用：
-
-```typescript
-export async function fetchMetrics(search?: string): Promise<string[]> {
-  const response = await fetch('http://your-prometheus:9090/api/v1/label/__name__/values');
-  const data = await response.json();
-  return data.data;
-}
-```
-
-3. 或者修改 `src/api/prometheus.ts` 中的查询函数
-
-## 🎯 功能特性
-
-### 已实现
-- ✅ 多种图表类型支持
-- ✅ 可视化 QueryBuilder
-- ✅ 拖拽式面板布局
-- ✅ 面板编辑器
-- ✅ 时间范围控制
-- ✅ 自动刷新
-- ✅ 响应式设计
-- ✅ 图例交互（显示/隐藏系列）
-- ✅ 数据格式化
-- ✅ 主题配置
-
-### 开发中
-- 🚧 查询历史记录
-- 🚧 仪表板导入/导出
-- 🚧 用户权限管理
+欢迎贡献代码！请查看 [贡献指南](./CONTRIBUTING.md)。
 
 ## 📄 License
 
-MIT License
+[MIT](./LICENSE)
 
-## 👥 贡献
+## 🎯 设计理念
 
-欢迎提交 Issue 和 Pull Request！
+Grafana Fast 的设计理念是让仪表板集成像使用 ECharts 一样简单：
 
-## 📮 联系方式
+1. **通过 ref 挂载**: 传入一个 ref 或 HTMLElement，即可将仪表板挂载到指定容器
+2. **独立运行**: 所有 UI 交互（弹窗、Toast 等）都绑定在挂载的容器内
+3. **框架无关**: 可以在任何框架（Vue、React、Angular）中使用
+4. **完整功能**: 包含完整的仪表板功能，无需额外配置
 
-如有问题或建议，请提交 Issue。
+## 💡 使用示例
 
----
+### 在 React 中使用
 
-**最后更新**: 2026-01-06  
-**版本**: 1.0.0 with QueryBuilder
+```tsx
+import { useRef, useEffect } from 'react'
+import { useDashboard } from '@grafana-fast/hooks'
+
+function App() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  
+  useEffect(() => {
+    if (!containerRef.current) return
+    
+    const { mount, unmount } = useDashboard({
+      container: containerRef.current,
+      dashboard: {
+        id: 'my-dashboard',
+        title: 'My Dashboard'
+      }
+    })
+    
+    mount()
+    
+    return () => unmount()
+  }, [])
+  
+  return <div ref={containerRef} style={{ width: '100%', height: '600px' }} />
+}
+```
+
+### 在原生 JavaScript 中使用
+
+```html
+<!DOCTYPE html>
+<html>
+<body>
+  <div id="container" style="width: 100%; height: 600px"></div>
+  
+  <script type="module">
+    import { useDashboard } from '@grafana-fast/hooks'
+    
+    const { mount } = useDashboard({
+      container: document.getElementById('container'),
+      dashboard: { id: 'my-dashboard', title: 'My Dashboard' }
+    })
+    
+    mount()
+  </script>
+</body>
+</html>
+```
+
+## 🔧 核心 API
+
+### useDashboard
+
+核心 Hook，用于将 Dashboard 组件挂载到指定的 DOM 元素上。
+
+```typescript
+interface UseDashboardOptions {
+  container: HTMLElement | Ref<HTMLElement | undefined>
+  dashboard?: Dashboard
+  onMounted?: () => void
+  onUnmounted?: () => void
+}
+
+interface UseDashboardReturn {
+  app: VueApp | null
+  mount: () => void
+  unmount: () => void
+  updateDashboard: (config: Partial<Dashboard>) => void
+  getDashboard: () => Dashboard | null
+  setTimeRange: (from: string, to: string) => void
+  refresh: () => void
+  isMounted: Ref<boolean>
+}
+```
+
+## 📊 支持的图表类型
+
+- **Time Series Chart**: 时序图
+- **Bar Chart**: 柱状图
+- **Pie Chart**: 饼图
+- **Gauge Chart**: 仪表盘
+- **Heatmap Chart**: 热力图
+- **Table Chart**: 表格
+- **Stat Panel**: 统计面板
+
+## 🎨 主题定制
+
+Grafana Fast 基于 Ant Design Vue，支持主题定制。
+
+```typescript
+import { ConfigProvider } from 'ant-design-vue'
+
+// 自定义主题
+const theme = {
+  token: {
+    colorPrimary: '#1890ff',
+    // ...
+  }
+}
+```
+
+## 📦 Monorepo 架构
+
+本项目采用 monorepo 架构，使用 pnpm workspace 管理。
+
+### 子包说明
+
+#### @grafana-fast/component
+
+可视化组件包，包含：
+- Dashboard: 主仪表板组件
+- Panel: 面板组件
+- Charts: 各种图表组件
+- QueryBuilder: 查询构建器
+
+#### @grafana-fast/hooks
+
+核心 Hooks 包，包含：
+- useDashboard: 核心 Hook，用于挂载和管理仪表板
+
+#### @grafana-fast/types
+
+类型定义包，包含：
+- Dashboard: 仪表板类型
+- Panel: 面板类型
+- Query: 查询类型
+- TimeRange: 时间范围类型
+
+#### @grafana-fast/metadata
+
+元数据包，用于管理包信息和文档生成。
+
+## 🛠️ 开发工具链
+
+- **构建工具**: Vite + Rollup
+- **类型检查**: TypeScript
+- **代码规范**: ESLint + Prettier
+- **文档系统**: VitePress
+- **包管理**: pnpm
+- **UI 框架**: Ant Design Vue
+- **图表库**: ECharts
+- **状态管理**: Pinia
+
+## 🔄 更新日志
+
+查看 [CHANGELOG.md](./CHANGELOG.md) 了解版本更新信息。

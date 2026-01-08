@@ -1,0 +1,31 @@
+{
+  "name": "playground",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.24",
+    "vue-router": "^4.5.0",
+    "pinia": "^2.2.0",
+    "ant-design-vue": "^4.0.0",
+    "echarts": "^5.5.0",
+    "dayjs": "^1.11.19",
+    "monaco-editor": "^0.52.2",
+    "monaco-editor-vue3": "^1.1.10",
+    "vue-grid-layout-v3": "^1.0.4",
+    "@grafana-fast/component": "workspace:*",
+    "@grafana-fast/hooks": "workspace:*",
+    "@grafana-fast/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.2.2",
+    "typescript": "~5.9.3",
+    "less": "^4.4.2"
+  }
+}

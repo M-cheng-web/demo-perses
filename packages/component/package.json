@@ -1,0 +1,46 @@
+{
+  "name": "@grafana-fast/component",
+  "version": "0.0.1",
+  "description": "Dashboard components for fast visualization",
+  "module": "./index.mjs",
+  "types": "./index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs"
+    },
+    "./*": "./*"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grafana-fast/grafana-fast.git",
+    "directory": "packages/component"
+  },
+  "author": "grafana-fast",
+  "keywords": [
+    "grafana-fast",
+    "component",
+    "dashboard",
+    "vue3"
+  ],
+  "peerDependencies": {
+    "vue": "^3.0.0"
+  },
+  "dependencies": {
+    "@grafana-fast/types": "workspace:*",
+    "pinia": "^2.2.0",
+    "ant-design-vue": "^4.0.0",
+    "echarts": "^5.5.0",
+    "monaco-editor": "^0.52.2",
+    "monaco-editor-vue3": "^1.1.10",
+    "vue-grid-layout-v3": "^1.0.4",
+    "dayjs": "^1.11.19"
+  },
+  "bugs": {
+    "url": "https://github.com/grafana-fast/grafana-fast/issues"
+  },
+  "homepage": "https://github.com/grafana-fast/grafana-fast#readme",
+  "main": "./index.mjs"
+}
