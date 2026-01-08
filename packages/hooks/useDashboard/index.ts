@@ -4,7 +4,7 @@ import Antd from 'ant-design-vue';
 import 'ant-design-vue/dist/reset.css';
 import Dashboard from '@grafana-fast/component/Dashboard';
 import type { Dashboard as DashboardConfig } from '@grafana-fast/types';
-import { useDashboardStore, useTimeRangeStore } from '@/stores';
+import { useDashboardStore, useTimeRangeStore } from '@grafana-fast/component';
 
 export interface UseDashboardOptions {
   /**

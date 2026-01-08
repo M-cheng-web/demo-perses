@@ -19,8 +19,8 @@
     "declarationDir": "./types",
     "baseUrl": ".",
     "paths": {
-      "@grafana-fast/component": ["./packages/component/index.ts"],
-      "@grafana-fast/component/*": ["./packages/component/*"],
+      "@grafana-fast/component": ["./packages/component/src/index.ts"],
+      "@grafana-fast/component/*": ["./packages/component/src/*"],
       "@grafana-fast/hooks": ["./packages/hooks/index.ts"],
       "@grafana-fast/hooks/*": ["./packages/hooks/*"],
       "@grafana-fast/types": ["./packages/types/index.ts"],

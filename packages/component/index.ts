@@ -1,1 +1,1 @@
-export { default as Dashboard } from './Dashboard';
+src/index.ts

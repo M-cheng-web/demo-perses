@@ -26,7 +26,11 @@
     "vue3"
   ],
   "peerDependencies": {
-    "vue": "^3.0.0"
+    "vue": "^3.0.0",
+    "pinia": "^2.0.0",
+    "ant-design-vue": "^4.0.0",
+    "echarts": "^5.0.0",
+    "dayjs": "^1.0.0"
   },
   "dependencies": {
     "@grafana-fast/types": "workspace:*",

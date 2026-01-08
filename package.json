@@ -10,6 +10,7 @@
     "build:rollup": "cross-env NODE_OPTIONS=\"--max-old-space-size=6144\" rollup -c",
     "build:types": "tsc --emitDeclarationOnly && pnpm run types:fix",
     "dev": "pnpm run update && pnpm run docs",
+    "dev:skip-update": "vitepress dev packages --open",
     "docs": "vitepress dev packages --open",
     "docs:serve": "vitepress serve packages",
     "docs:build": "pnpm run update:full && vitepress build packages",
