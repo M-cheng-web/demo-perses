@@ -29,8 +29,7 @@
 <script setup lang="ts">
   import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
   import { storeToRefs } from '@grafana-fast/store';
-  import Button from '/#/Button';
-  import Empty from '/#/Empty';
+  import { Button, Empty } from '/#/components-common';
   import { useDashboardStore, useTooltipStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
   import { DASHBOARD_EMPTY_TEXT, formatDashboardTitle } from '/#/components/Dashboard/utils';
@@ -52,7 +51,7 @@
 
   const emptyText = computed(() => DASHBOARD_EMPTY_TEXT);
 
-  const dashboardName = computed(() => formatDashboardTitle(dashboardStore.currentDashboard?.name));
+  const _dashboardName = computed(() => formatDashboardTitle(dashboardStore.currentDashboard?.name));
 
   const handleAddPanelGroup = () => {
     dashboardStore.addPanelGroup({ title: '新面板组' });
