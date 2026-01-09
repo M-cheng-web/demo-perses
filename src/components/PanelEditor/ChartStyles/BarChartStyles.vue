@@ -158,7 +158,7 @@
   import { ref, watch } from 'vue';
   import { deepClone, createNamespace } from '@/utils';
   import { getDefaultBarChartOptions } from '../ChartStylesDefaultOptions/barChartDefaultOptions';
-  import { Switch, Select, Segmented, Button, Input, InputNumber } from 'ant-design-vue';
+  import { Switch, Select, Segmented, Button, Input, InputNumber } from '@/component-common';
 
   const [_, bem] = createNamespace('bar-chart-styles');
 

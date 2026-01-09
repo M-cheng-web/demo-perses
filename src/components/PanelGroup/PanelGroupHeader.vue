@@ -39,7 +39,7 @@
 <script setup lang="ts">
   import { h } from 'vue';
   import { storeToRefs } from 'pinia';
-  import { Button, Tooltip, Popconfirm } from 'ant-design-vue';
+  import { Button, Tooltip, Popconfirm } from '@/component-common';
   import {
     RightOutlined,
     DownOutlined,

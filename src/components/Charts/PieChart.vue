@@ -32,7 +32,7 @@
   import { useChartInit } from '@/composables/useChartInit';
   import { useChartTooltip, TooltipDataProviders, type TooltipData } from '@/composables/useChartTooltip';
   import Legend from '@/components/ChartLegend/Legend.vue';
-  import { Spin } from 'ant-design-vue';
+  import { Spin } from '@/component-common';
 
   const [_, bem] = createNamespace('pie-chart');
 

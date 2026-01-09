@@ -14,9 +14,9 @@
 </template>
 
 <script setup lang="ts">
-  import { Button } from 'ant-design-vue';
+  import { Button } from '@/component-common';
   import { CopyOutlined } from '@ant-design/icons-vue';
-  import { message } from 'ant-design-vue';
+  import { message } from '@/component-common';
   import { createNamespace } from '@/utils';
 
   const [_, bem] = createNamespace('query-preview');

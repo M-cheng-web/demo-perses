@@ -98,7 +98,7 @@
   import { ref, watch } from 'vue';
   import { deepClone, createNamespace } from '@/utils';
   import { getDefaultHeatmapChartOptions } from '../ChartStylesDefaultOptions/heatmapChartDefaultOptions';
-  import { Switch, Input, Select, Button } from 'ant-design-vue';
+  import { Switch, Input, Select, Button } from '@/component-common';
 
   const [_, bem] = createNamespace('heatmap-chart-styles');
 

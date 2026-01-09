@@ -83,13 +83,13 @@
 </template>
 
 <script setup lang="ts">
-  import { Button, Input, Modal, Select, Table, Tag } from 'ant-design-vue';
+  import { Button, Input, Modal, Select, Table, Tag } from '@/component-common';
   import { ref, computed, watch, onMounted } from 'vue';
   import { SearchOutlined, FilterOutlined } from '@ant-design/icons-vue';
-  import { message } from 'ant-design-vue';
+  import { message } from '@/component-common';
   import { fetchMetrics } from '@/api/querybuilder/prometheusApi';
   import { createNamespace } from '@/utils';
-  import type { TableProps, TableColumnType } from 'ant-design-vue';
+  import type { TableProps, TableColumnType } from '@/component-common';
 
   const [_, bem] = createNamespace('metrics-modal');
 

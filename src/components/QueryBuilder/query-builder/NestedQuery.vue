@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Alert, Button, Card, Input, Select } from 'ant-design-vue';
+  import { Alert, Button, Card, Input, Select } from '@/component-common';
   import { ref, watch } from 'vue';
   import { CloseOutlined } from '@ant-design/icons-vue';
   import MetricSelector from '@/components/QueryBuilder/MetricSelector.vue';

@@ -39,7 +39,7 @@
   import { computed } from 'vue';
   import { createNamespace } from '@/utils';
   import type { LegendItem, LegendSelection } from '@/types/legend';
-  import { Checkbox } from 'ant-design-vue';
+  import { Checkbox } from '@/component-common';
 
   const [_, _bem] = createNamespace('list-legend');
 

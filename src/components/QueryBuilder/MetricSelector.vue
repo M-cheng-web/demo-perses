@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Button, Select } from 'ant-design-vue';
+  import { Button, Select } from '@/component-common';
   import { ref, computed, onMounted, watch } from 'vue';
   import { AppstoreOutlined } from '@ant-design/icons-vue';
   import { fetchMetrics } from '@/api/querybuilder/prometheusApi';

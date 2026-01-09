@@ -109,7 +109,7 @@
   import { ref, watch } from 'vue';
   import { deepClone, createNamespace } from '@/utils';
   import { getDefaultStatPanelOptions } from '../ChartStylesDefaultOptions/statPanelDefaultOptions';
-  import { Switch, Select, Segmented, Button } from 'ant-design-vue';
+  import { Switch, Select, Segmented, Button } from '@/component-common';
 
   const [_, bem] = createNamespace('stat-panel-styles');
 

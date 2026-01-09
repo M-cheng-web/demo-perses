@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
   import { ref, computed, nextTick } from 'vue';
-  import { Spin } from 'ant-design-vue';
+  import { Spin } from '@/component-common';
   import type { EChartsOption, ECharts } from 'echarts';
   import type { Panel, QueryResult } from '@/types';
   import { formatValue, formatTime, createNamespace } from '@/utils';

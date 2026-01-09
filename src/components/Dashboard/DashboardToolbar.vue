@@ -79,7 +79,7 @@
 
 <script setup lang="ts">
   import { ref, computed, h, onUnmounted } from 'vue';
-  import { Button, Select, Dropdown, Menu, Space, Modal } from 'ant-design-vue';
+  import { Button, Select, Dropdown, Menu, Space, Modal } from '@/component-common';
   import { storeToRefs } from 'pinia';
   import {
     ReloadOutlined,
@@ -91,7 +91,7 @@
     PlusOutlined,
   } from '@ant-design/icons-vue';
   import { useDashboardStore, useTimeRangeStore } from '@/stores';
-  import { message } from 'ant-design-vue';
+  import { message } from '@/component-common';
   import JsonEditor from '@/components/Common/JsonEditor.vue';
   import VariableSelector from '@/components/Common/VariableSelector.vue';
   import { createNamespace } from '@/utils';

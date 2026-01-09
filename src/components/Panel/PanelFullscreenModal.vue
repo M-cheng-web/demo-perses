@@ -22,7 +22,7 @@
   import { useDashboardStore } from '@/stores';
   import { createNamespace } from '@/utils';
   import PanelContent from './PanelContent.vue';
-  import { Modal } from 'ant-design-vue';
+  import { Modal } from '@/component-common';
 
   const [_, bem] = createNamespace('panel-fullscreen-modal');
 

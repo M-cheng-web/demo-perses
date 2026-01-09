@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
   import { computed, h } from 'vue';
-  import { Spin } from 'ant-design-vue';
+  import { Spin } from '@/component-common';
   import { ArrowUpOutlined, ArrowDownOutlined, MinusOutlined } from '@ant-design/icons-vue';
   import type { Panel, QueryResult } from '@/types';
   import { formatValue, createNamespace } from '@/utils';

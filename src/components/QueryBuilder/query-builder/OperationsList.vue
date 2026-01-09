@@ -51,7 +51,7 @@
                 </Button>
                 <template #overlay>
                   <Menu @click="(e: any) => handleOperationMenuClick(index, e.key)">
-                    <MenuItem v-for="alt in getAlternativeOperations(operation.id)" :key="alt.id">
+                    <MenuItem v-for="alt in getAlternativeOperations(operation.id)" :key="alt.id" :item-key="alt.id">
                       {{ alt.name }}
                     </MenuItem>
                   </Menu>
@@ -186,7 +186,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Button, Cascader, Checkbox, Dropdown, Input, InputNumber, Menu, MenuItem, Select, Tooltip } from 'ant-design-vue';
+  import { Button, Cascader, Checkbox, Dropdown, Input, InputNumber, Menu, MenuItem, Select, Tooltip } from '@/component-common';
   import { ref, watch, computed, nextTick } from 'vue';
   import { PlusOutlined, CloseOutlined, InfoCircleOutlined, HolderOutlined, DownOutlined, ArrowRightOutlined } from '@ant-design/icons-vue';
   import LabelParamEditor from './LabelParamEditor.vue';

@@ -38,10 +38,10 @@
 </template>
 
 <script setup lang="ts">
-  import { Alert, Button } from 'ant-design-vue';
+  import { Alert, Button } from '@/component-common';
   import { computed } from 'vue';
   import { ThunderboltOutlined } from '@ant-design/icons-vue';
-  import { message } from 'ant-design-vue';
+  import { message } from '@/component-common';
   import type { PromVisualQuery } from '@/lib/prometheus-querybuilder/types';
   import { createNamespace } from '@/utils';
 

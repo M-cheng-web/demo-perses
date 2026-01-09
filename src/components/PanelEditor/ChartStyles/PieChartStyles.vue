@@ -148,7 +148,7 @@
   import { ref, watch } from 'vue';
   import { deepClone, createNamespace } from '@/utils';
   import { getDefaultPieChartOptions } from '../ChartStylesDefaultOptions/pieChartDefaultOptions';
-  import { Switch, Select, Segmented, Slider, Button } from 'ant-design-vue';
+  import { Switch, Select, Segmented, Slider, Button } from '@/component-common';
 
   const [_, bem] = createNamespace('pie-chart-styles');
 

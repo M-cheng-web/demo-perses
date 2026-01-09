@@ -17,9 +17,9 @@
 </template>
 
 <script setup lang="ts">
-  import { Modal, Form, FormItem, Input, Textarea, Switch } from 'ant-design-vue';
+  import { Modal, Form, FormItem, Input, Textarea, Switch } from '@/component-common';
   import { ref } from 'vue';
-  import { message } from 'ant-design-vue';
+  import { message } from '@/component-common';
   import { useDashboardStore } from '@/stores';
   import { createNamespace } from '@/utils';
   import type { PanelGroup } from '@/types';

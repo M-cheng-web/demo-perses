@@ -197,7 +197,7 @@
   import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
   import { deepClone, createNamespace } from '@/utils';
   import { getDefaultGaugeChartOptions } from '../ChartStylesDefaultOptions/gaugeChartDefaultOptions';
-  import { Switch, Segmented, Button, InputNumber, Select, Input } from 'ant-design-vue';
+  import { Switch, Segmented, Button, InputNumber, Select, Input } from '@/component-common';
 
   const [_, bem] = createNamespace('gauge-chart-styles');
 

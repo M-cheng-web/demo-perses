@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Select } from 'ant-design-vue';
+  import { Select } from '@/component-common';
   import { ref, watch } from 'vue';
   import { queryLabelKeys } from '@/api/querybuilder/prometheusApi';
   import { promQueryModeller } from '@/lib/prometheus-querybuilder/PromQueryModeller';

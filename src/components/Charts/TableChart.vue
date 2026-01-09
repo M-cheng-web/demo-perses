@@ -20,8 +20,8 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { Spin, Table } from 'ant-design-vue';
-  import type { TableColumnType } from 'ant-design-vue';
+  import { Spin, Table } from '@/component-common';
+  import type { TableColumnType } from '@/component-common';
   import type { Panel, QueryResult, TableOptions } from '@/types';
   import { formatValue, formatTime, createNamespace } from '@/utils';
 

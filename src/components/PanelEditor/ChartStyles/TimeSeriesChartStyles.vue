@@ -205,7 +205,7 @@
   import { ref, watch } from 'vue';
   import { deepClone, createNamespace } from '@/utils';
   import { getDefaultTimeSeriesOptions } from '../ChartStylesDefaultOptions/timeSeriesDefaultOptions';
-  import { Switch, Select, Segmented, Button, Input, InputNumber, Slider } from 'ant-design-vue';
+  import { Switch, Select, Segmented, Button, Input, InputNumber, Slider } from '@/component-common';
 
   const [_, bem] = createNamespace('timeseries-chart-styles');
 

@@ -89,7 +89,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons-vue';
-  import { Checkbox } from 'ant-design-vue';
+  import { Checkbox } from '@/component-common';
   import { createNamespace } from '@/utils';
 
   const [_, bem] = createNamespace('data-table');

@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Button, Select } from 'ant-design-vue';
+  import { Button, Select } from '@/component-common';
   import { ref, watch, onMounted } from 'vue';
   import { PlusOutlined, CloseOutlined } from '@ant-design/icons-vue';
   import type { QueryBuilderLabelFilter } from '@/lib/prometheus-querybuilder/types';

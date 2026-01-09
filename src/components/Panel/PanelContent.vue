@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
   import { computed, ref, watch, onMounted } from 'vue';
-  import { Spin, Result, Empty } from 'ant-design-vue';
+  import { Spin, Result, Empty } from '@/component-common';
   import { storeToRefs } from 'pinia';
   import type { Panel, QueryResult } from '@/types';
   import { useTimeRangeStore } from '@/stores';

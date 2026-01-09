@@ -1,5 +1,5 @@
 <template>
-  <ConfigProvider :locale="locale">
+  <ConfigProvider>
     <div :class="bem()">
       <router-view />
     </div>
@@ -7,13 +7,11 @@
 </template>
 
 <script setup lang="ts">
-  import { ConfigProvider } from 'ant-design-vue';
-  import zhCN from 'ant-design-vue/es/locale/zh_CN';
+  import { ConfigProvider } from '@/component-common';
   import { createNamespace } from '@/utils';
 
   // App 根组件
   const [_, bem] = createNamespace('app');
-  const locale = zhCN;
 </script>
 
 <style scoped>

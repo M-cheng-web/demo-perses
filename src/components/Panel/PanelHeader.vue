@@ -55,7 +55,7 @@
 <script setup lang="ts">
   import { h } from 'vue';
   import { storeToRefs } from 'pinia';
-  import { Button, Tooltip, Popconfirm, message } from 'ant-design-vue';
+  import { Button, Tooltip, Popconfirm, message } from '@/component-common';
   import { EditOutlined, CopyOutlined, DeleteOutlined, FullscreenOutlined, InfoCircleOutlined } from '@ant-design/icons-vue';
   import type { Panel, ID } from '@/types';
   import { useDashboardStore, useEditorStore } from '@/stores';

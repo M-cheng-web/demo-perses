@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
   import { ref, computed, watch, onMounted, withDefaults } from 'vue';
-  import { Empty } from 'ant-design-vue';
+  import { Empty } from '@/component-common';
   import TimeSeriesChart from '@/components/Charts/TimeSeriesChart.vue';
   import PieChart from '@/components/Charts/PieChart.vue';
   import BarChart from '@/components/Charts/BarChart.vue';

@@ -34,7 +34,7 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
   import type { DashboardVariable } from '@/types';
-  import { Select, Input } from 'ant-design-vue';
+  import { Select, Input } from '@/component-common';
   import { createNamespace } from '@/utils';
 
   const [_, bem] = createNamespace('variable-selector');

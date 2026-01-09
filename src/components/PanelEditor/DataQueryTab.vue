@@ -182,7 +182,7 @@
 
 <script setup lang="ts">
   import { ref, watch, computed } from 'vue';
-  import { Space, Button, RadioGroup, RadioButton, Switch, Tag, FormItem, Input, Textarea, InputNumber, message } from 'ant-design-vue';
+  import { Space, Button, RadioGroup, RadioButton, Switch, Tag, FormItem, Input, Textarea, InputNumber, message } from '@/component-common';
   import { BlockOutlined, CodeOutlined, ThunderboltOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons-vue';
   import MetricSelector from '@/components/QueryBuilder/MetricSelector.vue';
   import LabelFilters from '@/components/QueryBuilder/LabelFilters.vue';

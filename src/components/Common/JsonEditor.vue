@@ -25,7 +25,7 @@
 
 <script setup lang="ts">
   import { ref, onMounted, onUnmounted, watch } from 'vue';
-  import { message, Button, Space, Alert } from 'ant-design-vue';
+  import { message, Button, Space, Alert } from '@/component-common';
   import { FormatPainterOutlined, CheckCircleOutlined, CopyOutlined } from '@ant-design/icons-vue';
   import monaco from '@/monaco-worker';
   import { createNamespace } from '@/utils';

@@ -92,7 +92,7 @@
   import { ref, watch } from 'vue';
   import { deepClone, createNamespace } from '@/utils';
   import { getDefaultTableChartOptions } from '../ChartStylesDefaultOptions/tableChartDefaultOptions';
-  import { Switch, Select, Button } from 'ant-design-vue';
+  import { Switch, Select, Button } from '@/component-common';
 
   const [_, bem] = createNamespace('table-chart-styles');
 

@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { Empty, Button } from 'ant-design-vue';
+  import { Empty, Button } from '@/component-common';
   import { storeToRefs } from 'pinia';
   import { GridLayout, GridItem } from 'vue-grid-layout-v3';
   import type { PanelLayout, Panel as PanelType, ID } from '@/types';

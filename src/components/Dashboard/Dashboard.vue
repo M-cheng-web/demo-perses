@@ -29,7 +29,7 @@
 <script setup lang="ts">
   import { ref, watch, onMounted, onUnmounted } from 'vue';
   import { storeToRefs } from 'pinia';
-  import { Empty, Button } from 'ant-design-vue';
+  import { Empty, Button } from '@/component-common';
   import { useDashboardStore, useTooltipStore } from '@/stores';
   import { createNamespace } from '@/utils';
   import DashboardToolbar from './DashboardToolbar.vue';

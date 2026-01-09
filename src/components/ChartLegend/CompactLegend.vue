@@ -12,11 +12,7 @@
       <div
         v-for="item in items"
         :key="item.id"
-        :class="[
-          bem('item'),
-          bem('item', { selected: isSelected(item.id) }),
-          bem('item', { dimmed: !isSelected(item.id) && hasSelection }),
-        ]"
+        :class="[bem('item'), bem('item', { selected: isSelected(item.id) }), bem('item', { dimmed: !isSelected(item.id) && hasSelection })]"
         @click="handleClick($event, item.id)"
         @mouseenter="emit('item-hover', item.id)"
         @mouseleave="emit('item-leave', item.id)"
@@ -32,7 +28,7 @@
   import { computed } from 'vue';
   import { createNamespace } from '@/utils';
   import type { LegendItem, LegendSelection } from '@/types/legend';
-  import { Checkbox } from 'ant-design-vue';
+  import { Checkbox } from '@/component-common';
 
   const [_, bem] = createNamespace('compact-legend');
 

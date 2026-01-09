@@ -124,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Tag, Divider } from 'ant-design-vue';
+  import { Tag, Divider } from '@/component-common';
   import { DatabaseOutlined } from '@ant-design/icons-vue';
   import { computed, ref } from 'vue';
   import { promQueryModeller } from '@/lib/prometheus-querybuilder/PromQueryModeller';

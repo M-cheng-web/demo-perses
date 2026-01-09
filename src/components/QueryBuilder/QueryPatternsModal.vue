@@ -76,9 +76,9 @@
 </template>
 
 <script setup lang="ts">
-  import { Alert, Button, Card, Divider, Modal, Tag } from 'ant-design-vue';
+  import { Alert, Button, Card, Divider, Modal, Tag } from '@/component-common';
   import { ref, watch } from 'vue';
-  import { message } from 'ant-design-vue';
+  import { message } from '@/component-common';
   import { promQueryModeller } from '@/lib/prometheus-querybuilder/PromQueryModeller';
   import type { PromQueryPattern, PromVisualQuery } from '@/lib/prometheus-querybuilder/types';
   import { createNamespace } from '@/utils';

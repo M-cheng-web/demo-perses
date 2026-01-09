@@ -2,12 +2,10 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
-import Antd from 'ant-design-vue';
-
-import 'ant-design-vue/dist/reset.css';
+import '@/component-common/styles/index.less';
 import '@/assets/styles/global.less';
 
 const app = createApp(App);
 const pinia = createPinia();
 
-app.use(pinia).use(router).use(Antd).mount('#app');
+app.use(pinia).use(router).mount('#app');
