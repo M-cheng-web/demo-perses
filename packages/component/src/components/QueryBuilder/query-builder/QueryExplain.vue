@@ -127,8 +127,8 @@
   import { Tag, Divider } from 'ant-design-vue';
   import { DatabaseOutlined } from '@ant-design/icons-vue';
   import { computed, ref } from 'vue';
-  import { promQueryModeller } from '/#/lib/prometheus-querybuilder/PromQueryModeller';
-  import type { PromVisualQuery } from '/#/lib/prometheus-querybuilder/types';
+  import { promQueryModeller } from '/#/components/QueryBuilder/lib/PromQueryModeller';
+  import type { PromVisualQuery } from '/#/components/QueryBuilder/lib/types';
   import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('query-explain');

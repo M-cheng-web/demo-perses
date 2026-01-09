@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Alert, Button, Card, Input, Select } from 'ant-design-vue';
+  import { Button, Card, Input, Select } from 'ant-design-vue';
   import { ref, watch } from 'vue';
   import { CloseOutlined } from '@ant-design/icons-vue';
   import MetricSelector from '/#/components/QueryBuilder/MetricSelector.vue';
@@ -95,8 +95,9 @@
   import OperationsList from './OperationsList.vue';
   import NestedQueryList from './NestedQueryList.vue';
   import QueryExplain from './QueryExplain.vue';
-  import { promQueryModeller } from '/#/lib/prometheus-querybuilder/PromQueryModeller';
-  import type { PromVisualQueryBinary, PromVisualQuery } from '/#/lib/prometheus-querybuilder/types';
+  import { promQueryModeller } from '/#/components/QueryBuilder/lib/PromQueryModeller';
+  import type { PromVisualQueryBinary, PromVisualQuery } from '/#/components/QueryBuilder/lib/types';
+  import { Alert } from '/#/components-common';
 
   interface Props {
     nestedQuery: PromVisualQueryBinary;

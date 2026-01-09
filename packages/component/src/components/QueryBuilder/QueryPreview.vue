@@ -8,7 +8,15 @@
       </Button>
     </div>
     <div v-if="errors && errors.length > 0" :class="bem('errors')">
-      <a-alert v-for="(error, index) in errors" :key="index" :message="error" type="error" show-icon closable style="margin-bottom: 8px" />
+      <Alert
+        v-for="(error, index) in errors"
+        :key="index"
+        :message="error"
+        type="error"
+        show-icon
+        closable
+        style="margin-bottom: 8px"
+      />
     </div>
   </div>
 </template>
@@ -18,6 +26,7 @@
   import { CopyOutlined } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
   import { createNamespace } from '/#/utils';
+  import { Alert } from '/#/components-common';
 
   const [_, bem] = createNamespace('query-preview');
 

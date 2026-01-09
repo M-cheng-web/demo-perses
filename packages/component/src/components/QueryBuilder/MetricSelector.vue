@@ -15,7 +15,7 @@
 -->
 <template>
   <div :class="bem()">
-    <a-input-group compact style="display: flex">
+    <InputGroup compact>
       <Select
         v-model:value="selectedMetric"
         show-search
@@ -29,7 +29,7 @@
         <AppstoreOutlined />
         浏览
       </Button>
-    </a-input-group>
+    </InputGroup>
 
     <!-- 指标浏览器弹窗 -->
     <MetricsModal v-model:open="modalOpen" @select="handleMetricSelect" />
@@ -43,6 +43,7 @@
   import { fetchMetrics } from '/#/api/querybuilder/prometheusApi';
   import MetricsModal from './MetricsModal.vue';
   import { createNamespace } from '/#/utils';
+  import { InputGroup } from '/#/components-common';
 
   const [_, bem] = createNamespace('metric-selector');
 

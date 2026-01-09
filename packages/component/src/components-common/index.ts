@@ -4,3 +4,5 @@ export { default as TabPane } from './TabPane.vue';
 export { default as Tag } from './Tag.vue';
 export { default as Empty } from './Empty.vue';
 export { default as Loading } from './Loading.vue';
+export { default as InputGroup } from './InputGroup.vue';
+export { default as Alert } from './Alert.vue';

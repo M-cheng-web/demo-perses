@@ -154,7 +154,7 @@ pnpm format
 
 ### 自定义 QueryBuilder 操作
 
-在 `packages/component/src/lib/prometheus-querybuilder/operations.ts` 中添加新的操作定义：
+在 `packages/component/src/components/QueryBuilder/lib/operations.ts` 中添加新的操作定义：
 
 ```typescript
 {

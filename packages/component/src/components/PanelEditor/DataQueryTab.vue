@@ -233,7 +233,7 @@
   import QueryPreview from '/#/components/QueryBuilder/QueryPreview.vue';
   import QueryExplain from '/#/components/QueryBuilder/query-builder/QueryExplain.vue';
   import QueryPatternsModal from '/#/components/QueryBuilder/QueryPatternsModal.vue';
-  import { promQueryModeller } from '/#/lib/prometheus-querybuilder/PromQueryModeller';
+  import { promQueryModeller } from '/#/components/QueryBuilder/lib/PromQueryModeller';
   import { getDefaultDataSource } from '/#/api/querybuilder/datasource';
   import { createNamespace } from '/#/utils';
   import type { PromVisualQuery, QueryPanel } from '@grafana-fast/types';

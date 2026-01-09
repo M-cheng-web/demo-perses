@@ -38,12 +38,13 @@
 </template>
 
 <script setup lang="ts">
-  import { Alert, Button } from 'ant-design-vue';
+  import { Button } from 'ant-design-vue';
   import { computed } from 'vue';
   import { ThunderboltOutlined } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
-  import type { PromVisualQuery } from '/#/lib/prometheus-querybuilder/types';
+  import type { PromVisualQuery } from '/#/components/QueryBuilder/lib/types';
   import { createNamespace } from '/#/utils';
+  import { Alert } from '/#/components-common';
 
   const [_, bem] = createNamespace('query-hints');
 

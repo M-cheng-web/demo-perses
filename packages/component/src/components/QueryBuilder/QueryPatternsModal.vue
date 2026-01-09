@@ -76,12 +76,13 @@
 </template>
 
 <script setup lang="ts">
-  import { Alert, Button, Card, Divider, Modal, Tag } from 'ant-design-vue';
+  import { Button, Card, Divider, Modal, Tag } from 'ant-design-vue';
   import { ref, watch } from 'vue';
   import { message } from 'ant-design-vue';
-  import { promQueryModeller } from '/#/lib/prometheus-querybuilder/PromQueryModeller';
-  import type { PromQueryPattern, PromVisualQuery } from '/#/lib/prometheus-querybuilder/types';
+  import { promQueryModeller } from '/#/components/QueryBuilder/lib/PromQueryModeller';
+  import type { PromQueryPattern, PromVisualQuery } from '/#/components/QueryBuilder/lib/types';
   import { createNamespace } from '/#/utils';
+  import { Alert } from '/#/components-common';
 
   const [_, bem] = createNamespace('query-patterns-modal');
 
