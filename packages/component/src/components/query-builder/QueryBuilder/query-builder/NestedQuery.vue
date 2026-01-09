@@ -90,13 +90,13 @@
   import { Alert, Button, Card, Input, Select } from 'ant-design-vue';
   import { ref, watch } from 'vue';
   import { CloseOutlined } from '@ant-design/icons-vue';
-  import MetricSelector from '@/components/QueryBuilder/MetricSelector.vue';
-  import LabelFilters from '@/components/QueryBuilder/LabelFilters.vue';
+  import MetricSelector from '#/components/QueryBuilder/MetricSelector.vue';
+  import LabelFilters from '#/components/QueryBuilder/LabelFilters.vue';
   import OperationsList from './OperationsList.vue';
   import NestedQueryList from './NestedQueryList.vue';
   import QueryExplain from './QueryExplain.vue';
-  import { promQueryModeller } from '@/lib/prometheus-querybuilder/PromQueryModeller';
-  import type { PromVisualQueryBinary, PromVisualQuery } from '@/lib/prometheus-querybuilder/types';
+  import { promQueryModeller } from '#/lib/prometheus-querybuilder/PromQueryModeller';
+  import type { PromVisualQueryBinary, PromVisualQuery } from '#/lib/prometheus-querybuilder/types';
 
   interface Props {
     nestedQuery: PromVisualQueryBinary;

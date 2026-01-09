@@ -2,7 +2,7 @@
  * PromQL 渲染器
  * 将可视化查询模型转换为 PromQL 字符串
  */
-import type { PromVisualQuery, LabelFilter, Operation } from '@/types/promql';
+import type { PromVisualQuery, LabelFilter, Operation } from '#/types/promql';
 import { getOperationById } from './operations';
 
 /**

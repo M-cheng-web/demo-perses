@@ -107,7 +107,7 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { deepClone, createNamespace } from '@/utils';
+  import { deepClone, createNamespace } from '#/utils';
   import { getDefaultStatPanelOptions } from '../ChartStylesDefaultOptions/statPanelDefaultOptions';
   import { Switch, Select, Segmented, Button } from 'ant-design-vue';
 

@@ -3,7 +3,7 @@
  */
 
 import dayjs from 'dayjs';
-import type { TimeRange, AbsoluteTimeRange, Timestamp } from '@/types';
+import type { TimeRange, AbsoluteTimeRange, Timestamp } from '#/types';
 
 /**
  * 解析相对时间字符串（如 "now-1h"）

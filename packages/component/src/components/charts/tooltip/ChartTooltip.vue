@@ -34,9 +34,9 @@
   import { storeToRefs } from 'pinia';
   import { PushpinFilled } from '@ant-design/icons-vue';
   import type { ECharts } from 'echarts';
-  import { formatValue, formatTime, createNamespace } from '@/utils';
-  import type { TimeSeriesData } from '@/types';
-  import { useTooltipStore } from '@/stores';
+  import { formatValue, formatTime, createNamespace } from '#/utils';
+  import type { TimeSeriesData } from '#/types';
+  import { useTooltipStore } from '#/stores';
 
   const [_, bem] = createNamespace('chart-tooltip');
 

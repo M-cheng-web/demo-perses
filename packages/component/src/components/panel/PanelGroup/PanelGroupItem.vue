@@ -11,10 +11,10 @@
 </template>
 
 <script setup lang="ts">
-  import type { PanelGroup } from '@/types';
-  import { createNamespace } from '@/utils';
+  import type { PanelGroup } from '#/types';
+  import { createNamespace } from '#/utils';
   import PanelGroupHeader from './PanelGroupHeader.vue';
-  import GridLayout from '@/components/GridLayout/GridLayout.vue';
+  import GridLayout from '#/components/GridLayout/GridLayout.vue';
 
   const [_, bem] = createNamespace('panel-group-item');
 

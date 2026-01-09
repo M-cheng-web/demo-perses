@@ -50,9 +50,9 @@
     ArrowDownOutlined,
     InfoCircleOutlined,
   } from '@ant-design/icons-vue';
-  import type { PanelGroup } from '@/types';
-  import { useDashboardStore, useEditorStore } from '@/stores';
-  import { createNamespace } from '@/utils';
+  import type { PanelGroup } from '#/types';
+  import { useDashboardStore, useEditorStore } from '#/stores';
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('panel-group-header');
 

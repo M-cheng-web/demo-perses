@@ -190,9 +190,9 @@
   import { ref, watch, computed, nextTick } from 'vue';
   import { PlusOutlined, CloseOutlined, InfoCircleOutlined, HolderOutlined, DownOutlined, ArrowRightOutlined } from '@ant-design/icons-vue';
   import LabelParamEditor from './LabelParamEditor.vue';
-  import { promQueryModeller } from '@/lib/prometheus-querybuilder/PromQueryModeller';
-  import type { QueryBuilderOperation } from '@/lib/prometheus-querybuilder/types';
-  import { createNamespace } from '@/utils';
+  import { promQueryModeller } from '#/lib/prometheus-querybuilder/PromQueryModeller';
+  import type { QueryBuilderOperation } from '#/lib/prometheus-querybuilder/types';
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('operations-list');
 

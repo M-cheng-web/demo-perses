@@ -18,18 +18,18 @@
   import { computed, ref, watch, onMounted } from 'vue';
   import { Spin, Result, Empty } from 'ant-design-vue';
   import { storeToRefs } from 'pinia';
-  import type { Panel, QueryResult } from '@/types';
-  import { useTimeRangeStore } from '@/stores';
-  import { mockDataManager } from '@/mock';
-  import { PanelType } from '@/enums/panelType';
-  import { createNamespace } from '@/utils';
-  import TimeSeriesChart from '@/components/Charts/TimeSeriesChart.vue';
-  import PieChart from '@/components/Charts/PieChart.vue';
-  import BarChart from '@/components/Charts/BarChart.vue';
-  import StatPanel from '@/components/Charts/StatPanel.vue';
-  import TableChart from '@/components/Charts/TableChart.vue';
-  import GaugeChart from '@/components/Charts/GaugeChart.vue';
-  import HeatmapChart from '@/components/Charts/HeatmapChart.vue';
+  import type { Panel, QueryResult } from '#/types';
+  import { useTimeRangeStore } from '#/stores';
+  // import { mockDataManager } from '#/mock'; // TODO: Mock should be provided by the consuming application
+  import { PanelType } from '#/constants/panelType';
+  import { createNamespace } from '#/utils';
+  import TimeSeriesChart from '#/components/Charts/TimeSeriesChart.vue';
+  import PieChart from '#/components/Charts/PieChart.vue';
+  import BarChart from '#/components/Charts/BarChart.vue';
+  import StatPanel from '#/components/Charts/StatPanel.vue';
+  import TableChart from '#/components/Charts/TableChart.vue';
+  import GaugeChart from '#/components/Charts/GaugeChart.vue';
+  import HeatmapChart from '#/components/Charts/HeatmapChart.vue';
 
   const [_, bem] = createNamespace('panel-content');
 
@@ -70,11 +70,13 @@
 
     try {
       const absRange = absoluteTimeRange.value;
-      const results = await mockDataManager.executeQueries(props.panel.queries, {
-        from: absRange.from,
-        to: absRange.to,
-      });
-      queryResults.value = results;
+      // const results = await mockDataManager.executeQueries(props.panel.queries, {
+      //   from: absRange.from,
+      //   to: absRange.to,
+      // });
+      // TODO: This should be provided by the consuming application
+      queryResults.value = [];
+      console.warn('executeQueries: Mock data manager not available. This should be implemented by the consuming application.');
     } catch (err) {
       error.value = err instanceof Error ? err.message : '查询失败';
       console.error('Query execution failed:', err);

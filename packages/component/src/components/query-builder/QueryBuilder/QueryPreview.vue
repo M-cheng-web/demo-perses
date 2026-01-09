@@ -17,7 +17,7 @@
   import { Button } from 'ant-design-vue';
   import { CopyOutlined } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
-  import { createNamespace } from '@/utils';
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('query-preview');
 

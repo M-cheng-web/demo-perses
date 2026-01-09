@@ -3,8 +3,8 @@
  */
 
 import { defineStore } from 'pinia';
-import type { Panel, ID } from '@/types';
-import { deepClone } from '@/utils';
+import type { Panel, ID } from '#/types';
+import { deepClone } from '#/utils';
 
 interface EditorState {
   /** 抽屉是否打开 */

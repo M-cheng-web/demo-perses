@@ -12,8 +12,8 @@
 </template>
 
 <script setup lang="ts">
-  import type { PanelGroup } from '@/types';
-  import { createNamespace } from '@/utils';
+  import type { PanelGroup } from '#/types';
+  import { createNamespace } from '#/utils';
   import PanelGroupItem from './PanelGroupItem.vue';
 
   const [_, bem] = createNamespace('panel-group-list');

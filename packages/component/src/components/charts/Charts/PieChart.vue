@@ -25,13 +25,13 @@
 <script setup lang="ts">
   import { ref, computed, nextTick } from 'vue';
   import type { EChartsOption, ECharts } from 'echarts';
-  import type { Panel, QueryResult } from '@/types';
-  import { formatValue, createNamespace } from '@/utils';
-  import { useChartResize } from '@/composables/useChartResize';
-  import { useLegend } from '@/composables/useLegend';
-  import { useChartInit } from '@/composables/useChartInit';
-  import { useChartTooltip, TooltipDataProviders, type TooltipData } from '@/composables/useChartTooltip';
-  import Legend from '@/components/ChartLegend/Legend.vue';
+  import type { Panel, QueryResult } from '#/types';
+  import { formatValue, createNamespace } from '#/utils';
+  import { useChartResize } from '#/composables/useChartResize';
+  import { useLegend } from '#/composables/useLegend';
+  import { useChartInit } from '#/composables/useChartInit';
+  import { useChartTooltip, TooltipDataProviders, type TooltipData } from '#/composables/useChartTooltip';
+  import Legend from '#/components/charts/legend/Legend.vue';
   import { Spin } from 'ant-design-vue';
 
   const [_, bem] = createNamespace('pie-chart');

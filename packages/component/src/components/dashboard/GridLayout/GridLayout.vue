@@ -38,10 +38,10 @@
   import { Empty, Button } from 'ant-design-vue';
   import { storeToRefs } from 'pinia';
   import { GridLayout, GridItem } from 'vue-grid-layout-v3';
-  import type { PanelLayout, Panel as PanelType, ID } from '@/types';
-  import { useDashboardStore, useEditorStore } from '@/stores';
-  import Panel from '@/components/Panel/Panel.vue';
-  import { createNamespace } from '@/utils';
+  import type { PanelLayout, Panel as PanelType, ID } from '#/types';
+  import { useDashboardStore, useEditorStore } from '#/stores';
+  import Panel from '#/components/Panel/Panel.vue';
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('grid-layout');
 

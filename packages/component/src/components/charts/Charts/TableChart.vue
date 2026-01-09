@@ -22,8 +22,8 @@
   import { computed } from 'vue';
   import { Spin, Table } from 'ant-design-vue';
   import type { TableColumnType } from 'ant-design-vue';
-  import type { Panel, QueryResult, TableOptions } from '@/types';
-  import { formatValue, formatTime, createNamespace } from '@/utils';
+  import type { Panel, QueryResult, TableOptions } from '#/types';
+  import { formatValue, formatTime, createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('table-chart');
 

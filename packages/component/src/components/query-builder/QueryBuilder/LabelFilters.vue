@@ -66,9 +66,9 @@
   import { Button, Select } from 'ant-design-vue';
   import { ref, watch, onMounted } from 'vue';
   import { PlusOutlined, CloseOutlined } from '@ant-design/icons-vue';
-  import type { QueryBuilderLabelFilter } from '@/lib/prometheus-querybuilder/types';
-  import { fetchLabelKeys, fetchLabelValues } from '@/api/querybuilder/prometheusApi';
-  import { createNamespace } from '@/utils';
+  import type { QueryBuilderLabelFilter } from '#/lib/prometheus-querybuilder/types';
+  import { fetchLabelKeys, fetchLabelValues } from '#/api/querybuilder/prometheusApi';
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('label-filters');
 

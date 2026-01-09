@@ -146,7 +146,7 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { deepClone, createNamespace } from '@/utils';
+  import { deepClone, createNamespace } from '#/utils';
   import { getDefaultPieChartOptions } from '../ChartStylesDefaultOptions/pieChartDefaultOptions';
   import { Switch, Select, Segmented, Slider, Button } from 'ant-design-vue';
 

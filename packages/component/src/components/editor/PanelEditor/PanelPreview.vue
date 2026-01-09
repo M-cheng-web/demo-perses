@@ -14,17 +14,17 @@
 <script setup lang="ts">
   import { ref, computed, watch, onMounted, withDefaults } from 'vue';
   import { Empty } from 'ant-design-vue';
-  import TimeSeriesChart from '@/components/Charts/TimeSeriesChart.vue';
-  import PieChart from '@/components/Charts/PieChart.vue';
-  import BarChart from '@/components/Charts/BarChart.vue';
-  import StatPanel from '@/components/Charts/StatPanel.vue';
-  import GaugeChart from '@/components/Charts/GaugeChart.vue';
-  import HeatmapChart from '@/components/Charts/HeatmapChart.vue';
-  import TableChart from '@/components/Charts/TableChart.vue';
-  import type { Panel, QueryResult } from '@/types';
-  import { useTimeRangeStore } from '@/stores';
-  import { executeQueries } from '@/mock/queries';
-  import { createNamespace } from '@/utils';
+  import TimeSeriesChart from '#/components/Charts/TimeSeriesChart.vue';
+  import PieChart from '#/components/Charts/PieChart.vue';
+  import BarChart from '#/components/Charts/BarChart.vue';
+  import StatPanel from '#/components/Charts/StatPanel.vue';
+  import GaugeChart from '#/components/Charts/GaugeChart.vue';
+  import HeatmapChart from '#/components/Charts/HeatmapChart.vue';
+  import TableChart from '#/components/Charts/TableChart.vue';
+  import type { Panel, QueryResult } from '#/types';
+  import { useTimeRangeStore } from '#/stores';
+  // import { executeQueries } from '#/mock/queries'; // TODO: Mock should be provided by the consuming application
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('panel-preview');
 
@@ -70,7 +70,10 @@
       const timeRange = { from: start, to: end };
 
       // 使用和外部一样的 executeQueries 函数，确保数据来源一致
-      const results = await executeQueries(props.panel.queries, timeRange);
+      // const results = await executeQueries(props.panel.queries, timeRange);
+      // TODO: This should be provided by the consuming application
+      const results: QueryResult[] = [];
+      console.warn('executeQueries: Mock data manager not available. This should be implemented by the consuming application.');
 
       queryResults.value = results;
     } catch (error) {

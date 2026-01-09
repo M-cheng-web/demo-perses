@@ -6,10 +6,10 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@grafana-fast/component': resolve(__dirname, '../packages/component'),
+      '@grafana-fast/component': resolve(__dirname, '../packages/component/src'),
       '@grafana-fast/hooks': resolve(__dirname, '../packages/hooks'),
       '@grafana-fast/types': resolve(__dirname, '../packages/types'),
-      '@': resolve(__dirname, '../packages/component')
+      '#': resolve(__dirname, '../packages/component/src')
     }
   },
   css: {

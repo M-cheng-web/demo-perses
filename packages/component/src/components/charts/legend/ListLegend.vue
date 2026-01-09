@@ -37,8 +37,8 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { createNamespace } from '@/utils';
-  import type { LegendItem, LegendSelection } from '@/types/legend';
+  import { createNamespace } from '#/utils';
+  import type { LegendItem, LegendSelection } from '#/types/legend';
   import { Checkbox } from 'ant-design-vue';
 
   const [_, _bem] = createNamespace('list-legend');

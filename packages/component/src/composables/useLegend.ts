@@ -5,7 +5,7 @@
 
 import { ref, computed, type Ref, type ComputedRef } from 'vue';
 import type { ECharts } from 'echarts';
-import type { Panel, QueryResult, LegendItem, LegendSelection } from '@/types';
+import type { Panel, QueryResult, LegendItem, LegendSelection } from '#/types';
 
 export interface UseLegendOptions {
   /** 面板配置 */

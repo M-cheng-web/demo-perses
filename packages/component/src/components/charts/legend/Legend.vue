@@ -26,8 +26,8 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { createNamespace } from '@/utils';
-  import type { LegendItem, LegendOptions, LegendSelection } from '@/types/legend';
+  import { createNamespace } from '#/utils';
+  import type { LegendItem, LegendOptions, LegendSelection } from '#/types/legend';
   import CompactLegend from './CompactLegend.vue';
   import TableLegend from './TableLegend.vue';
 

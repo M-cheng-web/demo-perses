@@ -87,8 +87,8 @@
   import { ref, computed, watch, onMounted } from 'vue';
   import { SearchOutlined, FilterOutlined } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
-  import { fetchMetrics } from '@/api/querybuilder/prometheusApi';
-  import { createNamespace } from '@/utils';
+  import { fetchMetrics } from '#/api/querybuilder/prometheusApi';
+  import { createNamespace } from '#/utils';
   import type { TableProps, TableColumnType } from 'ant-design-vue';
 
   const [_, bem] = createNamespace('metrics-modal');

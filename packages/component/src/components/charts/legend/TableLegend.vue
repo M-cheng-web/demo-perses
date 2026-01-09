@@ -24,9 +24,9 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { createNamespace } from '@/utils';
-  import type { LegendItem, LegendSelection } from '@/types/legend';
-  import DataTable from '@/components/Common/DataTable.vue';
+  import { createNamespace } from '#/utils';
+  import type { LegendItem, LegendSelection } from '#/types/legend';
+  import DataTable from '#/components/common/Common/DataTable.vue';
 
   const [_, bem] = createNamespace('table-legend');
 

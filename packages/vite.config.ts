@@ -15,9 +15,10 @@ export default defineConfig(async () => {
     },
     resolve: {
       alias: {
-        '@grafana-fast/component': resolve(__dirname, 'component/index.ts'),
+        '@grafana-fast/component': resolve(__dirname, 'component/src/index.ts'),
         '@grafana-fast/hooks': resolve(__dirname, 'hooks/index.ts'),
-        '@grafana-fast/types': resolve(__dirname, 'types/index.ts')
+        '@grafana-fast/types': resolve(__dirname, 'types/index.ts'),
+        '#': resolve(__dirname, 'component/src')
       }
     }
   }

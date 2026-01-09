@@ -3,8 +3,8 @@
  */
 
 import { defineStore } from 'pinia';
-import type { TimeRange, AbsoluteTimeRange } from '@/types';
-import { parseTimeRange } from '@/utils/time';
+import type { TimeRange, AbsoluteTimeRange } from '#/types';
+import { parseTimeRange } from '#/utils/time';
 
 interface TimeRangeState {
   /** 时间范围 */

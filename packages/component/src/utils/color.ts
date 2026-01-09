@@ -2,7 +2,7 @@
  * 颜色工具函数
  */
 
-import type { ColorScheme } from '@/types';
+import type { ColorScheme } from '#/types';
 
 /**
  * 预定义颜色方案

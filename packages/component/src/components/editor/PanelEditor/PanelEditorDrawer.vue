@@ -72,9 +72,9 @@
   import { ref, reactive, watch, computed } from 'vue';
   import { storeToRefs } from 'pinia';
   import { Drawer, Form, FormItem, Select, Input, Textarea, Button, Tabs, TabPane, Empty, Row, Col, Flex, message } from 'ant-design-vue';
-  import { useDashboardStore, useEditorStore } from '@/stores';
-  import { generateId, deepClone, createNamespace } from '@/utils';
-  import { PanelType, PANEL_TYPE_OPTIONS } from '@/enums/panelType';
+  import { useDashboardStore, useEditorStore } from '#/stores';
+  import { generateId, deepClone, createNamespace } from '#/utils';
+  import { PanelType, PANEL_TYPE_OPTIONS } from '#/constants/panelType';
   import TimeSeriesChartStyles from './ChartStyles/TimeSeriesChartStyles.vue';
   import BarChartStyles from './ChartStyles/BarChartStyles.vue';
   import PieChartStyles from './ChartStyles/PieChartStyles.vue';
@@ -82,8 +82,8 @@
   import HeatmapChartStyles from './ChartStyles/HeatmapChartStyles.vue';
   import StatPanelStyles from './ChartStyles/StatPanelStyles.vue';
   import TableChartStyles from './ChartStyles/TableChartStyles.vue';
-  import type { Panel } from '@/types';
-  import JsonEditor from '@/components/Common/JsonEditor.vue';
+  import type { Panel } from '#/types';
+  import JsonEditor from '#/components/common/Common/JsonEditor.vue';
   import PanelPreview from './PanelPreview.vue';
   import DataQueryTab from './DataQueryTab.vue';
   import { getDefaultTimeSeriesOptions } from './ChartStylesDefaultOptions/timeSeriesDefaultOptions';

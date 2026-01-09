@@ -90,11 +90,11 @@
     SettingOutlined,
     PlusOutlined,
   } from '@ant-design/icons-vue';
-  import { useDashboardStore, useTimeRangeStore } from '@/stores';
+  import { useDashboardStore, useTimeRangeStore } from '#/stores';
   import { message } from 'ant-design-vue';
-  import JsonEditor from '@/components/Common/JsonEditor.vue';
-  import VariableSelector from '@/components/Common/VariableSelector.vue';
-  import { createNamespace } from '@/utils';
+  import JsonEditor from '#/components/common/Common/JsonEditor.vue';
+  import VariableSelector from '#/components/common/Common/VariableSelector.vue';
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('dashboard-toolbar');
 

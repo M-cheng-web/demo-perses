@@ -2,8 +2,8 @@
  * PromQL 操作定义
  * 参考 Grafana 核心操作
  */
-import { OperationCategory } from '@/types/promql';
-import type { OperationDef } from '@/types/promql';
+import { OperationCategory } from '#/types/promql';
+import type { OperationDef } from '#/types/promql';
 
 // Range Functions（范围函数）
 export const rangeFunctionOperations: OperationDef[] = [

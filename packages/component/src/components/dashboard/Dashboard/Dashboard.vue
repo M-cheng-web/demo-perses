@@ -30,15 +30,15 @@
   import { ref, watch, onMounted, onUnmounted } from 'vue';
   import { storeToRefs } from 'pinia';
   import { Empty, Button } from 'ant-design-vue';
-  import { useDashboardStore, useTooltipStore } from '@/stores';
-  import { createNamespace } from '@/utils';
+  import { useDashboardStore, useTooltipStore } from '#/stores';
+  import { createNamespace } from '#/utils';
   import DashboardToolbar from './DashboardToolbar.vue';
-  import PanelGroupList from '@/components/PanelGroup/PanelGroupList.vue';
-  import PanelEditorDrawer from '@/components/PanelEditor/PanelEditorDrawer.vue';
-  import PanelFullscreenModal from '@/components/Panel/PanelFullscreenModal.vue';
-  import GlobalChartTooltip from '@/components/ChartTooltip/GlobalChartTooltip.vue';
-  import PanelGroupDialog from '@/components/PanelGroup/PanelGroupDialog.vue';
-  import type { PanelGroup } from '@/types';
+  import PanelGroupList from '#/components/PanelGroup/PanelGroupList.vue';
+  import PanelEditorDrawer from '#/components/PanelEditor/PanelEditorDrawer.vue';
+  import PanelFullscreenModal from '#/components/Panel/PanelFullscreenModal.vue';
+  import GlobalChartTooltip from '#/components/ChartTooltip/GlobalChartTooltip.vue';
+  import PanelGroupDialog from '#/components/PanelGroup/PanelGroupDialog.vue';
+  import type { PanelGroup } from '#/types';
 
   const [_, bem] = createNamespace('dashboard');
 

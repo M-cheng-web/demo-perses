@@ -33,8 +33,8 @@
   import { Button } from 'ant-design-vue';
   import { storeToRefs } from 'pinia';
   import { PushpinFilled } from '@ant-design/icons-vue';
-  import { useTooltipStore } from '@/stores';
-  import { createNamespace } from '@/utils';
+  import { useTooltipStore } from '#/stores';
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('chart-tooltip');
 

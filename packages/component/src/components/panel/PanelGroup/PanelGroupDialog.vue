@@ -20,9 +20,9 @@
   import { Modal, Form, FormItem, Input, Textarea, Switch } from 'ant-design-vue';
   import { ref } from 'vue';
   import { message } from 'ant-design-vue';
-  import { useDashboardStore } from '@/stores';
-  import { createNamespace } from '@/utils';
-  import type { PanelGroup } from '@/types';
+  import { useDashboardStore } from '#/stores';
+  import { createNamespace } from '#/utils';
+  import type { PanelGroup } from '#/types';
 
   const [_, _bem] = createNamespace('panel-group-dialog');
 

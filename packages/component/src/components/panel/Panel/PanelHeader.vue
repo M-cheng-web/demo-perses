@@ -57,9 +57,9 @@
   import { storeToRefs } from 'pinia';
   import { Button, Tooltip, Popconfirm, message } from 'ant-design-vue';
   import { EditOutlined, CopyOutlined, DeleteOutlined, FullscreenOutlined, InfoCircleOutlined } from '@ant-design/icons-vue';
-  import type { Panel, ID } from '@/types';
-  import { useDashboardStore, useEditorStore } from '@/stores';
-  import { createNamespace } from '@/utils';
+  import type { Panel, ID } from '#/types';
+  import { useDashboardStore, useEditorStore } from '#/stores';
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('panel-header');
 

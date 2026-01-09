@@ -3,7 +3,7 @@
  * 返回空数组，让 queries.ts 使用默认数据池
  */
 
-import type { TimeSeriesData } from '@/types';
+import type { TimeSeriesData } from '#/types';
 
 export interface PrometheusQueryParams {
   query: string;

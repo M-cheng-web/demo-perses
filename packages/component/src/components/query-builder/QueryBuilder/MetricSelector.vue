@@ -40,9 +40,9 @@
   import { Button, Select } from 'ant-design-vue';
   import { ref, computed, onMounted, watch } from 'vue';
   import { AppstoreOutlined } from '@ant-design/icons-vue';
-  import { fetchMetrics } from '@/api/querybuilder/prometheusApi';
+  import { fetchMetrics } from '#/api/querybuilder/prometheusApi';
   import MetricsModal from './MetricsModal.vue';
-  import { createNamespace } from '@/utils';
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('metric-selector');
 

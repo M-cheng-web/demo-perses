@@ -5,20 +5,20 @@
  * @example
  * ```typescript
  * // 业务代码只需从这个文件导入所有需要的类型和功能
- * import { useChartTooltip, TooltipDataProviders, type ChartRegistration } from '@/composables/useChartTooltip';
+ * import { useChartTooltip, TooltipDataProviders, type ChartRegistration } from '#/composables/useChartTooltip';
  * ```
  */
 
 import { onUnmounted, type Ref, type ComputedRef } from 'vue';
 import type { ECharts } from 'echarts';
-import { useTooltipStore } from '@/stores';
+import { useTooltipStore } from '#/stores';
 import type {
   ChartRegistration as StoreChartRegistration,
   MousePosition as StoreMousePosition,
   TooltipData as StoreTooltipData,
   TooltipSeriesItem as StoreTooltipSeriesItem,
-} from '@/stores/tooltip';
-import type { TimeSeriesData, QueryResult } from '@/types';
+} from '#/stores/tooltip';
+import type { TimeSeriesData, QueryResult } from '#/types';
 
 /**
  * 重新导出 Store 中定义的类型，供业务代码使用

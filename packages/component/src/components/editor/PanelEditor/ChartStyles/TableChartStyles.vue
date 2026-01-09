@@ -90,7 +90,7 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { deepClone, createNamespace } from '@/utils';
+  import { deepClone, createNamespace } from '#/utils';
   import { getDefaultTableChartOptions } from '../ChartStylesDefaultOptions/tableChartDefaultOptions';
   import { Switch, Select, Button } from 'ant-design-vue';
 

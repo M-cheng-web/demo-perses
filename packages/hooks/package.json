@@ -45,5 +45,7 @@
   "bugs": {
     "url": "https://github.com/grafana-fast/grafana-fast/issues"
   },
-  "homepage": "https://github.com/grafana-fast/grafana-fast#readme"
+  "homepage": "https://github.com/grafana-fast/grafana-fast#readme",
+  "unpkg": "./index.iife.min.js",
+  "jsdelivr": "./index.iife.min.js"
 }

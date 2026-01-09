@@ -96,7 +96,7 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { deepClone, createNamespace } from '@/utils';
+  import { deepClone, createNamespace } from '#/utils';
   import { getDefaultHeatmapChartOptions } from '../ChartStylesDefaultOptions/heatmapChartDefaultOptions';
   import { Switch, Input, Select, Button } from 'ant-design-vue';
 

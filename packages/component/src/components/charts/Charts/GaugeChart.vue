@@ -13,10 +13,10 @@
   import { ref, computed, nextTick } from 'vue';
   import { Spin } from 'ant-design-vue';
   import type { EChartsOption, ECharts } from 'echarts';
-  import type { Panel, QueryResult, GaugeOptions } from '@/types';
-  import { formatValue, createNamespace } from '@/utils';
-  import { useChartResize } from '@/composables/useChartResize';
-  import { useChartInit } from '@/composables/useChartInit';
+  import type { Panel, QueryResult, GaugeOptions } from '#/types';
+  import { formatValue, createNamespace } from '#/utils';
+  import { useChartResize } from '#/composables/useChartResize';
+  import { useChartInit } from '#/composables/useChartInit';
 
   const [_, bem] = createNamespace('gauge-chart');
 

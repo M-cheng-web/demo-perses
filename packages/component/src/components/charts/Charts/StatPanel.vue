@@ -20,8 +20,8 @@
   import { computed, h } from 'vue';
   import { Spin } from 'ant-design-vue';
   import { ArrowUpOutlined, ArrowDownOutlined, MinusOutlined } from '@ant-design/icons-vue';
-  import type { Panel, QueryResult } from '@/types';
-  import { formatValue, createNamespace } from '@/utils';
+  import type { Panel, QueryResult } from '#/types';
+  import { formatValue, createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('stat-panel');
 

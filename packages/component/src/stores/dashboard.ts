@@ -3,9 +3,9 @@
  */
 
 import { defineStore } from 'pinia';
-import type { Dashboard, PanelGroup, Panel, PanelLayout, ID } from '@/types';
-import { mockDataManager } from '@/mock';
-import { generateId, deepClone } from '@/utils';
+import type { Dashboard, PanelGroup, Panel, PanelLayout, ID } from '#/types';
+// import { mockDataManager } from '#/mock'; // TODO: Mock should be provided by the consuming application
+import { generateId, deepClone } from '#/utils';
 
 interface DashboardState {
   /** 当前 Dashboard */
@@ -72,8 +72,10 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     async loadDashboard(id: ID) {
       try {
-        const dashboard = await mockDataManager.getDashboard(id);
-        this.currentDashboard = deepClone(dashboard);
+        // const dashboard = await mockDataManager.getDashboard(id);
+        // this.currentDashboard = deepClone(dashboard);
+        // TODO: This should be provided by the consuming application
+        console.warn('loadDashboard: Mock data manager not available. This should be implemented by the consuming application.');
 
         console.log('currentDashboard', this.currentDashboard);
       } catch (error) {
@@ -89,7 +91,9 @@ export const useDashboardStore = defineStore('dashboard', {
 
       this.isSaving = true;
       try {
-        mockDataManager.saveDashboard(this.currentDashboard);
+        // mockDataManager.saveDashboard(this.currentDashboard);
+        // TODO: This should be provided by the consuming application
+        console.warn('saveDashboard: Mock data manager not available. This should be implemented by the consuming application.');
         await new Promise((resolve) => setTimeout(resolve, 500)); // 模拟延迟
       } catch (error) {
         console.error('Failed to save dashboard:', error);

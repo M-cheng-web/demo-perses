@@ -3,7 +3,7 @@
  * 用于 QueryBuilder 组件
  */
 
-import type { PrometheusDatasource } from '@/types';
+import type { PrometheusDatasource } from '#/types';
 
 /**
  * 默认的 mock Prometheus 数据源

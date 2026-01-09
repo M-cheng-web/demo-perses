@@ -184,18 +184,18 @@
   import { ref, watch, computed } from 'vue';
   import { Space, Button, RadioGroup, RadioButton, Switch, Tag, FormItem, Input, Textarea, InputNumber, message } from 'ant-design-vue';
   import { BlockOutlined, CodeOutlined, ThunderboltOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons-vue';
-  import MetricSelector from '@/components/QueryBuilder/MetricSelector.vue';
-  import LabelFilters from '@/components/QueryBuilder/LabelFilters.vue';
-  import OperationsList from '@/components/QueryBuilder/query-builder/OperationsList.vue';
-  import NestedQueryList from '@/components/QueryBuilder/query-builder/NestedQueryList.vue';
-  import QueryHints from '@/components/QueryBuilder/query-builder/QueryHints.vue';
-  import QueryPreview from '@/components/QueryBuilder/QueryPreview.vue';
-  import QueryExplain from '@/components/QueryBuilder/query-builder/QueryExplain.vue';
-  import QueryPatternsModal from '@/components/QueryBuilder/QueryPatternsModal.vue';
-  import { promQueryModeller } from '@/lib/prometheus-querybuilder/PromQueryModeller';
-  import { getDefaultDataSource } from '@/api/querybuilder/datasource';
-  import { createNamespace } from '@/utils';
-  import type { PromVisualQuery, QueryPanel } from '@/types';
+  import MetricSelector from '#/components/QueryBuilder/MetricSelector.vue';
+  import LabelFilters from '#/components/QueryBuilder/LabelFilters.vue';
+  import OperationsList from '#/components/QueryBuilder/query-builder/OperationsList.vue';
+  import NestedQueryList from '#/components/QueryBuilder/query-builder/NestedQueryList.vue';
+  import QueryHints from '#/components/QueryBuilder/query-builder/QueryHints.vue';
+  import QueryPreview from '#/components/QueryBuilder/QueryPreview.vue';
+  import QueryExplain from '#/components/QueryBuilder/query-builder/QueryExplain.vue';
+  import QueryPatternsModal from '#/components/QueryBuilder/QueryPatternsModal.vue';
+  import { promQueryModeller } from '#/lib/prometheus-querybuilder/PromQueryModeller';
+  import { getDefaultDataSource } from '#/api/querybuilder/datasource';
+  import { createNamespace } from '#/utils';
+  import type { PromVisualQuery, QueryPanel } from '#/types';
 
   const [_, bem] = createNamespace('data-query-tab');
 

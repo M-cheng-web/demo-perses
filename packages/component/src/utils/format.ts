@@ -2,7 +2,7 @@
  * 格式化工具函数
  */
 
-import type { FormatOptions } from '@/types';
+import type { FormatOptions } from '#/types';
 
 /**
  * 格式化数值

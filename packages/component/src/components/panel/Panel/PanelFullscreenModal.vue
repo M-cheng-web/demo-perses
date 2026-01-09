@@ -18,9 +18,9 @@
 
 <script setup lang="ts">
   import { ref, computed } from 'vue';
-  import type { Panel } from '@/types';
-  import { useDashboardStore } from '@/stores';
-  import { createNamespace } from '@/utils';
+  import type { Panel } from '#/types';
+  import { useDashboardStore } from '#/stores';
+  import { createNamespace } from '#/utils';
   import PanelContent from './PanelContent.vue';
   import { Modal } from 'ant-design-vue';
 

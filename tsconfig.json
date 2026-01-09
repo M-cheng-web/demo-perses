@@ -26,7 +26,7 @@
       "@grafana-fast/types": ["./packages/types/index.ts"],
       "@grafana-fast/types/*": ["./packages/types/*"],
       "@grafana-fast/metadata": ["./packages/metadata/metadata.ts"],
-      "@/*": ["./src/*"]
+      "#/*": ["./packages/component/src/*"]
     }
   },
   "include": [

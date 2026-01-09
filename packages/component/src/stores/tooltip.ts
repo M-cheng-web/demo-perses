@@ -4,7 +4,7 @@
  */
 
 import { defineStore } from 'pinia';
-import type { TimeSeriesData } from '@/types';
+import type { TimeSeriesData } from '#/types';
 
 /**
  * 图表注册信息

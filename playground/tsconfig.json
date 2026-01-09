@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@grafana-fast/component": ["../packages/component/src/index.ts"],
+      "@grafana-fast/component/*": ["../packages/component/src/*"],
+      "@grafana-fast/hooks": ["../packages/hooks/index.ts"],
+      "@grafana-fast/hooks/*": ["../packages/hooks/*"],
+      "@grafana-fast/types": ["../packages/types/index.ts"],
+      "@grafana-fast/types/*": ["../packages/types/*"],
+      "#/*": ["../packages/component/src/*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.d.ts",
+    "**/*.tsx",
+    "**/*.vue"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

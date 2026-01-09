@@ -25,13 +25,13 @@
 <script setup lang="ts">
   import { ref, computed, nextTick } from 'vue';
   import type { EChartsOption, ECharts } from 'echarts';
-  import type { Panel, QueryResult } from '@/types';
-  import { formatValue, createNamespace } from '@/utils';
-  import { useChartResize } from '@/composables/useChartResize';
-  import { useLegend } from '@/composables/useLegend';
-  import { useChartInit } from '@/composables/useChartInit';
-  import { useChartTooltip, TooltipDataProviders, type TooltipData } from '@/composables/useChartTooltip';
-  import Legend from '@/components/ChartLegend/Legend.vue';
+  import type { Panel, QueryResult } from '#/types';
+  import { formatValue, createNamespace } from '#/utils';
+  import { useChartResize } from '#/composables/useChartResize';
+  import { useLegend } from '#/composables/useLegend';
+  import { useChartInit } from '#/composables/useChartInit';
+  import { useChartTooltip, TooltipDataProviders, type TooltipData } from '#/composables/useChartTooltip';
+  import Legend from '#/components/charts/legend/Legend.vue';
   import { Spin } from 'ant-design-vue';
 
   const [_, bem] = createNamespace('bar-chart');
@@ -62,14 +62,14 @@
         isValid: (options: any) => options && Object.keys(options).length > 0,
       },
     ],
-    onChartCreated: (instance) => {
+    onChartCreated: (instance: ECharts) => {
       nextTick(() => {
         updateChart(instance);
         registerTooltip();
         initChartResize();
       });
     },
-    onUpdate: (instance) => {
+    onUpdate: (instance: ECharts) => {
       nextTick(() => {
         updateChart(instance);
         updateTooltip();
@@ -146,7 +146,7 @@
     const { options } = props.panel;
 
     // 检查是否有有效数据
-    if (!queryResults || queryResults.length === 0 || queryResults.every((r) => !r.data || r.data.length === 0)) {
+    if (!queryResults || queryResults.length === 0 || queryResults.every((r: QueryResult) => !r.data || r.data.length === 0)) {
       return {
         title: {
           text: '暂无数据',
@@ -173,10 +173,10 @@
     queryResults.forEach((result) => {
       if (!result.data) return;
 
-      result.data.forEach((timeSeries) => {
+      result.data.forEach((timeSeries: any) => {
         if (!timeSeries || !timeSeries.values) return;
 
-        timeSeries.values.forEach(([timestamp]) => {
+        timeSeries.values.forEach(([timestamp]: [number, number]) => {
           categories.add(timestamp);
         });
       });
@@ -205,10 +205,10 @@
       };
     }
 
-    queryResults.forEach((result) => {
+    queryResults.forEach((result: QueryResult) => {
       if (!result.data) return;
 
-      result.data.forEach((timeSeries) => {
+      result.data.forEach((timeSeries: any) => {
         if (!timeSeries || !timeSeries.values || timeSeries.values.length === 0) return;
 
         const legend = timeSeries.metric.__legend__ || timeSeries.metric.__name__ || 'series';
@@ -224,7 +224,7 @@
         }
 
         // 为每个时间点创建数据
-        const dataMap = new Map(timeSeries.values.map(([timestamp, value]) => [timestamp, value]));
+        const dataMap = new Map(timeSeries.values.map(([timestamp, value]: [number, number]) => [timestamp, value]));
         const data = sortedCategories.map((ts) => dataMap.get(ts) ?? 0);
 
         const color = colors[colorIndex % colors.length] || `hsl(${(colorIndex * 137.5) % 360}, 70%, 50%)`;

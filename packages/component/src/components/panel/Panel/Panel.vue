@@ -10,10 +10,10 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
-  import type { ID } from '@/types';
+  import type { ID } from '#/types';
   import { Result } from 'ant-design-vue';
-  import { useDashboardStore } from '@/stores';
-  import { createNamespace } from '@/utils';
+  import { useDashboardStore } from '#/stores';
+  import { createNamespace } from '#/utils';
   import PanelHeader from './PanelHeader.vue';
   import PanelContent from './PanelContent.vue';
 

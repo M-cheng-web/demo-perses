@@ -13,11 +13,11 @@
   import { ref, computed, nextTick } from 'vue';
   import { Spin } from 'ant-design-vue';
   import type { EChartsOption, ECharts } from 'echarts';
-  import type { Panel, QueryResult, HeatmapOptions } from '@/types';
-  import { formatValue, formatTime, createNamespace } from '@/utils';
-  import { useChartResize } from '@/composables/useChartResize';
-  import { useChartInit } from '@/composables/useChartInit';
-  import { useChartTooltip, type TooltipData } from '@/composables/useChartTooltip';
+  import type { Panel, QueryResult, HeatmapOptions } from '#/types';
+  import { formatValue, formatTime, createNamespace } from '#/utils';
+  import { useChartResize } from '#/composables/useChartResize';
+  import { useChartInit } from '#/composables/useChartInit';
+  import { useChartTooltip, type TooltipData } from '#/composables/useChartTooltip';
 
   const [_, bem] = createNamespace('heatmap-chart');
 

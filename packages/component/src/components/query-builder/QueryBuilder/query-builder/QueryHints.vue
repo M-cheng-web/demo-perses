@@ -42,8 +42,8 @@
   import { computed } from 'vue';
   import { ThunderboltOutlined } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
-  import type { PromVisualQuery } from '@/lib/prometheus-querybuilder/types';
-  import { createNamespace } from '@/utils';
+  import type { PromVisualQuery } from '#/lib/prometheus-querybuilder/types';
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('query-hints');
 
@@ -191,7 +191,7 @@
 </script>
 
 <style scoped lang="less">
-  @import '@/assets/styles/variables.less';
+  @import '#/assets/styles/variables.less';
 
   .dp-query-hints {
     width: 100%;

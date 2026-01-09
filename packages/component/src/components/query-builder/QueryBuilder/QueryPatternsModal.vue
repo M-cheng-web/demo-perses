@@ -79,9 +79,9 @@
   import { Alert, Button, Card, Divider, Modal, Tag } from 'ant-design-vue';
   import { ref, watch } from 'vue';
   import { message } from 'ant-design-vue';
-  import { promQueryModeller } from '@/lib/prometheus-querybuilder/PromQueryModeller';
-  import type { PromQueryPattern, PromVisualQuery } from '@/lib/prometheus-querybuilder/types';
-  import { createNamespace } from '@/utils';
+  import { promQueryModeller } from '#/lib/prometheus-querybuilder/PromQueryModeller';
+  import type { PromQueryPattern, PromVisualQuery } from '#/lib/prometheus-querybuilder/types';
+  import { createNamespace } from '#/utils';
 
   const [_, bem] = createNamespace('query-patterns-modal');
 
