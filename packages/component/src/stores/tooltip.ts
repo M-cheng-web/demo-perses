@@ -3,7 +3,7 @@
  * 用于管理多个图表之间的 Tooltip 固定状态和图表注册
  */
 
-import { defineStore } from 'pinia';
+import { defineStore } from '@grafana-fast/store';
 import type { TimeSeriesData } from '@grafana-fast/types';
 
 /**

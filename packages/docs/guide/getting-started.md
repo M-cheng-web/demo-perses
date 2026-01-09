@@ -6,7 +6,7 @@
 pnpm install
 # 启动演示站点
 pnpm dev
-# 构建全部包（types -> component -> hooks）
+# 构建全部包（types -> store -> component -> hooks）
 pnpm run build:packages
 ```
 
@@ -24,11 +24,11 @@ pnpm run build:packages
 pnpm add @grafana-fast/component @grafana-fast/hooks @grafana-fast/types
 ```
 
-在你的应用里挂载 Pinia 和 Ant Design Vue 后即可使用：
+在你的应用里挂载 `@grafana-fast/store` 和 Ant Design Vue 后即可使用：
 
 ```ts
 import { createApp } from 'vue';
-import { createPinia } from 'pinia';
+import { createPinia } from '@grafana-fast/store';
 import Antd from 'ant-design-vue';
 import App from './App.vue';
 

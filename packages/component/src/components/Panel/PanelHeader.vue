@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
   import { h } from 'vue';
-  import { storeToRefs } from 'pinia';
+  import { storeToRefs } from '@grafana-fast/store';
   import { Button, Tooltip, Popconfirm, message } from 'ant-design-vue';
   import { EditOutlined, CopyOutlined, DeleteOutlined, FullscreenOutlined, InfoCircleOutlined } from '@ant-design/icons-vue';
   import type { Panel, ID } from '@grafana-fast/types';

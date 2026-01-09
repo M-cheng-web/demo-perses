@@ -17,6 +17,7 @@
       "/#/*": ["packages/component/src/*"],
       "@grafana-fast/component": ["packages/component/src/index.ts"],
       "@grafana-fast/hooks": ["packages/hook/src/index.ts"],
+      "@grafana-fast/store": ["packages/store/src/index.ts"],
       "@grafana-fast/types": ["packages/types/src/index.ts"],
       "@grafana-fast/types/*": ["packages/types/src/*"]
     }

@@ -13,6 +13,7 @@ export default defineConfig({
       '@': resolveFromRoot('./src'),
       '/#/': `${resolveFromRoot('../component/src')}/`,
       '@grafana-fast/component': resolveFromRoot('../component/src/index.ts'),
+      '@grafana-fast/store': resolveFromRoot('../store/src/index.ts'),
       '@grafana-fast/hooks': resolveFromRoot('../hook/src/index.ts'),
       '@grafana-fast/types': resolveFromRoot('../types/src/index.ts'),
     },

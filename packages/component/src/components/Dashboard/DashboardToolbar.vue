@@ -79,8 +79,9 @@
 
 <script setup lang="ts">
   import { ref, computed, h, onUnmounted } from 'vue';
-  import { Button, Select, Dropdown, Menu, Space, Modal } from 'ant-design-vue';
-  import { storeToRefs } from 'pinia';
+  import { Select, Dropdown, Menu, Space, Modal } from 'ant-design-vue';
+  import { Button } from '/#/components-common';
+  import { storeToRefs } from '@grafana-fast/store';
   import {
     ReloadOutlined,
     MoreOutlined,

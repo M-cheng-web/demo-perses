@@ -2,7 +2,7 @@
  * 时间范围状态管理
  */
 
-import { defineStore } from 'pinia';
+import { defineStore } from '@grafana-fast/store';
 import type { TimeRange, AbsoluteTimeRange } from '@grafana-fast/types';
 import { parseTimeRange } from '/#/utils/time';
 

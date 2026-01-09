@@ -5,6 +5,7 @@
     "paths": {
       "/#/*": ["../component/src/*"],
       "@grafana-fast/component": ["../component/src/index.ts"],
+      "@grafana-fast/store": ["../store/src/index.ts"],
       "@grafana-fast/types": ["../types/src/index.ts"],
       "@grafana-fast/types/*": ["../types/src/*"]
     },
@@ -19,5 +20,5 @@
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist"],
-  "references": [{ "path": "../types" }, { "path": "../component" }]
+  "references": [{ "path": "../types" }, { "path": "../store" }, { "path": "../component" }]
 }

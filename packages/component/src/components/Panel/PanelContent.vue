@@ -1,6 +1,8 @@
 <template>
   <div :class="bem()">
-    <Spin v-if="loading" :class="bem('loading')" :spinning="true" tip="加载中..." />
+    <div v-if="loading" :class="bem('loading')">
+      <Loading text="加载中..." />
+    </div>
 
     <div :class="bem('wrapper')">
       <div v-if="error" :class="bem('error')">
@@ -16,8 +18,9 @@
 
 <script setup lang="ts">
   import { computed, ref, watch, onMounted } from 'vue';
-  import { Spin, Result, Empty } from 'ant-design-vue';
-  import { storeToRefs } from 'pinia';
+  import { Result } from 'ant-design-vue';
+  import { Loading, Empty } from '/#/components-common';
+  import { storeToRefs } from '@grafana-fast/store';
   import type { Panel, QueryResult } from '@grafana-fast/types';
   import { useTimeRangeStore } from '/#/stores';
   import { mockDataManager } from '/#/mock';

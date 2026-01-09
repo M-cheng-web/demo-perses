@@ -1,27 +1,45 @@
 import path from 'path';
-import { fileURLToPath } from 'url';
+import alias from '@rollup/plugin-alias';
+import vue from '@vitejs/plugin-vue';
 import esbuild from 'rollup-plugin-esbuild';
 import dts from 'rollup-plugin-dts';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, '..');
-const hookEntry = path.join(root, 'packages/hook/src/index.ts');
-const hookDist = path.join(root, 'packages/hook/dist');
+const pkgRoot = process.cwd();
+const entry = path.join(pkgRoot, 'src/index.ts');
+const dist = path.join(pkgRoot, 'dist');
+const pkgName = path.basename(pkgRoot);
+
+const externalsByPkg = {
+  hook: ['vue', '@grafana-fast/store', '@grafana-fast/component', '@grafana-fast/types'],
+  store: ['vue'],
+};
+
+const external = externalsByPkg[pkgName] ?? ['vue'];
 
 export default [
   {
-    input: hookEntry,
+    input: entry,
     output: [
-      { file: path.join(hookDist, 'index.mjs'), format: 'es' },
-      { file: path.join(hookDist, 'index.cjs'), format: 'cjs' }
+      { file: path.join(dist, 'index.mjs'), format: 'es' },
+      { file: path.join(dist, 'index.cjs'), format: 'cjs' },
     ],
-    plugins: [esbuild({ target: 'esnext' })],
-    external: ['vue', 'pinia', '@grafana-fast/component', '@grafana-fast/types']
+    plugins: [
+      ...(pkgName === 'hook'
+        ? [
+            alias({
+              entries: [{ find: '/#/', replacement: `${path.resolve(pkgRoot, '../component/src')}/` }],
+            }),
+            vue(),
+          ]
+        : []),
+      esbuild({ target: 'esnext' }),
+    ],
+    external,
   },
   {
-    input: hookEntry,
-    output: { file: path.join(hookDist, 'index.d.ts'), format: 'es' },
+    input: entry,
+    output: { file: path.join(dist, 'index.d.ts'), format: 'es' },
     plugins: [dts()],
-    external: [/\\.css$/, /\\.less$/]
-  }
+    external: [/\.css$/, /\.less$/],
+  },
 ];

@@ -33,7 +33,7 @@ export default defineConfig({
     rollupOptions: {
       external: [
         'vue',
-        'pinia',
+        '@grafana-fast/store',
         'ant-design-vue',
         '@ant-design/icons-vue',
         'echarts',

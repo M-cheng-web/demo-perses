@@ -5,7 +5,7 @@
 
     <!-- 面板组列表 -->
     <div :class="bem('content')">
-      <Empty v-if="!panelGroups.length" description="暂无面板组">
+      <Empty v-if="!panelGroups.length" :description="emptyText">
         <Button v-if="isEditMode" type="primary" @click="handleAddPanelGroup"> 创建面板组 </Button>
       </Empty>
 
@@ -27,11 +27,13 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, onMounted, onUnmounted } from 'vue';
-  import { storeToRefs } from 'pinia';
-  import { Empty, Button } from 'ant-design-vue';
+  import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
+  import { storeToRefs } from '@grafana-fast/store';
+  import Button from '/#/Button';
+  import Empty from '/#/Empty';
   import { useDashboardStore, useTooltipStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
+  import { DASHBOARD_EMPTY_TEXT, formatDashboardTitle } from '/#/components/Dashboard/utils';
   import DashboardToolbar from './DashboardToolbar.vue';
   import PanelGroupList from '/#/components/PanelGroup/PanelGroupList.vue';
   import PanelEditorDrawer from '/#/components/PanelEditor/PanelEditorDrawer.vue';
@@ -47,6 +49,10 @@
   const { panelGroups, isEditMode, viewPanel } = storeToRefs(dashboardStore);
   const fullscreenModalRef = ref<InstanceType<typeof PanelFullscreenModal>>();
   const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
+
+  const emptyText = computed(() => DASHBOARD_EMPTY_TEXT);
+
+  const dashboardName = computed(() => formatDashboardTitle(dashboardStore.currentDashboard?.name));
 
   const handleAddPanelGroup = () => {
     dashboardStore.addPanelGroup({ title: '新面板组' });

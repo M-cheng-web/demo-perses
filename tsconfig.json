@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "./packages/types" },
+    { "path": "./packages/store" },
     { "path": "./packages/component" },
     { "path": "./packages/hook" },
     { "path": "./packages/app" }

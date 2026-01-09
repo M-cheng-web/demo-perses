@@ -7,22 +7,25 @@
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Dashboard } from '@grafana-fast/component';
 import { useDashboardSdk } from '@grafana-fast/hooks';
 
 const root = ref<HTMLElement | null>(null);
-const { state, actions, containerSize } = useDashboardSdk(root, {
+const { state, actions, containerSize, api } = useDashboardSdk(root, {
   dashboardId: 'default',
+  apiConfig: {
+    dsn: 'https://api.example.com',
+  },
 });
 </script>
 
 <template>
-  <section ref="root">
-    <Dashboard />
+  <section>
+    <div ref="root" style="min-height: 480px;"></div>
     <aside v-if="state.dashboard">
       <p>面板组数量：{{ state.panelGroups.length }}</p>
       <p>当前模式：{{ state.isEditMode ? '编辑' : '浏览' }}</p>
       <p>容器尺寸：{{ containerSize.width }} × {{ containerSize.height }}</p>
+      <p>加载接口：{{ api.endpoints.LoadDashboard }}</p>
       <button @click="actions.toggleEditMode">切换模式</button>
     </aside>
   </section>
@@ -36,6 +39,21 @@ const { state, actions, containerSize } = useDashboardSdk(root, {
 - `containerSize`：跟踪传入 `ref` 的容器尺寸，便于外部布局计算。
 - `ready`：hook 初始化完成的标记。
 - `targetRef`：透传的容器 `ref`，内部已绑定鼠标事件用于 Tooltip 全局坐标。
+- `api`：包含当前 dsn 与计算后的接口路径，可通过 `apiConfig` 定制。
+- `mountDashboard/unmountDashboard`：手动控制 Dashboard 挂载/卸载。
+
+## 接口枚举
+
+通过 `DashboardApi` 与 `DEFAULT_DASHBOARD_ENDPOINTS` 获取或自定义接口路径：
+
+```ts
+import { DashboardApi, DEFAULT_DASHBOARD_ENDPOINTS } from '@grafana-fast/hooks';
+
+const custom = {
+  ...DEFAULT_DASHBOARD_ENDPOINTS,
+  [DashboardApi.ExecuteQueries]: '/custom/queries',
+};
+```
 
 ## 别名说明
 

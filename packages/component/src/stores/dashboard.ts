@@ -2,7 +2,7 @@
  * Dashboard 状态管理
  */
 
-import { defineStore } from 'pinia';
+import { defineStore } from '@grafana-fast/store';
 import type { Dashboard, PanelGroup, Panel, PanelLayout, ID } from '@grafana-fast/types';
 import { mockDataManager } from '/#/mock';
 import { generateId, deepClone } from '/#/utils';

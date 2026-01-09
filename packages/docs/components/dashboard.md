@@ -1,25 +1,29 @@
-# Dashboard 组件
+# Dashboard 挂载
 
-`@grafana-fast/component` 暴露的 `Dashboard` 组件聚合了查询、布局、Tooltip、面板编辑等能力。
+`@grafana-fast/component` 不再直接导出 Dashboard，请通过 `@grafana-fast/hooks` 暴露的 `useDashboardSdk` 将 Dashboard 渲染到你自己的容器中。
 
 ```vue
 <script setup lang="ts">
-import { Dashboard } from '@grafana-fast/component';
+import { ref } from 'vue';
+import { useDashboardSdk } from '@grafana-fast/hooks';
+
+const hostRef = ref<HTMLElement | null>(null);
+useDashboardSdk(hostRef, { dashboardId: 'default' });
 </script>
 
 <template>
-  <Dashboard />
+  <div ref="hostRef" style="min-height: 480px;"></div>
 </template>
 ```
 
 ## 依赖要求
 
-- 需要在宿主应用中注册 `Pinia` 与 `Ant Design Vue`，并提供 `echarts`、`dayjs`、`ant-design-vue`、`pinia` 作为 peer 依赖。
+- 需要在宿主应用中注册 `@grafana-fast/store` 与 `Ant Design Vue`，并提供 `echarts`、`dayjs` 等 peer 依赖。
 - 组件内部使用 `/#/` 别名访问源码，你也可以在本地通过 `vite.config.ts` 将 `/#/` 指向 `packages/component/src` 以获得类型提示。
 
 ## 导出内容
 
-- `Dashboard` 组件（默认导出）。
+- 占位组件 `MockButton`。
 - `useDashboardStore`、`useTimeRangeStore`、`useTooltipStore`、`useEditorStore` 等内部 store。
 - 所有 `@grafana-fast/types` 类型。
 

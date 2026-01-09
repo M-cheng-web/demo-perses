@@ -36,7 +36,7 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
   import { Empty, Button } from 'ant-design-vue';
-  import { storeToRefs } from 'pinia';
+  import { storeToRefs } from '@grafana-fast/store';
   import { GridLayout, GridItem } from 'vue-grid-layout-v3';
   import type { PanelLayout, Panel as PanelType, ID } from '@grafana-fast/types';
   import { useDashboardStore, useEditorStore } from '/#/stores';

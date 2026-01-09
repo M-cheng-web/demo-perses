@@ -38,12 +38,12 @@
       <!-- Tabs -->
       <Tabs v-model:activeKey="activeTab" :class="bem('tabs')">
         <!-- 数据查询 -->
-        <TabPane key="query" tab="数据查询">
+        <TabPane name="query" tab="数据查询">
           <DataQueryTab ref="dataQueryTabRef" :queries="formData.queries" @update:queries="handleQueriesUpdate" @execute="handleExecuteQuery" />
         </TabPane>
 
         <!-- 图表样式 -->
-        <TabPane key="style" tab="图表样式">
+        <TabPane name="style" tab="图表样式">
           <!-- 根据面板类型显示不同的样式配置 -->
           <component v-if="styleComponent" :is="styleComponent" v-model:options="formData.options" />
           <div v-else>
@@ -52,7 +52,7 @@
         </TabPane>
 
         <!-- JSON 编辑器 -->
-        <TabPane key="json" tab="JSON 编辑">
+        <TabPane name="json" tab="JSON 编辑">
           <JsonEditor v-model="jsonValue" @validate="handleJsonValidate" />
         </TabPane>
       </Tabs>
@@ -70,8 +70,9 @@
 
 <script setup lang="ts">
   import { ref, reactive, watch, computed } from 'vue';
-  import { storeToRefs } from 'pinia';
-  import { Drawer, Form, FormItem, Select, Input, Textarea, Button, Tabs, TabPane, Empty, Row, Col, Flex, message } from 'ant-design-vue';
+  import { storeToRefs } from '@grafana-fast/store';
+  import { Drawer, Form, FormItem, Select, Input, Textarea, Row, Col, Flex, message } from 'ant-design-vue';
+  import { Button, Tabs, TabPane, Empty } from '/#/components-common';
   import { useDashboardStore, useEditorStore } from '/#/stores';
   import { generateId, deepClone, createNamespace } from '/#/utils';
   import { PanelType, PANEL_TYPE_OPTIONS } from '/#/enums/panelType';

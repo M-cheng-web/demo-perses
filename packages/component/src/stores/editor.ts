@@ -2,7 +2,7 @@
  * 编辑器状态管理
  */
 
-import { defineStore } from 'pinia';
+import { defineStore } from '@grafana-fast/store';
 import type { Panel, ID } from '@grafana-fast/types';
 import { deepClone } from '/#/utils';
 

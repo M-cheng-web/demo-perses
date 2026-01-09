@@ -31,7 +31,7 @@
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted } from 'vue';
   import { Button } from 'ant-design-vue';
-  import { storeToRefs } from 'pinia';
+  import { storeToRefs } from '@grafana-fast/store';
   import { PushpinFilled } from '@ant-design/icons-vue';
   import type { ECharts } from 'echarts';
   import { formatValue, formatTime, createNamespace } from '/#/utils';

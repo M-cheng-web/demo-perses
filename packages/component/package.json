@@ -23,6 +23,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@grafana-fast/store": "workspace:*",
     "@grafana-fast/types": "workspace:*",
     "axios": "^1.13.2",
     "lodash-es": "^4.17.21",
@@ -35,7 +36,6 @@
     "ant-design-vue": "^4.0.0",
     "dayjs": "^1.11.0",
     "echarts": "^6.0.0",
-    "pinia": "^3.0.0",
     "vue": "^3.5.0"
   },
   "devDependencies": {
