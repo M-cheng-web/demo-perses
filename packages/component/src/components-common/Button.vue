@@ -1,18 +1,13 @@
 <template>
   <button
-    :class="[
-      bem(),
-      `gf-btn--${type}`,
-      `gf-btn--${size}`,
-      { 'is-block': block, 'is-loading': loading },
-    ]"
+    :class="[bem(), `gf-btn--${type}`, `gf-btn--${size}`, { 'is-block': block, 'is-loading': loading }]"
     type="button"
     :disabled="disabled || loading"
     @click="handleClick"
   >
-    <span v-if="loading" class="gf-btn__spinner" />
+    <span v-if="loading" class="gf-btn__spinner"></span>
     <span class="gf-btn__content">
-      <slot />
+      <slot></slot>
     </span>
   </button>
 </template>
