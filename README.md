@@ -1,6 +1,6 @@
-# Demo Perses - 监控面板系统
+# @grafana-fast/monorepo
 
-一个功能完整的监控面板系统，基于 Vue 3 + TypeScript + Ant Design Vue 构建。
+原 `demo-perses` 项目已重构为 pnpm monorepo，提供可复用的 Dashboard 组件、对外 SDK hooks、类型包、文档与示例站点。
 
 ## ✨ 主要功能
 
@@ -38,70 +38,35 @@
 
 ## 🚀 快速开始
 
-### 安装依赖
-
 ```bash
-npm install
-# 或
-yarn install
+pnpm install
+pnpm dev                # 运行演示站点（packages/app）
+pnpm run build:packages # 构建 types -> component -> hooks
+pnpm run docs:dev       # 打开 VitePress 文档
 ```
 
-### 开发模式
-
-```bash
-npm run dev
-```
-
-访问 http://localhost:5173
-
-### 构建生产版本
-
-```bash
-npm run build
-```
-
-### 预览生产版本
-
-```bash
-npm run preview
-```
+演示站点默认运行在 http://localhost:5173 ，文档运行在 http://localhost:4173 。
 
 ## 📁 项目结构
 
 ```
 demo-perses/
-├── src/
-│   ├── components/
-│   │   ├── Charts/           # 图表组件
-│   │   ├── Dashboard/        # 仪表板组件
-│   │   ├── Panel/            # 面板组件
-│   │   ├── PanelEditor/      # 面板编辑器
-│   │   │   ├── DataQueryTab.vue      # 数据查询标签页（新增）
-│   │   │   ├── ChartStyles/          # 图表样式配置
-│   │   │   └── PanelEditorDrawer.vue # 编辑器主组件
-│   │   ├── QueryBuilder/     # QueryBuilder 组件（新增）
-│   │   │   ├── QueryBuilder.vue      # 主查询构建器
-│   │   │   ├── MetricSelector.vue    # 指标选择器
-│   │   │   ├── LabelFilters.vue      # 标签过滤器
-│   │   │   ├── MetricsModal.vue      # 指标浏览器
-│   │   │   └── query-builder/        # 子组件
-│   │   ├── ChartLegend/      # 图例组件
-│   │   └── Common/           # 通用组件
-│   ├── stores/               # Pinia 状态管理
-│   ├── types/                # TypeScript 类型定义
-│   │   ├── queryBuilder.ts   # QueryBuilder 类型（新增）
-│   │   └── prometheus.ts     # Prometheus 类型（新增）
-│   ├── lib/                  # 核心库（新增）
-│   │   └── prometheus-querybuilder/  # PromQL 查询建模器
-│   ├── api/                  # API 接口
-│   │   ├── prometheus.ts     # Prometheus API
-│   │   └── querybuilder/     # QueryBuilder API（新增）
-│   ├── utils/                # 工具函数
-│   ├── views/                # 页面视图
-│   └── router/               # 路由配置
-├── public/
-└── dist/                     # 构建输出
+├── packages/
+│   ├── app/         # 演示站点（消费组件与 hooks）
+│   ├── component/   # 对外发布的 Dashboard 组件包 @grafana-fast/component
+│   ├── hook/        # SDK hooks 包 @grafana-fast/hooks
+│   ├── types/       # 类型包 @grafana-fast/types
+│   └── docs/        # VitePress 文档
+├── scripts/         # 打包/发布辅助脚本（参考 morehook 的 build/publish）
+├── tsconfig.base.json  # 统一别名与编译配置，提供 /#/ 与 @grafana-fast/* 路径
+├── pnpm-workspace.yaml
+└── README.md
 ```
+
+别名说明：
+
+- `/#/`：指向组件包源码，支持在包内使用绝对路径（例如 `/#/utils/index.ts`）。  
+- `@grafana-fast/component` / `@grafana-fast/hooks` / `@grafana-fast/types`：工作区内的各子包入口。
 
 ## 📚 使用文档
 
@@ -173,26 +138,23 @@ demo-perses/
 项目使用 ESLint + Prettier 进行代码规范检查和格式化。
 
 ```bash
-# 检查代码规范
-npm run lint:check
+# 检查/修复
+pnpm lint
 
-# 自动修复
-npm run lint
-
-# 格式化代码
-npm run format
+# 格式化
+pnpm format
 ```
 
 ### 添加新的图表类型
 
-1. 在 `src/enums/panelType.ts` 中添加新类型
-2. 在 `src/components/Charts/` 中创建新的图表组件
-3. 在 `src/components/PanelEditor/ChartStyles/` 中创建样式配置组件
+1. 在 `packages/component/src/enums/panelType.ts` 中添加新类型
+2. 在 `packages/component/src/components/Charts/` 中创建新的图表组件
+3. 在 `packages/component/src/components/PanelEditor/ChartStyles/` 中创建样式配置组件
 4. 在 `PanelEditorDrawer.vue` 中注册新组件
 
 ### 自定义 QueryBuilder 操作
 
-在 `src/lib/prometheus-querybuilder/operations.ts` 中添加新的操作定义：
+在 `packages/component/src/lib/prometheus-querybuilder/operations.ts` 中添加新的操作定义：
 
 ```typescript
 {
@@ -213,7 +175,7 @@ npm run format
 
 当前项目使用 mock 数据。要对接真实的 Prometheus API：
 
-1. 修改 `src/api/querybuilder/prometheusApi.ts`
+1. 修改 `packages/component/src/api/querybuilder/prometheusApi.ts`
 2. 将模拟函数替换为真实的 API 调用：
 
 ```typescript
@@ -224,7 +186,7 @@ export async function fetchMetrics(search?: string): Promise<string[]> {
 }
 ```
 
-3. 或者修改 `src/api/prometheus.ts` 中的查询函数
+3. 或者修改 `packages/component/src/api/prometheus.ts` 中的查询函数
 
 ## 🎯 功能特性
 
@@ -256,8 +218,3 @@ MIT License
 ## 📮 联系方式
 
 如有问题或建议，请提交 Issue。
-
----
-
-**最后更新**: 2026-01-06  
-**版本**: 1.0.0 with QueryBuilder

@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "/#/*": ["../component/src/*"],
+      "@grafana-fast/component": ["../component/src/index.ts"],
+      "@grafana-fast/types": ["../types/src/index.ts"],
+      "@grafana-fast/types/*": ["../types/src/*"]
+    },
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "module": "ESNext",
+    "target": "ESNext",
+    "noEmit": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist"],
+  "references": [{ "path": "../types" }, { "path": "../component" }]
+}

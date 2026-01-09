@@ -1,0 +1,24 @@
+{
+  "name": "@grafana-fast/types",
+  "version": "0.1.0",
+  "description": "Shared type definitions for the grafana-fast monorepo.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./*": "./dist/*"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "license": "MIT"
+}

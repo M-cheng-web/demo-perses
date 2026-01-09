@@ -1,0 +1,24 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "preserve",
+    "strict": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "useDefineForClassFields": true,
+    "types": ["vite/client"],
+    "paths": {
+      "/#/*": ["packages/component/src/*"],
+      "@grafana-fast/component": ["packages/component/src/index.ts"],
+      "@grafana-fast/hooks": ["packages/hook/src/index.ts"],
+      "@grafana-fast/types": ["packages/types/src/index.ts"],
+      "@grafana-fast/types/*": ["packages/types/src/*"]
+    }
+  }
+}

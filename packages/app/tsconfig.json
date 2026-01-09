@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" },
+    { "path": "../component" },
+    { "path": "../hook" },
+    { "path": "../types" }
+  ]
+}
