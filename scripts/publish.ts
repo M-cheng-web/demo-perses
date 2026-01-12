@@ -25,7 +25,7 @@ function assertNoWorkspaceProtocol(record: unknown, label: string) {
 async function validateDist(distDir: string) {
   const pkgJSONPath = path.join(distDir, 'package.json');
   if (!(await fs.pathExists(pkgJSONPath))) {
-    throw new Error(`Missing dist package.json: ${pkgJSONPath}`);
+    throw new Error(`缺少 dist/package.json：${pkgJSONPath}`);
   }
 
   const pkgJSON = await fs.readJSON(pkgJSONPath);
@@ -35,7 +35,7 @@ async function validateDist(distDir: string) {
     if (typeof rel !== 'string') continue;
     const abs = path.join(distDir, rel);
     if (!(await fs.pathExists(abs))) {
-      throw new Error(`package.json#${field} points to missing file: ${rel}`);
+      throw new Error(`package.json#${field} 指向的文件不存在：${rel}`);
     }
   }
 
@@ -46,7 +46,7 @@ async function validateDist(distDir: string) {
     if (!rel.startsWith('./') && !rel.startsWith('../')) continue;
     const abs = path.join(distDir, rel);
     if (!(await fs.pathExists(abs))) {
-      throw new Error(`package.json#exports points to missing file: ${rel}`);
+      throw new Error(`package.json#exports 指向的文件不存在：${rel}`);
     }
   }
 
@@ -55,14 +55,14 @@ async function validateDist(distDir: string) {
 
   const readmePath = path.join(distDir, 'README.md');
   if (!(await fs.pathExists(readmePath))) {
-    consola.warn(`README.md not found in dist: ${distDir}`);
+    consola.warn(`dist 内未找到 README.md：${distDir}`);
   }
 }
 
 async function main() {
   for (const pkg of packages) {
     const dist = path.join(pkg.dir, 'dist');
-    consola.box(`Publishing ${pkg.name} from ${dist}`);
+    consola.box(`发布 ${pkg.name}（目录：${dist}）`);
     await validateDist(dist);
     run('npm publish --access public', dist);
   }

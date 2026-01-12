@@ -6,17 +6,15 @@
 
 ## 如何运行 dist 模式
 
-根目录提供了两个命令：
-
 ```bash
-# 先 build 各包，再让 app 走 dist/exports 构建
-pnpm build:dist
+# 先构建各包产物
+pnpm build
 
-# 直接启动 app，但让 app 走 dist/exports（要求你已提前 build packages）
-pnpm dev:dist
+# 启动 app，但让 app 走 dist/exports（关闭源码 alias）
+GF_USE_DIST=1 pnpm -C packages/app dev
 ```
 
-其中 `pnpm dev:dist` / `pnpm build:dist` 会通过环境变量 `GF_USE_DIST=1` 关闭 `packages/app/vite.config.ts` 的源码 alias。
+其中 `GF_USE_DIST=1` 会关闭 `packages/app/vite.config.ts` 的源码 alias。
 
 ## 发布前校验
 
@@ -27,4 +25,3 @@ pnpm dev:dist
 - 是否还残留 `workspace:*` 版本号
 
 这样可以在发布前更早发现 “dist 缺文件/exports 配错” 这类问题。
-

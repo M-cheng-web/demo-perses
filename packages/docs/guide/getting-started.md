@@ -7,7 +7,7 @@ pnpm install
 # 启动演示站点
 pnpm dev
 # 构建全部包（types -> store -> component -> dashboard -> hooks）
-pnpm run build:packages
+pnpm build
 ```
 
 工作区结构：
@@ -35,9 +35,11 @@ createApp(App).use(createPinia()).use(GrafanaFastUI).mount('#app');
 默认 `pnpm dev` 为了开发体验会让演示站点直接指向各包源码。要模拟“真正发布后的消费形态”（走 `dist` + `exports`），可以：
 
 ```bash
-pnpm build:dist
-# 或者
-pnpm dev:dist
+# 构建产物（用于 dist/exports 形态的 smoke test）
+pnpm build
+
+# 用 dist/exports 形态启动演示站点
+GF_USE_DIST=1 pnpm -C packages/app dev
 ```
 
 ## 组件按需导入

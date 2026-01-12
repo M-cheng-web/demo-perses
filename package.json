@@ -9,31 +9,27 @@
   ],
   "scripts": {
     "preinstall": "node ./scripts/ensure-pnpm.mjs",
-    "dev": "pnpm -C packages/app dev",
-    "dev:dist": "GF_USE_DIST=1 pnpm -C packages/app dev",
-    "build": "pnpm run build:packages && pnpm -C packages/app build",
-    "build:dist": "pnpm run build:packages && GF_USE_DIST=1 pnpm -C packages/app build",
-    "preview": "pnpm -C packages/app preview",
-    "type-check": "pnpm -C packages/app type-check",
-    "build:packages": "pnpm run build:types && pnpm run build:store && pnpm run build:component && pnpm run build:dashboard && pnpm run build:hooks",
-    "build:component": "pnpm -C packages/component run build && pnpm -C packages/component run build:types",
-    "build:dashboard": "pnpm -C packages/dashboard run build && pnpm -C packages/dashboard run build:types",
-    "build:hooks": "pnpm -C packages/hook run build",
-    "build:store": "pnpm -C packages/store run build",
-    "build:types": "pnpm -C packages/types run build",
-    "docs:dev": "pnpm -C packages/docs run docs:dev",
-    "docs:build": "pnpm -C packages/docs run docs:build",
-    "lint": "eslint . --ext .ts,.tsx,.vue",
+    "postinstall": "node ./scripts/link-nr.mjs",
+    "build": "nr update && esno scripts/build.ts",
+    "dev": "nr update && nr -C packages/app dev",
+    "docs": "nr update && nr -C packages/docs docs:dev",
+    "docs:build": "nr update && nr -C packages/docs docs:build",
+    "docs:serve": "nr update && nr -C packages/docs docs:serve",
+    "lint": "eslint --cache .",
+    "lint:fix": "nr lint --fix",
     "format": "prettier --check .",
-    "scripts:build": "ts-node --esm --project tsconfig.scripts.json scripts/build.ts"
+    "update": "esno scripts/update.ts",
+    "clean": "esno scripts/clean.ts",
+    "types:fix": "esno scripts/sync-dist-meta.ts",
+    "publish": "esno scripts/publish.ts"
   },
   "pnpm": {
     "overrides": {
       "esbuild": "0.25.12"
     }
   },
-  "dependencies": {},
   "devDependencies": {
+    "@rollup/plugin-alias": "^5.1.0",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^24.10.0",
     "@types/uuid": "^11.0.0",
@@ -41,7 +37,6 @@
     "@typescript-eslint/parser": "^8.21.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
-    "@rollup/plugin-alias": "^5.1.0",
     "consola": "^2.15.3",
     "esbuild": "0.25.12",
     "eslint": "^8.57.1",
@@ -50,6 +45,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^5.0.0",
     "eslint-plugin-vue": "^9.17.0",
+    "esno": "^4.8.0",
     "fast-glob": "^3.2.12",
     "fs-extra": "^10.1.0",
     "prettier": "^3.0.2",
@@ -63,6 +59,6 @@
     "vue-tsc": "^3.1.3"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.19.0"
   }
 }

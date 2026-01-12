@@ -1,21 +1,38 @@
-import path from 'path';
 import { execSync } from 'child_process';
 import fs from 'fs-extra';
 import consola from 'consola';
+import path from 'path';
+import { rootDir } from '../meta/paths.js';
+import { publishPackages, resolvePackageDir } from '../meta/packages.js';
 
-export const rootDir = path.resolve(__dirname, '..');
-export const packagesDir = path.resolve(rootDir, 'packages');
+export { rootDir };
 
 export interface PkgInfo {
   name: string;
   dir: string;
 }
 
+export async function readRootPackageJSON(): Promise<Record<string, unknown>> {
+  const pkgJSONPath = path.join(rootDir, 'package.json');
+  return fs.readJSON(pkgJSONPath);
+}
+
+export async function readRootVersion(): Promise<string> {
+  const pkgJSON = await readRootPackageJSON();
+  const version = pkgJSON?.version;
+  if (typeof version !== 'string' || version.length === 0) {
+    throw new Error(`Invalid root version in ${path.join(rootDir, 'package.json')}`);
+  }
+  return version;
+}
+
 export const packages: PkgInfo[] = [
-  { name: '@grafana-fast/types', dir: path.join(packagesDir, 'types') },
-  { name: '@grafana-fast/component', dir: path.join(packagesDir, 'component') },
-  { name: '@grafana-fast/dashboard', dir: path.join(packagesDir, 'dashboard') },
-  { name: '@grafana-fast/hooks', dir: path.join(packagesDir, 'hook') },
+  ...publishPackages.map((pkg) => {
+    if (!pkg.packageName) {
+      throw new Error(`Missing packageName for meta package: ${pkg.name}`);
+    }
+    return { name: pkg.packageName, dir: resolvePackageDir(pkg.name) };
+  }),
 ];
 
 export function run(command: string, cwd = rootDir) {
