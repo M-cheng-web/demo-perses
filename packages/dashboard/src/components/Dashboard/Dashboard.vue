@@ -34,7 +34,7 @@
   import { Button, ConfigProvider, Empty } from '@grafana-fast/component';
   import { useDashboardStore, useTooltipStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
-  import { DASHBOARD_EMPTY_TEXT, formatDashboardTitle } from '/#/components/Dashboard/utils';
+	  import { DASHBOARD_EMPTY_TEXT } from '/#/components/Dashboard/utils';
   import DashboardToolbar from './DashboardToolbar.vue';
   import PanelGroupList from '/#/components/PanelGroup/PanelGroupList.vue';
   import PanelEditorDrawer from '/#/components/PanelEditor/PanelEditorDrawer.vue';
@@ -53,11 +53,9 @@
 
   const emptyText = computed(() => DASHBOARD_EMPTY_TEXT);
 
-  const _dashboardName = computed(() => formatDashboardTitle(dashboardStore.currentDashboard?.name));
-
-  const handleAddPanelGroup = () => {
-    dashboardStore.addPanelGroup({ title: '新面板组' });
-  };
+	  const handleAddPanelGroup = () => {
+	    dashboardStore.addPanelGroup({ title: '新面板组' });
+	  };
 
   const handleEditGroup = (group: PanelGroup) => {
     panelGroupDialogRef.value?.openEdit(group);

@@ -7,26 +7,28 @@ import { DashboardView } from '@grafana-fast/dashboard';
 
 const DEFAULT_DSN = '/api';
 
-export enum DashboardApi {
+export const DashboardApi = {
   /** GET /dashboards/:id - 获取单个 Dashboard */
-  LoadDashboard = 'LoadDashboard',
+  LoadDashboard: 'LoadDashboard',
   /** POST /dashboards - 保存 Dashboard */
-  SaveDashboard = 'SaveDashboard',
+  SaveDashboard: 'SaveDashboard',
   /** DELETE /dashboards/:id - 删除 Dashboard */
-  DeleteDashboard = 'DeleteDashboard',
+  DeleteDashboard: 'DeleteDashboard',
   /** GET /dashboards - 查询全部 Dashboard 列表 */
-  AllDashboards = 'AllDashboards',
+  AllDashboards: 'AllDashboards',
   /** GET /dashboards/default - 获取默认 Dashboard */
-  DefaultDashboard = 'DefaultDashboard',
+  DefaultDashboard: 'DefaultDashboard',
   /** POST /query/execute - 执行单条查询 */
-  ExecuteQuery = 'ExecuteQuery',
+  ExecuteQuery: 'ExecuteQuery',
   /** POST /queries/execute - 执行多条查询 */
-  ExecuteQueries = 'ExecuteQueries',
+  ExecuteQueries: 'ExecuteQueries',
   /** GET /datasources/:id - 获取数据源 */
-  GetDatasource = 'GetDatasource',
+  GetDatasource: 'GetDatasource',
   /** GET /datasources/default - 获取默认数据源 */
-  DefaultDatasource = 'DefaultDatasource',
-}
+  DefaultDatasource: 'DefaultDatasource',
+} as const;
+
+export type DashboardApi = (typeof DashboardApi)[keyof typeof DashboardApi];
 
 export const DEFAULT_DASHBOARD_ENDPOINTS: Record<DashboardApi, string> = {
   [DashboardApi.LoadDashboard]: '/dashboards/:id',
@@ -191,13 +193,14 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
 
   const isDashboardMounted = ref(false);
 
-  const mountDashboard = () => {
-    if (dashboardApp.value || !targetRef.value || isDashboardMounted.value) return;
-    dashboardApp.value = createApp(DashboardView);
-    dashboardApp.value.use(pinia as any);
-    dashboardApp.value.mount(targetRef.value);
-    isDashboardMounted.value = true;
-  };
+	  const mountDashboard = () => {
+	    if (dashboardApp.value || !targetRef.value || isDashboardMounted.value) return;
+	    const app = createApp(DashboardView);
+	    app.use(pinia as any);
+	    app.mount(targetRef.value);
+	    dashboardApp.value = app;
+	    isDashboardMounted.value = true;
+	  };
 
   // 卸载 Dashboard，可用于调试/重置
   const unmountDashboard = () => {

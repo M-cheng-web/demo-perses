@@ -54,8 +54,8 @@
                 { key: 'import', label: '导入 JSON', icon: h(UploadOutlined) },
                 { key: 'viewJson', label: '查看 JSON', icon: h(FileTextOutlined) },
               ]"
-              @click="(info: { key: string }) => handleMenuClick(info)"
-            />
+	              @click="handleMenuClick"
+	            />
           </template>
         </Dropdown>
       </div>
@@ -149,22 +149,22 @@
     message.success('已添加面板组');
   };
 
-  const handleMenuClick = ({ key }: { key: string }) => {
-    switch (key) {
-      case 'manageVariables':
-        handleManageVariables();
-        break;
+	  const handleMenuClick = ({ key }: { key: string | number }) => {
+	    switch (String(key)) {
+	      case 'manageVariables':
+	        handleManageVariables();
+	        break;
       case 'export':
         handleExport();
         break;
       case 'import':
         handleImport();
         break;
-      case 'viewJson':
-        handleViewJson();
-        break;
-    }
-  };
+	      case 'viewJson':
+	        handleViewJson();
+	        break;
+	    }
+	  };
 
   const handleVariableChange = (variables: Record<string, string | string[]>) => {
     console.log('Variables changed:', variables);

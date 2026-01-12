@@ -1,8 +1,10 @@
 export interface TableColumnType<T = any> {
   title: string;
-  dataIndex?: keyof T | string;
+  dataIndex?: Extract<keyof T, string> | string;
   key?: string;
   width?: number;
+  align?: 'left' | 'center' | 'right';
+  ellipsis?: boolean;
   sorter?: (a: T, b: T) => number;
 }
 

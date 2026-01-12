@@ -120,35 +120,35 @@
   const pageSize = ref(20);
 
   // 表格列定义
-  const columns: TableColumnType[] = [
-    {
-      title: '指标名称',
-      dataIndex: 'name',
-      key: 'name',
-      width: '35%',
-      ellipsis: true,
-    },
-    {
-      title: '类型',
-      dataIndex: 'type',
-      key: 'type',
-      width: '15%',
-      align: 'center',
-    },
-    {
-      title: '描述',
-      dataIndex: 'help',
-      key: 'help',
-      width: '40%',
-      ellipsis: true,
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: '10%',
-      align: 'center',
-    },
-  ];
+	  const columns: TableColumnType[] = [
+	    {
+	      title: '指标名称',
+	      dataIndex: 'name',
+	      key: 'name',
+	      width: 260,
+	      ellipsis: true,
+	    },
+	    {
+	      title: '类型',
+	      dataIndex: 'type',
+	      key: 'type',
+	      width: 120,
+	      align: 'center',
+	    },
+	    {
+	      title: '描述',
+	      dataIndex: 'help',
+	      key: 'help',
+	      width: 320,
+	      ellipsis: true,
+	    },
+	    {
+	      title: '操作',
+	      key: 'action',
+	      width: 80,
+	      align: 'center',
+	    },
+	  ];
 
   watch(
     () => props.open,

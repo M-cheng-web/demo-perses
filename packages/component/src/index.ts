@@ -1,7 +1,7 @@
 import './styles/theme.less';
 import './styles/controls.less';
 import './styles/message.less';
-import type { App } from 'vue';
+import type { App, Component } from 'vue';
 
 // base
 export { default as Button } from './components/base/Button.vue';
@@ -93,7 +93,9 @@ import ResultComp from './components/feedback/Result.vue';
 import TableComp from './components/data/Table.vue';
 import CardComp from './components/data/Card.vue';
 
-const components = [
+// Avoid deep/recursive inferred union types from many SFC imports (Volar `__VLS_WithSlots...`)
+// by widening the array element type explicitly.
+const components: Component[] = [
   ButtonComp,
   TabsComp,
   TabPaneComp,

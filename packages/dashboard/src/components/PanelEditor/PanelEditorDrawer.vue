@@ -15,9 +15,9 @@
           <div :class="bem('section-body')">
             <Row :gutter="16">
               <Col :span="12">
-                <FormItem label="面板组" required>
-                  <Select :options="panelGroups" v-model:value="selectedGroupId" placeholder="请选择面板组" />
-                </FormItem>
+	                <FormItem label="面板组" required>
+	                  <Select :options="panelGroupOptions" v-model:value="selectedGroupId" placeholder="请选择面板组" />
+	                </FormItem>
               </Col>
               <Col :span="12">
                 <FormItem label="面板名称" required>
@@ -141,7 +141,13 @@
   const isHotkeysBound = ref(false);
 
   // 获取面板组列表
-  const panelGroups = computed(() => currentDashboard.value?.panelGroups || []);
+	  const panelGroupOptions = computed(() => {
+	    const groups = currentDashboard.value?.panelGroups ?? [];
+	    return groups.map((group) => ({
+	      label: group.title,
+	      value: group.id,
+	    }));
+	  });
 
   // 面板类型选项
   const panelTypeOptions = PANEL_TYPE_OPTIONS;
@@ -209,7 +215,7 @@
   };
 
   // 监听 drawer 打开
-  watch(isDrawerOpen, (open) => {
+  watch(() => isDrawerOpen.value, (open) => {
     isOpen.value = open;
     if (open) {
       if (editingPanel.value) {

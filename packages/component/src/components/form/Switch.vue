@@ -6,8 +6,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue';
-  import { createNamespace } from '../../utils';
+	  import { createNamespace } from '../../utils';
 
   defineOptions({ name: 'GfSwitch' });
 

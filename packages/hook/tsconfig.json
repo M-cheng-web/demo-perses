@@ -2,24 +2,17 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": "./",
-    "paths": {
-      "/#/*": ["../dashboard/src/*"],
-      "@grafana-fast/dashboard": ["../dashboard/src/index.ts"],
-      "@grafana-fast/component": ["../component/src/index.ts"],
-      "@grafana-fast/store": ["../store/src/index.ts"],
-      "@grafana-fast/types": ["../types/src/index.ts"],
-      "@grafana-fast/types/*": ["../types/src/*"]
-    },
     "composite": true,
     "declaration": true,
     "declarationMap": true,
+    "allowImportingTsExtensions": false,
     "outDir": "dist",
     "rootDir": "src",
     "module": "ESNext",
     "target": "ESNext",
     "noEmit": false
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.d.ts"],
   "exclude": ["dist"],
-  "references": [{ "path": "../types" }, { "path": "../store" }, { "path": "../dashboard" }]
+  "references": [{ "path": "../types" }, { "path": "../store" }]
 }

@@ -1,7 +1,7 @@
 <!-- 图表预览 -->
 <template>
   <div :class="bem()">
-    <div :class="bem('content')" ref="previewRef">
+	    <div :class="bem('content')">
       <div v-if="showHeader" :class="bem('header')">
         <div :class="bem('title')">预览</div>
       </div>
@@ -12,11 +12,11 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch, onMounted, withDefaults } from 'vue';
-  import { Empty } from '@grafana-fast/component';
-  import TimeSeriesChart from '/#/components/Charts/TimeSeriesChart.vue';
-  import PieChart from '/#/components/Charts/PieChart.vue';
-  import BarChart from '/#/components/Charts/BarChart.vue';
+	  import { ref, computed, watch, onMounted } from 'vue';
+	  import { Empty } from '@grafana-fast/component';
+	  import TimeSeriesChart from '/#/components/Charts/TimeSeriesChart.vue';
+	  import PieChart from '/#/components/Charts/PieChart.vue';
+	  import BarChart from '/#/components/Charts/BarChart.vue';
   import StatPanel from '/#/components/Charts/StatPanel.vue';
   import GaugeChart from '/#/components/Charts/GaugeChart.vue';
   import HeatmapChart from '/#/components/Charts/HeatmapChart.vue';
@@ -42,8 +42,7 @@
 
   const timeRangeStore = useTimeRangeStore();
   const queryResults = ref<QueryResult[]>([]);
-  const previewRef = ref<HTMLElement>();
-  const isLoading = ref(false);
+	  const isLoading = ref(false);
 
   // 根据面板类型选择对应的图表组件
   const chartComponent = computed(() => {
