@@ -18,6 +18,7 @@
   import { useChartResize } from '/#/composables/useChartResize';
   import { useChartInit } from '/#/composables/useChartInit';
   import { useChartTooltip, type TooltipData } from '/#/composables/useChartTooltip';
+  import { getEChartsTheme } from '/#/utils/echartsTheme';
 
   const [_, bem] = createNamespace('heatmap-chart');
 
@@ -117,6 +118,7 @@
   }
 
   function getChartOption(): EChartsOption {
+    const theme = getEChartsTheme(chartRef.value);
     if (!props.queryResults.length || props.queryResults.every((r) => !r.data || r.data.length === 0)) {
       return {
         title: {
@@ -124,7 +126,7 @@
           left: 'center',
           top: 'center',
           textStyle: {
-            color: '#999',
+            color: theme.textSecondary,
             fontSize: 14,
           },
         },
@@ -175,12 +177,14 @@
     // 获取颜色配置
     const colorScheme = heatmapOptions.value.colorScheme || 'blue';
     const colorRange = colorSchemes[colorScheme] || colorSchemes.blue;
-    const minColor = colorRange?.[0] || '#e3f2fd';
-    const maxColor = colorRange?.[1] || '#1565c0';
+    const minColor = colorScheme === 'blue' ? theme.palette[7] || colorRange?.[0] : colorRange?.[0];
+    const maxColor = colorScheme === 'blue' ? theme.palette[0] || colorRange?.[1] : colorRange?.[1];
 
     return {
+      ...theme.baseOption,
       // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
+        ...theme.baseOption.tooltip,
         // showContent: false,
         position: 'top',
         triggerOn: 'mousemove',
@@ -237,6 +241,12 @@
         axisLabel: {
           rotate: 45,
           fontSize: 10,
+          color: theme.textSecondary,
+        },
+        axisLine: {
+          lineStyle: {
+            color: theme.borderMuted,
+          },
         },
       },
       yAxis: {
@@ -247,6 +257,12 @@
         },
         axisLabel: {
           fontSize: 11,
+          color: theme.textSecondary,
+        },
+        axisLine: {
+          lineStyle: {
+            color: theme.borderMuted,
+          },
         },
       },
       visualMap: {
@@ -262,6 +278,7 @@
         text: ['高', '低'],
         textStyle: {
           fontSize: 11,
+          color: theme.textSecondary,
         },
       },
       series: [
@@ -278,8 +295,8 @@
           },
           emphasis: {
             itemStyle: {
-              shadowBlur: 10,
-              shadowColor: 'rgba(0, 0, 0, 0.5)',
+              shadowBlur: 8,
+              shadowColor: theme.border,
             },
           },
         },

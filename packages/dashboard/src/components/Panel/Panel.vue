@@ -37,15 +37,16 @@
     flex-direction: column;
     width: 100%;
     height: 100%;
-    background-color: @background-base;
-    border: 1px solid @border-color;
-    border-radius: @border-radius;
+    background-color: var(--gf-color-surface);
+    border: 1px solid var(--gf-color-border);
+    border-radius: var(--gf-radius-md);
     overflow: hidden;
-    transition: box-shadow 0.2s;
+    transition: box-shadow var(--gf-motion-normal) var(--gf-easing), border-color var(--gf-motion-normal) var(--gf-easing);
 
     &:hover {
       --panel-hover: flex;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-color: var(--gf-color-border-strong);
+      box-shadow: var(--gf-shadow-1);
     }
 
     &--error {

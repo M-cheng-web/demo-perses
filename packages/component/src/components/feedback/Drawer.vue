@@ -241,7 +241,7 @@
   }
 
   .gf-drawer__header {
-    padding: var(--gf-space-3) var(--gf-space-4);
+    padding: var(--gf-space-2) var(--gf-space-3);
     border-bottom: 1px solid var(--gf-border);
     display: flex;
     align-items: center;
@@ -251,11 +251,11 @@
   .gf-drawer__body {
     flex: 1;
     overflow: auto;
-    padding: var(--gf-space-4);
+    padding: var(--gf-space-3);
   }
 
   .gf-drawer__footer {
-    padding: var(--gf-space-3) var(--gf-space-4);
+    padding: var(--gf-space-2) var(--gf-space-3);
     border-top: 1px solid var(--gf-border);
     display: flex;
     justify-content: flex-end;

@@ -92,7 +92,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 7px 12px;
+    padding: 6px 10px;
     border-radius: var(--gf-radius-sm);
     border: 1px solid var(--gf-btn-border);
     background: var(--gf-btn-bg);
@@ -167,14 +167,14 @@
     }
 
     &--size-small {
-      padding: 6px 10px;
+      padding: 5px 8px;
       border-radius: var(--gf-radius-xs);
       font-size: var(--gf-font-size-xs);
       gap: 5px;
     }
 
     &--size-large {
-      padding: 10px 14px;
+      padding: 8px 12px;
       font-size: var(--gf-font-size-md);
     }
 

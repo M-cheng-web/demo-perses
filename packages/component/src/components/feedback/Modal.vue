@@ -154,7 +154,7 @@
   }
 
   .gf-modal__header {
-    padding: var(--gf-space-3) var(--gf-space-4);
+    padding: var(--gf-space-2) var(--gf-space-3);
     border-bottom: 1px solid var(--gf-border);
     display: flex;
     align-items: center;
@@ -174,7 +174,7 @@
     cursor: pointer;
     font-size: 16px;
     padding: 4px 6px;
-    border-radius: var(--gf-radius-sm);
+    border-radius: var(--gf-radius-xs);
     transition: all 0.2s var(--gf-easing);
 
     &:hover {
@@ -184,12 +184,12 @@
   }
 
   .gf-modal__body {
-    padding: var(--gf-space-4);
+    padding: var(--gf-space-3);
     overflow: auto;
   }
 
   .gf-modal__footer {
-    padding: var(--gf-space-3) var(--gf-space-4);
+    padding: var(--gf-space-2) var(--gf-space-3);
     border-top: 1px solid var(--gf-border);
     display: flex;
     justify-content: flex-end;

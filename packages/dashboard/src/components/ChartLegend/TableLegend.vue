@@ -143,7 +143,7 @@
       height: 12px;
       border-radius: 2px;
       flex-shrink: 0;
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+      box-shadow: inset 0 0 0 1px var(--gf-color-border-muted);
     }
 
     &__label {

@@ -105,7 +105,7 @@
     display: inline-flex;
     align-items: center;
     width: 100%;
-    gap: 8px;
+    gap: 6px;
 
     &__control {
       flex: 1;
@@ -125,7 +125,7 @@
       color: var(--gf-text-secondary);
       cursor: pointer;
       padding: 2px 6px;
-      border-radius: 6px;
+      border-radius: var(--gf-radius-xs);
       transition: all 0.2s var(--gf-easing);
 
       &:hover {

@@ -54,8 +54,8 @@
                 { key: 'import', label: '导入 JSON', icon: h(UploadOutlined) },
                 { key: 'viewJson', label: '查看 JSON', icon: h(FileTextOutlined) },
               ]"
-	              @click="handleMenuClick"
-	            />
+              @click="handleMenuClick"
+            />
           </template>
         </Dropdown>
       </div>
@@ -137,7 +137,7 @@
       await dashboardStore.saveDashboard();
       message.success('保存成功');
     } catch (error) {
-      message.error('保存失败');
+      console.error('保存失败', error);
     }
   };
 
@@ -149,22 +149,22 @@
     message.success('已添加面板组');
   };
 
-	  const handleMenuClick = ({ key }: { key: string | number }) => {
-	    switch (String(key)) {
-	      case 'manageVariables':
-	        handleManageVariables();
-	        break;
+  const handleMenuClick = ({ key }: { key: string | number }) => {
+    switch (String(key)) {
+      case 'manageVariables':
+        handleManageVariables();
+        break;
       case 'export':
         handleExport();
         break;
       case 'import':
         handleImport();
         break;
-	      case 'viewJson':
-	        handleViewJson();
-	        break;
-	    }
-	  };
+      case 'viewJson':
+        handleViewJson();
+        break;
+    }
+  };
 
   const handleVariableChange = (variables: Record<string, string | string[]>) => {
     console.log('Variables changed:', variables);
@@ -218,7 +218,7 @@
         dashboardStore.currentDashboard = dashboard;
         message.success('导入成功');
       } catch (error) {
-        message.error('导入失败：JSON 格式错误');
+        console.error('导入失败：JSON 格式错误', error);
       }
     };
     reader.readAsText(file);
@@ -249,7 +249,7 @@
       jsonModalVisible.value = false;
       message.success('应用成功');
     } catch (error) {
-      message.error('应用失败：JSON 格式错误');
+      console.error('应用失败：JSON 格式错误', error);
     }
   };
 
@@ -270,12 +270,12 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
+      padding: 10px 12px;
       background-color: @background-base;
       transition: background-color 0.3s;
 
       &.dp-dashboard-toolbar__header--edit-mode {
-        background-color: fade(@primary-color, 15%);
+        background-color: var(--gf-color-primary-soft);
       }
     }
 
@@ -297,7 +297,7 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      padding: 8px 16px 0;
+      padding: 6px 12px 0;
       gap: 12px;
     }
 

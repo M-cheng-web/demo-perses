@@ -45,21 +45,20 @@ a {
   transition: color var(--gf-motion-normal) var(--gf-easing);
 
   &:hover {
-    color: var(--gf-accent);
+    color: var(--gf-color-primary-hover);
   }
 }
 
 .gf-surface {
   background: var(--gf-surface);
   border: 1px solid var(--gf-border);
-  box-shadow: var(--gf-shadow-soft);
   border-radius: var(--gf-radius-md);
   transition: box-shadow var(--gf-motion-normal) var(--gf-easing), border-color var(--gf-motion-normal) var(--gf-easing);
 }
 
 .gf-surface:hover {
   border-color: var(--gf-border-strong);
-  box-shadow: var(--gf-shadow-strong);
+  box-shadow: var(--gf-shadow-1);
 }
 
 .gf-glow-ring {
@@ -84,4 +83,15 @@ a {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* ------------------------------------------------------------
+ * Density / Zebra utilities (dashboard-friendly, industrial)
+ * ------------------------------------------------------------ */
+.gf-zebra-rows > *:nth-child(even) {
+  background: var(--gf-color-zebra);
+}
+
+.gf-zebra-cards > .gf-card:nth-child(even) {
+  --gf-card-bg: var(--gf-color-zebra);
 }

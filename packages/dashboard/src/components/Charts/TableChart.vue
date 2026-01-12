@@ -164,7 +164,7 @@
       }
 
       :deep(.gf-table th) {
-        background: #fafafa;
+        background: var(--gf-color-surface-muted);
         font-weight: 600;
       }
     }

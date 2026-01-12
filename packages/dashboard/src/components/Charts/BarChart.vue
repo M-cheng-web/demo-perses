@@ -33,6 +33,7 @@
   import { useChartTooltip, TooltipDataProviders, type TooltipData } from '/#/composables/useChartTooltip';
   import Legend from '/#/components/ChartLegend/Legend.vue';
   import { Spin } from '@grafana-fast/component';
+  import { getEChartsTheme } from '/#/utils/echartsTheme';
 
   const [_, bem] = createNamespace('bar-chart');
 
@@ -144,6 +145,7 @@
   const getChartOption = (): EChartsOption => {
     const { queryResults } = props;
     const { options } = props.panel;
+    const theme = getEChartsTheme(chartRef.value);
 
     // 检查是否有有效数据
     if (!queryResults || queryResults.length === 0 || queryResults.every((r) => !r.data || r.data.length === 0)) {
@@ -153,7 +155,7 @@
           left: 'center',
           top: 'center',
           textStyle: {
-            color: '#999',
+            color: theme.textSecondary,
             fontSize: 14,
           },
         },
@@ -162,7 +164,7 @@
 
     // 准备系列数据
     const series: any[] = [];
-    const colors = options.chart?.colors || [];
+    const colors = options.chart?.colors && options.chart.colors.length > 0 ? options.chart.colors : theme.palette;
     let colorIndex = 0;
 
     const specificOptions = options.specific as any;
@@ -198,7 +200,7 @@
           left: 'center',
           top: 'center',
           textStyle: {
-            color: '#999',
+            color: theme.textSecondary,
             fontSize: 14,
           },
         },
@@ -227,7 +229,7 @@
         const dataMap = new Map(timeSeries.values.map(([timestamp, value]) => [timestamp, value]));
         const data = sortedCategories.map((ts) => dataMap.get(ts) ?? 0);
 
-        const color = colors[colorIndex % colors.length] || `hsl(${(colorIndex * 137.5) % 360}, 70%, 50%)`;
+        const color = colors[colorIndex % colors.length] || theme.palette[colorIndex % theme.palette.length] || theme.textSecondary;
 
         // 根据可见性状态设置透明度
         const opacity = visibility === 'visible' ? 1 : 0.08;
@@ -254,8 +256,12 @@
     });
 
     const axisLabel = {
+      color: theme.textSecondary,
       formatter: (value: number) => formatValue(value, options.format || {}),
     };
+
+    const axisLine = { lineStyle: { color: theme.borderMuted } };
+    const splitLine = { show: true, lineStyle: { color: theme.borderMuted } };
 
     // 如果没有系列数据，返回空配置
     if (series.length === 0) {
@@ -265,7 +271,7 @@
           left: 'center',
           top: 'center',
           textStyle: {
-            color: '#999',
+            color: theme.textSecondary,
             fontSize: 14,
           },
         },
@@ -273,12 +279,15 @@
     }
 
     return {
+      ...theme.baseOption,
       // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
+        ...theme.baseOption.tooltip,
         trigger: 'axis',
         triggerOn: 'mousemove',
         axisPointer: {
           type: 'shadow',
+          lineStyle: axisLine.lineStyle,
         },
         formatter: (params: any) => {
           if (!Array.isArray(params) || params.length === 0) {
@@ -325,12 +334,16 @@
             show: options.axis?.xAxis?.show ?? true,
             name: options.axis?.xAxis?.name,
             axisLabel,
+            axisLine,
+            splitLine,
           }
         : {
             type: 'category',
             data: categoryLabels,
             show: options.axis?.xAxis?.show ?? true,
             name: options.axis?.xAxis?.name,
+            axisLabel: { color: theme.textSecondary },
+            axisLine,
           },
       yAxis: isHorizontal
         ? {
@@ -338,6 +351,8 @@
             data: categoryLabels,
             show: options.axis?.yAxis?.show ?? true,
             name: options.axis?.yAxis?.name,
+            axisLabel: { color: theme.textSecondary },
+            axisLine,
           }
         : {
             type: 'value',
@@ -346,6 +361,8 @@
             min: options.axis?.yAxis?.min,
             max: options.axis?.yAxis?.max,
             axisLabel,
+            axisLine,
+            splitLine,
           },
       series,
     };

@@ -138,19 +138,19 @@
     left: 0;
     min-width: 240px;
     max-width: 450px;
-    background-color: rgba(40, 40, 40, 0.96);
-    color: #fff;
-    border-radius: 6px;
+    background-color: var(--gf-color-tooltip-bg);
+    color: var(--gf-color-tooltip-text);
+    border-radius: var(--gf-radius-md);
     font-size: 12px;
     pointer-events: none;
     z-index: 9999;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
+    box-shadow: var(--gf-shadow-2);
+    backdrop-filter: blur(2px);
     transition: transform 0.1s ease-out;
 
     &.dp-chart-tooltip--pinned {
       pointer-events: auto;
-      background-color: rgba(40, 40, 40, 0.98);
+      background-color: var(--gf-color-tooltip-bg);
     }
 
     &__header {
@@ -159,7 +159,7 @@
       justify-content: space-between;
       height: 40px;
       padding: 0 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
       gap: 8px;
     }
 
@@ -176,13 +176,13 @@
       min-width: 0;
 
       :deep(.gf-button) {
-        color: #fff;
+        color: var(--gf-color-tooltip-text);
         padding: 0 4px;
         height: 20px;
         font-size: 11px;
 
         &:hover {
-          color: @primary-color;
+          color: var(--gf-color-primary-secondary);
           background-color: rgba(255, 255, 255, 0.1);
         }
       }
@@ -190,7 +190,7 @@
 
     &__hint {
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.5);
+      color: rgba(255, 255, 255, 0.56);
       white-space: nowrap;
     }
 

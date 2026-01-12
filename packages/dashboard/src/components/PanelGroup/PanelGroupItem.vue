@@ -31,10 +31,17 @@
 
 <style scoped lang="less">
   .dp-panel-group-item {
-    background-color: @background-base;
-    border-radius: @border-radius-base;
+    background-color: var(--gf-color-surface);
+    border: 1px solid var(--gf-color-border-muted);
+    border-radius: var(--gf-radius-md);
     overflow: hidden;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
+    transition: border-color var(--gf-motion-normal) var(--gf-easing), box-shadow var(--gf-motion-normal) var(--gf-easing);
+
+    &:hover {
+      border-color: var(--gf-color-border-strong);
+      box-shadow: var(--gf-shadow-1);
+    }
 
     &__content {
       padding: @spacing-md;

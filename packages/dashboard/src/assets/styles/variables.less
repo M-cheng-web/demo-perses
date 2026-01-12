@@ -1,26 +1,29 @@
-// CSS 变量定义
-@primary-color: #3a78dd;
-@primary-color-hover: #2f6fd6;
-@success-color: #22a06b;
-@warning-color: #f0b429;
-@error-color: #e4586c;
-@info-color: #3a78dd;
+// Dashboard 全局变量：尽量从 @grafana-fast/component 的 CSS Variables 派生
+// 这样可以实现「组件库主题」与「dashboard 页面」的全局风格一致。
+
+// 主色 / 状态色
+@primary-color: var(--gf-color-primary);
+@primary-color-hover: var(--gf-color-primary-hover);
+@success-color: var(--gf-color-success);
+@warning-color: var(--gf-color-warning);
+@error-color: var(--gf-color-danger);
+@info-color: var(--gf-color-primary);
 
 // 文本颜色
-@text-color: #0f182a;
-@text-color-secondary: #5b667f;
-@text-color-disabled: rgba(15, 24, 42, 0.38);
+@text-color: var(--gf-color-text);
+@text-color-secondary: var(--gf-color-text-secondary);
+@text-color-disabled: var(--gf-color-text-disabled);
 
 // 背景颜色
-@background-base: #f7f9fc;
-@background-light: #eef2f8;
-@background-disabled: #e7ebf3;
+@background-base: var(--gf-color-surface-muted);
+@background-light: var(--gf-color-bg);
+@background-disabled: var(--gf-color-fill-quaternary);
 
 // 字体
-@font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-@font-size-base: 13px;
-@font-size-sm: 11px;
-@font-size-lg: 15px;
+@font-family: var(--gf-font-family);
+@font-size-base: var(--gf-font-size-md);
+@font-size-sm: var(--gf-font-size-xs);
+@font-size-lg: var(--gf-font-size-lg);
 
 // 间距
 @spacing-xs: 4px;
@@ -31,17 +34,17 @@
 @spacing-xl: 32px;
 
 // 边框
-@border-radius: 6px; // 容器组件（4-6px）
-@border-radius-base: 6px;
-@border-radius-sm: 4px; // 基础组件（2-4px）
-@border-radius-lg: 8px;
-@border-color: rgba(31, 74, 148, 0.22);
-@border-color-base: rgba(31, 74, 148, 0.22);
-@border-color-light: rgba(31, 74, 148, 0.12);
+@border-radius: var(--gf-radius-md);
+@border-radius-base: var(--gf-radius-md);
+@border-radius-sm: var(--gf-radius-sm);
+@border-radius-lg: var(--gf-radius-lg);
+@border-color: var(--gf-color-border);
+@border-color-base: var(--gf-color-border);
+@border-color-light: var(--gf-color-border-muted);
 
 // 阴影
-@box-shadow-base: 0 1px 2px rgba(15, 24, 42, 0.08), 0 6px 18px rgba(15, 24, 42, 0.06);
-@box-shadow-card: 0 2px 6px rgba(15, 24, 42, 0.1), 0 12px 28px rgba(15, 24, 42, 0.08);
+@box-shadow-base: var(--gf-shadow-1);
+@box-shadow-card: var(--gf-shadow-2);
 
 // 布局
 @header-height: 64px;

@@ -105,7 +105,7 @@
       align-items: center;
       gap: 4px;
       padding: 2px 7px;
-      background-color: fade(@background-light, 50%);
+      background-color: var(--gf-color-fill);
       border: 1px solid transparent;
       border-radius: 3px;
       cursor: pointer;
@@ -115,13 +115,13 @@
       font-size: 11px;
 
       &:hover {
-        background-color: fade(@primary-color, 8%);
-        border-color: fade(@primary-color, 25%);
+        background-color: var(--gf-color-primary-soft);
+        border-color: var(--gf-color-primary-border);
       }
 
       &.dp-compact-legend__item--selected {
-        background-color: fade(@primary-color, 10%);
-        border-color: fade(@primary-color, 35%);
+        background-color: var(--gf-color-primary-soft-hover);
+        border-color: var(--gf-color-primary-border-strong);
       }
 
       &.dp-compact-legend__item--dimmed {
@@ -140,8 +140,8 @@
         padding: 2px 6px;
 
         &:hover {
-          background-color: fade(@primary-color, 5%);
-          border-color: @primary-color;
+          background-color: var(--gf-color-primary-soft);
+          border-color: var(--gf-color-primary);
         }
 
         :deep(.gf-checkbox) {
@@ -155,7 +155,7 @@
       height: 8px;
       border-radius: 2px;
       flex-shrink: 0;
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+      box-shadow: inset 0 0 0 1px var(--gf-color-border-muted);
     }
 
     &__label {
@@ -183,11 +183,11 @@
     }
 
     &::-webkit-scrollbar-thumb {
-      background: fade(@border-color, 60%);
+      background: var(--gf-color-fill-tertiary);
       border-radius: 3px;
 
       &:hover {
-        background: @border-color;
+        background: var(--gf-color-fill-quaternary);
       }
     }
   }

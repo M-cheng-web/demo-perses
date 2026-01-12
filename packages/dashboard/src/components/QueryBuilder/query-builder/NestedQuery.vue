@@ -45,7 +45,7 @@
     </div>
 
     <div class="nested-query-body">
-      <Card size="small" :bordered="true">
+      <Card size="small" :bordered="false">
         <!-- 指标选择 -->
         <div class="section">
           <div class="section-label">指标</div>
@@ -191,27 +191,27 @@
   };
 </script>
 
-<style scoped>
+<style scoped lang="less">
   .nested-query {
-    border: 1px solid #d9d9d9;
-    border-radius: 4px;
-    background: #fafafa;
     margin-bottom: 12px;
+    background: var(--gf-color-surface);
+    border-left: 2px solid var(--gf-color-primary-border-strong);
+    border-radius: var(--gf-radius-md);
   }
 
   .nested-query-header {
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    background: #f5f5f5;
-    border-bottom: 1px solid #d9d9d9;
+    background: var(--gf-color-surface-muted);
+    border-bottom: 1px solid var(--gf-color-border-muted);
     gap: 8px;
   }
 
   .header-label {
     font-size: 13px;
     font-weight: 500;
-    color: #595959;
+    color: var(--gf-color-text-secondary);
     white-space: nowrap;
   }
 
@@ -230,7 +230,7 @@
   .section-label {
     font-weight: 500;
     margin-bottom: 8px;
-    color: rgba(0, 0, 0, 0.85);
+    color: var(--gf-color-text);
     font-size: 13px;
   }
 </style>

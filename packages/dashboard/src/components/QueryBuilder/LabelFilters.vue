@@ -214,18 +214,18 @@
       gap: 6px;
     }
 
-    &__item {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      padding: 4px;
-      background: #fafafa;
-      border-radius: 2px;
+	    &__item {
+	      display: flex;
+	      gap: 6px;
+	      align-items: center;
+	      padding: 4px;
+	      background: var(--gf-color-surface-muted);
+	      border-radius: var(--gf-radius-xs);
 
-      &:hover {
-        background: #f5f5f5;
-      }
-    }
+	      &:hover {
+	        background: var(--gf-color-fill);
+	      }
+	    }
 
     &__add-btn {
       width: fit-content !important;

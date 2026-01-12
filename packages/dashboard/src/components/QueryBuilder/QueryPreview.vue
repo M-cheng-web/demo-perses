@@ -59,13 +59,15 @@
       padding: 0 4px;
       height: 20px;
       font-size: 12px;
-      color: #8c8c8c;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid #e0e0e0;
+      color: var(--gf-color-text-tertiary);
+      background: var(--gf-color-surface-raised);
+      border: 1px solid var(--gf-color-border-muted);
+      border-radius: var(--gf-radius-xs);
 
       &:hover {
-        color: #1890ff;
-        background: #ffffff;
+        color: var(--gf-color-primary);
+        background: var(--gf-color-surface);
+        border-color: var(--gf-color-primary-border);
       }
     }
 
@@ -73,20 +75,20 @@
       margin: 0;
       padding: 6px 8px;
       padding-right: 60px;
-      background: #f5f5f5;
-      border: 1px solid #e0e0e0;
-      border-radius: 2px;
+      background: var(--gf-color-surface-muted);
+      border: 1px solid var(--gf-color-border-muted);
+      border-radius: var(--gf-radius-xs);
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
       font-size: 11px;
       line-height: 1.5;
-      color: #000000d9;
+      color: var(--gf-color-text);
       white-space: pre-wrap;
       word-break: break-all;
     }
 
     &__errors {
       padding: 8px;
-      background: #fff;
+      background: var(--gf-color-surface);
     }
   }
 </style>

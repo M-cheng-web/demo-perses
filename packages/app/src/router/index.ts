@@ -12,6 +12,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/DashboardView.vue'),
   },
   {
+    path: '/components',
+    name: 'ComponentShowcase',
+    component: () => import('@/views/ComponentShowcase.vue'),
+  },
+  {
     path: '/',
     redirect: '/home',
   },

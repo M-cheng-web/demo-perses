@@ -309,7 +309,7 @@
 
 <style scoped>
   .dp-metrics-modal :deep(.gf-modal__body) {
-    padding: 16px;
+    padding: var(--gf-space-3);
   }
 
   .dp-metrics-modal__search-filters {
@@ -329,20 +329,21 @@
   .dp-metrics-modal__metric-name {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 12px;
-    color: #1890ff;
-    background: #f0f5ff;
+    color: var(--gf-color-primary);
+    background: var(--gf-color-primary-soft);
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: var(--gf-radius-xs);
+    border: 1px solid var(--gf-color-primary-border);
   }
 
   .dp-metrics-modal__no-type {
-    color: #8c8c8c;
+    color: var(--gf-color-text-tertiary);
     font-size: 12px;
   }
 
   .dp-metrics-modal__description {
     font-size: 12px;
-    color: #595959;
+    color: var(--gf-color-text-secondary);
   }
 
   /* 自定义 Table 样式 */
@@ -351,13 +352,13 @@
   }
 
   .dp-metrics-modal__table :deep(.gf-table th) {
-    background: #fafafa;
+    background: var(--gf-color-surface-muted);
     font-weight: 600;
     font-size: 12px;
   }
 
   .dp-metrics-modal__table :deep(.gf-table td:hover) {
-    background: #f5f5f5;
+    background: var(--gf-color-fill);
   }
 
   .dp-metrics-modal__table :deep(.gf-tag) {

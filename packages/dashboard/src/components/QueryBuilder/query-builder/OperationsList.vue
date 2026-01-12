@@ -556,20 +556,20 @@
 
     &__card {
       position: relative;
-      background: #fafafa;
-      border: 1px solid #e0e0e0;
-      border-radius: 2px;
-      transition: all 0.2s;
+      background: var(--gf-color-surface);
+      border: 1px solid var(--gf-color-border-muted);
+      border-radius: var(--gf-radius-xs);
+      transition: border-color var(--gf-motion-fast) var(--gf-easing), box-shadow var(--gf-motion-fast) var(--gf-easing);
       min-width: 240px;
       max-width: 420px;
 
       &:hover {
-        border-color: #d9d9d9;
+        border-color: var(--gf-color-border-strong);
       }
 
       &--highlighted {
-        border-color: #1890ff;
-        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        border-color: var(--gf-color-primary-border-strong);
+        box-shadow: var(--gf-focus-ring);
       }
 
       &--flash {
@@ -580,10 +580,10 @@
     @keyframes flashAnimation {
       0%,
       100% {
-        border-color: #e0e0e0;
+        border-color: var(--gf-color-border-muted);
       }
       50% {
-        border-color: #ffa940;
+        border-color: var(--gf-color-warning-border);
       }
     }
 
@@ -592,8 +592,8 @@
       display: flex;
       align-items: center;
       padding: 4px 6px;
-      border-bottom: 1px solid #e8e8e8;
-      background: #f5f5f5;
+      border-bottom: 1px solid var(--gf-color-border-muted);
+      background: var(--gf-color-surface-muted);
     }
 
     &__drag-handle {
@@ -601,14 +601,14 @@
       align-items: center;
       justify-content: center;
       width: 16px;
-      color: #bfbfbf;
+      color: var(--gf-color-text-disabled);
       cursor: grab;
       transition: color 0.2s;
       margin-right: 4px;
       font-size: 12px;
 
       &:hover {
-        color: #8c8c8c;
+        color: var(--gf-color-text-secondary);
       }
 
       &:active {
@@ -624,14 +624,14 @@
 
     &__name-button {
       font-weight: 500;
-      color: #262626;
+      color: var(--gf-color-text);
       padding: 0 4px;
       font-size: 12px;
       height: auto;
       line-height: 1.5;
 
       &:hover {
-        color: #1890ff;
+        color: var(--gf-color-primary);
       }
     }
 
@@ -662,7 +662,7 @@
       padding: 4px 6px 4px 0;
       font-size: 12px;
       font-weight: 500;
-      color: #595959;
+      color: var(--gf-color-text-secondary);
       vertical-align: middle;
       min-width: 70px;
       white-space: nowrap;
@@ -686,7 +686,7 @@
       right: -16px;
       top: 50%;
       transform: translateY(-50%);
-      color: #bfbfbf;
+      color: var(--gf-color-text-disabled);
       font-size: 12px;
       z-index: 1;
     }

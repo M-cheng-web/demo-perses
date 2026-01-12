@@ -102,17 +102,17 @@
 
     &__label {
       font-size: 13px;
-      color: rgba(0, 0, 0, 0.65);
+      color: var(--gf-color-text-secondary);
       white-space: nowrap;
     }
 
     &__constant {
       padding: 4px 11px;
       font-size: 13px;
-      color: rgba(0, 0, 0, 0.45);
-      background: #fafafa;
-      border: 1px solid #d9d9d9;
-      border-radius: 4px;
+      color: var(--gf-color-text-tertiary);
+      background: var(--gf-color-surface-muted);
+      border: 1px solid var(--gf-color-border-muted);
+      border-radius: var(--gf-radius-sm);
     }
   }
 </style>

@@ -33,6 +33,7 @@
   import { useChartInit } from '/#/composables/useChartInit';
   import { useChartTooltip, TooltipDataProviders, type TooltipData } from '/#/composables/useChartTooltip';
   import Legend from '/#/components/ChartLegend/Legend.vue';
+  import { getEChartsTheme } from '/#/utils/echartsTheme';
 
   const [_, bem] = createNamespace('time-series-chart');
 
@@ -150,6 +151,7 @@
   function getChartOption(): EChartsOption {
     const { queryResults } = props;
     const { options } = props.panel;
+    const theme = getEChartsTheme(chartRef.value);
 
     // 检查是否有有效数据
     if (!queryResults || queryResults.length === 0 || queryResults.every((r) => !r.data || r.data.length === 0)) {
@@ -159,7 +161,7 @@
           left: 'center',
           top: 'center',
           textStyle: {
-            color: '#999',
+            color: theme.textSecondary,
             fontSize: 14,
           },
         },
@@ -168,7 +170,7 @@
 
     // 准备系列数据
     const series: any[] = [];
-    const colors = options.chart?.colors || [];
+    const colors = options.chart?.colors && options.chart.colors.length > 0 ? options.chart.colors : theme.palette;
     let colorIndex = 0;
 
     const specificOptions = options.specific as any;
@@ -193,7 +195,7 @@
 
         const data = timeSeries.values.map(([timestamp, value]) => [timestamp, value]);
 
-        const color = colors[colorIndex % colors.length] || `hsl(${(colorIndex * 137.5) % 360}, 70%, 50%)`;
+        const color = colors[colorIndex % colors.length] || theme.palette[colorIndex % theme.palette.length] || theme.textSecondary;
 
         // 根据可见性状态设置透明度
         const opacity = visibility === 'visible' ? 1 : 0.08;
@@ -252,7 +254,7 @@
           left: 'center',
           top: 'center',
           textStyle: {
-            color: '#999',
+            color: theme.textSecondary,
             fontSize: 14,
           },
         },
@@ -260,8 +262,10 @@
     }
 
     return {
+      ...theme.baseOption,
       // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
+        ...theme.baseOption.tooltip,
         trigger: 'axis',
         triggerOn: 'mousemove',
         axisPointer: {
@@ -270,7 +274,7 @@
             show: false,
           },
           lineStyle: {
-            color: '#000',
+            color: theme.borderMuted,
             width: 1,
           },
         },
@@ -321,6 +325,17 @@
         alignTicks: true,
         splitLine: {
           show: true, // 分割线
+          lineStyle: {
+            color: theme.borderMuted,
+          },
+        },
+        axisLine: {
+          lineStyle: {
+            color: theme.borderMuted,
+          },
+        },
+        axisLabel: {
+          color: theme.textSecondary,
         },
         axisTick: {
           show: false,
@@ -334,9 +349,18 @@
         // max: options.axis?.yAxis?.max,
         splitLine: {
           show: true,
+          lineStyle: {
+            color: theme.borderMuted,
+          },
         },
         axisLabel: {
+          color: theme.textSecondary,
           formatter: (value: number) => formatValue(value, options.format || {}),
+        },
+        axisLine: {
+          lineStyle: {
+            color: theme.borderMuted,
+          },
         },
         axisPointer: {
           type: 'line', // 轴线类型
@@ -344,7 +368,7 @@
             show: false,
           },
           lineStyle: {
-            color: '#000',
+            color: theme.borderMuted,
             width: 1,
           },
         },

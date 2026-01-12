@@ -32,6 +32,7 @@
   import { useChartInit } from '/#/composables/useChartInit';
   import { useChartTooltip, TooltipDataProviders, type TooltipData } from '/#/composables/useChartTooltip';
   import Legend from '/#/components/ChartLegend/Legend.vue';
+  import { getEChartsTheme } from '/#/utils/echartsTheme';
   import { Spin } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('pie-chart');
@@ -144,6 +145,7 @@
     const { queryResults } = props;
     const { options } = props.panel;
     const specificOptions = options.specific as any;
+    const theme = getEChartsTheme(chartRef.value);
 
     // 检查是否有有效数据
     if (!queryResults || queryResults.length === 0 || queryResults.every((r) => !r.data || r.data.length === 0)) {
@@ -153,7 +155,7 @@
           left: 'center',
           top: 'center',
           textStyle: {
-            color: '#999',
+            color: theme.textSecondary,
             fontSize: 14,
           },
         },
@@ -162,7 +164,7 @@
 
     // 准备饼图数据
     const data: any[] = [];
-    const colors = options.chart?.colors || [];
+    const colors = options.chart?.colors && options.chart.colors.length > 0 ? options.chart.colors : theme.palette;
     let colorIndex = 0;
 
     queryResults.forEach((result) => {
@@ -184,7 +186,7 @@
         // 取最后一个值
         const lastValue = timeSeries.values[timeSeries.values.length - 1];
         if (lastValue) {
-          const color = colors[colorIndex % colors.length] || `hsl(${(colorIndex * 137.5) % 360}, 70%, 50%)`;
+          const color = colors[colorIndex % colors.length] || theme.palette[colorIndex % theme.palette.length] || theme.textSecondary;
           const opacity = visibility === 'visible' ? 1 : 0.3;
 
           data.push({
@@ -209,7 +211,7 @@
           left: 'center',
           top: 'center',
           textStyle: {
-            color: '#999',
+            color: theme.textSecondary,
             fontSize: 14,
           },
         },
@@ -219,8 +221,10 @@
     const isPie = specificOptions?.pieType !== 'doughnut';
 
     return {
+      ...theme.baseOption,
       // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
+        ...theme.baseOption.tooltip,
         trigger: 'item',
         triggerOn: 'mousemove',
         formatter: (params: any) => {
@@ -273,14 +277,15 @@
           data,
           emphasis: {
             itemStyle: {
-              shadowBlur: 10,
+              shadowBlur: 8,
               shadowOffsetX: 0,
-              shadowColor: 'rgba(0, 0, 0, 0.5)',
+              shadowColor: theme.border,
             },
           },
           label: {
             show: specificOptions?.showPercentage ?? true,
             formatter: '{b}: {d}%',
+            color: theme.textSecondary,
           },
         },
       ],

@@ -217,13 +217,12 @@
   }
 
   .dp-query-patterns-modal__card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--gf-shadow-1);
   }
 
   .dp-query-patterns-modal__card :deep(.gf-card__header) {
-    background: #fafafa;
-    padding: 10px 16px;
+    background: var(--gf-color-surface-muted);
+    padding: 8px 12px;
     min-height: auto;
   }
 
@@ -243,7 +242,7 @@
   }
 
   .dp-query-patterns-modal__card-description {
-    color: #595959;
+    color: var(--gf-color-text-secondary);
     font-size: 12px;
     line-height: 1.5;
     margin-bottom: 12px;
@@ -251,16 +250,17 @@
   }
 
   .dp-query-patterns-modal__operations {
-    background: #f5f5f5;
+    background: var(--gf-color-surface-muted);
     padding: 10px;
-    border-radius: 4px;
+    border-radius: var(--gf-radius-xs);
+    border: 1px solid var(--gf-color-border-muted);
     margin-bottom: 10px;
   }
 
   .dp-query-patterns-modal__operations-label {
     font-weight: 500;
     font-size: 12px;
-    color: #262626;
+    color: var(--gf-color-text);
     margin-bottom: 6px;
   }
 
@@ -273,29 +273,30 @@
   .dp-query-patterns-modal__operations-list li {
     padding: 3px 0;
     font-size: 12px;
-    color: #595959;
+    color: var(--gf-color-text-secondary);
   }
 
   .dp-query-patterns-modal__operations-list code {
-    background: #fff;
-    color: #1890ff;
+    background: var(--gf-color-surface);
+    color: var(--gf-color-primary);
     padding: 2px 5px;
-    border-radius: 3px;
+    border-radius: var(--gf-radius-xs);
+    border: 1px solid var(--gf-color-border-muted);
     font-family: 'Monaco', 'Menlo', monospace;
     font-size: 11px;
   }
 
   .dp-query-patterns-modal__op-params {
-    color: #8c8c8c;
+    color: var(--gf-color-text-tertiary);
     font-size: 11px;
     margin-left: 4px;
   }
 
   .dp-query-patterns-modal__binary {
-    background: #f0f5ff;
+    background: var(--gf-color-primary-soft);
     padding: 8px 10px;
-    border-radius: 4px;
-    border-left: 3px solid #1890ff;
+    border-radius: var(--gf-radius-xs);
+    border-left: 2px solid var(--gf-color-primary);
   }
 
   .dp-query-patterns-modal__binary-info {
@@ -306,16 +307,17 @@
   }
 
   .dp-query-patterns-modal__binary-info code {
-    background: #fff;
-    color: #722ed1;
+    background: var(--gf-color-surface);
+    color: var(--gf-color-primary-hover);
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: var(--gf-radius-xs);
+    border: 1px solid var(--gf-color-border-muted);
     font-weight: 600;
     font-size: 11px;
   }
 
   .dp-query-patterns-modal__binary-desc {
-    color: #595959;
+    color: var(--gf-color-text-secondary);
     font-size: 11px;
   }
 </style>

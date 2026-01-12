@@ -158,13 +158,13 @@
     &__value {
       font-size: 32px;
       font-weight: 600;
-      color: rgba(0, 0, 0, 0.85);
+      color: var(--gf-color-text);
       line-height: 1.2;
     }
 
     &__name {
       font-size: 14px;
-      color: rgba(0, 0, 0, 0.45);
+      color: var(--gf-color-text-secondary);
       margin-top: @spacing-xs;
     }
 
@@ -177,15 +177,15 @@
       margin-top: @spacing-xs;
 
       &.trend-up {
-        color: #52c41a;
+        color: var(--gf-color-success);
       }
 
       &.trend-down {
-        color: #f5222d;
+        color: var(--gf-color-danger);
       }
 
       &.trend-neutral {
-        color: rgba(0, 0, 0, 0.45);
+        color: var(--gf-color-text-tertiary);
       }
     }
   }

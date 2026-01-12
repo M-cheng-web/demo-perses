@@ -17,6 +17,7 @@
   import { formatValue, createNamespace } from '/#/utils';
   import { useChartResize } from '/#/composables/useChartResize';
   import { useChartInit } from '/#/composables/useChartInit';
+  import { getEChartsTheme } from '/#/utils/echartsTheme';
 
   const [_, bem] = createNamespace('gauge-chart');
 
@@ -149,10 +150,11 @@
     }
 
     const firstThreshold = validThresholds[0];
-    return firstThreshold?.color || '#5470c6';
+    return firstThreshold?.color || getEChartsTheme().palette[0] || '#5470c6';
   }
 
   function getChartOption(): EChartsOption {
+    const theme = getEChartsTheme(chartRef.value);
     const min = gaugeOptions.value.min ?? 0;
     const max = gaugeOptions.value.max ?? 100;
     const startAngle = gaugeOptions.value.startAngle ?? 225;
@@ -207,6 +209,7 @@
     }
 
     return {
+      ...theme.baseOption,
       series: [
         {
           type: 'gauge',
@@ -230,21 +233,21 @@
             distance: -30,
             length: 8,
             lineStyle: {
-              color: '#fff',
-              width: 2,
+              color: theme.borderMuted,
+              width: 1,
             },
           },
           splitLine: {
             distance: 6,
             length: 15,
             lineStyle: {
-              color: '#fff',
-              width: 4,
+              color: theme.borderMuted,
+              width: 2,
             },
           },
           axisLabel: {
             distance: -45,
-            color: '#999',
+            color: theme.textSecondary,
             fontSize: 11,
             formatter: (value: number) => {
               return formatValue(value, formatOptions.value || {});

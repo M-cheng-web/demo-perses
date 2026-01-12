@@ -70,43 +70,40 @@
     display: flex;
     flex-direction: column;
     gap: var(--gf-space-2);
+    border: 1px solid var(--gf-color-border);
+    border-radius: var(--gf-radius-md);
+    background: var(--gf-color-surface);
 
     &__nav {
       display: flex;
       gap: var(--gf-space-1);
-      padding: var(--gf-space-1);
-      background: var(--gf-color-surface);
-      border: 1px solid var(--gf-border);
-      border-radius: var(--gf-radius-md);
-      box-shadow: inset 0 1px 0 var(--gf-color-fill);
+      padding: 6px 8px;
+      background: transparent;
+      border-bottom: 1px solid var(--gf-color-border-muted);
     }
 
     &__tab {
-      padding: 7px 10px;
-      border-radius: var(--gf-radius-sm);
+      padding: 6px 10px;
+      border-radius: var(--gf-radius-xs);
       cursor: pointer;
       color: var(--gf-text-secondary);
       font-size: var(--gf-font-size-sm);
-      transition: background var(--gf-motion-fast) var(--gf-easing), color var(--gf-motion-fast) var(--gf-easing),
-        box-shadow var(--gf-motion-fast) var(--gf-easing);
+      transition: background var(--gf-motion-fast) var(--gf-easing), color var(--gf-motion-fast) var(--gf-easing);
 
       &.is-active {
         background: var(--gf-color-primary-soft);
         color: var(--gf-color-primary);
-        box-shadow: none;
+        box-shadow: inset 0 -2px 0 var(--gf-color-primary);
       }
 
       &:hover:not(.is-active) {
-        background: var(--gf-color-surface-muted);
+        background: var(--gf-color-fill);
+        color: var(--gf-color-text);
       }
     }
 
     &__content {
-      background: var(--gf-color-surface);
-      border: 1px solid var(--gf-border);
-      border-radius: var(--gf-radius-md);
       padding: var(--gf-space-3);
-      box-shadow: var(--gf-shadow-1);
     }
   }
 </style>

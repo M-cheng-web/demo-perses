@@ -101,11 +101,11 @@
         font-size: 11px;
 
         &:hover {
-          background-color: fade(@primary-color, 6%);
+          background-color: var(--gf-color-fill);
         }
 
         &.is-selected {
-          background-color: fade(@primary-color, 10%);
+          background-color: var(--gf-color-primary-soft);
         }
 
         &.is-dimmed {
@@ -118,13 +118,13 @@
 
         &.global-selector {
           font-weight: 500;
-          background-color: @background-light;
-          border-bottom: 1px solid @border-color;
+          background-color: var(--gf-color-surface-muted);
+          border-bottom: 1px solid var(--gf-color-border-muted);
           margin-bottom: 2px;
           padding: 5px 6px;
 
           &:hover {
-            background-color: fade(@primary-color, 6%);
+            background-color: var(--gf-color-fill);
           }
 
           :deep(.gf-checkbox) {
@@ -137,7 +137,7 @@
           height: 8px;
           border-radius: 2px;
           flex-shrink: 0;
-          box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+          box-shadow: inset 0 0 0 1px var(--gf-color-border-muted);
         }
 
         .item-label {
@@ -162,16 +162,16 @@
     }
 
     &::-webkit-scrollbar-track {
-      background: @background-light;
+      background: transparent;
       border-radius: 3px;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: @border-color;
+      background: var(--gf-color-fill-tertiary);
       border-radius: 3px;
 
       &:hover {
-        background: darken(@border-color, 10%);
+        background: var(--gf-color-fill-quaternary);
       }
     }
   }

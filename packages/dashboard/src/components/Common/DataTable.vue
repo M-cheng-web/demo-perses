@@ -204,7 +204,7 @@
     font-size: 12px;
     max-height: 300px;
     overflow-y: auto;
-    border-radius: 4px;
+    border-radius: var(--gf-radius-md);
 
     &__container {
       width: 100%;
@@ -243,7 +243,7 @@
           transform: translateY(-50%);
           height: 70%;
           width: 1px;
-          background-color: fade(@border-color, 60%);
+          background-color: var(--gf-color-border-muted);
         }
 
         &.dp-data-table__cell--sortable {
@@ -303,12 +303,16 @@
     }
 
     &__body {
+      .dp-data-table__row:nth-child(even):not(.dp-data-table__row--selected) {
+        background-color: var(--gf-color-zebra);
+      }
+
       .dp-data-table__row {
         display: flex;
         align-items: center;
         height: 28px;
         padding: 0 12px;
-        border-bottom: 1px solid fade(@border-color, 30%);
+        border-bottom: 1px solid var(--gf-color-border-muted);
         cursor: pointer;
         transition: all 0.2s ease;
 
@@ -317,14 +321,14 @@
         }
 
         &:hover {
-          background-color: fade(@primary-color, 5%);
+          background-color: var(--gf-color-fill);
         }
 
         &.dp-data-table__row--selected {
-          background-color: fade(@primary-color, 8%);
+          background-color: var(--gf-color-primary-soft);
 
           &:hover {
-            background-color: fade(@primary-color, 12%);
+            background-color: var(--gf-color-primary-soft-hover);
           }
         }
 
@@ -373,11 +377,11 @@
     }
 
     &::-webkit-scrollbar-thumb {
-      background: fade(@border-color, 60%);
+      background: var(--gf-color-fill-tertiary);
       border-radius: 3px;
 
       &:hover {
-        background: darken(@border-color, 10%);
+        background: var(--gf-color-fill-quaternary);
       }
     }
   }

@@ -576,14 +576,14 @@
 
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     color: var(--gf-color-text);
 
     &__header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 14px;
+      padding: 10px 12px;
       border: 1px solid var(--gf-color-border);
       border-radius: var(--gf-radius-md);
       background: var(--gf-color-surface);
@@ -626,9 +626,9 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 10px;
+      padding: 6px 8px;
       border: 1px solid var(--gf-color-border-muted);
-      border-radius: var(--gf-radius-md);
+      border-radius: var(--gf-radius-sm);
       background: var(--gf-color-surface-muted);
       box-shadow: none;
     }
@@ -648,9 +648,9 @@
 
     &__run-btn {
       border-radius: var(--gf-radius-sm);
-      padding: 6px 16px;
+      padding: 6px 14px;
       font-weight: 700;
-      height: 34px;
+      height: 32px;
     }
 
     &__queries {
@@ -702,7 +702,7 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      padding: 12px 16px;
+      padding: 10px 12px;
       background: var(--gf-color-surface-muted);
       border-bottom: 1px solid var(--gf-color-border-muted);
       gap: 12px;
@@ -739,9 +739,10 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: var(--gf-radius-xs);
       background: var(--dp-primary-soft-2);
       color: var(--gf-color-primary);
       font-weight: 700;
@@ -783,7 +784,7 @@
     }
 
     &__query-content {
-      padding: 14px 16px 16px;
+      padding: 12px;
       background: var(--gf-color-surface);
     }
 
@@ -794,10 +795,11 @@
 
     &__section {
       width: 100%;
-      border: 1px solid var(--gf-color-border);
-      border-radius: var(--gf-radius-md);
+      border: none;
+      border-left: 2px solid var(--gf-color-border-muted);
+      border-radius: var(--gf-radius-xs);
       overflow: hidden;
-      background: var(--gf-color-surface-muted);
+      background: var(--gf-color-surface);
       box-shadow: none;
       transition:
         border-color 0.2s ease,
@@ -805,23 +807,23 @@
 
       // 不同区块的左边框强调色
       &--metric {
-        border-left: 2px solid var(--gf-color-primary);
+        border-left-color: var(--gf-color-primary);
       }
 
       &--filters {
-        border-left: 2px solid var(--gf-color-success);
+        border-left-color: var(--gf-color-success);
       }
 
       &--operations {
-        border-left: 2px solid var(--gf-color-warning);
+        border-left-color: var(--gf-color-warning);
       }
 
       &--binary {
-        border-left: 2px solid rgba(124, 92, 255, 0.95);
+        border-left-color: var(--gf-color-primary-border-strong);
       }
 
       &:hover {
-        border-color: var(--gf-color-border-strong);
+        border-left-color: var(--gf-color-border-strong);
         box-shadow: none;
       }
     }
@@ -832,7 +834,7 @@
       justify-content: space-between;
       padding: 8px 12px;
       border-bottom: 1px solid var(--gf-color-border-muted);
-      background: var(--gf-color-surface);
+      background: var(--gf-color-surface-muted);
     }
 
     &__section-title {
@@ -861,20 +863,26 @@
         display: none;
       }
 
+      :deep(.dp-data-query-tab__mode-tabs.gf-tabs) {
+        border: 1px solid var(--gf-color-border-muted);
+        border-radius: var(--gf-radius-sm);
+        background: var(--gf-color-surface);
+      }
+
       :deep(.gf-tabs__nav) {
         padding: 2px;
-        border-radius: 999px;
-        box-shadow: none;
+        border-bottom: none;
       }
 
       :deep(.gf-tabs__tab) {
         min-width: 86px;
-        padding: 6px 10px;
-        border-radius: 999px;
+        padding: 5px 10px;
+        border-radius: var(--gf-radius-xs);
       }
 
       :deep(.gf-tabs__tab.is-active) {
         background: var(--gf-color-primary-soft);
+        box-shadow: inset 0 -2px 0 var(--gf-color-primary);
       }
     }
 

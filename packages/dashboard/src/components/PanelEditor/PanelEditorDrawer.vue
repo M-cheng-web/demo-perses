@@ -458,12 +458,7 @@
     }
 
     &__tabs {
-      :deep(.gf-tabs__nav) {
-        margin-bottom: 10px;
-      }
-
-      :deep(.gf-tabs__content) {
-        border-radius: var(--gf-radius-md);
+      :deep(.gf-tabs) {
         box-shadow: none;
       }
     }

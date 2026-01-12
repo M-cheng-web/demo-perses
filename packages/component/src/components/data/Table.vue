@@ -200,18 +200,23 @@
   .gf-table {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--gf-space-3);
     width: 100%;
     position: relative;
 
     &__wrap {
       width: 100%;
       overflow: auto;
-      border: 1px solid var(--gf-border);
+      border: 1px solid var(--gf-color-border);
       border-radius: var(--gf-radius-md);
       background: var(--gf-color-surface);
-      box-shadow: var(--gf-shadow-1);
       position: relative;
+      transition: border-color var(--gf-motion-normal) var(--gf-easing), box-shadow var(--gf-motion-normal) var(--gf-easing);
+    }
+
+    &__wrap:hover {
+      border-color: var(--gf-color-border-strong);
+      box-shadow: var(--gf-shadow-1);
     }
 
     table {
@@ -220,11 +225,15 @@
       min-width: 400px;
     }
 
+    tbody tr:nth-child(even) td {
+      background: var(--gf-color-zebra);
+    }
+
     th,
     td {
-      padding: 10px 12px;
+      padding: 8px 10px;
       text-align: left;
-      border-bottom: 1px solid var(--gf-border);
+      border-bottom: 1px solid var(--gf-color-border-muted);
       font-size: var(--gf-font-size-md);
       color: var(--gf-text);
     }
@@ -238,7 +247,7 @@
       transition: background var(--gf-motion-normal) var(--gf-easing);
 
       &:hover {
-        background: var(--gf-color-primary-soft);
+        background: var(--gf-color-fill);
       }
     }
 
@@ -281,7 +290,7 @@
       gap: 8px;
 
       button {
-        border: 1px solid var(--gf-border);
+        border: 1px solid var(--gf-color-border);
         background: var(--gf-color-surface);
         padding: 6px 10px;
         border-radius: var(--gf-radius-sm);
@@ -297,7 +306,7 @@
     }
 
     select {
-      border: 1px solid var(--gf-border);
+      border: 1px solid var(--gf-color-border);
       border-radius: var(--gf-radius-sm);
       padding: 6px 10px;
       background: var(--gf-color-surface);
@@ -306,7 +315,7 @@
 
     &--size-small th,
     &--size-small td {
-      padding: 8px 10px;
+      padding: 6px 8px;
       font-size: 12px;
     }
 

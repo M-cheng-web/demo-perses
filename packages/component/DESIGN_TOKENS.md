@@ -39,12 +39,30 @@ Token 同时挂在 `:root` 和主题容器 `.gf-theme-blue` 上，因此你可�
 ### Colors
 
 - `--gf-color-primary`：主色（蓝）
+- `--gf-color-primary-secondary`：次主色（更浅一档，用于次要高亮/导航强调）
 - `--gf-color-primary-hover` / `--gf-color-primary-active`：交互态
 - `--gf-color-bg`：页面背景
 - `--gf-color-surface` / `--gf-color-surface-muted`：容器背景层级
 - `--gf-color-text` / `--gf-color-text-secondary`：正文 / 次要文本
 - `--gf-color-border` / `--gf-color-border-strong`：边框层级
 - `--gf-color-success` / `--gf-color-warning` / `--gf-color-danger`：状态色
+- `--gf-color-zebra`：斑马纹底色（极浅冷灰，用于表格/列表行交替背景）
+
+### Industrial Blue（基于 Ant Design 蓝色系的低饱和版本）
+
+以下为 light 模式的主蓝梯度（对应 `packages/component/src/styles/tokens.less`）：
+
+- `--gf-palette-blue-400`：`#4a86dd`（次主色）
+- `--gf-palette-blue-500`：`#356fcf`（主色）
+- `--gf-palette-blue-600`：`#2d63c0`（hover）
+- `--gf-palette-blue-700`：`#2553a6`（active）
+
+语义映射：
+
+- `--gf-color-primary` = `--gf-palette-blue-500`
+- `--gf-color-primary-secondary` = `--gf-palette-blue-400`
+- `--gf-color-primary-hover` = `--gf-palette-blue-600`
+- `--gf-color-primary-active` = `--gf-palette-blue-700`
 
 ### Spacing
 

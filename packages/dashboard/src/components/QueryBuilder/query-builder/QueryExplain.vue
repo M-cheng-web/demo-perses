@@ -347,8 +347,8 @@
       display: flex;
       gap: 0;
       padding: 8px;
-      background: #ffffff;
-      border-radius: 2px;
+      background: var(--gf-color-surface);
+      border-radius: var(--gf-radius-xs);
       border: 1px solid transparent;
       transition: all 0.15s;
       cursor: pointer;
@@ -364,16 +364,16 @@
       // }
 
       &--highlighted {
-        background: #e6f7ff;
-        border-color: #91d5ff;
+        background: var(--gf-color-primary-soft);
+        border-color: var(--gf-color-primary-border);
       }
 
       &--binary {
-        background: #f9f0ff;
+        background: var(--gf-color-surface-muted);
 
         &:hover {
-          background: #f0e6ff;
-          border-color: #d3adf7;
+          background: var(--gf-color-surface);
+          border-color: var(--gf-color-border-strong);
         }
       }
     }
@@ -390,8 +390,8 @@
     &__step-number {
       width: 22px;
       height: 22px;
-      border-radius: 50%;
-      background: #1890ff;
+      border-radius: var(--gf-radius-xs);
+      background: var(--gf-color-primary);
       color: white;
       display: flex;
       align-items: center;
@@ -402,13 +402,13 @@
     }
 
     &__step--binary &__step-number {
-      background: #722ed1;
+      background: var(--gf-color-primary-hover);
     }
 
     &__step-connector {
       width: 1px;
       flex: 1;
-      background: #d9d9d9;
+      background: var(--gf-color-border-muted);
       margin-top: 2px;
     }
 
@@ -433,7 +433,7 @@
 
     &__step-title {
       font-weight: 500;
-      color: #262626;
+      color: var(--gf-color-text);
       font-size: 12px;
     }
 
@@ -442,24 +442,24 @@
     }
 
     &__promql-box {
-      background: #f5f5f5;
-      border: 1px solid #e0e0e0;
-      border-radius: 2px;
+      background: var(--gf-color-surface-muted);
+      border: 1px solid var(--gf-color-border-muted);
+      border-radius: var(--gf-radius-xs);
       padding: 6px 8px;
-      border-left: 2px solid #1890ff;
+      border-left: 2px solid var(--gf-color-primary);
     }
 
     &__promql-code {
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
       font-size: 11px;
       line-height: 1.5;
-      color: #262626;
+      color: var(--gf-color-text);
       word-break: break-all;
       white-space: pre-wrap;
     }
 
     &__step-description {
-      color: #595959;
+      color: var(--gf-color-text-secondary);
       font-size: 11px;
       line-height: 1.5;
 
@@ -476,20 +476,20 @@
       line-height: 1.5;
 
       code {
-        background: #f5f5f5;
+        background: var(--gf-color-fill);
         padding: 1px 4px;
-        border-radius: 2px;
+        border-radius: var(--gf-radius-xs);
         font-size: 11px;
-        color: #d63031;
+        color: var(--gf-color-danger);
       }
 
       strong {
         font-weight: 500;
-        color: #262626;
+        color: var(--gf-color-text);
       }
 
       a {
-        color: #1890ff;
+        color: var(--gf-color-primary);
         text-decoration: none;
 
         &:hover {
@@ -499,9 +499,9 @@
     }
 
     &__step-details {
-      background: #f9f9f9;
+      background: var(--gf-color-surface-muted);
       padding: 6px 8px;
-      border-radius: 2px;
+      border-radius: var(--gf-radius-xs);
       display: flex;
       flex-direction: column;
       gap: 3px;
@@ -514,16 +514,16 @@
       font-size: 11px;
 
       code {
-        background: #ffffff;
+        background: var(--gf-color-surface);
         padding: 1px 4px;
-        border-radius: 2px;
+        border-radius: var(--gf-radius-xs);
         font-size: 11px;
-        border: 1px solid #e8e8e8;
+        border: 1px solid var(--gf-color-border-muted);
       }
     }
 
     &__detail-label {
-      color: #8c8c8c;
+      color: var(--gf-color-text-tertiary);
       font-weight: 500;
     }
 
@@ -533,7 +533,7 @@
 
     .params-label {
       font-size: 11px;
-      color: #8c8c8c;
+      color: var(--gf-color-text-tertiary);
       font-weight: 500;
       margin-bottom: 3px;
     }
@@ -550,22 +550,22 @@
       gap: 4px;
       font-size: 11px;
       padding: 3px 6px;
-      background: #f9f9f9;
-      border-radius: 2px;
+      background: var(--gf-color-surface-muted);
+      border-radius: var(--gf-radius-xs);
     }
 
     .param-name {
-      color: #595959;
+      color: var(--gf-color-text-secondary);
       font-weight: 500;
     }
 
     .param-value {
-      background: #ffffff;
+      background: var(--gf-color-surface);
       padding: 1px 4px;
-      border-radius: 2px;
+      border-radius: var(--gf-radius-xs);
       font-size: 11px;
-      border: 1px solid #e8e8e8;
-      color: #d63031;
+      border: 1px solid var(--gf-color-border-muted);
+      color: var(--gf-color-danger);
     }
   }
 </style>

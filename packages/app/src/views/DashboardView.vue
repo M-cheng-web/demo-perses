@@ -6,6 +6,7 @@
         <span>模式: {{ state.isEditMode ? '编辑' : '浏览' }}</span>
       </div>
       <div class="dp-dashboard-view__actions">
+        <Button size="small" type="ghost" @click="goComponents">组件库</Button>
         <Button size="small" type="ghost" @click="reloadDashboard">重新加载</Button>
         <Button size="small" type="ghost" @click="setQuickRange">最近 5 分钟</Button>
         <Button size="small" type="ghost" @click="handleRefresh">刷新时间范围</Button>
@@ -31,9 +32,11 @@
 
 <script setup lang="ts">
   import { ref } from 'vue';
+  import { useRouter } from 'vue-router';
   import { Button } from '@grafana-fast/component';
   import { useDashboardSdk, DashboardApi } from '@grafana-fast/hooks';
 
+  const router = useRouter();
   const dashboardRef = ref<HTMLElement | null>(null);
   const { state, actions, containerSize, api, ready, mountDashboard, unmountDashboard } = useDashboardSdk(dashboardRef, {
     dashboardId: 'default',
@@ -52,6 +55,8 @@
       from: 'now-5m',
       to: 'now',
     });
+
+  const goComponents = () => router.push('/components');
 </script>
 
 <style scoped lang="less">
