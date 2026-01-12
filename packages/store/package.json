@@ -17,7 +17,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "rollup -c ../../scripts/rollup.config.js"
+    "build": "rollup -c ../../scripts/rollup.config.js",
+    "build:types": "tsc -p tsconfig.json --emitDeclarationOnly"
   },
   "peerDependencies": {
     "vue": "^3.5.0"

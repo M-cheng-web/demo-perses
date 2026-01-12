@@ -1,0 +1,286 @@
+// Design Tokens (CSS Variables)
+// Naming convention:
+// - Primitive palette: --gf-palette-*
+// - Semantic tokens:   --gf-color-*, --gf-font-*, --gf-space-*, --gf-radius-*, --gf-shadow-*, --gf-z-*
+// - Legacy aliases:    --gf-primary, --gf-surface... (kept for backward compatibility)
+
+:root,
+.gf-theme-blue,
+[data-gf-theme='light'] {
+  /* Typography */
+  --gf-font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --gf-font-size-xs: 11px;
+  --gf-font-size-sm: 12px;
+  --gf-font-size-md: 13px;
+  --gf-font-size-lg: 14px;
+  --gf-line-height: 1.35;
+
+  /* Spacing (8px baseline; allow 4px micro spacing) */
+  --gf-space-1: 4px;
+  --gf-space-2: 8px;
+  --gf-space-3: 12px;
+  --gf-space-4: 16px;
+  --gf-space-5: 20px;
+  --gf-space-6: 24px;
+  --gf-space-8: 32px;
+
+  /* Radius (ops/industrial: smaller, sharper) */
+  --gf-radius-xs: 2px;
+  --gf-radius-sm: 4px;
+  --gf-radius-md: 6px;
+  --gf-radius-lg: 8px;
+
+  /* Control heights (AntD-compatible semantics) */
+  --gf-control-height-sm: 28px;
+  --gf-control-height-md: 32px;
+  --gf-control-height-lg: 40px;
+
+  /* Motion */
+  --gf-easing: cubic-bezier(0.4, 0.14, 0.3, 1);
+  --gf-motion-fast: 140ms;
+  --gf-motion-normal: 200ms;
+
+  /* Palette (low-saturation, ops-friendly) */
+  --gf-palette-blue-500: #3a78dd;
+  --gf-palette-blue-600: #2f6fd6;
+  --gf-palette-blue-700: #245fc2;
+  --gf-palette-blue-soft: rgba(58, 120, 221, 0.12);
+
+  --gf-palette-neutral-0: #ffffff;
+  --gf-palette-neutral-50: #f7f9fc;
+  --gf-palette-neutral-100: #eef2f8;
+  --gf-palette-neutral-200: #e7ebf3;
+  --gf-palette-neutral-700: #5b667f;
+  --gf-palette-neutral-900: #0f182a;
+
+  /* Higher-contrast status colors for ops */
+  --gf-palette-success: #22a06b;
+  --gf-palette-warning: #f0b429;
+  --gf-palette-danger: #e4586c;
+
+  /* Semantic colors */
+  --gf-color-primary: var(--gf-palette-blue-500);
+  --gf-color-primary-hover: var(--gf-palette-blue-600);
+  --gf-color-primary-active: var(--gf-palette-blue-700);
+  --gf-color-primary-soft: var(--gf-palette-blue-soft);
+  --gf-color-primary-soft-hover: rgba(58, 120, 221, 0.16);
+  --gf-color-primary-soft-active: rgba(58, 120, 221, 0.22);
+  --gf-color-primary-border: rgba(58, 120, 221, 0.28);
+  --gf-color-primary-border-strong: rgba(58, 120, 221, 0.4);
+
+  --gf-color-bg: var(--gf-palette-neutral-100);
+  --gf-color-surface: var(--gf-palette-neutral-0);
+  --gf-color-surface-muted: var(--gf-palette-neutral-50);
+  --gf-color-surface-raised: rgba(255, 255, 255, 0.92);
+
+  --gf-color-text: var(--gf-palette-neutral-900);
+  --gf-color-text-secondary: var(--gf-palette-neutral-700);
+  --gf-color-text-tertiary: rgba(15, 24, 42, 0.62);
+  --gf-color-text-disabled: rgba(15, 24, 42, 0.38);
+
+  /* Border: stronger outline, still subtle */
+  --gf-color-border-muted: rgba(31, 74, 148, 0.12);
+  --gf-color-border: rgba(31, 74, 148, 0.22);
+  --gf-color-border-strong: rgba(31, 74, 148, 0.34);
+
+  /* Neutral fills (hover/selected backgrounds) */
+  --gf-color-fill: rgba(15, 24, 42, 0.06);
+  --gf-color-fill-secondary: rgba(15, 24, 42, 0.08);
+  --gf-color-fill-tertiary: rgba(15, 24, 42, 0.12);
+  --gf-color-fill-quaternary: rgba(15, 24, 42, 0.16);
+
+  --gf-color-success: var(--gf-palette-success);
+  --gf-color-warning: var(--gf-palette-warning);
+  --gf-color-danger: var(--gf-palette-danger);
+
+  --gf-color-success-soft: rgba(34, 160, 107, 0.12);
+  --gf-color-warning-soft: rgba(240, 180, 41, 0.16);
+  --gf-color-danger-soft: rgba(228, 88, 108, 0.12);
+  --gf-color-success-border: rgba(34, 160, 107, 0.35);
+  --gf-color-warning-border: rgba(240, 180, 41, 0.35);
+  --gf-color-danger-border: rgba(228, 88, 108, 0.35);
+
+  /* Floating layer colors */
+  --gf-color-mask: rgba(15, 24, 42, 0.42);
+  --gf-color-overlay: rgba(255, 255, 255, 0.65);
+  --gf-color-tooltip-bg: rgba(15, 24, 42, 0.92);
+  --gf-color-tooltip-text: #f5f8ff;
+
+  /* Kbd / shortcut hint */
+  --gf-color-kbd-bg: rgba(15, 24, 42, 0.06);
+  --gf-color-kbd-border: rgba(31, 74, 148, 0.18);
+  --gf-color-kbd-text: rgba(15, 24, 42, 0.74);
+
+  /* Shadows (subtle, consistent) */
+  --gf-shadow-1: 0 1px 2px rgba(15, 24, 42, 0.08), 0 6px 18px rgba(15, 24, 42, 0.06);
+  --gf-shadow-2: 0 2px 6px rgba(15, 24, 42, 0.1), 0 12px 28px rgba(15, 24, 42, 0.08);
+
+  /* Focus */
+  --gf-focus-ring: 0 0 0 3px rgba(58, 120, 221, 0.24);
+
+  /* Z-index scale */
+  --gf-z-mask: 2400;
+  --gf-z-drawer: 2450;
+  --gf-z-modal: 2480;
+  --gf-z-popover: 2550;
+  --gf-z-tooltip: 2580;
+  --gf-z-message: 2600;
+
+  /* Legacy aliases (keep stable for existing components) */
+  --gf-primary: var(--gf-color-primary);
+  --gf-primary-strong: var(--gf-color-primary-hover);
+  --gf-primary-soft: var(--gf-color-primary-soft);
+  --gf-accent: rgba(104, 181, 255, 0.95);
+
+  --gf-surface: var(--gf-color-surface);
+  --gf-surface-muted: var(--gf-color-surface-muted);
+  --gf-surface-strong: rgba(15, 24, 42, 0.92);
+
+  --gf-text: var(--gf-color-text);
+  --gf-text-secondary: var(--gf-color-text-secondary);
+  --gf-border: var(--gf-color-border);
+  --gf-border-strong: var(--gf-color-border-strong);
+  --gf-shadow-soft: var(--gf-shadow-1);
+  --gf-shadow-strong: var(--gf-shadow-2);
+
+  /* Keep for compatibility (no longer the default visual choice) */
+  --gf-gradient: linear-gradient(135deg, var(--gf-color-primary) 0%, rgba(104, 181, 255, 0.85) 100%);
+  --gf-panel-glow: 0 0 0 1px rgba(47, 111, 214, 0.12), 0 10px 30px rgba(31, 74, 148, 0.18);
+}
+
+.gf-theme-dark,
+[data-gf-theme='dark'],
+:root[data-gf-theme='dark'] {
+  /* Typography */
+  --gf-font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --gf-font-size-xs: 11px;
+  --gf-font-size-sm: 12px;
+  --gf-font-size-md: 13px;
+  --gf-font-size-lg: 14px;
+  --gf-line-height: 1.35;
+
+  /* Spacing */
+  --gf-space-1: 4px;
+  --gf-space-2: 8px;
+  --gf-space-3: 12px;
+  --gf-space-4: 16px;
+  --gf-space-5: 20px;
+  --gf-space-6: 24px;
+  --gf-space-8: 32px;
+
+  /* Radius */
+  --gf-radius-xs: 2px;
+  --gf-radius-sm: 4px;
+  --gf-radius-md: 6px;
+  --gf-radius-lg: 8px;
+
+  /* Control heights */
+  --gf-control-height-sm: 28px;
+  --gf-control-height-md: 32px;
+  --gf-control-height-lg: 40px;
+
+  /* Motion */
+  --gf-easing: cubic-bezier(0.4, 0.14, 0.3, 1);
+  --gf-motion-fast: 140ms;
+  --gf-motion-normal: 200ms;
+
+  /* Palette */
+  --gf-palette-blue-500: #5aa7ff;
+  --gf-palette-blue-600: #3f98ff;
+  --gf-palette-blue-700: #2d7ae3;
+  --gf-palette-blue-soft: rgba(90, 167, 255, 0.16);
+
+  --gf-palette-neutral-0: #0f182a;
+  --gf-palette-neutral-50: #0b1220;
+  --gf-palette-neutral-100: #070c16;
+  --gf-palette-neutral-200: #141f35;
+  --gf-palette-neutral-700: #a8b4c8;
+  --gf-palette-neutral-900: #e6edf7;
+
+  --gf-palette-success: #33c28e;
+  --gf-palette-warning: #ffd166;
+  --gf-palette-danger: #ff6b83;
+
+  /* Semantic colors */
+  --gf-color-primary: var(--gf-palette-blue-500);
+  --gf-color-primary-hover: var(--gf-palette-blue-600);
+  --gf-color-primary-active: var(--gf-palette-blue-700);
+  --gf-color-primary-soft: var(--gf-palette-blue-soft);
+  --gf-color-primary-soft-hover: rgba(90, 167, 255, 0.22);
+  --gf-color-primary-soft-active: rgba(90, 167, 255, 0.3);
+  --gf-color-primary-border: rgba(90, 167, 255, 0.34);
+  --gf-color-primary-border-strong: rgba(90, 167, 255, 0.48);
+
+  --gf-color-bg: var(--gf-palette-neutral-100);
+  --gf-color-surface: var(--gf-palette-neutral-0);
+  --gf-color-surface-muted: var(--gf-palette-neutral-50);
+  --gf-color-surface-raised: rgba(18, 28, 48, 0.92);
+
+  --gf-color-text: var(--gf-palette-neutral-900);
+  --gf-color-text-secondary: var(--gf-palette-neutral-700);
+  --gf-color-text-tertiary: rgba(230, 237, 247, 0.72);
+  --gf-color-text-disabled: rgba(230, 237, 247, 0.42);
+
+  --gf-color-border-muted: rgba(138, 165, 220, 0.14);
+  --gf-color-border: rgba(138, 165, 220, 0.22);
+  --gf-color-border-strong: rgba(138, 165, 220, 0.34);
+
+  --gf-color-fill: rgba(230, 237, 247, 0.08);
+  --gf-color-fill-secondary: rgba(230, 237, 247, 0.1);
+  --gf-color-fill-tertiary: rgba(230, 237, 247, 0.14);
+  --gf-color-fill-quaternary: rgba(230, 237, 247, 0.18);
+
+  --gf-color-success: var(--gf-palette-success);
+  --gf-color-warning: var(--gf-palette-warning);
+  --gf-color-danger: var(--gf-palette-danger);
+
+  --gf-color-success-soft: rgba(51, 194, 142, 0.16);
+  --gf-color-warning-soft: rgba(255, 209, 102, 0.16);
+  --gf-color-danger-soft: rgba(255, 107, 131, 0.16);
+  --gf-color-success-border: rgba(51, 194, 142, 0.34);
+  --gf-color-warning-border: rgba(255, 209, 102, 0.34);
+  --gf-color-danger-border: rgba(255, 107, 131, 0.34);
+
+  --gf-color-mask: rgba(0, 0, 0, 0.56);
+  --gf-color-overlay: rgba(0, 0, 0, 0.32);
+  --gf-color-tooltip-bg: rgba(17, 26, 44, 0.96);
+  --gf-color-tooltip-text: rgba(230, 237, 247, 0.94);
+
+  --gf-color-kbd-bg: rgba(230, 237, 247, 0.08);
+  --gf-color-kbd-border: rgba(138, 165, 220, 0.18);
+  --gf-color-kbd-text: rgba(230, 237, 247, 0.78);
+
+  /* Shadows (only for floating layers) */
+  --gf-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 24px rgba(0, 0, 0, 0.22);
+  --gf-shadow-2: 0 2px 10px rgba(0, 0, 0, 0.42), 0 18px 48px rgba(0, 0, 0, 0.26);
+
+  --gf-focus-ring: 0 0 0 3px rgba(90, 167, 255, 0.26);
+
+  /* Z-index scale */
+  --gf-z-mask: 2400;
+  --gf-z-drawer: 2450;
+  --gf-z-modal: 2480;
+  --gf-z-popover: 2550;
+  --gf-z-tooltip: 2580;
+  --gf-z-message: 2600;
+
+  /* Legacy aliases */
+  --gf-primary: var(--gf-color-primary);
+  --gf-primary-strong: var(--gf-color-primary-hover);
+  --gf-primary-soft: var(--gf-color-primary-soft);
+  --gf-accent: rgba(120, 197, 255, 0.92);
+
+  --gf-surface: var(--gf-color-surface);
+  --gf-surface-muted: var(--gf-color-surface-muted);
+  --gf-surface-strong: rgba(230, 237, 247, 0.92);
+
+  --gf-text: var(--gf-color-text);
+  --gf-text-secondary: var(--gf-color-text-secondary);
+  --gf-border: var(--gf-color-border);
+  --gf-border-strong: var(--gf-color-border-strong);
+  --gf-shadow-soft: var(--gf-shadow-1);
+  --gf-shadow-strong: var(--gf-shadow-2);
+
+  --gf-gradient: linear-gradient(135deg, var(--gf-color-primary) 0%, rgba(120, 197, 255, 0.75) 100%);
+  --gf-panel-glow: 0 0 0 1px rgba(90, 167, 255, 0.16), 0 12px 32px rgba(0, 0, 0, 0.28);
+}

@@ -1,7 +1,7 @@
 {
   "name": "@grafana-fast/component",
   "version": "0.1.0",
-  "description": "Dashboard UI components for grafana-fast.",
+  "description": "Lightweight tech-styled UI kit for grafana-fast dashboards.",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -11,6 +11,16 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
+    },
+    "./exports": {
+      "import": "./dist/exports.mjs",
+      "require": "./dist/exports.cjs",
+      "types": "./dist/exports.d.ts"
+    },
+    "./styles": {
+      "import": "./dist/styles.mjs",
+      "require": "./dist/styles.cjs",
+      "types": "./dist/styles.d.ts"
     }
   },
   "files": [
@@ -22,34 +32,22 @@
     "build:types": "vue-tsc --project tsconfig.json --declaration --emitDeclarationOnly --outDir dist",
     "preview": "vite preview"
   },
-  "dependencies": {
-    "@grafana-fast/store": "workspace:*",
-    "@grafana-fast/types": "workspace:*",
-    "axios": "^1.13.2",
-    "lodash-es": "^4.17.21",
-    "monaco-editor": "^0.54.0",
-    "uuid": "^13.0.0",
-    "vue-grid-layout-v3": "^3.1.2"
-  },
   "peerDependencies": {
     "@ant-design/icons-vue": "^7.0.1",
-    "ant-design-vue": "^4.0.0",
-    "dayjs": "^1.11.0",
-    "echarts": "^6.0.0",
     "vue": "^3.5.0"
   },
   "devDependencies": {
+    "@ant-design/icons-vue": "^7.0.1",
     "@vitejs/plugin-vue": "^6.0.1",
     "less": "^4.4.2",
-    "sass": "^1.94.0",
     "typescript": "~5.9.3",
     "vite": "^7.2.2",
+    "vue": "^3.5.24",
     "vue-tsc": "^3.1.3"
   },
   "sideEffects": [
     "**/*.css",
-    "**/*.less",
-    "**/*.scss"
+    "**/*.less"
   ],
   "license": "MIT"
 }

@@ -41,7 +41,8 @@
 ```bash
 pnpm install
 pnpm dev                # 运行演示站点（packages/app）
-pnpm run build:packages # 构建 types -> component -> hooks
+pnpm dev:dist           # 使用 dist/exports 形态运行演示站点（用于 smoke test）
+pnpm run build:packages # 构建 types -> store -> component(UI) -> dashboard -> hooks
 pnpm run docs:dev       # 打开 VitePress 文档
 ```
 
@@ -53,8 +54,9 @@ pnpm run docs:dev       # 打开 VitePress 文档
 demo-perses/
 ├── packages/
 │   ├── app/         # 演示站点（消费组件与 hooks）
-│   ├── component/   # 对外发布的 Dashboard 组件包 @grafana-fast/component
-│   ├── hook/        # SDK hooks 包 @grafana-fast/hooks
+│   ├── component/   # 自研 UI 组件包 @grafana-fast/component（取代 Ant Design Vue）
+│   ├── dashboard/   # Dashboard 体验包 @grafana-fast/dashboard
+│   ├── hook/        # SDK hooks 包 @grafana-fast/hooks（依赖 dashboard）
 │   ├── types/       # 类型包 @grafana-fast/types
 │   └── docs/        # VitePress 文档
 ├── scripts/         # 打包/发布辅助脚本（参考 morehook 的 build/publish）
@@ -65,8 +67,8 @@ demo-perses/
 
 别名说明：
 
-- `/#/`：指向组件包源码，支持在包内使用绝对路径（例如 `/#/utils/index.ts`）。  
-- `@grafana-fast/component` / `@grafana-fast/hooks` / `@grafana-fast/types`：工作区内的各子包入口。
+- `/#/`：指向 dashboard 包源码的内部别名（仅建议在 `@grafana-fast/dashboard` 包内部使用）。  
+- `@grafana-fast/component` / `@grafana-fast/dashboard` / `@grafana-fast/hooks` / `@grafana-fast/types`：工作区内的各子包入口。
 
 ## 📚 使用文档
 
@@ -119,7 +121,7 @@ demo-perses/
 ## 🛠️ 技术栈
 
 - **框架**: Vue 3.5 + TypeScript
-- **UI 库**: Ant Design Vue 4.x
+- **UI**: `@grafana-fast/component`（Design Tokens + 基础组件）；可选用 `gfAntdTokensCssVar` 让 AntD 视觉对齐
 - **图表库**: ECharts 6.0
 - **状态管理**: Pinia 3.0
 - **路由**: Vue Router 4.x
@@ -147,14 +149,14 @@ pnpm format
 
 ### 添加新的图表类型
 
-1. 在 `packages/component/src/enums/panelType.ts` 中添加新类型
-2. 在 `packages/component/src/components/Charts/` 中创建新的图表组件
-3. 在 `packages/component/src/components/PanelEditor/ChartStyles/` 中创建样式配置组件
-4. 在 `PanelEditorDrawer.vue` 中注册新组件
+1. 在 `packages/dashboard/src/enums/panelType.ts` 中添加新类型
+2. 在 `packages/dashboard/src/components/Charts/` 中创建新的图表组件
+3. 在 `packages/dashboard/src/components/PanelEditor/ChartStyles/` 中创建样式配置组件
+4. 在 `packages/dashboard/src/components/PanelEditor/PanelEditorDrawer.vue` 中注册新组件
 
 ### 自定义 QueryBuilder 操作
 
-在 `packages/component/src/components/QueryBuilder/lib/operations.ts` 中添加新的操作定义：
+在 `packages/dashboard/src/components/QueryBuilder/lib/operations.ts` 中添加新的操作定义：
 
 ```typescript
 {
@@ -175,7 +177,7 @@ pnpm format
 
 当前项目使用 mock 数据。要对接真实的 Prometheus API：
 
-1. 修改 `packages/component/src/api/querybuilder/prometheusApi.ts`
+1. 修改 `packages/dashboard/src/api/querybuilder/prometheusApi.ts`
 2. 将模拟函数替换为真实的 API 调用：
 
 ```typescript
@@ -186,7 +188,7 @@ export async function fetchMetrics(search?: string): Promise<string[]> {
 }
 ```
 
-3. 或者修改 `packages/component/src/api/prometheus.ts` 中的查询函数
+3. 或者修改 `packages/dashboard/src/api/prometheus.ts` 中的查询函数
 
 ## 🎯 功能特性
 

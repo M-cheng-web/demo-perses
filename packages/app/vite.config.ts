@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
 const resolveFromRoot = (p: string) => path.resolve(__dirname, p);
+const useDist = process.env.GF_USE_DIST === '1';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,17 +12,22 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolveFromRoot('./src'),
-      '/#/': `${resolveFromRoot('../component/src')}/`,
-      '@grafana-fast/component': resolveFromRoot('../component/src/index.ts'),
-      '@grafana-fast/store': resolveFromRoot('../store/src/index.ts'),
-      '@grafana-fast/hooks': resolveFromRoot('../hook/src/index.ts'),
-      '@grafana-fast/types': resolveFromRoot('../types/src/index.ts'),
+      ...(useDist
+        ? {}
+        : {
+            '/#/': `${resolveFromRoot('../dashboard/src')}/`,
+            '@grafana-fast/dashboard': resolveFromRoot('../dashboard/src/index.ts'),
+            '@grafana-fast/component': resolveFromRoot('../component/src/index.ts'),
+            '@grafana-fast/store': resolveFromRoot('../store/src/index.ts'),
+            '@grafana-fast/hooks': resolveFromRoot('../hook/src/index.ts'),
+            '@grafana-fast/types': resolveFromRoot('../types/src/index.ts'),
+          }),
     },
   },
   css: {
     preprocessorOptions: {
       less: {
-        additionalData: `@import \"/#/assets/styles/variables.less\"; @import \"/#/assets/styles/mixins.less\";`,
+        additionalData: useDist ? '' : `@import \"/#/assets/styles/variables.less\"; @import \"/#/assets/styles/mixins.less\";`,
         javascriptEnabled: true,
       },
     },

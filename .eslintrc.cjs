@@ -26,7 +26,6 @@ module.exports = defineConfig({
   ],
   rules: {
     'vue/script-setup-uses-vars': 'error',
-    '@typescript-eslint/ban-ts-ignore': 'off',
     '@typescript-eslint/no-unused-expressions': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
@@ -36,7 +35,6 @@ module.exports = defineConfig({
     'no-use-before-define': 'off',
     '@typescript-eslint/no-use-before-define': 'off',
     '@typescript-eslint/ban-ts-comment': 'off',
-    '@typescript-eslint/ban-types': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     'vue/multi-word-component-names': 'off',

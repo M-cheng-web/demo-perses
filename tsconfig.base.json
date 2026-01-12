@@ -14,7 +14,8 @@
     "useDefineForClassFields": true,
     "types": ["vite/client"],
     "paths": {
-      "/#/*": ["packages/component/src/*"],
+      "/#/*": ["packages/dashboard/src/*"],
+      "@grafana-fast/dashboard": ["packages/dashboard/src/index.ts"],
       "@grafana-fast/component": ["packages/component/src/index.ts"],
       "@grafana-fast/hooks": ["packages/hook/src/index.ts"],
       "@grafana-fast/store": ["packages/store/src/index.ts"],

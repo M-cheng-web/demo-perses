@@ -6,9 +6,13 @@ async function main() {
   consola.start('Building shared types');
   run('pnpm -C packages/types run build');
 
-  consola.start('Building component package');
+  consola.start('Building UI component package');
   run('pnpm -C packages/component run build');
   run('pnpm -C packages/component run build:types');
+
+  consola.start('Building dashboard package');
+  run('pnpm -C packages/dashboard run build');
+  run('pnpm -C packages/dashboard run build:types');
 
   consola.start('Building hooks package');
   run('pnpm -C packages/hook run build');

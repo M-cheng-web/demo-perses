@@ -1,6 +1,4 @@
 import path from 'path';
-import alias from '@rollup/plugin-alias';
-import vue from '@vitejs/plugin-vue';
 import esbuild from 'rollup-plugin-esbuild';
 import dts from 'rollup-plugin-dts';
 
@@ -10,7 +8,7 @@ const dist = path.join(pkgRoot, 'dist');
 const pkgName = path.basename(pkgRoot);
 
 const externalsByPkg = {
-  hook: ['vue', '@grafana-fast/store', '@grafana-fast/component', '@grafana-fast/types'],
+  hook: ['vue', '@grafana-fast/store', '@grafana-fast/dashboard', '@grafana-fast/types'],
   store: ['vue'],
 };
 
@@ -23,17 +21,7 @@ export default [
       { file: path.join(dist, 'index.mjs'), format: 'es' },
       { file: path.join(dist, 'index.cjs'), format: 'cjs' },
     ],
-    plugins: [
-      ...(pkgName === 'hook'
-        ? [
-            alias({
-              entries: [{ find: '/#/', replacement: `${path.resolve(pkgRoot, '../component/src')}/` }],
-            }),
-            vue(),
-          ]
-        : []),
-      esbuild({ target: 'esnext' }),
-    ],
+    plugins: [esbuild({ target: 'esnext' })],
     external,
   },
   {

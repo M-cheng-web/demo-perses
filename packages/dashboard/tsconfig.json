@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "/#/*": ["src/*"],
+      "@grafana-fast/dashboard": ["src/index.ts"],
+      "@grafana-fast/component": ["../component/dist/index.d.ts"],
+      "@grafana-fast/store": ["../store/dist/index.d.ts"],
+      "@grafana-fast/types": ["../types/dist/index.d.ts"],
+      "@grafana-fast/types/*": ["../types/dist/*"]
+    },
+    "composite": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
+  "references": [{ "path": "../types" }, { "path": "../store" }, { "path": "../component" }]
+}

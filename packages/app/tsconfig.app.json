@@ -6,7 +6,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "/#/*": ["../component/src/*"],
+      "/#/*": ["../dashboard/src/*"],
+      "@grafana-fast/dashboard": ["../dashboard/src/index.ts"],
       "@grafana-fast/component": ["../component/src/index.ts"],
       "@grafana-fast/store": ["../store/src/index.ts"],
       "@grafana-fast/hooks": ["../hook/src/index.ts"],

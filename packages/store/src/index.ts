@@ -1,4 +1,4 @@
-import { computed, reactive, toRef, type App, type Ref } from 'vue';
+import { computed, reactive, toRef, type App, type ComputedRef, type Ref } from 'vue';
 
 export interface Pinia {
   _s: Map<string, any>;
@@ -28,18 +28,33 @@ export const getActivePinia = () => activePinia;
 type StateTree = Record<string, any>;
 type StoreGetter<S extends StateTree> = (state: S) => any;
 
-type StoreAction<S extends StateTree> = (this: S & Record<string, any>, ...args: any[]) => any;
+type StoreAction = (...args: any[]) => any;
 
-export interface DefineStoreOptions<S extends StateTree, A extends Record<string, StoreAction<S>>, G extends Record<string, StoreGetter<S>>> {
+type StoreGettersResult<S extends StateTree, G extends Record<string, StoreGetter<S>>> = {
+  [K in keyof G]: ReturnType<G[K]>;
+};
+
+type StoreInstance<S extends StateTree, A extends Record<string, StoreAction>, G extends Record<string, StoreGetter<S>>> = S &
+  A &
+  StoreGettersResult<S, G> & {
+    $id: string;
+    $state: S;
+  };
+
+export interface DefineStoreOptions<
+  S extends StateTree,
+  A extends Record<string, StoreAction>,
+  G extends Record<string, StoreGetter<S>>,
+> {
   state: () => S;
-  actions?: A;
-  getters?: G;
+  actions?: A & ThisType<StoreInstance<S, A, G>>;
+  getters?: G & ThisType<StoreInstance<S, A, G>>;
 }
 
 export function defineStore<
   Id extends string,
   S extends StateTree,
-  A extends Record<string, StoreAction<S>> = Record<string, StoreAction<S>>,
+  A extends Record<string, StoreAction> = Record<string, StoreAction>,
   G extends Record<string, StoreGetter<S>> = Record<string, StoreGetter<S>>,
 >(id: Id, options: DefineStoreOptions<S, A, G>) {
   return (pinia?: Pinia) => {
@@ -49,7 +64,7 @@ export function defineStore<
     }
 
     if (targetPinia._s.has(id)) {
-      return targetPinia._s.get(id) as S & A & G;
+      return targetPinia._s.get(id) as StoreInstance<S, A, G>;
     }
 
     const state = reactive(options.state()) as S;
@@ -76,17 +91,25 @@ export function defineStore<
       Object.keys(options.actions).forEach((key) => {
         const action = options.actions?.[key];
         if (action) {
-          store[key] = (...args: any[]) => action.apply(store, args);
+          store[key] = (...args: any[]) => (action as any).apply(store, args);
         }
       });
     }
 
     targetPinia._s.set(id, store);
-    return store as S & A & G;
+    return store as StoreInstance<S, A, G>;
   };
 }
 
-export function storeToRefs<T extends Record<string, any>>(store: T): Record<string, Ref<any>> {
+type StoreToRefsResult<T extends Record<string, any>> = {
+  [K in keyof T as T[K] extends Function ? never : K]: T[K] extends Ref<any>
+    ? T[K]
+    : T[K] extends ComputedRef<any>
+      ? T[K]
+      : Ref<T[K]>;
+};
+
+export function storeToRefs<T extends Record<string, any>>(store: T): StoreToRefsResult<T> {
   const refs: Record<string, Ref<any>> = {};
   const descriptors = Object.getOwnPropertyDescriptors(store);
 
@@ -100,5 +123,5 @@ export function storeToRefs<T extends Record<string, any>>(store: T): Record<str
     }
   });
 
-  return refs;
+  return refs as StoreToRefsResult<T>;
 }

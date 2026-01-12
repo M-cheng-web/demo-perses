@@ -8,43 +8,33 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '/#/': `${resolveFromRoot('src')}/`,
+      '/@/': `${resolveFromRoot('src')}/`,
     },
   },
   css: {
     preprocessorOptions: {
       less: {
-        additionalData: `@import "/#/assets/styles/variables.less"; @import "/#/assets/styles/mixins.less";`,
         javascriptEnabled: true,
+        additionalData: `@import \"/@/styles/theme.less\";`,
       },
     },
   },
   build: {
     lib: {
-      entry: resolveFromRoot('src/index.ts'),
-      name: 'GrafanaFastComponent',
-      fileName: (format) => {
-        if (format === 'es') return 'index.mjs';
-        if (format === 'cjs') return 'index.cjs';
-        return `index.${format}.js`;
+      entry: {
+        index: resolveFromRoot('src/index.ts'),
+        exports: resolveFromRoot('src/exports.ts'),
+        styles: resolveFromRoot('src/styles.ts'),
+      },
+      name: 'GrafanaFastUI',
+      fileName: (format, entryName) => {
+        const ext = format === 'es' ? 'mjs' : format === 'cjs' ? 'cjs' : format;
+        return `${entryName}.${ext}`;
       },
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
-      external: [
-        'vue',
-        '@grafana-fast/store',
-        'ant-design-vue',
-        '@ant-design/icons-vue',
-        'echarts',
-        'dayjs',
-        '@grafana-fast/types',
-        'axios',
-        'lodash-es',
-        'uuid',
-        'monaco-editor',
-        'vue-grid-layout-v3',
-      ],
+      external: ['vue', '@ant-design/icons-vue'],
       output: {
         globals: {
           vue: 'Vue',

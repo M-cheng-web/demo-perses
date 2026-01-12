@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "noEmit": false,
+    "paths": {
+      "/#/*": ["src/*"],
+      "@grafana-fast/dashboard": ["src/index.ts"],
+      "@grafana-fast/types": ["../types/dist/index.d.ts"],
+      "@grafana-fast/types/*": ["../types/dist/*"],
+      "@grafana-fast/store": ["../store/dist/index.d.ts"],
+      "@grafana-fast/component": ["src/shims/grafana-fast-component.d.ts"]
+    }
+  }
+}

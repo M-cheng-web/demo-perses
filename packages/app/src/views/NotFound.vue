@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
   import { useRouter } from 'vue-router';
-  import { Result, Button } from 'ant-design-vue';
+  import { Result, Button } from '@grafana-fast/component';
 
   const router = useRouter();
 

@@ -3,15 +3,19 @@
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
-      "/#/*": ["src/*"],
+      "/@/*": ["src/*"],
       "@grafana-fast/component": ["src/index.ts"],
-      "@grafana-fast/hooks": ["../hook/src/index.ts"],
-      "@grafana-fast/store": ["../store/src/index.ts"],
       "@grafana-fast/types": ["../types/src/index.ts"],
       "@grafana-fast/types/*": ["../types/src/*"]
     },
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
     "composite": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
-  "references": [{ "path": "../types" }, { "path": "../store" }]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.json"],
+  "references": [{ "path": "../types" }]
 }

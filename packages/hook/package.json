@@ -21,12 +21,10 @@
   },
   "dependencies": {
     "@grafana-fast/store": "workspace:*",
-    "@grafana-fast/component": "workspace:*",
+    "@grafana-fast/dashboard": "workspace:*",
     "@grafana-fast/types": "workspace:*"
   },
   "peerDependencies": {
-    "@ant-design/icons-vue": "^7.0.1",
-    "ant-design-vue": "^4.0.0",
     "dayjs": "^1.11.0",
     "echarts": "^6.0.0",
     "vue": "^3.5.0"

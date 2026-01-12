@@ -1,0 +1,43 @@
+.gf-message-container {
+  position: fixed;
+  top: var(--gf-space-4);
+  right: var(--gf-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gf-space-3);
+  z-index: var(--gf-z-message);
+  pointer-events: none;
+}
+
+.gf-message {
+  min-width: 200px;
+  padding: 10px 12px;
+  border-radius: var(--gf-radius-md);
+  border: 1px solid var(--gf-border);
+  background: var(--gf-color-surface);
+  box-shadow: var(--gf-shadow-1);
+  color: var(--gf-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.gf-message__icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--gf-primary-soft);
+}
+
+.gf-message--success {
+  border-color: rgba(47, 168, 124, 0.35);
+}
+
+.gf-message--error {
+  border-color: rgba(228, 88, 108, 0.35);
+}
+
+.gf-message--warning {
+  border-color: rgba(240, 180, 41, 0.35);
+}

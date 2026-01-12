@@ -1,9 +1,9 @@
-import { computed, createApp, onMounted, onUnmounted, ref, watch, type App, type Ref } from 'vue';
+import { computed, createApp, onMounted, onUnmounted, ref, watch, type App, type ComputedRef, type Ref } from 'vue';
 import { createPinia, getActivePinia, setActivePinia } from '@grafana-fast/store';
 import type { Pinia } from '@grafana-fast/store';
 import type { Dashboard, Panel, PanelGroup, PanelLayout, ID, TimeRange } from '@grafana-fast/types';
-import { useDashboardStore, useTimeRangeStore, useTooltipStore, type MousePosition, type TooltipData } from '@grafana-fast/component';
-import DashboardView from '/#/components/Dashboard/Dashboard.vue';
+import { useDashboardStore, useTimeRangeStore, useTooltipStore, type MousePosition, type TooltipData } from '@grafana-fast/dashboard';
+import { DashboardView } from '@grafana-fast/dashboard';
 
 const DEFAULT_DSN = '/api';
 
@@ -79,6 +79,51 @@ export interface DashboardSdkApiConfig {
   endpoints?: Partial<Record<DashboardApi, string>>;
 }
 
+export interface ResolvedDashboardSdkApiConfig {
+  dsn: string;
+  endpoints: Record<DashboardApi, string>;
+}
+
+export interface DashboardSdkActions {
+  loadDashboard: (id: ID) => Promise<unknown>;
+  saveDashboard: () => Promise<unknown>;
+  toggleEditMode: () => void;
+  addPanelGroup: (group: Partial<PanelGroup>) => unknown;
+  updatePanelGroup: (id: ID, updates: Partial<PanelGroup>) => unknown;
+  deletePanelGroup: (id: ID) => unknown;
+  updatePanelGroupLayout: (groupId: ID, layout: PanelLayout[]) => unknown;
+  duplicatePanel: (groupId: ID, panelId: ID) => unknown;
+  togglePanelView: (groupId: ID, panelId: ID) => unknown;
+  getPanelGroupById: (id: ID) => unknown;
+  getPanelById: (groupId: ID, panelId: ID) => unknown;
+  setTimeRange: (range: TimeRange) => unknown;
+  setRefreshInterval: (interval: number) => unknown;
+  refreshTimeRange: () => unknown;
+  registerChart: (...args: any[]) => unknown;
+  updateChartRegistration: (...args: any[]) => unknown;
+  unregisterChart: (...args: any[]) => unknown;
+  setGlobalMousePosition: (pos: MousePosition) => unknown;
+}
+
+export interface UseDashboardSdkResult {
+  pinia: Pinia;
+  ready: Ref<boolean>;
+  targetRef: Ref<HTMLElement | null>;
+  containerSize: Ref<{ width: number; height: number }>;
+  state: ComputedRef<DashboardSdkState>;
+  api: ComputedRef<ResolvedDashboardSdkApiConfig>;
+  actions: DashboardSdkActions;
+  mountDashboard: () => void;
+  unmountDashboard: () => void;
+  /**
+   * For advanced/debug usage only. Typed as `unknown` to avoid exposing internal store state types.
+   * Prefer `state` + `actions` for a stable public surface.
+   */
+  dashboardStore: unknown;
+  timeRangeStore: unknown;
+  tooltipStore: unknown;
+}
+
 function ensurePinia(pinia?: Pinia) {
   if (pinia) {
     // 外部传入实例时，直接设为当前激活实例
@@ -99,7 +144,7 @@ function ensurePinia(pinia?: Pinia) {
  * @param targetRef 要挂载 Dashboard 的容器 ref
  * @param options   配置项（dashboardId、pinia、接口路径、生命周期钩子等）
  */
-export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: DashboardSdkOptions = {}) {
+export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: DashboardSdkOptions = {}): UseDashboardSdkResult {
   // 保证 Pinia 上下文存在
   const pinia = ensurePinia(options.pinia);
   const dashboardStore = useDashboardStore(pinia);
@@ -131,7 +176,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   };
 
   // 将 dsn 与自定义 endpoints 合并为完整 URL，暴露给外部调试/使用
-  const resolvedApiConfig = computed(() => {
+  const resolvedApiConfig = computed<ResolvedDashboardSdkApiConfig>(() => {
     const dsn = (options.apiConfig?.dsn ?? DEFAULT_DSN).replace(/\/$/, '');
     const overrides = options.apiConfig?.endpoints ?? {};
     const endpoints: Record<DashboardApi, string> = { ...DEFAULT_DASHBOARD_ENDPOINTS, ...overrides };
@@ -144,18 +189,22 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     return { dsn, endpoints: resolved };
   });
 
+  const isDashboardMounted = ref(false);
+
   const mountDashboard = () => {
-    if (dashboardApp.value || !targetRef.value) return;
+    if (dashboardApp.value || !targetRef.value || isDashboardMounted.value) return;
     dashboardApp.value = createApp(DashboardView);
     dashboardApp.value.use(pinia as any);
     dashboardApp.value.mount(targetRef.value);
+    isDashboardMounted.value = true;
   };
 
   // 卸载 Dashboard，可用于调试/重置
   const unmountDashboard = () => {
-    if (dashboardApp.value) {
+    if (dashboardApp.value && isDashboardMounted.value) {
       dashboardApp.value.unmount();
       dashboardApp.value = null;
+      isDashboardMounted.value = false;
     }
   };
 
@@ -226,7 +275,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     mousePosition: tooltipStore.currentPosition,
   }));
 
-  const actions = {
+  const actions: DashboardSdkActions = {
     // Dashboard 数据加载/保存
     loadDashboard: (id: ID) => dashboardStore.loadDashboard(id),
     saveDashboard: () => dashboardStore.saveDashboard(),

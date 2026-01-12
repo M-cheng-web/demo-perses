@@ -1,5 +1,5 @@
 <template>
-  <ConfigProvider :locale="locale">
+  <ConfigProvider theme="blue">
     <div class="dp-app">
       <router-view />
     </div>
@@ -7,10 +7,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ConfigProvider } from 'ant-design-vue';
-  import zhCN from 'ant-design-vue/es/locale/zh_CN';
-
-  const locale = zhCN;
+  import { ConfigProvider } from '@grafana-fast/component';
 </script>
 
 <style scoped>

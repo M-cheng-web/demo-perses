@@ -14,6 +14,7 @@ export interface PkgInfo {
 export const packages: PkgInfo[] = [
   { name: '@grafana-fast/types', dir: path.join(packagesDir, 'types') },
   { name: '@grafana-fast/component', dir: path.join(packagesDir, 'component') },
+  { name: '@grafana-fast/dashboard', dir: path.join(packagesDir, 'dashboard') },
   { name: '@grafana-fast/hooks', dir: path.join(packagesDir, 'hook') },
 ];
 
