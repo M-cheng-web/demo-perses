@@ -1,5 +1,5 @@
 <template>
-  <ConfigProvider :theme="theme">
+  <ConfigProvider theme="inherit">
     <div class="dp-component-showcase">
       <div class="dp-component-showcase__header gf-surface">
         <div class="dp-component-showcase__title">
@@ -8,7 +8,7 @@
         </div>
 
         <Flex justify="end" :gap="10" wrap>
-          <Segmented v-model:value="theme" size="small" :options="themeOptions" />
+          <Segmented v-model:value="themeModel" size="small" :options="themeOptions" />
           <Button size="small" type="ghost" @click="goHome">返回 Dashboard</Button>
         </Flex>
       </div>
@@ -274,14 +274,22 @@
     Tooltip,
     message,
   } from '@grafana-fast/component';
+  import { getAppliedDashboardTheme, setDashboardThemePreference, type DashboardTheme } from '@grafana-fast/dashboard';
 
   const router = useRouter();
 
-  const theme = ref<'blue' | 'dark'>('blue');
+  const theme = ref<DashboardTheme>(getAppliedDashboardTheme());
   const themeOptions = [
-    { label: 'Light', value: 'blue' },
+    { label: 'Light', value: 'light' },
     { label: 'Dark', value: 'dark' },
   ] as const;
+
+  const themeModel = computed({
+    get: () => theme.value,
+    set: (value: DashboardTheme) => {
+      theme.value = setDashboardThemePreference(value);
+    },
+  });
 
   const loadingBtn = ref(false);
   const modalOpen = ref(false);
@@ -396,7 +404,7 @@
     width: 100%;
     min-height: 100%;
     padding: 12px;
-    background: var(--gf-color-bg);
+    background: transparent;
     color: var(--gf-color-text);
     display: flex;
     flex-direction: column;

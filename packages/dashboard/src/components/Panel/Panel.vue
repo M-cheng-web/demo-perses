@@ -41,7 +41,9 @@
     border: 1px solid var(--gf-color-border);
     border-radius: var(--gf-radius-md);
     overflow: hidden;
-    transition: box-shadow var(--gf-motion-normal) var(--gf-easing), border-color var(--gf-motion-normal) var(--gf-easing);
+    transition:
+      box-shadow var(--gf-motion-normal) var(--gf-easing),
+      border-color var(--gf-motion-normal) var(--gf-easing);
 
     &:hover {
       --panel-hover: flex;

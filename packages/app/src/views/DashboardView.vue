@@ -1,11 +1,12 @@
 <template>
   <div class="dp-dashboard-view">
-    <div v-if="state.dashboard" class="dp-dashboard-view__meta">
+    <div v-if="state.dashboard" class="dp-dashboard-view__meta gf-surface">
       <div class="dp-dashboard-view__status">
         <span>面板组: {{ state.panelGroups.length }}</span>
         <span>模式: {{ state.isEditMode ? '编辑' : '浏览' }}</span>
       </div>
       <div class="dp-dashboard-view__actions">
+        <Segmented v-model:value="themeModel" size="small" :options="themeOptions" />
         <Button size="small" type="ghost" @click="goComponents">组件库</Button>
         <Button size="small" type="ghost" @click="reloadDashboard">重新加载</Button>
         <Button size="small" type="ghost" @click="setQuickRange">最近 5 分钟</Button>
@@ -18,33 +19,47 @@
       </div>
     </div>
 
-    <div class="dp-dashboard-view__canvas" ref="dashboardRef"></div>
+    <div class="dp-dashboard-view__canvas gf-glow-ring" ref="dashboardRef"></div>
 
-    <div class="dp-dashboard-view__debug">
+    <div class="dp-dashboard-view__debug gf-surface">
       <div>容器尺寸：{{ containerSize.width }} × {{ containerSize.height }}</div>
       <div>当前 DSN：{{ api.dsn }}</div>
       <div>加载接口：{{ api.endpoints.LoadDashboard }}</div>
       <div>查询接口：{{ api.endpoints.ExecuteQueries }}</div>
       <div>挂载状态：{{ ready ? '已挂载' : '挂载中' }}</div>
+      <div>主题：{{ theme }}</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { computed, ref } from 'vue';
   import { useRouter } from 'vue-router';
-  import { Button } from '@grafana-fast/component';
+  import { Button, Segmented } from '@grafana-fast/component';
   import { useDashboardSdk, DashboardApi } from '@grafana-fast/hooks';
+  import type { DashboardTheme } from '@grafana-fast/dashboard';
 
   const router = useRouter();
   const dashboardRef = ref<HTMLElement | null>(null);
-  const { state, actions, containerSize, api, ready, mountDashboard, unmountDashboard } = useDashboardSdk(dashboardRef, {
+  const { state, actions, containerSize, api, ready, mountDashboard, unmountDashboard, theme } = useDashboardSdk(dashboardRef, {
     dashboardId: 'default',
     apiConfig: {
       dsn: 'https://api.example.com',
       endpoints: {
         [DashboardApi.ExecuteQueries]: '/custom/execute',
       },
+    },
+  });
+
+  const themeOptions = [
+    { label: 'Light', value: 'light' },
+    { label: 'Dark', value: 'dark' },
+  ] as const;
+
+  const themeModel = computed({
+    get: () => theme.value,
+    set: (value: DashboardTheme) => {
+      actions.setTheme(value);
     },
   });
 
@@ -67,23 +82,22 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding: 12px;
 
     &__meta {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 12px 16px;
-      background: #f8f9fb;
-      border: 1px solid #e3e6ed;
-      border-radius: 8px;
-      color: #1f2937;
+      color: var(--gf-color-text);
       font-size: 13px;
+      backdrop-filter: blur(12px);
     }
 
     &__status {
       display: flex;
       gap: 12px;
-      color: #4b5563;
+      color: var(--gf-color-text-secondary);
     }
 
     &__actions {
@@ -95,10 +109,7 @@
     &__debug {
       margin-top: 10px;
       padding: 12px;
-      background: #f6f9ff;
-      border: 1px solid #d8e5f5;
-      border-radius: 8px;
-      color: #42516b;
+      color: var(--gf-color-text-secondary);
       font-size: 12px;
       display: grid;
       gap: 6px;
@@ -107,9 +118,9 @@
     &__canvas {
       flex: 1;
       min-height: 480px;
-      border: 1px solid #e3e6ed;
-      border-radius: 8px;
-      background: #fff;
+      border-radius: var(--gf-radius-md);
+      background: var(--gf-color-surface-muted);
+      border: 1px solid var(--gf-color-border-muted);
       overflow: hidden;
     }
   }

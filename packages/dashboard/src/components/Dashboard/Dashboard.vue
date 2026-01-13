@@ -1,5 +1,5 @@
 <template>
-  <ConfigProvider theme="blue">
+  <ConfigProvider :theme="props.theme">
     <div :class="bem()">
       <!-- 工具栏 -->
       <DashboardToolbar />
@@ -34,7 +34,7 @@
   import { Button, ConfigProvider, Empty } from '@grafana-fast/component';
   import { useDashboardStore, useTooltipStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
-	  import { DASHBOARD_EMPTY_TEXT } from '/#/components/Dashboard/utils';
+  import { DASHBOARD_EMPTY_TEXT } from '/#/components/Dashboard/utils';
   import DashboardToolbar from './DashboardToolbar.vue';
   import PanelGroupList from '/#/components/PanelGroup/PanelGroupList.vue';
   import PanelEditorDrawer from '/#/components/PanelEditor/PanelEditorDrawer.vue';
@@ -45,6 +45,21 @@
 
   const [_, bem] = createNamespace('dashboard');
 
+  const props = withDefaults(
+    defineProps<{
+      /**
+       * Theme used by the embedded dashboard root.
+       * - 'inherit': follow document / parent tokens (recommended for host apps)
+       * - 'light'/'blue': explicit light scheme
+       * - 'dark': explicit dark scheme
+       */
+      theme?: 'blue' | 'light' | 'dark' | 'inherit';
+    }>(),
+    {
+      theme: 'inherit',
+    }
+  );
+
   const dashboardStore = useDashboardStore();
   const tooltipStore = useTooltipStore();
   const { panelGroups, isEditMode, viewPanel } = storeToRefs(dashboardStore);
@@ -53,9 +68,9 @@
 
   const emptyText = computed(() => DASHBOARD_EMPTY_TEXT);
 
-	  const handleAddPanelGroup = () => {
-	    dashboardStore.addPanelGroup({ title: '新面板组' });
-	  };
+  const handleAddPanelGroup = () => {
+    dashboardStore.addPanelGroup({ title: '新面板组' });
+  };
 
   const handleEditGroup = (group: PanelGroup) => {
     panelGroupDialogRef.value?.openEdit(group);
@@ -99,12 +114,19 @@
     flex-direction: column;
     width: 100%;
     height: 100%;
-    background-color: @background-light;
+    background-color: transparent;
 
     &__content {
       flex: 1;
       overflow: auto;
-      padding: @spacing-md;
+      padding: 14px 16px 18px;
+
+      // Keep the layout breathable on large screens
+      > * {
+        width: 100%;
+        max-width: 1480px;
+        margin: 0 auto;
+      }
     }
   }
 </style>

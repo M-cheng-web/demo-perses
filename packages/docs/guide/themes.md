@@ -25,6 +25,14 @@ import { ConfigProvider } from '@grafana-fast/component';
 </script>
 ```
 
+如果你希望主题由文档根节点（`:root[data-gf-theme]`）统一控制、并且避免某个容器「覆写」主题，可以使用：
+
+```vue
+<ConfigProvider theme="inherit">
+  <App />
+</ConfigProvider>
+```
+
 也可以在任意容器上手动控制：
 
 ```html
@@ -38,4 +46,3 @@ import { ConfigProvider } from '@grafana-fast/component';
 ```ts
 import '@grafana-fast/component/styles';
 ```
-

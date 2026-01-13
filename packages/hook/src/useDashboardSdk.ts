@@ -1,8 +1,19 @@
-import { computed, createApp, onMounted, onUnmounted, ref, watch, type App, type ComputedRef, type Ref } from 'vue';
+import { computed, createApp, defineComponent, h, onMounted, onUnmounted, ref, watch, type App, type ComputedRef, type Ref } from 'vue';
 import { createPinia, getActivePinia, setActivePinia } from '@grafana-fast/store';
 import type { Pinia } from '@grafana-fast/store';
 import type { Dashboard, Panel, PanelGroup, PanelLayout, ID, TimeRange } from '@grafana-fast/types';
-import { useDashboardStore, useTimeRangeStore, useTooltipStore, type MousePosition, type TooltipData } from '@grafana-fast/dashboard';
+import {
+  initDashboardTheme,
+  getStoredThemePreference,
+  setDashboardThemePreference,
+  type DashboardTheme,
+  type DashboardThemePreference,
+  useDashboardStore,
+  useTimeRangeStore,
+  useTooltipStore,
+  type MousePosition,
+  type TooltipData,
+} from '@grafana-fast/dashboard';
 import { DashboardView } from '@grafana-fast/dashboard';
 
 const DEFAULT_DSN = '/api';
@@ -74,6 +85,8 @@ export interface DashboardSdkState {
   tooltip: TooltipData | null;
   /** 全局鼠标位置（用于 Tooltip 联动） */
   mousePosition: MousePosition | null;
+  /** 当前主题（light/dark） */
+  theme: DashboardTheme;
 }
 
 export interface DashboardSdkApiConfig {
@@ -105,6 +118,11 @@ export interface DashboardSdkActions {
   updateChartRegistration: (...args: any[]) => unknown;
   unregisterChart: (...args: any[]) => unknown;
   setGlobalMousePosition: (pos: MousePosition) => unknown;
+  /** 设置主题偏好并应用（light/dark/system） */
+  setTheme: (theme: DashboardTheme) => DashboardTheme;
+  setThemePreference: (preference: DashboardThemePreference) => DashboardTheme;
+  toggleTheme: () => DashboardTheme;
+  getTheme: () => DashboardTheme;
 }
 
 export interface UseDashboardSdkResult {
@@ -115,6 +133,8 @@ export interface UseDashboardSdkResult {
   state: ComputedRef<DashboardSdkState>;
   api: ComputedRef<ResolvedDashboardSdkApiConfig>;
   actions: DashboardSdkActions;
+  theme: Ref<DashboardTheme>;
+  themePreference: Ref<DashboardThemePreference>;
   mountDashboard: () => void;
   unmountDashboard: () => void;
   /**
@@ -156,6 +176,15 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const containerSize = ref({ width: 0, height: 0 });
   const ready = ref(false);
   const dashboardApp = ref<App<Element> | null>(null);
+  const themePreference = ref<DashboardThemePreference>('system');
+  const theme = ref<DashboardTheme>('light');
+
+  const DashboardSdkRoot = defineComponent({
+    name: 'DashboardSdkRoot',
+    setup() {
+      return () => h(DashboardView, { theme: theme.value });
+    },
+  });
 
   const updateSize = () => {
     const el = targetRef.value;
@@ -193,14 +222,14 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
 
   const isDashboardMounted = ref(false);
 
-	  const mountDashboard = () => {
-	    if (dashboardApp.value || !targetRef.value || isDashboardMounted.value) return;
-	    const app = createApp(DashboardView);
-	    app.use(pinia as any);
-	    app.mount(targetRef.value);
-	    dashboardApp.value = app;
-	    isDashboardMounted.value = true;
-	  };
+  const mountDashboard = () => {
+    if (dashboardApp.value || !targetRef.value || isDashboardMounted.value) return;
+    const app = createApp(DashboardSdkRoot);
+    app.use(pinia as any);
+    app.mount(targetRef.value);
+    dashboardApp.value = app;
+    isDashboardMounted.value = true;
+  };
 
   // 卸载 Dashboard，可用于调试/重置
   const unmountDashboard = () => {
@@ -247,6 +276,10 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     }
 
     try {
+      // Initialize theme as early as possible so tokens are ready before first paint.
+      themePreference.value = getStoredThemePreference() ?? 'system';
+      theme.value = initDashboardTheme({ defaultPreference: themePreference.value });
+
       mountDashboard();
       if (options.autoLoad !== false && !dashboardStore.currentDashboard) {
         await dashboardStore.loadDashboard(options.dashboardId ?? 'default');
@@ -276,6 +309,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     timeRange: timeRangeStore.timeRange,
     tooltip: tooltipStore.currentTooltipData,
     mousePosition: tooltipStore.currentPosition,
+    theme: theme.value,
   }));
 
   const actions: DashboardSdkActions = {
@@ -303,6 +337,24 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     updateChartRegistration: tooltipStore.updateChartRegistration,
     unregisterChart: tooltipStore.unregisterChart,
     setGlobalMousePosition: tooltipStore.updateGlobalMousePosition,
+
+    getTheme: () => theme.value,
+    setTheme: (next: DashboardTheme) => {
+      themePreference.value = next;
+      theme.value = setDashboardThemePreference(next);
+      return theme.value;
+    },
+    setThemePreference: (preference: DashboardThemePreference) => {
+      themePreference.value = preference;
+      theme.value = setDashboardThemePreference(preference);
+      return theme.value;
+    },
+    toggleTheme: () => {
+      const next = theme.value === 'dark' ? 'light' : 'dark';
+      themePreference.value = next;
+      theme.value = setDashboardThemePreference(next);
+      return theme.value;
+    },
   };
 
   // 对外暴露的状态、API 配置和操作
@@ -317,6 +369,8 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     timeRangeStore,
     tooltipStore,
     actions,
+    theme,
+    themePreference,
     mountDashboard,
     unmountDashboard,
   };

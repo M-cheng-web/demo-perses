@@ -14,7 +14,7 @@
   const props = withDefaults(
     defineProps<{
       /** 主题标识（预留多主题） */
-      theme?: 'blue' | 'light' | 'dark';
+      theme?: 'blue' | 'light' | 'dark' | 'inherit';
       /** 语言配置（预留） */
       locale?: any;
     }>(),
@@ -26,8 +26,15 @@
 
   const [_, bem] = createNamespace('config-provider');
 
-  const colorScheme = computed(() => (props.theme === 'dark' ? 'dark' : 'light'));
-  const themeClass = computed(() => (props.theme === 'dark' ? 'gf-theme-dark' : 'gf-theme-blue'));
+  const colorScheme = computed(() => {
+    if (props.theme === 'inherit') return undefined;
+    return props.theme === 'dark' ? 'dark' : 'light';
+  });
+
+  const themeClass = computed(() => {
+    if (props.theme === 'inherit') return undefined;
+    return props.theme === 'dark' ? 'gf-theme-dark' : 'gf-theme-blue';
+  });
 </script>
 
 <style scoped>

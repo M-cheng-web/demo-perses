@@ -7,6 +7,7 @@ export * from '/#/stores/dashboard';
 export * from '/#/stores/timeRange';
 export * from '/#/stores/editor';
 export * from '/#/stores/tooltip';
+export * from '/#/api/theme';
 export * from '@grafana-fast/types';
 
 export const install = (app: App) => {

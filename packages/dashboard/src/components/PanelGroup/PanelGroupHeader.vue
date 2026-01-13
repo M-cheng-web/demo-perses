@@ -109,15 +109,15 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 40px;
-    padding: 8px 16px;
-    background-color: @background-base;
+    height: 44px;
+    padding: 10px 14px;
+    background-color: color-mix(in srgb, @background-base, transparent 18%);
     border-bottom: 1px solid @border-color;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color var(--gf-motion-normal) var(--gf-easing);
 
     &:hover {
-      background-color: @background-light;
+      background-color: color-mix(in srgb, var(--gf-color-fill-secondary), @background-base 75%);
     }
 
     &__content {
@@ -137,8 +137,9 @@
 
     &__title {
       margin: 0;
-      font-size: 18px;
-      font-weight: 500;
+      font-size: 14px;
+      font-weight: 650;
+      letter-spacing: 0.2px;
       color: @text-color;
       white-space: nowrap;
       overflow: hidden;

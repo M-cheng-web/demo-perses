@@ -36,7 +36,9 @@
     border-radius: var(--gf-radius-md);
     overflow: hidden;
     box-shadow: none;
-    transition: border-color var(--gf-motion-normal) var(--gf-easing), box-shadow var(--gf-motion-normal) var(--gf-easing);
+    transition:
+      border-color var(--gf-motion-normal) var(--gf-easing),
+      box-shadow var(--gf-motion-normal) var(--gf-easing);
 
     &:hover {
       border-color: var(--gf-color-border-strong);
