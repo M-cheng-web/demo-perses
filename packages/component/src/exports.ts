@@ -27,6 +27,7 @@ export { default as Row } from './components/layout/Row.vue';
 export { default as Col } from './components/layout/Col.vue';
 export { default as Divider } from './components/layout/Divider.vue';
 export { default as ConfigProvider } from './components/layout/ConfigProvider.vue';
+export { default as Panel } from './components/layout/Panel.vue';
 
 // navigation
 export { default as Dropdown } from './components/navigation/Dropdown.vue';
@@ -39,7 +40,6 @@ export { default as Drawer } from './components/feedback/Drawer.vue';
 export { default as Popconfirm } from './components/feedback/Popconfirm.vue';
 export { default as Tooltip } from './components/feedback/Tooltip.vue';
 export { default as Spin } from './components/feedback/Spin.vue';
-export { default as Result } from './components/feedback/Result.vue';
 
 // data display
 export { default as Table } from './components/data/Table.vue';

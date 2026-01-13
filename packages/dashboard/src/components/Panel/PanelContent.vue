@@ -6,7 +6,7 @@
 
     <div :class="bem('wrapper')">
       <div v-if="error" :class="bem('error')">
-        <Result status="error" :title="error" />
+        <Alert type="error" show-icon :message="error" />
       </div>
       <component v-else-if="chartComponent" :is="chartComponent" :panel="panel" :query-results="queryResults" />
       <div v-else :class="bem('empty')">
@@ -18,8 +18,7 @@
 
 <script setup lang="ts">
   import { computed, ref, watch, onMounted } from 'vue';
-  import { Result } from '@grafana-fast/component';
-  import { Loading, Empty } from '@grafana-fast/component';
+  import { Alert, Loading, Empty } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import type { Panel, QueryResult } from '@grafana-fast/types';
   import { useTimeRangeStore } from '/#/stores';

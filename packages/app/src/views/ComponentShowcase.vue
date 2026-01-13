@@ -151,10 +151,10 @@
           <Table :columns="tableColumns" :data-source="tableData" :pagination="tablePagination" size="small" />
         </Card>
 
-        <Card title="Empty / Result" size="small" :bordered="true">
+        <Card title="Empty / Alert" size="small" :bordered="true">
           <Space direction="vertical" :size="10" style="width: 100%">
             <Empty description="暂无告警规则" />
-            <Result status="success" title="Saved" sub-title="配置已保存并生效。" />
+            <Alert type="success" show-icon message="Saved" description="配置已保存并生效。" />
           </Space>
         </Card>
 
@@ -260,7 +260,7 @@
     MenuItem,
     Modal,
     Popconfirm,
-    Result,
+    // Result removed; Alert is the recommended replacement
     Segmented,
     Select,
     Slider,

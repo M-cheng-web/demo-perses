@@ -32,6 +32,7 @@ export { default as Row } from './components/layout/Row.vue';
 export { default as Col } from './components/layout/Col.vue';
 export { default as Divider } from './components/layout/Divider.vue';
 export { default as ConfigProvider } from './components/layout/ConfigProvider.vue';
+export { default as Panel } from './components/layout/Panel.vue';
 
 // navigation
 export { default as Dropdown } from './components/navigation/Dropdown.vue';
@@ -44,7 +45,6 @@ export { default as Drawer } from './components/feedback/Drawer.vue';
 export { default as Popconfirm } from './components/feedback/Popconfirm.vue';
 export { default as Tooltip } from './components/feedback/Tooltip.vue';
 export { default as Spin } from './components/feedback/Spin.vue';
-export { default as Result } from './components/feedback/Result.vue';
 
 // data display
 export { default as Table } from './components/data/Table.vue';
@@ -79,6 +79,7 @@ import RowComp from './components/layout/Row.vue';
 import ColComp from './components/layout/Col.vue';
 import DividerComp from './components/layout/Divider.vue';
 import ConfigProviderComp from './components/layout/ConfigProvider.vue';
+import PanelComp from './components/layout/Panel.vue';
 import DropdownComp from './components/navigation/Dropdown.vue';
 import MenuComp from './components/navigation/Menu.vue';
 import MenuItemComp from './components/navigation/MenuItem.vue';
@@ -87,7 +88,6 @@ import DrawerComp from './components/feedback/Drawer.vue';
 import PopconfirmComp from './components/feedback/Popconfirm.vue';
 import TooltipComp from './components/feedback/Tooltip.vue';
 import SpinComp from './components/feedback/Spin.vue';
-import ResultComp from './components/feedback/Result.vue';
 import TableComp from './components/data/Table.vue';
 import CardComp from './components/data/Card.vue';
 
@@ -116,6 +116,7 @@ const exportedComponents = {
   Col: ColComp,
   Divider: DividerComp,
   ConfigProvider: ConfigProviderComp,
+  Panel: PanelComp,
   Dropdown: DropdownComp,
   Menu: MenuComp,
   MenuItem: MenuItemComp,
@@ -124,7 +125,6 @@ const exportedComponents = {
   Popconfirm: PopconfirmComp,
   Tooltip: TooltipComp,
   Spin: SpinComp,
-  Result: ResultComp,
   Table: TableComp,
   Card: CardComp,
 } as const;

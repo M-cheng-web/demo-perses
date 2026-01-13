@@ -34,6 +34,29 @@ export function useChartInit<T = ECharts>(options: {
   const isInitializing = ref(false); // 防止重复初始化
 
   /**
+   * 等待容器具备非 0 的宽高（避免 ECharts init 时出现 0x0 的 warning）
+   */
+  const waitForDomSize = (dom: HTMLElement, timeoutMs = 1200): Promise<boolean> => {
+    const start = performance.now();
+    return new Promise((resolve) => {
+      const tick = () => {
+        const width = dom.clientWidth;
+        const height = dom.clientHeight;
+        if (width > 0 && height > 0) {
+          resolve(true);
+          return;
+        }
+        if (performance.now() - start >= timeoutMs) {
+          resolve(false);
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  };
+
+  /**
    * 检查所有依赖是否都已就绪
    */
   const areAllDependenciesReady = (): boolean => {
@@ -58,10 +81,17 @@ export function useChartInit<T = ECharts>(options: {
       };
 
       try {
-        setTimeout(() => {
+        setTimeout(async () => {
           const dom = resolveDom();
           if (!dom) {
             // DOM 尚未就绪或已被卸载，等待下一次依赖变更再尝试
+            resolve(false);
+            return;
+          }
+
+          const ready = await waitForDomSize(dom);
+          if (!ready) {
+            // 容器尺寸尚未计算出来（常见于 layout/transition 初期），等待下一次依赖或 resize 再试
             resolve(false);
             return;
           }
