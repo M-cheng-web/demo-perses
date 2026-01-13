@@ -1,6 +1,6 @@
 <!-- 组件说明：表单容器，提供布局上下文（横向/纵向） -->
 <template>
-  <form :class="[bem(), bem(`layout-${layout}`)]">
+  <form :class="[bem(), bem({ [`layout-${layout}`]: true })]">
     <slot></slot>
   </form>
 </template>

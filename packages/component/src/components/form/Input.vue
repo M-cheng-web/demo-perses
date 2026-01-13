@@ -1,6 +1,6 @@
 <!-- 组件说明：基础输入框，支持清空、前后缀、尺寸控制 -->
 <template>
-  <div :class="[bem(), bem(`size-${size}`), { 'is-disabled': disabled }]">
+  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-disabled': disabled }]">
     <span v-if="$slots.prefix" :class="bem('addon')">
       <slot name="prefix"></slot>
     </span>
@@ -8,7 +8,7 @@
       :value="innerValue"
       :type="type"
       :placeholder="placeholder"
-      :class="[bem('control'), 'gf-control', { 'gf-control--disabled': disabled }]"
+      :class="[bem('control'), 'gf-control', controlSizeClass, { 'gf-control--disabled': disabled }]"
       :disabled="disabled"
       :readonly="readonly"
       :autocomplete="autocomplete"
@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import { createNamespace } from '../../utils';
 
   defineOptions({ name: 'GfInput' });
@@ -69,6 +69,11 @@
 
   const [_, bem] = createNamespace('input');
   const innerValue = ref<string | number>(props.value ?? '');
+  const controlSizeClass = computed(() => {
+    if (props.size === 'small') return 'gf-control--size-small';
+    if (props.size === 'large') return 'gf-control--size-large';
+    return undefined;
+  });
 
   watch(
     () => props.value,
@@ -137,16 +142,6 @@
     &__control.gf-control {
       padding-right: 10px;
       padding-left: 10px;
-    }
-
-    &--size-small .gf-control {
-      padding: 6px 10px;
-      font-size: 12px;
-    }
-
-    &--size-large .gf-control {
-      padding: 11px 14px;
-      font-size: 14px;
     }
 
     &.is-disabled {

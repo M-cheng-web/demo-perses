@@ -15,21 +15,21 @@
 -->
 <template>
   <div :class="bem()">
-    <InputGroup compact>
+    <div :class="bem('group')">
       <Select
         v-model:value="selectedMetric"
         show-search
         placeholder="选择指标"
-        style="flex: 1"
+        :class="bem('select')"
         :options="metricOptions"
         @change="(value: any) => handleChange(value as string)"
         :filter-option="filterOption"
       />
-      <Button @click="openMetricsModal">
+      <Button :class="bem('btn')" @click="openMetricsModal">
         <AppstoreOutlined />
         浏览
       </Button>
-    </InputGroup>
+    </div>
 
     <!-- 指标浏览器弹窗 -->
     <MetricsModal v-model:open="modalOpen" @select="handleMetricSelect" />
@@ -43,7 +43,6 @@
   import { fetchMetrics } from '/#/api/querybuilder/prometheusApi';
   import MetricsModal from './MetricsModal.vue';
   import { createNamespace } from '/#/utils';
-  import { InputGroup } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('metric-selector');
 
@@ -113,5 +112,27 @@
 <style scoped lang="less">
   .dp-metric-selector {
     width: 100%;
+  }
+
+  .dp-metric-selector__group {
+    width: 100%;
+    display: flex;
+    align-items: stretch;
+  }
+
+  .dp-metric-selector__select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dp-metric-selector__group :deep(.gf-select__control) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .dp-metric-selector__btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: -1px;
   }
 </style>

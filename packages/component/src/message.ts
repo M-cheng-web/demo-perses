@@ -20,6 +20,7 @@ const ensureContainer = () => {
 };
 
 const instances = new Map<string, HTMLElement>();
+const timers = new WeakMap<HTMLElement, number>();
 
 const resolveOptions = (input: MessageInput, type?: MessageType, duration?: number): MessageOptions => {
   if (typeof input === 'string') {
@@ -29,10 +30,52 @@ const resolveOptions = (input: MessageInput, type?: MessageType, duration?: numb
 };
 
 const removeItem = (item: HTMLElement, key?: string) => {
-  item.style.opacity = '0';
-  item.style.transform = 'translateY(-6px)';
-  setTimeout(() => item.remove(), 200);
+  const timerId = timers.get(item);
+  if (timerId) {
+    window.clearTimeout(timerId);
+    timers.delete(item);
+  }
+
+  item.classList.add('is-leave');
+  item.classList.remove('is-visible');
+  window.setTimeout(() => item.remove(), 220);
   if (key) instances.delete(key);
+};
+
+const resolveSymbol = (type: MessageType) => {
+  const map: Record<MessageType, string> = {
+    info: 'i',
+    success: '✓',
+    warning: '!',
+    error: '×',
+    loading: '…',
+  };
+  return map[type] ?? 'i';
+};
+
+const createItem = (content: string, type: MessageType) => {
+  const item = document.createElement('div');
+  item.className = `gf-message gf-message--${type}`;
+
+  const icon = document.createElement('span');
+  icon.className = 'gf-message__icon';
+  icon.setAttribute('data-symbol', resolveSymbol(type));
+
+  const text = document.createElement('span');
+  text.className = 'gf-message__content';
+  text.textContent = content;
+
+  item.appendChild(icon);
+  item.appendChild(text);
+  return item;
+};
+
+const updateItem = (item: HTMLElement, content: string, type: MessageType) => {
+  item.className = `gf-message gf-message--${type} is-visible`;
+  const icon = item.querySelector<HTMLElement>('.gf-message__icon');
+  if (icon) icon.setAttribute('data-symbol', resolveSymbol(type));
+  const text = item.querySelector<HTMLElement>('.gf-message__content');
+  if (text) text.textContent = content;
 };
 
 const show = (input: MessageInput, preset?: MessageType, presetDuration?: number) => {
@@ -42,28 +85,28 @@ const show = (input: MessageInput, preset?: MessageType, presetDuration?: number
 
   if (key && instances.has(key)) {
     const existing = instances.get(key)!;
-    existing.textContent = content;
-    existing.className = `gf-message gf-message--${type}`;
-    if (duration !== 0) {
-      setTimeout(() => removeItem(existing, key), duration);
-    }
+    updateItem(existing, content, type);
+    const timerId = timers.get(existing);
+    if (timerId) window.clearTimeout(timerId);
+    if (duration !== 0) timers.set(existing, window.setTimeout(() => removeItem(existing, key), duration));
     return;
   }
 
-  const item = document.createElement('div');
-  item.className = `gf-message gf-message--${type}`;
-  item.textContent = content;
+  const item = createItem(content, type);
+  item.classList.add('is-enter');
   container.appendChild(item);
 
   if (key) {
     instances.set(key, item);
   }
 
+  requestAnimationFrame(() => {
+    item.classList.add('is-visible');
+    item.classList.remove('is-enter');
+  });
+
   if (duration !== 0) {
-    const timer = window.setTimeout(() => {
-      removeItem(item, key);
-      clearTimeout(timer);
-    }, duration);
+    timers.set(item, window.setTimeout(() => removeItem(item, key), duration));
   }
 };
 

@@ -1,6 +1,6 @@
 <!-- 组件说明：状态提示，支持图标、关闭操作与多种状态样式 -->
 <template>
-  <div v-if="visible" :class="[bem(), `gf-alert--${type}`]">
+  <div v-if="visible" :class="[bem(), `gf-alert--${type}`, { 'is-with-description': hasDescription }]">
     <div v-if="showIcon" :class="bem('icon')" :data-symbol="iconSymbol" aria-hidden="true"></div>
     <div :class="bem('body')">
       <div v-if="message" :class="bem('message')">{{ message }}</div>
@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
+  import { computed, ref, useSlots, watch } from 'vue';
   import { createNamespace } from '../../utils';
 
   type AlertType = 'info' | 'success' | 'warning' | 'error';
@@ -50,6 +50,8 @@
 
   const [_, bem] = createNamespace('alert');
   const visible = ref(true);
+  const slots = useSlots();
+  const hasDescription = computed(() => !!(props.description || slots.description));
 
   const iconSymbol = computed(() => {
     const map: Record<AlertType, string> = {
@@ -79,7 +81,7 @@
 <style scoped lang="less">
   .gf-alert {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 10px;
     padding: 10px 12px;
     border-radius: var(--gf-radius-md);
@@ -87,6 +89,10 @@
     background: var(--gf-color-surface);
     color: var(--gf-text);
     position: relative;
+
+    &.is-with-description {
+      align-items: flex-start;
+    }
 
     &__icon {
       width: 22px;
@@ -106,7 +112,9 @@
 
     &__body {
       flex: 1;
-      display: grid;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
       gap: 4px;
     }
 

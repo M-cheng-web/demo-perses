@@ -25,8 +25,8 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
-  import { createNamespace } from '../../utils';
+  import { computed, onBeforeUnmount, watch } from 'vue';
+  import { createNamespace, lockBodyScroll, unlockBodyScroll } from '../../utils';
   import Button from '../base/Button.vue';
 
   defineOptions({ name: 'GfModal', inheritAttrs: false });
@@ -92,20 +92,18 @@
     (val) => {
       if (val) {
         window.addEventListener('keydown', handleEsc);
+        lockBodyScroll();
       } else {
         window.removeEventListener('keydown', handleEsc);
+        unlockBodyScroll();
       }
-    }
+    },
+    { immediate: true }
   );
-
-  onMounted(() => {
-    if (props.open) {
-      window.addEventListener('keydown', handleEsc);
-    }
-  });
 
   onBeforeUnmount(() => {
     window.removeEventListener('keydown', handleEsc);
+    if (props.open) unlockBodyScroll();
   });
 
   const handleMaskClick = () => {

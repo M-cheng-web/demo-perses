@@ -1,6 +1,7 @@
 .gf-control {
   width: 100%;
   padding: 6px 10px;
+  min-height: var(--gf-control-height-md);
   border-radius: var(--gf-radius-sm);
   border: 1px solid var(--gf-border);
   background: var(--gf-color-surface);
@@ -12,11 +13,13 @@
 
   &:hover {
     border-color: var(--gf-border-strong);
+    box-shadow: 0 0 0 2px var(--gf-color-primary-soft);
     background: var(--gf-color-surface);
   }
 
   &:focus,
-  &:focus-visible {
+  &:focus-visible,
+  &:focus-within {
     outline: none;
     border-color: var(--gf-color-focus-border);
     box-shadow: var(--gf-focus-ring);
@@ -32,6 +35,26 @@
   &--disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  &--size-small {
+    min-height: var(--gf-control-height-sm);
+    padding: 4px 10px;
+    font-size: var(--gf-font-size-sm);
+  }
+
+  &--size-large {
+    min-height: var(--gf-control-height-lg);
+    padding: 8px 14px;
+    font-size: var(--gf-font-size-lg);
+  }
+
+  &--disabled:hover,
+  &--disabled:focus,
+  &--disabled:focus-visible,
+  &--disabled:focus-within {
+    border-color: var(--gf-border);
+    box-shadow: none;
   }
 }
 

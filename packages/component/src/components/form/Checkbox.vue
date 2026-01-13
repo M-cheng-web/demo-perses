@@ -78,7 +78,7 @@
     gap: 8px;
     cursor: pointer;
     color: var(--gf-text);
-    font-size: 13px;
+    font-size: var(--gf-font-size-sm);
     transition: color 0.2s var(--gf-easing);
 
     input {

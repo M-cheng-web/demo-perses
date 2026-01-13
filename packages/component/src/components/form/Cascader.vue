@@ -1,7 +1,25 @@
-<!-- 组件说明：级联选择器，支持搜索与路径选择 -->
+<!-- 组件说明：级联选择器（多级面板），用于逐级选择路径 -->
 <template>
-  <div :class="[bem(), bem(`size-${size}`), { 'is-open': open }]" ref="rootRef">
-    <div :class="bem('control')" @click="toggle">
+  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-open': open, 'is-disabled': disabled }]" ref="rootRef">
+    <div
+      v-if="$slots.default"
+      ref="triggerRef"
+      :class="bem('trigger')"
+      tabindex="0"
+      @click="toggle"
+      @keydown="handleKeydown"
+    >
+      <slot />
+    </div>
+
+    <div
+      v-else
+      ref="triggerRef"
+      :class="[bem('control'), 'gf-control', controlSizeClass, { 'gf-control--disabled': disabled }]"
+      tabindex="0"
+      @click="toggle"
+      @keydown="handleKeydown"
+    >
       <span v-if="selectedLabel" :class="bem('value')">{{ selectedLabel }}</span>
       <span v-else :class="bem('placeholder')">{{ placeholder }}</span>
       <span :class="bem('arrow')">▾</span>
@@ -10,12 +28,28 @@
     <Teleport to="body">
       <transition name="fade">
         <div v-if="open" :class="bem('dropdown')" :style="dropdownStyle" ref="dropdownRef">
-          <div v-if="showSearch" :class="bem('search-bar')"> <input v-model="search" placeholder="搜索..." /> </div>
-          <div :class="bem('options')">
-            <div v-for="path in filteredPaths" :key="path.labelPath" :class="bem('option')" @click="selectPath(path.valuePath)">
-              {{ path.labelPath }}
+          <div :class="bem('menus')">
+            <div v-for="(menu, depth) in menus" :key="depth" :class="bem('menu')">
+              <div
+                v-for="option in menu"
+                :key="option.value"
+                :class="[
+                  bem('option'),
+                  {
+                    'is-active': activeValues[depth] === option.value,
+                    'is-selected-leaf': isSelectedLeaf(depth, option.value),
+                    'has-children': !!option.children?.length,
+                  },
+                ]"
+                @mouseenter="handleHover(depth, option)"
+                @click="handleClick(depth, option)"
+              >
+                <span :class="bem('option-label')">{{ option.label }}</span>
+                <span v-if="option.children?.length" :class="bem('option-arrow')" aria-hidden="true">
+                  <RightOutlined />
+                </span>
+              </div>
             </div>
-            <div v-if="filteredPaths.length === 0" :class="bem('empty')">无匹配项</div>
           </div>
         </div>
       </transition>
@@ -24,7 +58,8 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { RightOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
 
   defineOptions({ name: 'GfCascader' });
@@ -33,6 +68,7 @@
     label: string;
     value: any;
     children?: CascaderOption[];
+    disabled?: boolean;
   }
 
   const props = withDefaults(
@@ -45,13 +81,16 @@
       placeholder?: string;
       /** 尺寸 */
       size?: 'small' | 'middle' | 'large';
-      /** 搜索开关或自定义过滤 */
-      showSearch?: boolean | { filter: (input: string, path: CascaderOption[]) => boolean };
+      /** 禁用状态 */
+      disabled?: boolean;
+      /** 兼容旧 API：不再渲染搜索 UI */
+      showSearch?: any;
     }>(),
     {
       options: () => [],
       placeholder: '请选择',
       size: 'middle',
+      disabled: false,
       showSearch: false,
     }
   );
@@ -63,63 +102,122 @@
 
   const [_, bem] = createNamespace('cascader');
   const rootRef = ref<HTMLElement>();
+  const triggerRef = ref<HTMLElement>();
   const dropdownRef = ref<HTMLElement>();
   const open = ref(false);
-  const search = ref('');
   const dropdownStyle = ref<Record<string, string>>({});
-
-  type PathItem = { labelPath: string; valuePath: any[]; options: CascaderOption[] };
-
-  const flattened = computed<PathItem[]>(() => {
-    const list: PathItem[] = [];
-    const walk = (opts: CascaderOption[], parents: CascaderOption[]) => {
-      opts.forEach((opt) => {
-        const current = [...parents, opt];
-        if (opt.children?.length) {
-          walk(opt.children, current);
-        } else {
-          list.push({
-            labelPath: current.map((p) => p.label).join(' / '),
-            valuePath: current.map((p) => p.value),
-            options: current,
-          });
-        }
-      });
-    };
-    walk(props.options, []);
-    return list;
+  const controlSizeClass = computed(() => {
+    if (props.size === 'small') return 'gf-control--size-small';
+    if (props.size === 'large') return 'gf-control--size-large';
+    return undefined;
   });
 
-  const selectedLabel = computed(() => {
-    if (!props.value || props.value.length === 0) return '';
-    const found = flattened.value.find((path) => JSON.stringify(path.valuePath) === JSON.stringify(props.value));
-    return found?.labelPath ?? '';
-  });
-
-  const filterFn = computed(() => {
-    if (typeof props.showSearch === 'object' && props.showSearch?.filter) {
-      return props.showSearch.filter;
+  const resolvePath = (values: any[] | undefined) => {
+    const pathValues = Array.isArray(values) ? values : [];
+    const out: CascaderOption[] = [];
+    let current = props.options;
+    for (const val of pathValues) {
+      const found = current.find((o) => o.value === val);
+      if (!found) break;
+      out.push(found);
+      current = found.children ?? [];
     }
-    return (input: string, path: CascaderOption[]) => path.some((opt) => opt.label.toLowerCase().includes(input.toLowerCase()));
-  });
-
-  const filteredPaths = computed(() => {
-    if (!props.showSearch || !search.value) return flattened.value;
-    return flattened.value.filter((item) => filterFn.value(search.value, item.options));
-  });
-
-  const toggle = () => {
-    open.value = !open.value;
-    if (open.value) syncDropdownPosition();
+    return out;
   };
 
-  const close = () => (open.value = false);
+  const selectedPath = computed(() => resolvePath(props.value));
+  const selectedLabel = computed(() => selectedPath.value.map((o) => o.label).join(' / '));
+
+  const activePath = ref<CascaderOption[]>([]);
+  const activeValues = computed<any[]>(() => activePath.value.map((o) => o.value));
+
+  const menus = computed<CascaderOption[][]>(() => {
+    const cols: CascaderOption[][] = [];
+    cols.push(props.options ?? []);
+    let current = props.options ?? [];
+    for (const opt of activePath.value) {
+      const found = current.find((o) => o.value === opt.value);
+      if (!found?.children?.length) break;
+      cols.push(found.children);
+      current = found.children;
+    }
+    return cols;
+  });
+
+  const isSelectedLeaf = (depth: number, value: any) => {
+    const values = Array.isArray(props.value) ? props.value : [];
+    if (depth !== values.length - 1) return false;
+    return values[depth] === value;
+  };
+
+  const openDropdown = async () => {
+    if (props.disabled) return;
+    if (open.value) return;
+    activePath.value = [...selectedPath.value];
+    open.value = true;
+    await nextTick();
+    syncDropdownPosition();
+  };
+
+  const close = () => {
+    open.value = false;
+  };
+
+  const toggle = () => {
+    if (props.disabled) return;
+    if (open.value) {
+      close();
+      return;
+    }
+    openDropdown();
+  };
+
+  const handleKeydown = (evt: KeyboardEvent) => {
+    if (evt.key === 'Enter' || evt.key === ' ') {
+      evt.preventDefault();
+      toggle();
+    }
+    if (evt.key === 'Escape') close();
+  };
+
+  const handleHover = (depth: number, option: CascaderOption) => {
+    if (props.disabled || option.disabled) return;
+    if (!option.children?.length) return;
+    const next = activePath.value.slice(0, depth);
+    next[depth] = option;
+    activePath.value = next;
+  };
+
+  const handleClick = (depth: number, option: CascaderOption) => {
+    if (props.disabled || option.disabled) return;
+    const next = activePath.value.slice(0, depth);
+    next[depth] = option;
+    activePath.value = next;
+
+    if (option.children?.length) return;
+
+    const valuePath = activePath.value.map((o) => o.value);
+    emit('update:value', valuePath);
+    emit('change', valuePath);
+    close();
+  };
 
   const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
+  let rafId: number | null = null;
+
+  const scheduleSyncDropdownPosition = () => {
+    if (!open.value) return;
+    if (rafId != null) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      syncDropdownPosition();
+    });
+  };
 
   const syncDropdownPosition = async () => {
-    if (!rootRef.value) return;
-    const rect = rootRef.value.getBoundingClientRect();
+    const trigger = triggerRef.value;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
     await nextTick();
     const menu = dropdownRef.value;
     const menuWidth = menu?.offsetWidth || rect.width;
@@ -144,6 +242,7 @@
   const handleOutside = (evt: MouseEvent) => {
     if (!rootRef.value) return;
     if (rootRef.value.contains(evt.target as Node)) return;
+    if (dropdownRef.value?.contains(evt.target as Node)) return;
     close();
   };
 
@@ -155,13 +254,20 @@
   onBeforeUnmount(() => {
     window.removeEventListener('click', handleOutside);
     window.removeEventListener('resize', syncDropdownPosition);
+    window.removeEventListener('scroll', scheduleSyncDropdownPosition, true);
+    if (rafId != null) cancelAnimationFrame(rafId);
   });
 
-  const selectPath = (path: any[]) => {
-    emit('update:value', path);
-    emit('change', path);
-    close();
-  };
+  watch(
+    () => open.value,
+    (val) => {
+      if (val) {
+        window.addEventListener('scroll', scheduleSyncDropdownPosition, true);
+      } else {
+        window.removeEventListener('scroll', scheduleSyncDropdownPosition, true);
+      }
+    }
+  );
 </script>
 
 <style scoped lang="less">
@@ -169,26 +275,32 @@
     position: relative;
     width: 100%;
 
+    &__trigger {
+      display: inline-flex;
+      width: auto;
+      outline: none;
+    }
+
     &__control {
       display: inline-flex;
       align-items: center;
       width: 100%;
-      min-height: var(--gf-control-height-md);
-      padding: 8px 12px;
-      border-radius: var(--gf-radius-sm);
-      border: 1px solid var(--gf-border);
-      background: var(--gf-color-surface);
       gap: 6px;
       cursor: pointer;
-      transition: all 0.2s var(--gf-easing);
     }
 
     &__placeholder {
       color: var(--gf-text-secondary);
+      line-height: 1.35;
+      display: inline-flex;
+      align-items: center;
     }
 
     &__value {
       color: var(--gf-text);
+      line-height: 1.35;
+      display: inline-flex;
+      align-items: center;
     }
 
     &__arrow {
@@ -207,47 +319,80 @@
       overflow: hidden;
     }
 
-    &__search-bar {
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--gf-border);
+    &__menus {
+      display: flex;
+      max-height: 320px;
+    }
 
-      input {
-        width: 100%;
-        border: none;
-        outline: none;
-        background: transparent;
-        color: var(--gf-text);
+    &__menu {
+      min-width: 200px;
+      max-height: 320px;
+      overflow: auto;
+      padding: 6px;
+      border-right: 1px solid var(--gf-color-border-muted);
+
+      &:last-child {
+        border-right: none;
       }
     }
 
-    &__options {
-      max-height: 260px;
-      overflow: auto;
-      padding: 6px;
-    }
-
     &__option {
-      padding: 8px 10px;
+      padding: 0 10px;
       border-radius: var(--gf-radius-sm);
       cursor: pointer;
       color: var(--gf-text);
-      transition: all 0.2s var(--gf-easing);
+      min-height: var(--gf-control-height-md);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background var(--gf-motion-fast) var(--gf-easing), color var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
         background: var(--gf-primary-soft);
         color: var(--gf-primary-strong);
       }
+
+      &.is-active {
+        background: var(--gf-color-fill);
+      }
+
+      &.is-selected-leaf {
+        background: var(--gf-primary-soft);
+        color: var(--gf-primary-strong);
+        box-shadow: inset 0 0 0 1px var(--gf-border-strong);
+      }
     }
 
-    &__empty {
-      padding: 12px;
-      text-align: center;
+    &__option-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &__option-arrow {
+      width: 16px;
+      height: 16px;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
       color: var(--gf-text-secondary);
     }
 
-    &--size-small &__control {
+    &--size-small &__option {
       min-height: var(--gf-control-height-sm);
-      padding: 6px 10px;
+      font-size: var(--gf-font-size-sm);
+    }
+
+    &--size-large &__option {
+      min-height: var(--gf-control-height-lg);
+      font-size: var(--gf-font-size-lg);
+    }
+
+    &.is-disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
   }
 </style>

@@ -7,7 +7,6 @@ declare module '@grafana-fast/component' {
   export const Tag: any;
   export const Empty: any;
   export const Loading: any;
-  export const InputGroup: any;
   export const Alert: any;
 
   export const Input: any;

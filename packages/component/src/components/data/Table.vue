@@ -1,51 +1,47 @@
 <!-- 组件说明：轻量表格，支持排序、分页、加载遮罩与自定义单元格 -->
 <template>
-  <div :class="[bem(), bem(`size-${size}`)]">
+  <div :class="[bem(), bem({ [`size-${size}`]: true })]">
     <div v-if="loading" :class="bem('overlay')">
       <Spin />
     </div>
     <div :class="bem('wrap')" :style="wrapStyle">
-      <table>
-        <thead>
-          <tr>
-            <th
-              v-for="col in columns"
-              :key="col.key || col.dataIndex"
-              :style="{ width: col.width ? `${col.width}px` : undefined }"
-              @click="handleSort(col)"
-            >
-              <span>{{ col.title }}</span>
-              <span v-if="col.sorter" :class="bem('sort')">
-                <span :class="{ active: sortState?.key === (col.key || col.dataIndex) && sortState?.order === 'ascend' }">▲</span>
-                <span :class="{ active: sortState?.key === (col.key || col.dataIndex) && sortState?.order === 'descend' }">▼</span>
-              </span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(row, rowIndex) in pagedData" :key="resolveRowKey(row, rowIndex)">
-            <td v-for="col in columns" :key="col.key || col.dataIndex">
+      <div :class="bem('table')">
+        <div :class="bem('header')" :style="{ gridTemplateColumns }">
+          <div
+            v-for="col in columns"
+            :key="col.key || col.dataIndex"
+            :class="[bem('cell'), bem('cell', 'th'), { sortable: !!col.sorter }]"
+            @click="handleSort(col)"
+          >
+            <span>{{ col.title }}</span>
+            <span v-if="col.sorter" :class="bem('sort')">
+              <span :class="{ active: sortState?.key === (col.key || col.dataIndex) && sortState?.order === 'ascend' }">▲</span>
+              <span :class="{ active: sortState?.key === (col.key || col.dataIndex) && sortState?.order === 'descend' }">▼</span>
+            </span>
+          </div>
+        </div>
+
+        <div :class="bem('body')">
+          <div v-for="(row, rowIndex) in pagedData" :key="resolveRowKey(row, rowIndex)" :class="bem('row')" :style="{ gridTemplateColumns }">
+            <div v-for="col in columns" :key="col.key || col.dataIndex" :class="bem('cell')">
               <slot name="bodyCell" :column="col" :text="row[col.dataIndex || '']" :record="row" :index="rowIndex">
                 {{ row[col.dataIndex || ''] }}
               </slot>
-            </td>
-          </tr>
-          <tr v-if="!pagedData.length">
-            <td :colspan="columns.length" :class="bem('empty')">暂无数据</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div v-if="pagination && !(pagination.hideOnSinglePage && pageCount <= 1)" :class="bem('pagination')">
-      <span class="total" v-if="pagination.showTotal">{{ pagination.showTotal(filteredData.length) }}</span>
-      <div :class="bem('pager')">
-        <button type="button" @click="prevPage" :disabled="page === 1">上一页</button>
-        <span>{{ page }} / {{ pageCount }}</span>
-        <button type="button" @click="nextPage" :disabled="page === pageCount">下一页</button>
+            </div>
+          </div>
+
+          <div v-if="!pagedData.length" :class="bem('empty')">暂无数据</div>
+        </div>
       </div>
-      <select v-if="pagination.showSizeChanger" v-model.number="pageSize">
-        <option v-for="opt in pagination.pageSizeOptions || ['10', '20', '50', '100']" :key="opt" :value="Number(opt)">{{ opt }}/页</option>
-      </select>
+    </div>
+    <div v-if="mergedPagination !== false && !(mergedPagination.hideOnSinglePage && pageCount <= 1)" :class="bem('pagination')">
+      <span class="total" v-if="mergedPagination.showTotal">{{ mergedPagination.showTotal(filteredData.length) }}</span>
+      <div :class="bem('pager')">
+        <Button size="small" type="ghost" @click="prevPage" :disabled="page === 1">上一页</Button>
+        <span>{{ page }} / {{ pageCount }}</span>
+        <Button size="small" type="ghost" @click="nextPage" :disabled="page === pageCount">下一页</Button>
+      </div>
+      <Select v-if="mergedPagination.showSizeChanger" v-model:value="pageSize" size="small" :options="pageSizeSelectOptions" :show-search="false" />
     </div>
   </div>
 </template>
@@ -53,7 +49,9 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue';
   import { createNamespace } from '../../utils';
+  import Button from '../base/Button.vue';
   import Spin from '../feedback/Spin.vue';
+  import Select from '../form/Select.vue';
 
   interface Column {
     title: string;
@@ -96,12 +94,7 @@
     {
       columns: () => [],
       dataSource: () => [],
-      pagination: () => ({
-        pageSize: 20,
-        showSizeChanger: true,
-        showQuickJumper: true,
-        hideOnSinglePage: true,
-      }),
+      pagination: undefined,
       size: 'middle',
       loading: false,
       rowKey: undefined,
@@ -114,9 +107,32 @@
     (e: 'change', pagination: PaginationConfig): void;
   }>();
 
-  const page = ref(props.pagination && (props.pagination as PaginationConfig).current ? (props.pagination as PaginationConfig).current! : 1);
-  const pageSize = ref(props.pagination && props.pagination.pageSize ? props.pagination.pageSize : 20);
+  const mergedPagination = computed<PaginationConfig | false>(() => {
+    if (props.pagination === false) return false;
+    const provided = props.pagination ?? {};
+    return {
+      pageSize: 20,
+      showSizeChanger: true,
+      showQuickJumper: true,
+      hideOnSinglePage: true,
+      ...provided,
+    };
+  });
+
+  const page = ref(mergedPagination.value !== false && mergedPagination.value.current ? mergedPagination.value.current : 1);
+  const pageSize = ref(mergedPagination.value !== false && mergedPagination.value.pageSize ? mergedPagination.value.pageSize : 20);
   const sortState = ref<{ key: string; order: 'ascend' | 'descend' } | null>(null);
+
+  const gridTemplateColumns = computed(() => {
+    if (!props.columns?.length) return '1fr';
+    return props.columns.map((col) => (col.width ? `${col.width}px` : 'minmax(120px, 1fr)')).join(' ');
+  });
+
+  const pageSizeSelectOptions = computed(() => {
+    const raw =
+      mergedPagination.value !== false && mergedPagination.value.pageSizeOptions ? mergedPagination.value.pageSizeOptions : ['10', '20', '50', '100'];
+    return raw.map((opt: string) => ({ label: `${opt}/页`, value: Number(opt) }));
+  });
 
   watch(
     () => props.dataSource,
@@ -142,13 +158,13 @@
   const filteredData = computed(() => sortedData.value);
 
   const pageCount = computed(() => {
-    if (!props.pagination) return 1;
+    if (mergedPagination.value === false) return 1;
     return Math.max(1, Math.ceil(filteredData.value.length / pageSize.value));
   });
 
   const pagedData = computed(() => {
-    if (!props.pagination) return filteredData.value;
-    if (props.pagination.hideOnSinglePage && pageCount.value <= 1) return filteredData.value;
+    if (mergedPagination.value === false) return filteredData.value;
+    if (mergedPagination.value.hideOnSinglePage && pageCount.value <= 1) return filteredData.value;
     const start = (page.value - 1) * pageSize.value;
     return filteredData.value.slice(start, start + pageSize.value);
   });
@@ -176,8 +192,8 @@
   };
 
   const emitChange = () => {
-    if (props.pagination) {
-      emit('change', { ...props.pagination, pageSize: pageSize.value, current: page.value, total: filteredData.value.length });
+    if (mergedPagination.value !== false) {
+      emit('change', { ...mergedPagination.value, pageSize: pageSize.value, current: page.value, total: filteredData.value.length });
     }
   };
 
@@ -211,7 +227,9 @@
       border-radius: var(--gf-radius-md);
       background: var(--gf-color-surface);
       position: relative;
-      transition: border-color var(--gf-motion-normal) var(--gf-easing), box-shadow var(--gf-motion-normal) var(--gf-easing);
+      transition:
+        border-color var(--gf-motion-normal) var(--gf-easing),
+        box-shadow var(--gf-motion-normal) var(--gf-easing);
     }
 
     &__wrap:hover {
@@ -219,40 +237,63 @@
       box-shadow: var(--gf-shadow-1);
     }
 
-    table {
+    &__table {
       width: 100%;
-      border-collapse: collapse;
       min-width: 400px;
     }
 
-    tbody tr:nth-child(even) td {
-      background: var(--gf-color-zebra);
-    }
-
-    th,
-    td {
-      padding: 8px 10px;
-      text-align: left;
-      border-bottom: 1px solid var(--gf-color-border-muted);
-      font-size: var(--gf-font-size-md);
-      color: var(--gf-text);
-    }
-
-    th {
+    &__header {
+      display: grid;
+      position: sticky;
+      top: 0;
+      z-index: 1;
       background: var(--gf-color-surface-muted);
-      font-weight: 600;
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
+      border-bottom: 1px solid var(--gf-color-border-muted);
+    }
+
+    &__body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    &__row {
+      display: grid;
+      border-bottom: 1px solid var(--gf-color-border-muted);
       transition: background var(--gf-motion-normal) var(--gf-easing);
+
+      &:nth-child(even) {
+        background: var(--gf-color-zebra);
+      }
 
       &:hover {
         background: var(--gf-color-fill);
       }
     }
 
-    tbody tr:hover td {
-      background: var(--gf-color-fill);
+    &__cell {
+      padding: 8px 10px;
+      text-align: left;
+      font-size: var(--gf-font-size-md);
+      color: var(--gf-text);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &__cell--th {
+      font-weight: 600;
+      user-select: none;
+      white-space: nowrap;
+      transition: background var(--gf-motion-normal) var(--gf-easing);
+
+      &.sortable {
+        cursor: pointer;
+      }
+
+      &.sortable:hover {
+        background: var(--gf-color-fill);
+      }
     }
 
     &__sort {
@@ -269,6 +310,7 @@
       text-align: center;
       color: var(--gf-text-secondary);
       padding: 18px;
+      border-bottom: 1px solid var(--gf-color-border-muted);
     }
 
     &__pagination {
@@ -288,35 +330,11 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-
-      button {
-        border: 1px solid var(--gf-color-border);
-        background: var(--gf-color-surface);
-        padding: 6px 10px;
-        border-radius: var(--gf-radius-sm);
-        cursor: pointer;
-        color: var(--gf-text);
-        transition: all 0.2s var(--gf-easing);
-
-        &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      }
     }
 
-    select {
-      border: 1px solid var(--gf-color-border);
-      border-radius: var(--gf-radius-sm);
-      padding: 6px 10px;
-      background: var(--gf-color-surface);
-      color: var(--gf-text);
-    }
-
-    &--size-small th,
-    &--size-small td {
+    &--size-small .gf-table__cell {
       padding: 6px 8px;
-      font-size: 12px;
+      font-size: var(--gf-font-size-sm);
     }
 
     &__overlay {

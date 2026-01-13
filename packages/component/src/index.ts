@@ -10,7 +10,6 @@ export { default as TabPane } from './components/base/TabPane.vue';
 export { default as Tag } from './components/base/Tag.vue';
 export { default as Empty } from './components/base/Empty.vue';
 export { default as Loading } from './components/base/Loading.vue';
-export { default as InputGroup } from './components/base/InputGroup.vue';
 export { default as Alert } from './components/base/Alert.vue';
 
 // form
@@ -62,7 +61,6 @@ import TabPaneComp from './components/base/TabPane.vue';
 import TagComp from './components/base/Tag.vue';
 import EmptyComp from './components/base/Empty.vue';
 import LoadingComp from './components/base/Loading.vue';
-import InputGroupComp from './components/base/InputGroup.vue';
 import AlertComp from './components/base/Alert.vue';
 import InputComp from './components/form/Input.vue';
 import TextareaComp from './components/form/Textarea.vue';
@@ -93,53 +91,56 @@ import ResultComp from './components/feedback/Result.vue';
 import TableComp from './components/data/Table.vue';
 import CardComp from './components/data/Card.vue';
 
+const exportedComponents = {
+  Button: ButtonComp,
+  Tabs: TabsComp,
+  TabPane: TabPaneComp,
+  Tag: TagComp,
+  Empty: EmptyComp,
+  Loading: LoadingComp,
+  Alert: AlertComp,
+  Input: InputComp,
+  Textarea: TextareaComp,
+  Select: SelectComp,
+  Switch: SwitchComp,
+  Checkbox: CheckboxComp,
+  Segmented: SegmentedComp,
+  InputNumber: InputNumberComp,
+  Slider: SliderComp,
+  Cascader: CascaderComp,
+  Form: FormComp,
+  FormItem: FormItemComp,
+  Space: SpaceComp,
+  Flex: FlexComp,
+  Row: RowComp,
+  Col: ColComp,
+  Divider: DividerComp,
+  ConfigProvider: ConfigProviderComp,
+  Dropdown: DropdownComp,
+  Menu: MenuComp,
+  MenuItem: MenuItemComp,
+  Modal: ModalComp,
+  Drawer: DrawerComp,
+  Popconfirm: PopconfirmComp,
+  Tooltip: TooltipComp,
+  Spin: SpinComp,
+  Result: ResultComp,
+  Table: TableComp,
+  Card: CardComp,
+} as const;
+
 // Avoid deep/recursive inferred union types from many SFC imports (Volar `__VLS_WithSlots...`)
 // by widening the array element type explicitly.
-const components: Component[] = [
-  ButtonComp,
-  TabsComp,
-  TabPaneComp,
-  TagComp,
-  EmptyComp,
-  LoadingComp,
-  InputGroupComp,
-  AlertComp,
-  InputComp,
-  TextareaComp,
-  SelectComp,
-  SwitchComp,
-  CheckboxComp,
-  SegmentedComp,
-  InputNumberComp,
-  SliderComp,
-  CascaderComp,
-  FormComp,
-  FormItemComp,
-  SpaceComp,
-  FlexComp,
-  RowComp,
-  ColComp,
-  DividerComp,
-  ConfigProviderComp,
-  DropdownComp,
-  MenuComp,
-  MenuItemComp,
-  ModalComp,
-  DrawerComp,
-  PopconfirmComp,
-  TooltipComp,
-  SpinComp,
-  ResultComp,
-  TableComp,
-  CardComp,
-];
+const components: Component[] = Object.values(exportedComponents);
 
 export const install = (app: App) => {
   components.forEach((comp) => {
     const name = (comp as any).name;
-    if (name) {
-      app.component(name, comp);
-    }
+    if (name) app.component(name, comp);
+  });
+  Object.entries(exportedComponents).forEach(([exportName, comp]) => {
+    if (!exportName) return;
+    app.component(exportName, comp);
   });
   return app;
 };

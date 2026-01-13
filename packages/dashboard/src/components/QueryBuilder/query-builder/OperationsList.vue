@@ -168,8 +168,7 @@
           <Cascader
             v-model:value="selectedNewOperation"
             :options="cascaderOptions"
-            :show-search="{ filter: cascaderFilter }"
-            placeholder="搜索操作"
+            placeholder="选择操作"
             size="small"
             :class="bem('add-cascader')"
             @change="handleAddOperation"
@@ -245,11 +244,6 @@
     },
     { deep: true }
   );
-
-  // 级联选择器过滤函数
-  const cascaderFilter = (inputValue: string, path: any[]) => {
-    return path.some((option) => option.label.toLowerCase().includes(inputValue.toLowerCase()));
-  };
 
   // 添加操作
   const handleAddOperation = (value: any[]) => {

@@ -5,7 +5,6 @@ export { default as TabPane } from './components/base/TabPane.vue';
 export { default as Tag } from './components/base/Tag.vue';
 export { default as Empty } from './components/base/Empty.vue';
 export { default as Loading } from './components/base/Loading.vue';
-export { default as InputGroup } from './components/base/InputGroup.vue';
 export { default as Alert } from './components/base/Alert.vue';
 
 // form
@@ -50,4 +49,3 @@ export { message } from './message';
 export * from './types';
 export { gfAntdTokensCssVar } from './theme/antdTokens';
 export { default as gfAntdTokensCssVarJson } from './theme/antdTokens.cssvar.json';
-

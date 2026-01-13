@@ -9,7 +9,7 @@
       :class="[bem('control'), 'gf-control', { 'gf-control--disabled': disabled }]"
       :disabled="disabled"
       @input="handleInput"
-    />
+    ></textarea>
   </div>
 </template>
 

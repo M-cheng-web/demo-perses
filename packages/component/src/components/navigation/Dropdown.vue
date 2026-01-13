@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-  import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+  import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { createNamespace } from '../../utils';
 
   defineOptions({ name: 'GfDropdown' });
@@ -25,6 +25,16 @@
   const overlayRef = ref<HTMLElement>();
   const open = ref(false);
   const overlayStyle = ref<Record<string, string>>({});
+  let rafId: number | null = null;
+
+  const scheduleUpdatePosition = () => {
+    if (!open.value) return;
+    if (rafId != null) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      updatePosition();
+    });
+  };
 
   const toggle = () => {
     open.value = !open.value;
@@ -76,7 +86,20 @@
   onBeforeUnmount(() => {
     window.removeEventListener('click', handleOutside);
     window.removeEventListener('resize', updatePosition);
+    window.removeEventListener('scroll', scheduleUpdatePosition, true);
+    if (rafId != null) cancelAnimationFrame(rafId);
   });
+
+  watch(
+    () => open.value,
+    (val) => {
+      if (val) {
+        window.addEventListener('scroll', scheduleUpdatePosition, true);
+      } else {
+        window.removeEventListener('scroll', scheduleUpdatePosition, true);
+      }
+    }
+  );
 </script>
 
 <style scoped lang="less">

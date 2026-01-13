@@ -37,6 +37,26 @@
           </Space>
         </Card>
 
+        <Card title="Tabs / Divider / Tag" size="small" :bordered="true">
+          <Tabs v-model:activeKey="tabsActiveKey">
+            <TabPane name="overview" tab="Overview">
+              <Space direction="vertical" :size="10" style="width: 100%">
+                <div class="dp-component-showcase__hint">Tabs + Tag + Divider + message API</div>
+                <Space wrap :size="8">
+                  <Tag color="var(--gf-color-primary)">core</Tag>
+                  <Tag color="var(--gf-color-success)">healthy</Tag>
+                  <Tag color="var(--gf-color-warning)">warning</Tag>
+                </Space>
+                <Divider />
+                <Button size="small" type="ghost" @click="notify('tab:overview')">Trigger message</Button>
+              </Space>
+            </TabPane>
+            <TabPane name="detail" tab="Detail">
+              <div class="dp-component-showcase__hint">这里是 Detail 内容</div>
+            </TabPane>
+          </Tabs>
+        </Card>
+
         <Card title="Form Controls" size="small" :bordered="true">
           <Form :model="form" layout="vertical">
             <FormItem label="Input" required>
@@ -63,6 +83,10 @@
               <Slider v-model:value="form.opacity" :min="0" :max="100" :step="5" />
             </FormItem>
 
+            <FormItem label="Cascader">
+              <Cascader v-model:value="form.cascader" :options="cascaderOptions" placeholder="选择路径" />
+            </FormItem>
+
             <FormItem label="Switch / Checkbox">
               <Space :size="12" wrap>
                 <Space :size="8">
@@ -73,6 +97,25 @@
               </Space>
             </FormItem>
           </Form>
+        </Card>
+
+        <Card title="Navigation (Dropdown / Menu)" size="small" :bordered="true">
+          <Space direction="vertical" :size="10" style="width: 100%">
+            <Dropdown>
+              <Button type="ghost">Dropdown Menu</Button>
+              <template #overlay>
+                <Menu :items="menuItems" @click="handleMenuClick" />
+              </template>
+            </Dropdown>
+
+            <Divider />
+
+            <div class="dp-component-showcase__hint">MenuItem (slot-driven)</div>
+            <Menu @click="handleMenuClick">
+              <MenuItem eventKey="a">Action A</MenuItem>
+              <MenuItem eventKey="b">Action B</MenuItem>
+            </Menu>
+          </Space>
         </Card>
 
         <Card title="Feedback" size="small" :bordered="true">
@@ -95,10 +138,49 @@
               <Button type="text">Popconfirm</Button>
             </Popconfirm>
           </Space>
+
+          <Divider />
+
+          <Space wrap :size="10">
+            <Spin tip="加载中..." />
+            <Loading text="Loading..." />
+          </Space>
         </Card>
 
         <Card title="Data Display (Table + Zebra)" size="small" :bordered="true">
           <Table :columns="tableColumns" :data-source="tableData" :pagination="tablePagination" size="small" />
+        </Card>
+
+        <Card title="Empty / Result" size="small" :bordered="true">
+          <Space direction="vertical" :size="10" style="width: 100%">
+            <Empty description="暂无告警规则" />
+            <Result status="success" title="Saved" sub-title="配置已保存并生效。" />
+          </Space>
+        </Card>
+
+        <Card title="Layout (Space / Flex / Row / Col)" size="small" :bordered="true">
+          <Space direction="vertical" :size="10" style="width: 100%">
+            <div class="dp-component-showcase__hint">Flex</div>
+            <Flex justify="between" :gap="10">
+              <Tag color="var(--gf-color-primary)">Left</Tag>
+              <Tag color="var(--gf-color-primary-secondary)">Right</Tag>
+            </Flex>
+
+            <Divider />
+
+            <div class="dp-component-showcase__hint">Row / Col</div>
+            <Row :gutter="[10, 10]">
+              <Col :span="8">
+                <div class="dp-component-showcase__box gf-surface">span 8</div>
+              </Col>
+              <Col :span="8">
+                <div class="dp-component-showcase__box gf-surface">span 8</div>
+              </Col>
+              <Col :span="8">
+                <div class="dp-component-showcase__box gf-surface">span 8</div>
+              </Col>
+            </Row>
+          </Space>
         </Card>
 
         <Card title="Cards (Zebra)" size="small" :bordered="true">
@@ -162,22 +244,33 @@
     Card,
     Checkbox,
     ConfigProvider,
+    Cascader,
     Divider,
     Drawer,
+    Dropdown,
+    Empty,
     Flex,
     Form,
     FormItem,
     Input,
+    Textarea,
     InputNumber,
+    Loading,
+    Menu,
+    MenuItem,
     Modal,
     Popconfirm,
+    Result,
     Segmented,
     Select,
     Slider,
     Space,
+    Spin,
     Switch,
     Table,
     Tag,
+    Tabs,
+    TabPane,
     Tooltip,
     message,
   } from '@grafana-fast/component';
@@ -193,6 +286,7 @@
   const loadingBtn = ref(false);
   const modalOpen = ref(false);
   const drawerOpen = ref(false);
+  const tabsActiveKey = ref('overview');
 
   const form = reactive({
     name: '',
@@ -204,6 +298,7 @@
     enabled: true,
     checked: true,
     filter: '',
+    cascader: [] as any[],
   });
 
   const envOptions = [
@@ -218,6 +313,30 @@
     { label: 'metrics', value: 'metrics' },
     { label: 'logs', value: 'logs' },
     { label: 'traces', value: 'traces' },
+  ];
+
+  const cascaderOptions = [
+    {
+      label: 'cluster-a',
+      value: 'cluster-a',
+      children: [
+        { label: 'node-01', value: 'node-01' },
+        { label: 'node-02', value: 'node-02' },
+      ],
+    },
+    {
+      label: 'cluster-b',
+      value: 'cluster-b',
+      children: [
+        { label: 'node-03', value: 'node-03' },
+        { label: 'node-04', value: 'node-04' },
+      ],
+    },
+  ];
+
+  const menuItems = [
+    { key: 'reload', label: 'Reload' },
+    { key: 'settings', label: 'Settings' },
   ];
 
   const notify = (label: string) => {
@@ -235,6 +354,11 @@
   };
 
   const goHome = () => router.push('/home');
+
+  const handleMenuClick = (payload: any) => {
+    const key = typeof payload === 'string' ? payload : payload?.key;
+    notify(`menu:${String(key)}`);
+  };
 
   const tableColumns = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
@@ -346,6 +470,11 @@
       flex-direction: column;
       gap: 12px;
     }
+
+    &__box {
+      padding: 10px;
+      font-size: 12px;
+      color: var(--gf-color-text-secondary);
+    }
   }
 </style>
-

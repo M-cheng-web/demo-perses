@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
   import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-  import { createNamespace } from '../../utils';
+  import { createNamespace, lockBodyScroll, unlockBodyScroll } from '../../utils';
   import Button from '../base/Button.vue';
 
   defineOptions({ name: 'GfDrawer', inheritAttrs: false });
@@ -152,6 +152,7 @@
     async (val) => {
       if (val) {
         window.addEventListener('keydown', handleEsc);
+        lockBodyScroll();
         if (isFirstSync) {
           isRendered.value = true;
           isMaskVisible.value = !!props.mask;
@@ -161,6 +162,7 @@
         }
       } else {
         window.removeEventListener('keydown', handleEsc);
+        unlockBodyScroll();
         if (isFirstSync) {
           isRendered.value = false;
           isMaskVisible.value = false;
@@ -176,6 +178,7 @@
 
   onBeforeUnmount(() => {
     window.removeEventListener('keydown', handleEsc);
+    if (props.open) unlockBodyScroll();
     clearTimers();
   });
 

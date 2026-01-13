@@ -1,7 +1,7 @@
 <!-- 组件说明：卡片容器，支持标题、额外区域、悬浮阴影与边框控制 -->
 <template>
   <div
-    :class="[bem(), bem(`size-${size}`), { 'is-hoverable': hoverable, 'is-borderless': bordered === false }]"
+    :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-hoverable': hoverable, 'is-borderless': bordered === false }]"
     @click="$emit('click')"
   >
     <div v-if="title || $slots.extra" :class="bem('header')">
