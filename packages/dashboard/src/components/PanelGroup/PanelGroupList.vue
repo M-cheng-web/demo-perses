@@ -1,20 +1,40 @@
 <template>
   <div :class="bem()">
-    <PanelGroupItem
+    <Panel
       v-for="(group, index) in panelGroups"
       :key="group.id"
-      :group="group"
-      :index="index"
-      :is-last="index === panelGroups.length - 1"
-      @edit="handleEditGroup"
-    />
+      :title="group.title || '未命名面板组'"
+      :description="group.description"
+      size="large"
+      :collapsible="true"
+      :collapsed="group.isCollapsed"
+      :hoverable="true"
+      :body-padding="true"
+      @update:collapsed="(collapsed) => handleCollapsedChange(group.id, collapsed)"
+    >
+      <template #right>
+        <PanelGroupRightActions
+          v-if="isEditMode"
+          :group="group"
+          :index="index"
+          :is-last="index === panelGroups.length - 1"
+          @edit="() => handleEditGroup(group)"
+        />
+      </template>
+
+      <GridLayout :group-id="group.id" :panels="group.panels" :layout="group.layout" />
+    </Panel>
   </div>
 </template>
 
 <script setup lang="ts">
   import type { PanelGroup } from '@grafana-fast/types';
+  import { storeToRefs } from '@grafana-fast/store';
+  import { Panel } from '@grafana-fast/component';
   import { createNamespace } from '/#/utils';
-  import PanelGroupItem from './PanelGroupItem.vue';
+  import { useDashboardStore } from '/#/stores';
+  import GridLayout from '/#/components/GridLayout/GridLayout.vue';
+  import PanelGroupRightActions from './PanelGroupRightActions.vue';
 
   const [_, bem] = createNamespace('panel-group-list');
 
@@ -26,8 +46,15 @@
     (e: 'edit-group', group: PanelGroup): void;
   }>();
 
+  const dashboardStore = useDashboardStore();
+  const { isEditMode } = storeToRefs(dashboardStore);
+
   const handleEditGroup = (group: PanelGroup) => {
     emit('edit-group', group);
+  };
+
+  const handleCollapsedChange = (groupId: PanelGroup['id'], collapsed: boolean) => {
+    dashboardStore.updatePanelGroup(groupId, { isCollapsed: collapsed });
   };
 </script>
 
