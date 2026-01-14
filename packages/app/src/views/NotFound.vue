@@ -1,6 +1,6 @@
 <template>
   <div class="dp-not-found">
-    <div class="dp-not-found__card gf-surface">
+    <div class="dp-not-found__card">
       <Alert type="error" show-icon message="404" description="页面不存在" />
       <Button type="primary" @click="goHome">返回首页</Button>
     </div>
@@ -32,6 +32,17 @@
       flex-direction: column;
       gap: 12px;
       padding: 16px;
+      background: var(--gf-color-surface);
+      border: 1px solid var(--gf-color-border);
+      border-radius: var(--gf-radius-md);
+      transition: box-shadow var(--gf-motion-normal) var(--gf-easing), border-color var(--gf-motion-normal) var(--gf-easing),
+        transform var(--gf-motion-normal) var(--gf-easing);
+    }
+
+    &__card:hover {
+      border-color: var(--gf-color-border-strong);
+      box-shadow: var(--gf-shadow-1);
+      transform: translateY(-1px);
     }
   }
 </style>

@@ -49,6 +49,7 @@ export { default as Spin } from './components/feedback/Spin.vue';
 // data display
 export { default as Table } from './components/data/Table.vue';
 export { default as Card } from './components/data/Card.vue';
+export { default as List } from './components/data/List.vue';
 
 export { message } from './message';
 export * from './types';
@@ -90,6 +91,7 @@ import TooltipComp from './components/feedback/Tooltip.vue';
 import SpinComp from './components/feedback/Spin.vue';
 import TableComp from './components/data/Table.vue';
 import CardComp from './components/data/Card.vue';
+import ListComp from './components/data/List.vue';
 
 const exportedComponents = {
   Button: ButtonComp,
@@ -127,6 +129,7 @@ const exportedComponents = {
   Spin: SpinComp,
   Table: TableComp,
   Card: CardComp,
+  List: ListComp,
 } as const;
 
 // Avoid deep/recursive inferred union types from many SFC imports (Volar `__VLS_WithSlots...`)

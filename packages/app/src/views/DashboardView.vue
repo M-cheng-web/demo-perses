@@ -1,6 +1,6 @@
 <template>
   <div class="dp-dashboard-view">
-    <div v-if="state.dashboard" class="dp-dashboard-view__meta gf-surface">
+    <div v-if="state.dashboard" class="dp-dashboard-view__meta">
       <div class="dp-dashboard-view__status">
         <span>面板组: {{ state.panelGroups.length }}</span>
         <span>模式: {{ state.isEditMode ? '编辑' : '浏览' }}</span>
@@ -13,34 +13,31 @@
         <Button size="small" type="ghost" @click="handleRefresh">刷新时间范围</Button>
         <Button size="small" type="ghost" @click="mountDashboard">挂载</Button>
         <Button size="small" type="ghost" @click="unmountDashboard">卸载</Button>
+        <Button size="small" type="ghost" @click="debugOpen = true">调试信息</Button>
         <Button size="small" type="primary" @click="actions.toggleEditMode">
           {{ state.isEditMode ? '退出编辑' : '进入编辑' }}
         </Button>
       </div>
     </div>
 
-    <div class="dp-dashboard-view__canvas gf-glow-ring" ref="dashboardRef"></div>
+    <div class="dp-dashboard-view__canvas" ref="dashboardRef"></div>
 
-    <div class="dp-dashboard-view__debug gf-surface">
-      <div>容器尺寸：{{ containerSize.width }} × {{ containerSize.height }}</div>
-      <div>当前 DSN：{{ api.dsn }}</div>
-      <div>加载接口：{{ api.endpoints.LoadDashboard }}</div>
-      <div>查询接口：{{ api.endpoints.ExecuteQueries }}</div>
-      <div>挂载状态：{{ ready ? '已挂载' : '挂载中' }}</div>
-      <div>主题：{{ theme }}</div>
-    </div>
+    <Modal v-model:open="debugOpen" title="调试信息" :width="560" @cancel="debugOpen = false">
+      <List :items="debugItems" variant="lines" size="small" :split="false" />
+    </Modal>
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { useRouter } from 'vue-router';
-  import { Button, Segmented } from '@grafana-fast/component';
+  import { Button, List, Modal, Segmented } from '@grafana-fast/component';
   import { useDashboardSdk, DashboardApi } from '@grafana-fast/hooks';
   import type { DashboardTheme } from '@grafana-fast/dashboard';
 
   const router = useRouter();
   const dashboardRef = ref<HTMLElement | null>(null);
+  const debugOpen = ref(false);
   const { state, actions, containerSize, api, ready, mountDashboard, unmountDashboard, theme } = useDashboardSdk(dashboardRef, {
     dashboardId: 'default',
     apiConfig: {
@@ -50,6 +47,15 @@
       },
     },
   });
+
+  const debugItems = computed(() => [
+    { key: 'size', label: '容器尺寸', value: `${containerSize.value.width} × ${containerSize.value.height}` },
+    { key: 'dsn', label: '当前 DSN', value: api.value.dsn },
+    { key: 'load', label: '加载接口', value: api.value.endpoints[DashboardApi.LoadDashboard] },
+    { key: 'query', label: '查询接口', value: api.value.endpoints[DashboardApi.ExecuteQueries] },
+    { key: 'ready', label: '挂载状态', value: ready.value ? '已挂载' : '挂载中' },
+    { key: 'theme', label: '主题', value: theme.value },
+  ]);
 
   const themeOptions = [
     { label: 'Light', value: 'light' },
@@ -92,6 +98,13 @@
       color: var(--gf-color-text);
       font-size: 13px;
       backdrop-filter: blur(12px);
+      background: var(--gf-color-surface);
+      border: 1px solid var(--gf-color-border);
+      border-radius: var(--gf-radius-md);
+      transition:
+        box-shadow var(--gf-motion-normal) var(--gf-easing),
+        border-color var(--gf-motion-normal) var(--gf-easing),
+        transform var(--gf-motion-normal) var(--gf-easing);
     }
 
     &__status {
@@ -106,15 +119,6 @@
       flex-wrap: wrap;
     }
 
-    &__debug {
-      margin-top: 10px;
-      padding: 12px;
-      color: var(--gf-color-text-secondary);
-      font-size: 12px;
-      display: grid;
-      gap: 6px;
-    }
-
     &__canvas {
       flex: 1;
       min-height: 480px;
@@ -122,6 +126,17 @@
       background: var(--gf-color-surface-muted);
       border: 1px solid var(--gf-color-border-muted);
       overflow: hidden;
+      position: relative;
+    }
+
+    &__canvas::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      border: 1px solid var(--gf-color-border-muted);
+      pointer-events: none;
+      box-shadow: 0 0 24px var(--gf-color-primary-soft);
     }
   }
 </style>

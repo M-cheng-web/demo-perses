@@ -1,7 +1,7 @@
 <template>
   <ConfigProvider theme="inherit">
     <div class="dp-component-showcase">
-      <div class="dp-component-showcase__header gf-surface">
+      <div class="dp-component-showcase__header">
         <div class="dp-component-showcase__title">
           <div class="dp-component-showcase__h1">@grafana-fast/component 组件展示</div>
           <div class="dp-component-showcase__sub">用于快速浏览组件状态、密度与交互（基于统一主题 Token）。</div>
@@ -189,6 +189,46 @@
           <Table :columns="tableColumns" :data-source="tableData" :pagination="tablePagination" size="small" />
         </Card>
 
+        <Card title="List (Variants / Slots)" size="small" :bordered="true">
+          <Space direction="vertical" :size="10" style="width: 100%">
+            <div class="dp-component-showcase__hint">KV：适合调试信息（插槽按 item.key：#dsn、#ready ...）</div>
+            <List :items="listKvItems" variant="kv" size="small" :split="false" :hoverable="true">
+              <template #dsn="{ value }">
+                <span class="dp-component-showcase__mono">{{ value }}</span>
+              </template>
+              <template #ready="{ value, item }">
+                <Tag :color="item.color">{{ value }}</Tag>
+              </template>
+            </List>
+
+            <Divider />
+
+            <div class="dp-component-showcase__hint">Lines：无外边框，一行行样式集合（适合弹窗/详情页）</div>
+            <List :items="listKvItems" variant="lines" size="small" :split="false" :hoverable="true">
+              <template #dsn="{ value }">
+                <span class="dp-component-showcase__mono">{{ value }}</span>
+              </template>
+              <template #ready="{ value, item }">
+                <Tag :color="item.color">{{ value }}</Tag>
+              </template>
+            </List>
+
+            <Divider />
+
+            <div class="dp-component-showcase__hint">Grid：卡片式列表（适合概览信息）</div>
+            <List :items="listGridItems" variant="grid" :columns="2" size="small" :hoverable="true" :bordered="true" />
+
+            <Divider />
+
+            <div class="dp-component-showcase__hint">Empty slot：无数据时的自定义占位</div>
+            <List :items="[]" variant="kv" size="small">
+              <template #empty>
+                <Empty description="暂无字段" />
+              </template>
+            </List>
+          </Space>
+        </Card>
+
         <Card title="Empty / Alert" size="small" :bordered="true">
           <Space direction="vertical" :size="10" style="width: 100%">
             <Empty description="暂无告警规则" />
@@ -209,29 +249,31 @@
             <div class="dp-component-showcase__hint">Row / Col</div>
             <Row :gutter="[10, 10]">
               <Col :span="8">
-                <div class="dp-component-showcase__box gf-surface">span 8</div>
+                <div class="dp-component-showcase__box">span 8</div>
               </Col>
               <Col :span="8">
-                <div class="dp-component-showcase__box gf-surface">span 8</div>
+                <div class="dp-component-showcase__box">span 8</div>
               </Col>
               <Col :span="8">
-                <div class="dp-component-showcase__box gf-surface">span 8</div>
+                <div class="dp-component-showcase__box">span 8</div>
               </Col>
             </Row>
           </Space>
         </Card>
 
         <Card title="Cards (Zebra)" size="small" :bordered="true">
-          <div class="gf-zebra-cards dp-component-showcase__card-list">
-            <Card v-for="card in cards" :key="card.key" :title="card.title" size="small" :bordered="true">
-              <Flex justify="between" :gap="10">
-                <div class="dp-component-showcase__card-meta">
-                  <div class="dp-component-showcase__card-desc">{{ card.desc }}</div>
-                  <div class="dp-component-showcase__card-sub">Key: {{ card.key }}</div>
-                </div>
-                <Tag :color="card.tagColor">{{ card.tag }}</Tag>
-              </Flex>
-            </Card>
+          <div class="dp-component-showcase__card-list dp-component-showcase__card-list--zebra">
+            <div v-for="card in cards" :key="card.key" class="dp-component-showcase__card-wrap">
+              <Card :title="card.title" size="small" :bordered="true">
+                <Flex justify="between" :gap="10">
+                  <div class="dp-component-showcase__card-meta">
+                    <div class="dp-component-showcase__card-desc">{{ card.desc }}</div>
+                    <div class="dp-component-showcase__card-sub">Key: {{ card.key }}</div>
+                  </div>
+                  <Tag :color="card.tagColor">{{ card.tag }}</Tag>
+                </Flex>
+              </Card>
+            </div>
           </div>
         </Card>
       </div>
@@ -293,6 +335,7 @@
     Input,
     Textarea,
     InputNumber,
+    List,
     Loading,
     Menu,
     MenuItem,
@@ -472,6 +515,21 @@
     showTotal: (total: number) => `共 ${total} 条`,
   };
 
+  const listKvItems = computed(() => [
+    { key: 'size', label: '容器尺寸', value: '1280 × 720', kind: 'plain' },
+    { key: 'dsn', label: '当前 DSN', value: 'https://api.example.com', kind: 'dsn' },
+    { key: 'load', label: '加载接口', value: '/custom/load', kind: 'plain' },
+    { key: 'query', label: '查询接口', value: '/custom/execute', kind: 'plain' },
+    { key: 'ready', label: '挂载状态', value: '已挂载', kind: 'status', color: 'var(--gf-color-success)' },
+  ]);
+
+  const listGridItems = computed(() => [
+    { key: 'g1', label: 'Service A', value: '核心服务，吞吐稳定，延迟低。' },
+    { key: 'g2', label: 'Service B', value: '近期有轻微抖动，建议关注错误率。' },
+    { key: 'g3', label: 'Service C', value: '链路依赖较多，建议配置更细粒度告警。' },
+    { key: 'g4', label: 'Service D', value: 'CPU 突增，可能存在热点或流量突刺。' },
+  ]);
+
   const cards = computed(() => [
     { key: 'A', title: 'Panel Card A', desc: '用于高密度信息展示的卡片容器。', tag: 'core', tagColor: 'var(--gf-color-primary)' },
     { key: 'B', title: 'Panel Card B', desc: '偶数项使用极浅冷灰斑马底色。', tag: 'infra', tagColor: 'var(--gf-color-primary-secondary)' },
@@ -498,6 +556,18 @@
       gap: 12px;
       padding: 12px;
       border-radius: var(--gf-radius-md);
+      background: var(--gf-color-surface);
+      border: 1px solid var(--gf-color-border);
+      transition:
+        box-shadow var(--gf-motion-normal) var(--gf-easing),
+        border-color var(--gf-motion-normal) var(--gf-easing),
+        transform var(--gf-motion-normal) var(--gf-easing);
+    }
+
+    &__header:hover {
+      border-color: var(--gf-color-border-strong);
+      box-shadow: var(--gf-shadow-1);
+      transform: translateY(-1px);
     }
 
     &__title {
@@ -536,6 +606,12 @@
       gap: 10px;
     }
 
+    &__card-list--zebra {
+      > .dp-component-showcase__card-wrap:nth-child(even) {
+        --gf-card-bg: var(--gf-color-zebra);
+      }
+    }
+
     &__card-meta {
       display: flex;
       flex-direction: column;
@@ -564,6 +640,34 @@
       padding: 10px;
       font-size: 12px;
       color: var(--gf-color-text-secondary);
+      background: var(--gf-color-surface);
+      border: 1px solid var(--gf-color-border);
+      border-radius: var(--gf-radius-md);
+      transition:
+        box-shadow var(--gf-motion-normal) var(--gf-easing),
+        border-color var(--gf-motion-normal) var(--gf-easing),
+        transform var(--gf-motion-normal) var(--gf-easing);
+    }
+
+    &__box:hover {
+      border-color: var(--gf-color-border-strong);
+      box-shadow: var(--gf-shadow-1);
+      transform: translateY(-1px);
+    }
+
+    &__mono {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid var(--gf-color-border-muted);
+      background: var(--gf-color-surface-muted);
+      color: var(--gf-color-text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 </style>

@@ -44,6 +44,7 @@ export { default as Spin } from './components/feedback/Spin.vue';
 // data display
 export { default as Table } from './components/data/Table.vue';
 export { default as Card } from './components/data/Card.vue';
+export { default as List } from './components/data/List.vue';
 
 export { message } from './message';
 export * from './types';
