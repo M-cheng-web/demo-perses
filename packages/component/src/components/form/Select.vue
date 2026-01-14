@@ -12,7 +12,8 @@
       ref="controlRef"
       :class="[bem('control'), 'gf-control', controlSizeClass, { 'gf-control--disabled': disabled }]"
       tabindex="0"
-      @click="toggle"
+      @click="handleTriggerClick"
+      @pointerdown="handlePointerDownInside"
       @focusin="handleFocusIn"
       @keydown="handleKeydown"
     >
@@ -36,7 +37,7 @@
           :class="bem('search-input')"
           type="text"
           :placeholder="selectedOptions.length === 0 ? placeholder : ''"
-          @click.stop
+          @click.stop="handleSearchClick"
           @keydown.stop="handleSearchKeydown"
         />
       </div>
@@ -51,7 +52,7 @@
           :class="bem('search-input')"
           type="text"
           :placeholder="selectedOptions[0] ? '搜索...' : placeholder"
-          @click.stop
+          @click.stop="handleSearchClick"
           @keydown.stop="handleSearchKeydown"
         />
       </template>
@@ -150,6 +151,9 @@
   const open = ref(false);
   const search = ref('');
   const activeIndex = ref(0);
+  let openedByFocusIn = false;
+  let pointerDownInside = false;
+  let clearPointerDownTimer: number | null = null;
   const controlSizeClass = computed(() => {
     if (props.size === 'small') return 'gf-control--size-small';
     if (props.size === 'large') return 'gf-control--size-large';
@@ -203,9 +207,10 @@
     );
   };
 
-  const openDropdown = async () => {
+  const openDropdown = async (source: 'click' | 'focusin-pointer' | 'focusin' = 'click') => {
     if (props.disabled) return;
     if (open.value) return;
+    openedByFocusIn = source === 'focusin-pointer';
     open.value = true;
     search.value = '';
     activeIndex.value = findFirstEnabledIndex();
@@ -213,21 +218,53 @@
     if (props.showSearch) await focusSearch();
   };
 
+  const handlePointerDownInside = () => {
+    if (props.disabled) return;
+    pointerDownInside = true;
+    if (clearPointerDownTimer != null) window.clearTimeout(clearPointerDownTimer);
+    clearPointerDownTimer = window.setTimeout(() => {
+      pointerDownInside = false;
+      clearPointerDownTimer = null;
+    }, 0);
+  };
+
   const handleFocusIn = (evt: FocusEvent) => {
     if (props.disabled) return;
     const target = evt.target as HTMLElement | null;
     if (target?.closest?.('.gf-select__clear')) return;
     if (target?.closest?.('.gf-tag__close')) return;
-    openDropdown();
+    void openDropdown(pointerDownInside ? 'focusin-pointer' : 'focusin');
   };
 
-  const toggle = () => {
+  const handleTriggerClick = () => {
     if (props.disabled) return;
-    openDropdown();
+    if (open.value) {
+      if (openedByFocusIn) {
+        openedByFocusIn = false;
+        return;
+      }
+      close();
+      return;
+    }
+    void openDropdown('click');
   };
 
   const close = () => {
     open.value = false;
+    openedByFocusIn = false;
+  };
+
+  const handleSearchClick = () => {
+    if (props.disabled) return;
+    if (open.value) {
+      if (openedByFocusIn) {
+        openedByFocusIn = false;
+        return;
+      }
+      close();
+      return;
+    }
+    void openDropdown('click');
   };
 
   const handleKeydown = (evt: KeyboardEvent) => {
@@ -399,6 +436,8 @@
     if (resizeObserver) resizeObserver.disconnect();
     resizeObserver = null;
     if (rafId != null) cancelAnimationFrame(rafId);
+    if (clearPointerDownTimer != null) window.clearTimeout(clearPointerDownTimer);
+    clearPointerDownTimer = null;
   });
 
   watch(

@@ -27,7 +27,7 @@
 
   defineOptions({ name: 'GfPopconfirm' });
 
-  const props = withDefaults(
+  const _props = withDefaults(
     defineProps<{
       /** 确认提示文案 */
       title?: string;
