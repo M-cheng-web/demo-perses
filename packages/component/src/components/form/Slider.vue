@@ -15,7 +15,9 @@
 </template>
 
 <script setup lang="ts">
+  import { inject } from 'vue';
   import { createNamespace } from '../../utils';
+  import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfSlider' });
 
@@ -44,11 +46,13 @@
   }>();
 
   const [_, bem] = createNamespace('slider');
+  const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
 
   const handleInput = (evt: Event) => {
     const val = Number((evt.target as HTMLInputElement).value);
     emit('update:value', val);
     emit('change', val);
+    formItem?.onFieldChange();
   };
 </script>
 

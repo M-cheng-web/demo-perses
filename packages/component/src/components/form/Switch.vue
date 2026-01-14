@@ -6,7 +6,9 @@
 </template>
 
 <script setup lang="ts">
-	  import { createNamespace } from '../../utils';
+  import { inject } from 'vue';
+  import { createNamespace } from '../../utils';
+  import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfSwitch' });
 
@@ -29,12 +31,14 @@
   }>();
 
   const [_, bem] = createNamespace('switch');
+  const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
 
   const toggle = () => {
     if (props.disabled) return;
     const next = !props.checked;
     emit('update:checked', next);
     emit('change', next);
+    formItem?.onFieldChange();
   };
 </script>
 

@@ -13,7 +13,8 @@
 
 <script setup lang="ts">
   import { createNamespace } from '../../utils';
-  import { ref, onMounted, watch, computed } from 'vue';
+  import { ref, onMounted, watch, computed, inject } from 'vue';
+  import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfCheckbox' });
 
@@ -46,6 +47,7 @@
   }>();
 
   const [_, bem] = createNamespace('checkbox');
+  const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
   const inputRef = ref<HTMLInputElement>();
 
   const syncIndeterminate = () => {
@@ -68,6 +70,7 @@
     emit('update:modelValue', target.checked);
     emit('update:checked', target.checked);
     emit('change', target.checked);
+    formItem?.onFieldChange();
   };
 </script>
 

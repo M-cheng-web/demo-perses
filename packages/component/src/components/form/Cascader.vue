@@ -58,9 +58,10 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { RightOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
+  import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfCascader' });
 
@@ -101,6 +102,7 @@
   }>();
 
   const [_, bem] = createNamespace('cascader');
+  const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
   const rootRef = ref<HTMLElement>();
   const triggerRef = ref<HTMLElement>();
   const dropdownRef = ref<HTMLElement>();
@@ -199,6 +201,7 @@
     const valuePath = activePath.value.map((o) => o.value);
     emit('update:value', valuePath);
     emit('change', valuePath);
+    formItem?.onFieldChange();
     close();
   };
 

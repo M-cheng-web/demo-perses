@@ -75,6 +75,10 @@
               <Select v-model:value="form.tags" mode="multiple" show-search :options="tagOptions" placeholder="选择标签" allow-clear />
             </FormItem>
 
+            <FormItem label="Select (long list scroll)">
+              <Select v-model:value="form.longEnv" :options="longEnvOptions" placeholder="下拉项很多时出现滚动条" allow-clear />
+            </FormItem>
+
             <FormItem label="InputNumber">
               <InputNumber v-model:value="form.threshold" :min="0" :max="100" />
             </FormItem>
@@ -97,6 +101,40 @@
               </Space>
             </FormItem>
           </Form>
+        </Card>
+
+        <Card title="Form Validation (provide/inject)" size="small" :bordered="true">
+          <Space direction="vertical" :size="10" style="width: 100%">
+            <div class="dp-component-showcase__hint">点击“校验”后，未通过规则的字段下方会显示红色提示。</div>
+            <Form ref="validateFormRef" :model="validateForm" :rules="validateRules" layout="vertical">
+              <FormItem label="用户名" prop="username">
+                <Input v-model:value="validateForm.username" placeholder="至少 3 个字符" allow-clear />
+              </FormItem>
+
+              <FormItem label="邮箱" prop="email">
+                <Input v-model:value="validateForm.email" placeholder="name@example.com" allow-clear />
+              </FormItem>
+
+              <FormItem label="环境" prop="env">
+                <Select v-model:value="validateForm.env" :options="envOptions" placeholder="选择环境" allow-clear />
+              </FormItem>
+
+              <FormItem label="阈值" prop="threshold">
+                <InputNumber v-model:value="validateForm.threshold" :min="0" :max="100" />
+              </FormItem>
+
+              <FormItem label="标签（至少选择 1 个）" prop="tags">
+                <Select v-model:value="validateForm.tags" mode="multiple" show-search :options="tagOptions" placeholder="选择标签" allow-clear />
+              </FormItem>
+
+              <FormItem>
+                <Space :size="8">
+                  <Button type="primary" @click="handleValidate">校验</Button>
+                  <Button type="ghost" @click="handleResetValidate">重置</Button>
+                </Space>
+              </FormItem>
+            </Form>
+          </Space>
         </Card>
 
         <Card title="Navigation (Dropdown / Menu)" size="small" :bordered="true">
@@ -307,13 +345,45 @@
     checked: true,
     filter: '',
     cascader: [] as any[],
+    longEnv: undefined as string | undefined,
   });
+
+  const validateFormRef = ref<any>(null);
+  const validateForm = reactive({
+    username: '',
+    email: '',
+    env: undefined as string | undefined,
+    threshold: undefined as number | undefined,
+    tags: [] as string[],
+  });
+
+  const validateRules = {
+    username: [
+      { required: true, message: '请输入用户名' },
+      { min: 3, message: '用户名至少 3 个字符' },
+    ],
+    email: [
+      { required: true, message: '请输入邮箱' },
+      { pattern: /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/, message: '邮箱格式不正确' },
+    ],
+    env: [{ required: true, message: '请选择环境' }],
+    threshold: [{ required: true, message: '请输入阈值' }],
+    tags: [{ min: 1, message: '至少选择 1 个标签' }],
+  };
 
   const envOptions = [
     { label: 'prod', value: 'prod' },
     { label: 'staging', value: 'staging' },
     { label: 'dev', value: 'dev' },
   ];
+
+  const longEnvOptions = Array.from({ length: 80 }, (_, i) => {
+    const idx = i + 1;
+    return {
+      label: `Option ${String(idx).padStart(2, '0')} - a very long label for scroll demo`,
+      value: `opt-${idx}`,
+    };
+  });
 
   const tagOptions = [
     { label: 'core', value: 'core' },
@@ -349,6 +419,17 @@
 
   const notify = (label: string) => {
     message.success(`action: ${label}`);
+  };
+
+  const handleValidate = async () => {
+    const ok = await validateFormRef.value?.validate?.();
+    if (ok) message.success('校验通过');
+    else message.error('校验未通过，请检查红色提示');
+  };
+
+  const handleResetValidate = () => {
+    validateFormRef.value?.resetFields?.();
+    validateFormRef.value?.clearValidate?.();
   };
 
   const triggerLoading = async () => {

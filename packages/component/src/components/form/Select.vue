@@ -56,11 +56,11 @@
           @keydown.stop="handleSearchKeydown"
         />
       </template>
-      <span :class="bem('suffix')" aria-hidden="true">
+      <span :class="bem('suffix')">
         <button v-if="showClear" type="button" :class="bem('clear')" tabindex="-1" aria-label="清空" @click.stop="clearValue">
           <CloseOutlined />
         </button>
-        <span :class="bem('arrow')">
+        <span :class="bem('arrow')" aria-hidden="true">
           <DownOutlined />
         </span>
       </span>
@@ -91,10 +91,11 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { CheckOutlined, CloseOutlined, DownOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
   import Tag from '../base/Tag.vue';
+  import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfSelect' });
 
@@ -143,6 +144,7 @@
   }>();
 
   const [_, bem] = createNamespace('select');
+  const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
 
   const rootRef = ref<HTMLElement>();
   const controlRef = ref<HTMLElement>();
@@ -162,7 +164,7 @@
 
   const isMultiple = computed(() => props.mode === 'multiple' || props.mode === 'tags');
   const isTags = computed(() => props.mode === 'tags');
-  const showClear = computed(() => !isMultiple.value && props.allowClear && hasValue.value);
+  const showClear = computed(() => props.allowClear && hasValue.value);
 
   const selectedOptions = computed<Option[]>(() => {
     if (isMultiple.value) {
@@ -308,6 +310,7 @@
   const updateValue = (val: any) => {
     emit('update:value', val);
     emit('change', val);
+    formItem?.onFieldChange();
   };
 
   const isSelected = (val: any) => {
@@ -341,6 +344,7 @@
   const clearValue = () => {
     updateValue(isMultiple.value ? [] : undefined);
     search.value = '';
+    close();
   };
 
   const removeValue = (val: any) => {

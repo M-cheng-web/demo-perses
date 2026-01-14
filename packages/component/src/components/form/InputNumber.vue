@@ -25,9 +25,10 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
+  import { computed, inject, ref, watch } from 'vue';
   import { DownOutlined, UpOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
+  import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfInputNumber' });
 
@@ -65,6 +66,7 @@
   }>();
 
   const [_, bem] = createNamespace('input-number');
+  const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
   const innerValue = ref<number | undefined>(props.value);
   const controlSizeClass = computed(() => {
     if (props.size === 'small') return 'gf-control--size-small';
@@ -104,9 +106,13 @@
     const next = clamp(val);
     innerValue.value = next;
     emit('update:value', next);
+    formItem?.onFieldChange();
   };
 
-  const emitChange = () => emit('change', innerValue.value);
+  const emitChange = () => {
+    emit('change', innerValue.value);
+    formItem?.onFieldChange();
+  };
 
   const handleInput = (evt: Event) => {
     const target = evt.target as HTMLInputElement;

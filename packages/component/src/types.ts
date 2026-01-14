@@ -27,3 +27,17 @@ export interface TableProps<T = any> {
   rowKey?: (record: T) => string | number;
   onChange?: (pagination: TablePaginationConfig) => void;
 }
+
+export type GfFormRuleTrigger = 'change' | 'blur' | 'submit';
+
+export interface GfFormRule {
+  required?: boolean;
+  message?: string;
+  min?: number;
+  max?: number;
+  pattern?: RegExp;
+  validator?: (value: any, model?: Record<string, any>) => boolean | string | Promise<boolean | string>;
+  trigger?: GfFormRuleTrigger | GfFormRuleTrigger[];
+}
+
+export type GfFormRules = Record<string, GfFormRule | GfFormRule[]>;

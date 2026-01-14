@@ -24,8 +24,9 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
+  import { computed, inject, ref, watch } from 'vue';
   import { createNamespace } from '../../utils';
+  import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfInput' });
 
@@ -68,6 +69,7 @@
   }>();
 
   const [_, bem] = createNamespace('input');
+  const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
   const innerValue = ref<string | number>(props.value ?? '');
   const controlSizeClass = computed(() => {
     if (props.size === 'small') return 'gf-control--size-small';
@@ -87,10 +89,12 @@
     innerValue.value = target.value;
     emit('update:value', innerValue.value);
     emit('input', innerValue.value);
+    formItem?.onFieldChange();
   };
 
   const handleChange = () => {
     emit('change', innerValue.value);
+    formItem?.onFieldChange();
   };
 
   const handlePressEnter = () => {
@@ -101,6 +105,7 @@
     innerValue.value = '';
     emit('update:value', '');
     emit('change', '');
+    formItem?.onFieldChange();
   };
 </script>
 

@@ -14,8 +14,9 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, onMounted, nextTick } from 'vue';
+  import { ref, watch, onMounted, nextTick, inject } from 'vue';
   import { createNamespace } from '../../utils';
+  import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfTextarea' });
 
@@ -47,6 +48,7 @@
   }>();
 
   const [_, bem] = createNamespace('textarea');
+  const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
   const textareaRef = ref<HTMLTextAreaElement>();
   const innerValue = ref(props.value ?? '');
 
@@ -80,6 +82,7 @@
     emit('update:value', innerValue.value);
     emit('change', innerValue.value);
     resize();
+    formItem?.onFieldChange();
   };
 </script>
 

@@ -24,8 +24,9 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { createNamespace } from '../../utils';
+  import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfSegmented' });
 
@@ -65,6 +66,7 @@
   }>();
 
   const [_, bem] = createNamespace('segmented');
+  const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
 
   const normalizedOptions = computed(() => {
     return (props.options ?? []).map((opt, idx) => {
@@ -81,6 +83,7 @@
     if (!target || target.disabled) return;
     emit('update:value', val);
     emit('change', val);
+    formItem?.onFieldChange();
   };
 
   const rootRef = ref<HTMLElement | null>(null);
