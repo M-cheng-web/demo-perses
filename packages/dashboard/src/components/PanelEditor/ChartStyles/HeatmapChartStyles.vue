@@ -98,6 +98,7 @@
   import { ref, watch } from 'vue';
   import { deepClone, createNamespace } from '/#/utils';
   import { getDefaultHeatmapChartOptions } from '../ChartStylesDefaultOptions/heatmapChartDefaultOptions';
+  import { deepMerge } from './utils';
   import { Switch, Input, Select, Button } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('heatmap-chart-styles');
@@ -113,12 +114,7 @@
   }>();
 
   // 合并默认配置和传入的配置
-  const localOptions = ref(
-    deepClone({
-      ...getDefaultHeatmapChartOptions(),
-      ...props.options,
-    })
-  );
+  const localOptions = ref(deepClone(deepMerge(getDefaultHeatmapChartOptions(), props.options ?? {})));
 
   // 恢复默认设置
   const resetToDefaults = () => {
@@ -141,10 +137,7 @@
     () => props.options,
     (newVal) => {
       if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
-        localOptions.value = deepClone({
-          ...getDefaultHeatmapChartOptions(),
-          ...newVal,
-        });
+        localOptions.value = deepClone(deepMerge(getDefaultHeatmapChartOptions(), newVal ?? {}));
       }
     },
     { deep: true }

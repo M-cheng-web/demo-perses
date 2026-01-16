@@ -1,3 +1,13 @@
+/**
+ * Monorepo 子包元信息列表
+ *
+ * 用途：
+ * - 给 scripts/build.ts / scripts/publish.ts 等脚本提供统一的包清单
+ * - 描述每个子包的发布信息、构建方式、external 依赖等
+ *
+ * 说明：
+ * - 这里只维护“仓库级别的配置”，不放具体业务逻辑
+ */
 import path from 'path';
 import { packagesDir } from './paths.js';
 
@@ -27,6 +37,24 @@ export interface PackageMeta {
 }
 
 export const packages: PackageMeta[] = [
+  {
+    name: 'api',
+    packageName: '@grafana-fast/api',
+    display: 'API',
+    description: 'grafana-fast 的数据访问层（契约层 + 实现层）。',
+    category: 'library',
+    publish: true,
+    external: ['@grafana-fast/types'],
+  },
+  {
+    name: 'panels',
+    packageName: '@grafana-fast/panels',
+    display: 'Panels',
+    description: '面板插件注册与筛选工具（all/exclude/insert）。',
+    category: 'library',
+    publish: true,
+    external: ['vue', '@grafana-fast/dashboard'],
+  },
   {
     name: 'types',
     packageName: '@grafana-fast/types',
@@ -60,7 +88,7 @@ export const packages: PackageMeta[] = [
     description: 'grafana-fast 的仪表板体验包。',
     category: 'library',
     publish: true,
-    external: ['vue', 'dayjs', 'echarts'],
+    external: ['vue', 'dayjs', 'echarts', '@grafana-fast/api'],
   },
   {
     name: 'hook',
@@ -69,7 +97,7 @@ export const packages: PackageMeta[] = [
     description: '与 grafana-fast 仪表板交互的组合式 Hooks（SDK）。',
     category: 'library',
     publish: true,
-    external: ['vue', '@grafana-fast/store', '@grafana-fast/dashboard', '@grafana-fast/types'],
+    external: ['vue', '@grafana-fast/store', '@grafana-fast/dashboard', '@grafana-fast/types', '@grafana-fast/api'],
   },
   {
     name: 'app',

@@ -11,6 +11,8 @@ interface TimeRangeState {
   timeRange: TimeRange;
   /** 刷新间隔（毫秒，0 表示不自动刷新） */
   refreshInterval: number;
+  /** 内部定时器 */
+  _timerId: number | null;
 }
 
 export const useTimeRangeStore = defineStore('timeRange', {
@@ -20,6 +22,7 @@ export const useTimeRangeStore = defineStore('timeRange', {
       to: 'now',
     },
     refreshInterval: 0,
+    _timerId: null,
   }),
 
   getters: {
@@ -59,6 +62,7 @@ export const useTimeRangeStore = defineStore('timeRange', {
      */
     setRefreshInterval(interval: number) {
       this.refreshInterval = interval;
+      this._restartAutoRefreshTimer();
     },
 
     /**
@@ -67,6 +71,22 @@ export const useTimeRangeStore = defineStore('timeRange', {
     refresh() {
       // 如果使用相对时间（如 "now"），强制更新以触发重新计算
       this.timeRange = { ...this.timeRange };
+    },
+
+    stopAutoRefresh() {
+      if (this._timerId !== null) {
+        clearInterval(this._timerId);
+        this._timerId = null;
+      }
+    },
+
+    _restartAutoRefreshTimer() {
+      // private-ish action (still callable)
+      this.stopAutoRefresh();
+      if (!this.refreshInterval || this.refreshInterval <= 0) return;
+      this._timerId = window.setInterval(() => {
+        this.refresh();
+      }, this.refreshInterval);
     },
   },
 });

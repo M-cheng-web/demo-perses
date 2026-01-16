@@ -1,3 +1,10 @@
+<!--
+  组件说明：面板网格布局（GridLayout）
+
+  用途：
+  - 基于 vue-grid-layout-v3 渲染面板布局（拖拽/缩放）
+  - 在编辑模式下把 layout 变化同步回 Dashboard Store
+-->
 <template>
   <div :class="bem()">
     <grid-layout

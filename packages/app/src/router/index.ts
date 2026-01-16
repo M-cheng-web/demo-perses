@@ -17,6 +17,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ComponentShowcase.vue'),
   },
   {
+    path: '/perf',
+    name: 'PerformanceView',
+    component: () => import('@/views/PerformanceView.vue'),
+  },
+  {
     path: '/',
     redirect: '/home',
   },

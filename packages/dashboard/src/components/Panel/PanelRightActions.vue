@@ -1,3 +1,10 @@
+<!--
+  组件说明：面板右侧操作区（PanelRightActions）
+
+  用途：
+  - 提供“编辑 / 复制 / 全屏 / 删除”等高频动作
+  - 默认仅在 hover 或编辑模式下显示（减少界面干扰）
+-->
 <template>
   <div :class="[bem(), { 'is-visible': isVisible }]">
     <template v-if="!isEditMode">
@@ -96,4 +103,3 @@
     }
   }
 </style>
-

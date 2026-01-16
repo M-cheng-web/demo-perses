@@ -1,0 +1,30 @@
+{
+  "name": "@grafana-fast/panels",
+  "version": "0.1.0",
+  "description": "Panel plugin registry helpers for grafana-fast (all/exclude/insert).",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c ../../scripts/rollup.config.js"
+  },
+  "dependencies": {
+    "@grafana-fast/dashboard": "workspace:*"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "license": "MIT"
+}
+

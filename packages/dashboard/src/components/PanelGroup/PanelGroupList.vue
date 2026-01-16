@@ -1,3 +1,10 @@
+<!--
+  组件说明：面板组列表（PanelGroupList）
+
+  用途：
+  - 循环渲染 dashboard 的 panelGroups
+  - 每个 group 内部挂载 GridLayout（渲染 panels）与右侧操作区
+-->
 <template>
   <div :class="bem()">
     <Panel

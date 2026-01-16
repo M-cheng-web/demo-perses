@@ -1,7 +1,18 @@
+/**
+ * 文件说明：Dashboard SDK（useDashboardSdk）
+ *
+ * 作用：
+ * - 为宿主应用提供“嵌入式 dashboard”的统一挂载能力
+ * - 提供 pinia 隔离策略、theme 管理、load/save 操作包装等
+ *
+ * 说明：
+ * - 这是对外导出的核心 API 文件之一，因此注释会相对更完整
+ */
 import { computed, createApp, defineComponent, h, onMounted, onUnmounted, ref, watch, type App, type ComputedRef, type Ref } from 'vue';
 import { createPinia, getActivePinia, setActivePinia } from '@grafana-fast/store';
 import type { Pinia } from '@grafana-fast/store';
 import type { Dashboard, Panel, PanelGroup, PanelLayout, ID, TimeRange } from '@grafana-fast/types';
+import { migrateDashboard } from '@grafana-fast/types';
 import {
   initDashboardTheme,
   getStoredThemePreference,
@@ -15,6 +26,15 @@ import {
   type TooltipData,
 } from '@grafana-fast/dashboard';
 import { DashboardView } from '@grafana-fast/dashboard';
+import {
+  createHttpApiClient,
+  createMockApiClient,
+  createPrometheusDirectApiClient,
+  type ApiImplementationKind,
+  type GrafanaFastApiClient,
+} from '@grafana-fast/api';
+import type { PanelRegistry } from '@grafana-fast/dashboard';
+import { setPiniaApiClient, setPiniaPanelRegistry, disposePiniaQueryScheduler, createBuiltInPanelRegistry } from '@grafana-fast/dashboard';
 
 const DEFAULT_DSN = '/api';
 
@@ -62,6 +82,37 @@ export interface DashboardSdkOptions {
   autoLoad?: boolean;
   /** 自定义数据源根路径（dsn）以及接口路径配置 */
   apiConfig?: DashboardSdkApiConfig;
+  /**
+   * 选择 API 的实现方式（实现层），默认使用 `mock`
+   *
+   * 说明：
+   * - 在后端接口未就绪前，默认走 mock 数据，保证前端开发不被阻塞
+   * - `http` / `prometheus-direct` 先预留入口：即便内部实现不同，调用层的方法名保持稳定
+   */
+  apiKind?: ApiImplementationKind;
+  /**
+   * 直接传入一个完整的 apiClient（优先级高于 apiKind + apiConfig）
+   *
+   * 适用场景：
+   * - 宿主应用已自行管理鉴权/请求/环境切换
+   * - 需要在运行时切换不同数据源或不同后端实例
+   */
+  apiClient?: GrafanaFastApiClient;
+  /**
+   * 面板注册表（Panel Registry / 插件系统）
+   *
+   * 说明：
+   * - 用于“面板类型 -> 面板渲染/编辑能力”的映射
+   * - 不传时默认使用内置面板（createBuiltInPanelRegistry）
+   */
+  panelRegistry?: PanelRegistry;
+  /**
+   * Pinia 实例隔离策略（用于同一页面挂载多个 dashboard 的场景）
+   *
+   * - `isolate`（默认）：当未传入 options.pinia 时，自动创建新的 pinia 实例，实现 store/调度器/tooltip 等隔离
+   * - `shared`：优先复用当前 active pinia（如果存在），适合“全站共享 store”场景
+   */
+  piniaStrategy?: 'isolate' | 'shared';
   /** SDK 准备好后触发 */
   onReady?: () => void;
   /** SDK 释放前触发 */
@@ -90,7 +141,9 @@ export interface DashboardSdkState {
 }
 
 export interface DashboardSdkApiConfig {
+  /** API 根路径，例如 `/api`，用于拼接 endpoints */
   dsn?: string;
+  /** 自定义 endpoints 覆盖（未提供的项会使用 DEFAULT_DASHBOARD_ENDPOINTS） */
   endpoints?: Partial<Record<DashboardApi, string>>;
 }
 
@@ -100,61 +153,102 @@ export interface ResolvedDashboardSdkApiConfig {
 }
 
 export interface DashboardSdkActions {
+  /** 按 id 加载 dashboard（内部会进行 schema migration） */
   loadDashboard: (id: ID) => Promise<unknown>;
+  /** 保存当前 dashboard（落库或写回后端/本地实现） */
   saveDashboard: () => Promise<unknown>;
+  /** 直接替换当前 dashboard（导入/回放/压测） */
+  setDashboard: (dashboard: Dashboard) => void;
+  /** 切换编辑模式（影响拖拽/操作按钮/编辑器等） */
   toggleEditMode: () => void;
+  /** 新增面板组 */
   addPanelGroup: (group: Partial<PanelGroup>) => unknown;
+  /** 更新面板组（标题/描述/折叠等） */
   updatePanelGroup: (id: ID, updates: Partial<PanelGroup>) => unknown;
+  /** 删除面板组 */
   deletePanelGroup: (id: ID) => unknown;
+  /** 更新面板组布局（拖拽/缩放后同步） */
   updatePanelGroupLayout: (groupId: ID, layout: PanelLayout[]) => unknown;
+  /** 复制面板（用于快速创建相似面板） */
   duplicatePanel: (groupId: ID, panelId: ID) => unknown;
+  /** 切换面板全屏查看（viewPanel） */
   togglePanelView: (groupId: ID, panelId: ID) => unknown;
+  /** 通过 id 获取面板组（用于只读查询） */
   getPanelGroupById: (id: ID) => unknown;
+  /** 通过 groupId + panelId 获取面板（用于只读查询） */
   getPanelById: (groupId: ID, panelId: ID) => unknown;
+  /** 设置时间范围（会触发相关面板刷新） */
   setTimeRange: (range: TimeRange) => unknown;
+  /** 设置刷新间隔（ms，0 表示关闭自动刷新） */
   setRefreshInterval: (interval: number) => unknown;
+  /** 主动触发一次刷新（按当前 timeRange/变量执行） */
   refreshTimeRange: () => unknown;
+  /** 注册图表到全局 Tooltip（用于跨图表联动/固定 tooltip） */
   registerChart: (...args: any[]) => unknown;
+  /** 更新已注册图表的信息（容器尺寸、offset 等） */
   updateChartRegistration: (...args: any[]) => unknown;
+  /** 取消注册图表 */
   unregisterChart: (...args: any[]) => unknown;
+  /** 手动写入全局鼠标位置（通常由 chart 事件驱动） */
   setGlobalMousePosition: (pos: MousePosition) => unknown;
   /** 设置主题偏好并应用（light/dark/system） */
   setTheme: (theme: DashboardTheme) => DashboardTheme;
+  /** 设置主题偏好（light/dark/system）并持久化 */
   setThemePreference: (preference: DashboardThemePreference) => DashboardTheme;
+  /** 在 light/dark 间切换 */
   toggleTheme: () => DashboardTheme;
+  /** 获取当前实际主题（light/dark） */
   getTheme: () => DashboardTheme;
 }
 
 export interface UseDashboardSdkResult {
+  /** SDK 使用的 pinia 实例（可用于与宿主应用共享或隔离） */
   pinia: Pinia;
+  /** SDK 是否已完成挂载与初始化 */
   ready: Ref<boolean>;
+  /** Dashboard 挂载目标容器 ref */
   targetRef: Ref<HTMLElement | null>;
+  /** 容器尺寸（用于响应式布局、resize 触发等） */
   containerSize: Ref<{ width: number; height: number }>;
+  /** 聚合后的只读状态（对外稳定形态） */
   state: ComputedRef<DashboardSdkState>;
+  /** 解析后的 API 配置（dsn + endpoints 完整 URL），方便调试 */
   api: ComputedRef<ResolvedDashboardSdkApiConfig>;
+  /** 对外操作集合（稳定 API 面） */
   actions: DashboardSdkActions;
+  /** 当前实际主题（light/dark） */
   theme: Ref<DashboardTheme>;
+  /** 主题偏好（light/dark/system） */
   themePreference: Ref<DashboardThemePreference>;
+  /** 手动挂载（一般由 SDK 自动触发；高级用法） */
   mountDashboard: () => void;
+  /** 手动卸载（用于释放资源/重置） */
   unmountDashboard: () => void;
   /**
-   * For advanced/debug usage only. Typed as `unknown` to avoid exposing internal store state types.
-   * Prefer `state` + `actions` for a stable public surface.
+   * 高级/调试用途：直接拿到内部 store 实例
+   *
+   * 说明：
+   * - 这里刻意标为 `unknown`，避免把内部 store 结构当成“稳定对外 API”
+   * - 对外推荐使用 `state` + `actions`（更稳定、可做兼容层）
    */
   dashboardStore: unknown;
   timeRangeStore: unknown;
   tooltipStore: unknown;
 }
 
-function ensurePinia(pinia?: Pinia) {
+function ensurePinia(pinia: Pinia | undefined, strategy: 'isolate' | 'shared') {
   if (pinia) {
     // 外部传入实例时，直接设为当前激活实例
     setActivePinia(pinia);
     return pinia;
   }
 
-  const active = getActivePinia();
-  if (active) return active;
+  // 默认行为（多实例隔离）：
+  // 未传 pinia 时，除非显式选择 shared，否则创建新的 pinia 实例用于隔离多个 dashboard。
+  if (strategy === 'shared') {
+    const active = getActivePinia();
+    if (active) return active;
+  }
 
   const created = createPinia();
   setActivePinia(created);
@@ -168,7 +262,24 @@ function ensurePinia(pinia?: Pinia) {
  */
 export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: DashboardSdkOptions = {}): UseDashboardSdkResult {
   // 保证 Pinia 上下文存在
-  const pinia = ensurePinia(options.pinia);
+  const pinia = ensurePinia(options.pinia, options.piniaStrategy ?? 'isolate');
+
+  // 解析 apiClient：默认使用 mock（后端接口未就绪时不阻塞前端）
+  const resolvedApiClient: GrafanaFastApiClient =
+    options.apiClient ??
+    (options.apiKind === 'http'
+      ? createHttpApiClient({ apiConfig: options.apiConfig })
+      : options.apiKind === 'prometheus-direct'
+        ? createPrometheusDirectApiClient({ apiConfig: options.apiConfig })
+        : createMockApiClient());
+
+  // 面板注册表（插件系统）
+  const resolvedPanelRegistry: PanelRegistry = options.panelRegistry ?? createBuiltInPanelRegistry();
+
+  // 把 runtime 依赖挂到 pinia 实例上，让 dashboard 内部 store 可以在“无全局单例”的情况下获取到 apiClient/panelRegistry
+  setPiniaApiClient(pinia, resolvedApiClient);
+  setPiniaPanelRegistry(pinia, resolvedPanelRegistry);
+
   const dashboardStore = useDashboardStore(pinia);
   const timeRangeStore = useTimeRangeStore(pinia);
   const tooltipStore = useTooltipStore(pinia);
@@ -178,11 +289,18 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const dashboardApp = ref<App<Element> | null>(null);
   const themePreference = ref<DashboardThemePreference>('system');
   const theme = ref<DashboardTheme>('light');
+  const runtimeId = `sdk-${resolvedApiClient.kind}-${typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : Math.random().toString(16).slice(2)}`;
 
   const DashboardSdkRoot = defineComponent({
     name: 'DashboardSdkRoot',
     setup() {
-      return () => h(DashboardView, { theme: theme.value });
+      return () =>
+        h(DashboardView, {
+          theme: theme.value,
+          apiClient: resolvedApiClient,
+          panelRegistry: resolvedPanelRegistry,
+          runtimeId,
+        });
     },
   });
 
@@ -196,15 +314,6 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   };
 
   let resizeObserver: ResizeObserver | null = null;
-
-  const handleMouseMove = (event: MouseEvent) => {
-    tooltipStore.updateGlobalMousePosition({
-      x: event.clientX,
-      y: event.clientY,
-      pageX: event.pageX,
-      pageY: event.pageY,
-    });
-  };
 
   // 将 dsn 与自定义 endpoints 合并为完整 URL，暴露给外部调试/使用
   const resolvedApiConfig = computed<ResolvedDashboardSdkApiConfig>(() => {
@@ -243,14 +352,12 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   watch(
     targetRef,
     (el, prevEl, onCleanup) => {
-      // 容器变化时重绑事件和 ResizeObserver
-      prevEl?.removeEventListener('mousemove', handleMouseMove);
+      // 容器变化时重绑 ResizeObserver
       if (resizeObserver && prevEl) {
         resizeObserver.unobserve(prevEl);
       }
 
       if (el) {
-        el.addEventListener('mousemove', handleMouseMove, { passive: true });
         resizeObserver?.observe(el);
         updateSize();
 
@@ -261,7 +368,6 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       }
 
       onCleanup(() => {
-        el?.removeEventListener('mousemove', handleMouseMove);
         if (resizeObserver && el) resizeObserver.unobserve(el);
       });
     },
@@ -276,7 +382,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     }
 
     try {
-      // Initialize theme as early as possible so tokens are ready before first paint.
+      // 尽可能早初始化主题：保证第一次渲染前 token/变量已就绪
       themePreference.value = getStoredThemePreference() ?? 'system';
       theme.value = initDashboardTheme({ defaultPreference: themePreference.value });
 
@@ -293,10 +399,21 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   });
 
   onUnmounted(() => {
-    const el = targetRef.value;
-    el?.removeEventListener('mousemove', handleMouseMove);
     resizeObserver?.disconnect();
     resizeObserver = null;
+    // 隔离实例场景下，卸载时要停止后台刷新，避免内存泄漏或多实例互相影响
+    try {
+      (timeRangeStore as any).stopAutoRefresh?.();
+    } catch {
+      // ignore
+    }
+    if (!options.pinia && (options.piniaStrategy ?? 'isolate') === 'isolate') {
+      try {
+        disposePiniaQueryScheduler(pinia);
+      } catch {
+        // ignore
+      }
+    }
     options.onBeforeUnmount?.();
     unmountDashboard();
   });
@@ -316,6 +433,9 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     // Dashboard 数据加载/保存
     loadDashboard: (id: ID) => dashboardStore.loadDashboard(id),
     saveDashboard: () => dashboardStore.saveDashboard(),
+    setDashboard: (dashboard: Dashboard) => {
+      dashboardStore.currentDashboard = migrateDashboard(dashboard);
+    },
     // 编辑模式切换
     toggleEditMode: () => dashboardStore.toggleEditMode(),
     // 面板组管理

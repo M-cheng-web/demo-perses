@@ -27,7 +27,7 @@
 
       <!-- 执行查询按钮 -->
       <div :class="bem('header-actions')">
-        <Button type="primary" size="middle" :class="bem('run-btn')" shortcut="Ctrl+Enter" @click="handleExecuteQuery">
+        <Button type="primary" size="middle" :class="bem('run-btn')" @click="handleExecuteQuery">
           <template #icon><SearchOutlined /></template>
           执行查询
         </Button>
@@ -247,26 +247,25 @@
   import QueryExplain from '/#/components/QueryBuilder/query-builder/QueryExplain.vue';
   import QueryPatternsModal from '/#/components/QueryBuilder/QueryPatternsModal.vue';
   import { promQueryModeller } from '/#/components/QueryBuilder/lib/PromQueryModeller';
-  import { getDefaultDataSource } from '/#/api/querybuilder/datasource';
   import { createNamespace } from '/#/utils';
-  import type { PromVisualQuery, QueryPanel } from '@grafana-fast/types';
+  import type { CanonicalQuery, DatasourceRef, PromVisualQuery, QueryPanel } from '@grafana-fast/types';
 
   const [_, bem] = createNamespace('data-query-tab');
 
   // Props
   interface Props {
-    queries?: any[]; // 原始查询列表（旧格式：Query 接口，包含 id, datasource, expr, legendFormat, minStep, format, instant 等字段）
+    queries?: CanonicalQuery[];
     datasource?: any; // Prometheus 数据源
   }
 
   const props = withDefaults(defineProps<Props>(), {
     queries: () => [],
-    datasource: () => getDefaultDataSource(),
+    datasource: () => ({ id: 'prometheus-mock', type: 'prometheus', name: 'Prometheus' }),
   });
 
   // Emits
   const emit = defineEmits<{
-    'update:queries': [queries: any[]];
+    'update:queries': [queries: CanonicalQuery[]];
     execute: [];
   }>();
 
@@ -319,7 +318,7 @@
     if (props.queries && props.queries.length > 0) {
       // 从旧格式转换 - Builder 模式
       builderQueryPanels.value = props.queries.map((_q, index) => ({
-        refId: String.fromCharCode(65 + index), // A, B, C...
+        refId: _q.refId || String.fromCharCode(65 + index), // A, B, C...
         query: {
           metric: '',
           labels: [],
@@ -331,7 +330,7 @@
 
       // 从旧格式转换 - Code 模式
       codeQueryPanels.value = props.queries.map((_q, index) => ({
-        refId: String.fromCharCode(65 + index),
+        refId: _q.refId || String.fromCharCode(65 + index),
         query: {
           metric: '',
           labels: [],
@@ -464,7 +463,7 @@
   // 执行查询
   const handleExecuteQuery = () => {
     // 根据当前模式转换查询
-    const queries = convertQueriesToOldFormat();
+    const queries = convertQueriesToCanonicalFormat();
 
     // 验证
     const invalidQueries = queries.filter((q: any, index: number) => {
@@ -484,12 +483,20 @@
     emit('execute');
   };
 
-  // 将 QueryPanel 转换为旧格式
-  const convertQueriesToOldFormat = () => {
+  const getDatasourceRef = (): DatasourceRef => {
+    // QueryBuilder datasource is Prometheus-like; keep stable uid for mock/http implementations.
+    const uid = props.datasource?.id ? String(props.datasource.id) : 'prometheus-mock';
+    return { type: 'prometheus', uid };
+  };
+
+  // 将 QueryPanel 转换为 CanonicalQuery（存储/执行层）
+  const convertQueriesToCanonicalFormat = (): CanonicalQuery[] => {
+    const datasourceRef = getDatasourceRef();
     if (queryMode.value === 'builder') {
       return builderQueryPanels.value.map((panel) => ({
         id: `query-${panel.refId}`,
-        datasource: 'Prometheus',
+        refId: panel.refId,
+        datasourceRef,
         expr: getPromQLForQuery(panel.query),
         legendFormat: '',
         minStep: 15,
@@ -500,7 +507,8 @@
     } else {
       return codeQueryPanels.value.map((panel, index) => ({
         id: `query-${panel.refId}`,
-        datasource: 'Prometheus',
+        refId: panel.refId,
+        datasourceRef,
         expr: codePromQLs.value[index] || '',
         legendFormat: legendFormats.value[index] || '',
         minStep: minSteps.value[index] || 15,
@@ -563,7 +571,7 @@
 
   // 对外暴露方法
   defineExpose({
-    getQueries: convertQueriesToOldFormat,
+    getQueries: convertQueriesToCanonicalFormat,
   });
 </script>
 

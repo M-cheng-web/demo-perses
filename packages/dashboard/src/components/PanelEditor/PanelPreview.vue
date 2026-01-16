@@ -12,18 +12,14 @@
 </template>
 
 <script setup lang="ts">
-	  import { ref, computed, watch, onMounted } from 'vue';
+	  import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 	  import { Empty } from '@grafana-fast/component';
-	  import TimeSeriesChart from '/#/components/Charts/TimeSeriesChart.vue';
-	  import PieChart from '/#/components/Charts/PieChart.vue';
-	  import BarChart from '/#/components/Charts/BarChart.vue';
-  import StatPanel from '/#/components/Charts/StatPanel.vue';
-  import GaugeChart from '/#/components/Charts/GaugeChart.vue';
-  import HeatmapChart from '/#/components/Charts/HeatmapChart.vue';
-  import TableChart from '/#/components/Charts/TableChart.vue';
-  import type { Panel, QueryResult } from '@grafana-fast/types';
-  import { useTimeRangeStore } from '/#/stores';
-  import { executeQueries } from '/#/mock/queries';
+  import type { Panel, QueryResult, QueryContext } from '@grafana-fast/types';
+  import { useTimeRangeStore, useVariablesStore } from '/#/stores';
+  import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
+  import { QueryRunner } from '/#/query/queryRunner';
+  import { usePanelRegistry } from '/#/runtime/useInjected';
+  import UnsupportedPanel from '/#/components/Panel/UnsupportedPanel.vue';
   import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('panel-preview');
@@ -41,21 +37,16 @@
   );
 
   const timeRangeStore = useTimeRangeStore();
+  const variablesStore = useVariablesStore();
+  const registry = usePanelRegistry();
   const queryResults = ref<QueryResult[]>([]);
 	  const isLoading = ref(false);
+  let abortController: AbortController | null = null;
 
   // 根据面板类型选择对应的图表组件
   const chartComponent = computed(() => {
-    const componentMap: Record<string, any> = {
-      timeseries: TimeSeriesChart,
-      pie: PieChart,
-      bar: BarChart,
-      stat: StatPanel,
-      gauge: GaugeChart,
-      heatmap: HeatmapChart,
-      table: TableChart,
-    };
-    return componentMap[props.panel.type] || TimeSeriesChart;
+    const plugin = registry.get(props.panel.type);
+    return plugin?.component ?? UnsupportedPanel;
   });
 
   // 执行查询（使用和外部一样的查询逻辑，确保数据一致）
@@ -65,16 +56,27 @@
       return;
     }
 
+    abortController?.abort();
+    abortController = new AbortController();
+
     isLoading.value = true;
     try {
       const { start, end } = timeRangeStore.getTimeRangeTimestamps();
-      const timeRange = { from: start, to: end };
+      const context: QueryContext = { timeRange: { from: start, to: end } };
+      const api = getPiniaApiClient();
+      const runner = new QueryRunner(api, { maxConcurrency: 4, cacheTtlMs: 0 });
+      const variableMeta: Record<string, any> = {};
+      for (const v of variablesStore.variables ?? []) {
+        variableMeta[v.name] = { includeAll: v.includeAll, allValue: v.allValue, multi: v.multi };
+      }
 
-      // 使用和外部一样的 executeQueries 函数，确保数据来源一致
-      const results = await executeQueries(props.panel.queries, timeRange);
+      const results = await runner.executeQueries(props.panel.queries, context, variablesStore.values as any, variableMeta, {
+        signal: abortController.signal,
+      });
 
       queryResults.value = results;
     } catch (error) {
+      if ((error as any)?.name === 'AbortError') return;
       console.error('Query execution failed:', error);
       queryResults.value = [];
     } finally {
@@ -119,10 +121,22 @@
     { deep: true }
   );
 
+  watch(
+    () => variablesStore.lastUpdatedAt,
+    () => {
+      if (props.autoExecute) executeQueriesInternal();
+    }
+  );
+
   onMounted(() => {
     if (props.autoExecute) {
       executeQueriesInternal();
     }
+  });
+
+  onBeforeUnmount(() => {
+    abortController?.abort();
+    abortController = null;
   });
 
   // 暴露方法给父组件调用

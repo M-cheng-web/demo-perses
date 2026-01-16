@@ -109,6 +109,7 @@
   import { ref, watch } from 'vue';
   import { deepClone, createNamespace } from '/#/utils';
   import { getDefaultStatPanelOptions } from '../ChartStylesDefaultOptions/statPanelDefaultOptions';
+  import { deepMerge } from './utils';
   import { Switch, Select, Segmented, Button } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('stat-panel-styles');
@@ -124,12 +125,7 @@
   }>();
 
   // 合并默认配置和传入的配置
-  const localOptions = ref(
-    deepClone({
-      ...getDefaultStatPanelOptions(),
-      ...props.options,
-    })
-  );
+  const localOptions = ref(deepClone(deepMerge(getDefaultStatPanelOptions(), props.options ?? {})));
 
   // 恢复默认设置
   const resetToDefaults = () => {
@@ -152,10 +148,7 @@
     () => props.options,
     (newVal) => {
       if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
-        localOptions.value = deepClone({
-          ...getDefaultStatPanelOptions(),
-          ...newVal,
-        });
+        localOptions.value = deepClone(deepMerge(getDefaultStatPanelOptions(), newVal ?? {}));
       }
     },
     { deep: true }

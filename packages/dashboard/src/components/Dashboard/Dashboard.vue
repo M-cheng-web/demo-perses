@@ -1,6 +1,14 @@
+<!--
+  文件说明：Dashboard 根组件
+
+  职责：
+  - 提供运行时依赖（apiClient / panelRegistry / runtimeContext）
+  - 渲染工具栏、面板组、编辑器、全屏弹窗、全局 Tooltip 等
+  - 处理多实例隔离：鼠标跟踪、依赖注入与 pinia 附加依赖绑定
+-->
 <template>
   <ConfigProvider :theme="props.theme">
-    <div :class="bem()">
+    <div ref="rootEl" :class="bem()">
       <!-- 工具栏 -->
       <DashboardToolbar />
 
@@ -29,10 +37,10 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
-  import { storeToRefs } from '@grafana-fast/store';
+  import { ref, watch, onMounted, onUnmounted, computed, provide, inject } from 'vue';
+  import { getActivePinia, storeToRefs, type Pinia } from '@grafana-fast/store';
   import { Button, ConfigProvider, Empty } from '@grafana-fast/component';
-  import { useDashboardStore, useTooltipStore } from '/#/stores';
+  import { useDashboardStore, useTooltipStore, useVariablesStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
   import { DASHBOARD_EMPTY_TEXT } from '/#/components/Dashboard/utils';
   import DashboardToolbar from './DashboardToolbar.vue';
@@ -42,6 +50,12 @@
   import GlobalChartTooltip from '/#/components/ChartTooltip/GlobalChartTooltip.vue';
   import PanelGroupDialog from '/#/components/PanelGroup/PanelGroupDialog.vue';
   import type { PanelGroup } from '@grafana-fast/types';
+  import type { GrafanaFastApiClient } from '@grafana-fast/api';
+  import { createMockApiClient } from '@grafana-fast/api';
+  import type { PanelRegistry } from '/#/runtime/panels';
+  import { createBuiltInPanelRegistry } from '/#/runtime/panels';
+  import { GF_API_KEY, GF_PANEL_REGISTRY_KEY, GF_RUNTIME_KEY } from '/#/runtime/keys';
+  import { setPiniaApiClient, setPiniaPanelRegistry } from '/#/runtime/piniaAttachments';
 
   const [_, bem] = createNamespace('dashboard');
 
@@ -54,19 +68,65 @@
        * - 'dark': explicit dark scheme
        */
       theme?: 'blue' | 'light' | 'dark' | 'inherit';
+      /**
+       * Optional runtime-provided API client (contracts + implementation).
+       * When not provided, dashboard defaults to mock implementation.
+       */
+      apiClient?: GrafanaFastApiClient;
+      /**
+       * Optional panel registry override (plugins).
+       * When not provided, dashboard uses built-in panels.
+       */
+      panelRegistry?: PanelRegistry;
+      /**
+       * Optional runtime id for multi-instance isolation.
+       * When not provided, a random id is generated.
+       */
+      runtimeId?: string;
     }>(),
     {
       theme: 'inherit',
+      apiClient: undefined,
+      panelRegistry: undefined,
+      runtimeId: undefined,
     }
   );
 
   const dashboardStore = useDashboardStore();
   const tooltipStore = useTooltipStore();
+  const variablesStore = useVariablesStore();
   const { panelGroups, isEditMode, viewPanel } = storeToRefs(dashboardStore);
+  const { currentDashboard } = storeToRefs(dashboardStore);
   const fullscreenModalRef = ref<InstanceType<typeof PanelFullscreenModal>>();
   const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
+  const rootEl = ref<HTMLElement | null>(null);
 
   const emptyText = computed(() => DASHBOARD_EMPTY_TEXT);
+
+  const runtimeId = computed(
+    () =>
+      props.runtimeId ?? (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `rt-${Math.random().toString(16).slice(2)}`)
+  );
+
+  // Provide runtime-scoped dependencies
+  const apiClient = computed(() => props.apiClient ?? createMockApiClient());
+  const panelRegistry = computed(() => props.panelRegistry ?? createBuiltInPanelRegistry());
+  provide(GF_API_KEY, apiClient.value);
+  provide(GF_PANEL_REGISTRY_KEY, panelRegistry.value);
+  provide(GF_RUNTIME_KEY, { id: runtimeId.value, rootEl });
+
+  // NOTE: inject() must be called during setup (not inside onMounted).
+  const injectedPinia = inject<Pinia | undefined>('pinia', undefined);
+
+  // Also attach to active pinia so stores (non-component) can access the instance-scoped dependencies.
+  onMounted(() => {
+    // Prefer injected pinia for multi-instance isolation (multiple Vue apps on one page).
+    const active = injectedPinia ?? getActivePinia();
+    if (active) {
+      setPiniaApiClient(active, apiClient.value);
+      setPiniaPanelRegistry(active, panelRegistry.value);
+    }
+  });
 
   const handleAddPanelGroup = () => {
     dashboardStore.addPanelGroup({ title: '新面板组' });
@@ -96,16 +156,43 @@
     });
   };
 
+  const bindPointerTracking = (el: HTMLElement | null) => {
+    if (!el) return;
+    el.addEventListener('mousemove', handleGlobalMouseMove, { passive: true });
+  };
+
+  const unbindPointerTracking = (el: HTMLElement | null) => {
+    if (!el) return;
+    el.removeEventListener('mousemove', handleGlobalMouseMove);
+  };
+
   // 生命周期钩子
   onMounted(() => {
-    // 监听整个 dashboard 的鼠标移动
-    window.addEventListener('mousemove', handleGlobalMouseMove, { passive: true });
+    bindPointerTracking(rootEl.value);
   });
 
   onUnmounted(() => {
-    // 清理事件监听
-    window.removeEventListener('mousemove', handleGlobalMouseMove);
+    unbindPointerTracking(rootEl.value);
   });
+
+  // root element changes (unlikely) -> rebind
+  watch(
+    rootEl,
+    (el, prev) => {
+      unbindPointerTracking(prev ?? null);
+      bindPointerTracking(el ?? null);
+    },
+    { immediate: false }
+  );
+
+  // Sync variables store from the current dashboard (import/load)
+  watch(
+    currentDashboard,
+    (d) => {
+      variablesStore.initializeFromDashboard(d ?? null);
+    },
+    { immediate: true }
+  );
 </script>
 
 <style scoped lang="less">

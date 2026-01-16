@@ -1,3 +1,10 @@
+<!--
+  组件说明：图表图例（Legend）容器
+
+  用途：
+  - 根据 options.mode（list/table 等）选择不同的图例展示组件
+  - 统一透传 selection/hover/click 等交互事件给上层
+-->
 <template>
   <div
     v-if="options.show !== false && items.length > 0"

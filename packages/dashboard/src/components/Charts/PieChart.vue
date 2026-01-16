@@ -59,7 +59,8 @@
       },
       {
         value: computed(() => props.panel.options),
-        isValid: (options: any) => options && Object.keys(options).length > 0,
+        // Options can be an empty object; charts should still render with defaults.
+        isValid: (options: any) => options != null,
       },
     ],
     onChartCreated: (instance) => {

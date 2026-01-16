@@ -4,6 +4,7 @@
 
 import type { ID, KeyValue, Timestamp } from './common';
 import type { TimeRange } from './timeRange';
+import type { DatasourceRef } from './queryModel';
 
 /**
  * 查询定义
@@ -31,6 +32,40 @@ export interface Query {
 export type QueryFormat = 'time_series' | 'table' | 'heatmap';
 
 /**
+ * 规范化查询（存储/传输层）
+ * - refId: A/B/C...（与 Grafana 一致）
+ * - datasourceRef: 不依赖 UI 的 datasource 名称字符串
+ * - hide: 是否参与结果/渲染
+ */
+export interface CanonicalQuery {
+  /** 查询唯一 ID（用于持久化/对齐） */
+  id: ID;
+  /**
+   * 查询引用标识（Grafana 风格：A/B/C...）
+   * - UI 展示、调试、以及多查询对齐使用
+   */
+  refId: string;
+  /**
+   * 数据源引用（与 UI 展示名称解耦）
+   * - type：数据源类型（prometheus/...）
+   * - uid：数据源唯一标识（例如 'prometheus-mock'）
+   */
+  datasourceRef: DatasourceRef;
+  /** 查询表达式（PromQL 或其他实现层可解释的语法） */
+  expr: string;
+  /** 图例格式（可选，面板/图表层解释） */
+  legendFormat?: string;
+  /** 最小步长（秒，部分实现层会用于 query_range 的 step 计算） */
+  minStep?: number;
+  /** 查询格式（time_series/table/heatmap） */
+  format?: QueryFormat;
+  /** 是否即时查询（true 表示瞬时点查询） */
+  instant?: boolean;
+  /** 是否隐藏（隐藏的 query 不参与渲染/结果展示） */
+  hide?: boolean;
+}
+
+/**
  * 时间序列数据
  */
 export interface TimeSeriesData {
@@ -51,6 +86,8 @@ export type DataPoint = [Timestamp, number];
 export interface QueryResult {
   /** 查询 ID */
   queryId: ID;
+  /** refId（A/B/C...），用于 UI 对齐与调试 */
+  refId?: string;
   /** 查询表达式 */
   expr: string;
   /** 数据 */
@@ -59,6 +96,8 @@ export interface QueryResult {
   error?: string;
   /** 加载状态 */
   loading?: boolean;
+  /** 可选元信息（实现层填充） */
+  meta?: Record<string, any>;
 }
 
 /**

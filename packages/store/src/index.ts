@@ -1,12 +1,38 @@
-import { computed, reactive, toRef, type App, type ComputedRef, type Ref } from 'vue';
+/**
+ * @grafana-fast/store
+ *
+ * 一个轻量级的 Pinia-like 状态管理实现，目标是：
+ * - 让 dashboard/hooks 在不引入真实 Pinia 依赖的情况下，拥有“按 id 的 store 单例 + actions/getters + storeToRefs”
+ * - 支持多实例隔离：同一页面挂载多个 Vue App（多个 dashboard）时，store 不应串到同一个全局实例
+ *
+ * 重要约定：
+ * - 组件上下文内优先使用 `inject('pinia')` 获取当前实例（避免依赖全局 activePinia）
+ * - 组件上下文外（例如纯模块作用域代码）仍可回退到 activePinia（由 createPinia.install/setActivePinia 设置）
+ */
+import { computed, getCurrentInstance, inject, reactive, toRef, type App, type ComputedRef, type Ref } from 'vue';
 
 export interface Pinia {
+  /**
+   * store 容器：key 为 store id，value 为 store 实例
+   */
   _s: Map<string, any>;
+  /**
+   * Vue 插件安装入口：会把 pinia 注入到 app.provide('pinia', pinia)
+   */
   install: (app: App) => void;
 }
 
 let activePinia: Pinia | undefined;
 
+function getInjectedPinia(): Pinia | undefined {
+  // 仅在组件 setup/render 上下文中可用
+  if (!getCurrentInstance()) return undefined;
+  return inject('pinia', undefined) as Pinia | undefined;
+}
+
+/**
+ * 创建一个 pinia 实例（轻量实现）
+ */
 export const createPinia = (): Pinia => {
   const pinia: Pinia = {
     _s: new Map(),
@@ -19,11 +45,19 @@ export const createPinia = (): Pinia => {
   return pinia;
 };
 
+/**
+ * 设置全局激活 pinia（用于组件上下文外的兜底）
+ */
 export const setActivePinia = (pinia?: Pinia) => {
   activePinia = pinia;
 };
 
-export const getActivePinia = () => activePinia;
+/**
+ * 获取当前激活 pinia
+ * - 组件上下文内：优先 injected pinia（多实例隔离关键）
+ * - 否则：回退到 activePinia
+ */
+export const getActivePinia = () => getInjectedPinia() ?? activePinia;
 
 type StateTree = Record<string, any>;
 type StoreGetter<S extends StateTree> = (state: S) => any;
@@ -41,11 +75,7 @@ type StoreInstance<S extends StateTree, A extends Record<string, StoreAction>, G
     $state: S;
   };
 
-export interface DefineStoreOptions<
-  S extends StateTree,
-  A extends Record<string, StoreAction>,
-  G extends Record<string, StoreGetter<S>>,
-> {
+export interface DefineStoreOptions<S extends StateTree, A extends Record<string, StoreAction>, G extends Record<string, StoreGetter<S>>> {
   state: () => S;
   actions?: A & ThisType<StoreInstance<S, A, G>>;
   getters?: G & ThisType<StoreInstance<S, A, G>>;
@@ -58,7 +88,8 @@ export function defineStore<
   G extends Record<string, StoreGetter<S>> = Record<string, StoreGetter<S>>,
 >(id: Id, options: DefineStoreOptions<S, A, G>) {
   return (pinia?: Pinia) => {
-    const targetPinia = pinia ?? activePinia ?? createPinia();
+    // 目标优先级：显式传入 pinia > 组件注入 pinia > 全局 activePinia > 新建 pinia（兜底）
+    const targetPinia = pinia ?? getInjectedPinia() ?? activePinia ?? createPinia();
     if (!activePinia) {
       activePinia = targetPinia;
     }
@@ -72,7 +103,7 @@ export function defineStore<
     store.$id = id;
     store.$state = state;
 
-    // attach getters as computed properties
+    // 将 getters 挂到 store 上（以 computed 的形式暴露为只读属性）
     if (options.getters) {
       Object.keys(options.getters).forEach((key) => {
         const getter = options.getters?.[key];
@@ -86,7 +117,7 @@ export function defineStore<
       });
     }
 
-    // bind actions to store instance
+    // 将 actions 绑定到 store 实例（保证 this 指向 store）
     if (options.actions) {
       Object.keys(options.actions).forEach((key) => {
         const action = options.actions?.[key];
@@ -102,14 +133,16 @@ export function defineStore<
 }
 
 type StoreToRefsResult<T extends Record<string, any>> = {
-  [K in keyof T as T[K] extends Function ? never : K]: T[K] extends Ref<any>
-    ? T[K]
-    : T[K] extends ComputedRef<any>
-      ? T[K]
-      : Ref<T[K]>;
+  [K in keyof T as T[K] extends (...args: any[]) => any ? never : K]: T[K] extends Ref<any> ? T[K] : T[K] extends ComputedRef<any> ? T[K] : Ref<T[K]>;
 };
 
 export function storeToRefs<T extends Record<string, any>>(store: T): StoreToRefsResult<T> {
+  /**
+   * 将 store 的 state/getters 变成 Ref（类似 Pinia 的 storeToRefs）
+   * - 跳过 actions（函数）
+   * - getter（通过 defineProperty 的 get）用 computed 包装
+   * - 普通 state 用 toRef 包装
+   */
   const refs: Record<string, Ref<any>> = {};
   const descriptors = Object.getOwnPropertyDescriptors(store);
 

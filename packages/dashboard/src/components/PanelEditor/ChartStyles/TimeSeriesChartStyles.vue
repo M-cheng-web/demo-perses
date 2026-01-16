@@ -115,7 +115,7 @@
                 <span :class="bem('label')">区域透明度</span>
                 <div style="flex: 1; display: flex; align-items: center; gap: 12px">
                   <Slider v-model:value="localOptions.specific.fillOpacity" :min="0" :max="1" :step="0.1" style="flex: 1" />
-                  <span :class="bem('slider-value')">{{ localOptions.specific.fillOpacity.toFixed(1) }}</span>
+                  <span :class="bem('slider-value')">{{ Number(localOptions.specific.fillOpacity ?? 0).toFixed(1) }}</span>
                 </div>
               </div>
 
@@ -201,11 +201,12 @@
   </div>
 </template>
 
-<script setup lang="ts">
-  import { ref, watch } from 'vue';
-  import { deepClone, createNamespace } from '/#/utils';
-  import { getDefaultTimeSeriesOptions } from '../ChartStylesDefaultOptions/timeSeriesDefaultOptions';
-  import { Switch, Select, Segmented, Button, Input, InputNumber, Slider } from '@grafana-fast/component';
+  <script setup lang="ts">
+	  import { ref, watch } from 'vue';
+	  import { deepClone, createNamespace } from '/#/utils';
+	  import { getDefaultTimeSeriesOptions } from '../ChartStylesDefaultOptions/timeSeriesDefaultOptions';
+	  import { deepMerge } from './utils';
+	  import { Switch, Select, Segmented, Button, Input, InputNumber, Slider } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('timeseries-chart-styles');
 
@@ -220,12 +221,7 @@
   }>();
 
   // 合并默认配置和传入的配置
-  const localOptions = ref(
-    deepClone({
-      ...getDefaultTimeSeriesOptions(),
-      ...props.options,
-    })
-  );
+	  const localOptions = ref(deepClone(deepMerge(getDefaultTimeSeriesOptions(), props.options ?? {})));
 
   // 恢复默认设置
   const resetToDefaults = () => {
@@ -247,16 +243,13 @@
   watch(
     () => props.options,
     (newVal) => {
-      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
-        localOptions.value = deepClone({
-          ...getDefaultTimeSeriesOptions(),
-          ...newVal,
-        });
-      }
-    },
-    { deep: true }
-  );
-</script>
+	      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
+	        localOptions.value = deepClone(deepMerge(getDefaultTimeSeriesOptions(), newVal ?? {}));
+	      }
+	    },
+	    { deep: true }
+	  );
+	</script>
 
 <style scoped lang="less">
   .dp-timeseries-chart-styles {

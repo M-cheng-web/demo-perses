@@ -45,7 +45,7 @@
           <div :class="bem('section-header')">
             <div :class="bem('section-title')">预览</div>
             <div :class="bem('section-actions')">
-              <Button type="ghost" size="small" shortcut="Ctrl+Enter" @click="handleExecuteQuery">执行查询</Button>
+              <Button type="ghost" size="small" @click="handleExecuteQuery">执行查询</Button>
             </div>
           </div>
           <div :class="bem('section-body')">
@@ -57,9 +57,7 @@
         <div :class="bem('section')">
           <div :class="bem('section-header')">
             <div :class="bem('section-title')">配置</div>
-            <div :class="bem('section-extra')">
-              <span :class="bem('hint')">快捷键：Ctrl/⌘ + S 保存，Ctrl/⌘ + Enter 执行查询，Esc 取消</span>
-            </div>
+            <div :class="bem('section-extra')"></div>
           </div>
           <div :class="bem('section-body')">
             <Tabs v-model:activeKey="activeTab" :class="bem('tabs')">
@@ -90,21 +88,22 @@
     <!-- 底部按钮 -->
     <template #footer>
       <Flex :gap="12" justify="end">
-        <Button shortcut="Esc" @click="handleClose">取消</Button>
-        <Button type="primary" shortcut="Ctrl+S" @click="handleSave">保存</Button>
+        <Button @click="handleClose">取消</Button>
+        <Button type="primary" @click="handleSave">保存</Button>
       </Flex>
     </template>
   </Drawer>
 </template>
 
 <script setup lang="ts">
-  import { computed, onBeforeUnmount, ref, reactive, watch } from 'vue';
+  import { computed, ref, reactive, watch } from 'vue';
   import { storeToRefs } from '@grafana-fast/store';
   import { Drawer, Form, FormItem, Select, Input, Textarea, Row, Col, Flex, message } from '@grafana-fast/component';
   import { Button, Tabs, TabPane, Empty } from '@grafana-fast/component';
   import { useDashboardStore, useEditorStore } from '/#/stores';
   import { generateId, deepClone, createNamespace } from '/#/utils';
-  import { PanelType, PANEL_TYPE_OPTIONS } from '/#/enums/panelType';
+  import { PanelType } from '/#/enums/panelType';
+  import { usePanelRegistry } from '/#/runtime/useInjected';
   import TimeSeriesChartStyles from './ChartStyles/TimeSeriesChartStyles.vue';
   import BarChartStyles from './ChartStyles/BarChartStyles.vue';
   import PieChartStyles from './ChartStyles/PieChartStyles.vue';
@@ -128,6 +127,7 @@
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
+  const panelRegistry = usePanelRegistry();
 
   const { isDrawerOpen, editingPanel, editingMode, targetGroupId, originalPanelId } = storeToRefs(editorStore);
   const { currentDashboard } = storeToRefs(dashboardStore);
@@ -138,7 +138,6 @@
   const selectedGroupId = ref<string>('');
   const panelPreviewRef = ref<InstanceType<typeof PanelPreview>>();
   const dataQueryTabRef = ref<InstanceType<typeof DataQueryTab>>();
-  const isHotkeysBound = ref(false);
 
   // 获取面板组列表
 	  const panelGroupOptions = computed(() => {
@@ -149,8 +148,11 @@
 	    }));
 	  });
 
-  // 面板类型选项
-  const panelTypeOptions = PANEL_TYPE_OPTIONS;
+  // 面板类型选项（来自 registry，支持插件化）
+  const panelTypeOptions = computed(() => {
+    const plugins = panelRegistry.list();
+    return plugins.map((p) => ({ label: p.displayName, value: p.type }));
+  });
 
   // 样式配置组件映射
   const styleComponentMap: Record<string, any> = {
@@ -288,43 +290,6 @@
       });
   };
 
-  const handleGlobalHotkeys = (event: KeyboardEvent) => {
-    if (!isOpen.value) return;
-
-    const isMac = /Mac|iPhone|iPad|iPod/i.test(navigator.platform);
-    const modKey = isMac ? event.metaKey : event.ctrlKey;
-
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      handleClose();
-      return;
-    }
-
-    if (modKey && (event.key === 's' || event.key === 'S')) {
-      event.preventDefault();
-      handleSave();
-      return;
-    }
-
-    if (modKey && event.key === 'Enter') {
-      event.preventDefault();
-      handleExecuteQuery();
-      return;
-    }
-  };
-
-  const bindHotkeys = () => {
-    if (isHotkeysBound.value) return;
-    window.addEventListener('keydown', handleGlobalHotkeys);
-    isHotkeysBound.value = true;
-  };
-
-  const unbindHotkeys = () => {
-    if (!isHotkeysBound.value) return;
-    window.removeEventListener('keydown', handleGlobalHotkeys);
-    isHotkeysBound.value = false;
-  };
-
   // 关闭
   const handleClose = () => {
     editorStore.closeEditor();
@@ -374,15 +339,6 @@
       console.error(error);
     }
   };
-
-  watch(isOpen, (open) => {
-    if (open) bindHotkeys();
-    else unbindHotkeys();
-  });
-
-  onBeforeUnmount(() => {
-    unbindHotkeys();
-  });
 </script>
 
 <style scoped lang="less">

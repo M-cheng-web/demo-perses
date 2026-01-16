@@ -1,3 +1,10 @@
+<!--
+  组件说明：面板组创建/编辑弹窗（PanelGroupDialog）
+
+  用途：
+  - 新建/编辑面板组的基础信息：标题、描述、默认折叠
+  - 通过 `defineExpose` 暴露 `openCreate/openEdit`，供外部按钮触发打开
+-->
 <template>
   <Modal v-model:open="isOpen" :title="isEditMode ? '编辑面板组' : '创建面板组'" :width="600" @ok="handleSubmit" @cancel="handleCancel">
     <Form :model="formData" layout="vertical" :label-col="{ span: 24 }">

@@ -3,7 +3,7 @@
  */
 
 import type { ID } from './common';
-import type { Query } from './query';
+import type { CanonicalQuery } from './query';
 import type { ChartOptions, AxisOptions, LegendOptions, FormatOptions, PanelTitleOptions, ThresholdConfig } from './chart';
 
 /**
@@ -19,15 +19,30 @@ export interface Panel {
   /** 面板类型 */
   type: PanelType;
   /** 查询列表 */
-  queries: Query[];
+  queries: CanonicalQuery[];
   /** 面板选项 */
   options: PanelOptions;
+  /**
+   * 数据变换链（可选）
+   * - 用于 stat/gauge/table 等场景把 time-series 数据转换为最终展示形态
+   * - 也可用于重命名、过滤、聚合等
+   */
+  transformations?: PanelTransformation[];
 }
 
 /**
  * 面板类型
  */
-export type PanelType = 'timeseries' | 'pie' | 'bar' | 'table' | 'stat' | 'gauge' | 'heatmap';
+export type PanelType = string;
+
+/**
+ * 内置面板类型（Core）
+ *
+ * 说明：
+ * - 这些类型由仓库内置的 panels 子包提供实现
+ * - 插件化后，外部面板也可以注册任意 `PanelType`（字符串）
+ */
+export type CorePanelType = 'timeseries' | 'pie' | 'bar' | 'table' | 'stat' | 'gauge' | 'heatmap';
 
 /**
  * 面板选项
@@ -47,10 +62,18 @@ export interface PanelOptions {
   format?: FormatOptions;
   /** 阈值配置 */
   thresholds?: {
+    /** 阈值模式：absolute（绝对值）/ percent（百分比） */
     mode: 'absolute' | 'percent';
     steps: Array<{
+      /** 阶段名称（可选，用于 UI 展示） */
       name: string;
+      /**
+       * 阈值值
+       * - number：该阶段起始值
+       * - null：表示“无阈值/起点”，常用于第一段（例如从 -∞ 开始）
+       */
       value: number | null;
+      /** 阶段颜色（用于渲染区间颜色/文字颜色等） */
       color: string;
     }>;
   };
@@ -175,4 +198,23 @@ export interface PanelDimensions {
   width: number;
   /** 高度（像素） */
   height: number;
+}
+
+export interface PanelTransformation {
+  /**
+   * transformation 标识
+   *
+   * 说明：
+   * - 一般对应“变换插件”的类型名，例如 'reduce' / 'rename' / 'merge' 等
+   * - 具体能力由 transformations registry 或内置实现决定
+   */
+  id: string;
+  /**
+   * transformation 配置
+   *
+   * 说明：
+   * - 每种 transformation 的 options 结构不同
+   * - 存储层保持宽松：未知字段不丢失，便于未来扩展与兼容旧 JSON
+   */
+  options?: Record<string, any>;
 }

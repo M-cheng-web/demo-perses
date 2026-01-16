@@ -1,3 +1,10 @@
+<!--
+  页面说明：NotFound（404）路由页
+
+  用途：
+  - 当访问不存在的路由时展示兜底页面
+  - 提供返回首页的快捷操作
+-->
 <template>
   <div class="dp-not-found">
     <div class="dp-not-found__card">

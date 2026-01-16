@@ -1,3 +1,11 @@
+<!--
+  组件说明：图表局部 Tooltip（ChartTooltip）
+
+  用途：
+  - 绑定单个 ECharts 实例，监听鼠标移动/点击等事件
+  - 计算“当前点附近的 series 值”，并写入 Tooltip Store
+  - 与 GlobalChartTooltip 搭配，实现跨组件/跨弹窗的一致 Tooltip 体验
+-->
 <template>
   <Teleport to="body">
     <div v-if="isVisible" ref="tooltipRef" :class="[bem(), bem({ pinned: isPinned })]" :style="tooltipStyle">

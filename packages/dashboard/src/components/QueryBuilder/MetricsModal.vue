@@ -87,7 +87,7 @@
   import { ref, computed, watch, onMounted } from 'vue';
   import { SearchOutlined, FilterOutlined } from '@ant-design/icons-vue';
   import { message } from '@grafana-fast/component';
-  import { fetchMetrics } from '/#/api/querybuilder/prometheusApi';
+  import { useApiClient } from '/#/runtime/useInjected';
   import { createNamespace } from '/#/utils';
   import type { TableProps, TableColumnType } from '@grafana-fast/component';
 
@@ -118,6 +118,7 @@
   const selectedTypes = ref<string[]>([]);
   const currentPage = ref(1);
   const pageSize = ref(20);
+  const api = useApiClient();
 
   // 表格列定义
 	  const columns: TableColumnType[] = [
@@ -209,7 +210,7 @@
   const loadMetrics = async () => {
     loading.value = true;
     try {
-      const metricNames = await fetchMetrics();
+      const metricNames = await api.query.fetchMetrics();
 
       // 转换为 MetricInfo 格式并添加模拟的类型和描述
       allMetrics.value = metricNames.map((name) => ({

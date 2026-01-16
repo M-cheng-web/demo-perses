@@ -4,8 +4,9 @@
 
 import { defineStore } from '@grafana-fast/store';
 import type { Dashboard, PanelGroup, Panel, PanelLayout, ID } from '@grafana-fast/types';
-import { mockDataManager } from '/#/mock';
 import { generateId, deepClone } from '/#/utils';
+import { migrateDashboard } from '@grafana-fast/types';
+import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
 
 interface DashboardState {
   /** 当前 Dashboard */
@@ -72,10 +73,10 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     async loadDashboard(id: ID) {
       try {
-        const dashboard = await mockDataManager.getDashboard(id);
-        this.currentDashboard = deepClone(dashboard);
-
-        console.log('currentDashboard', this.currentDashboard);
+        const api = getPiniaApiClient();
+        const dashboard = await api.dashboard.loadDashboard(id);
+        // Always normalize/migrate to current schema before putting into store.
+        this.currentDashboard = deepClone(migrateDashboard(dashboard));
       } catch (error) {
         console.error('Failed to load dashboard:', error);
       }
@@ -89,8 +90,8 @@ export const useDashboardStore = defineStore('dashboard', {
 
       this.isSaving = true;
       try {
-        mockDataManager.saveDashboard(this.currentDashboard);
-        await new Promise((resolve) => setTimeout(resolve, 500)); // 模拟延迟
+        const api = getPiniaApiClient();
+        await api.dashboard.saveDashboard(this.currentDashboard);
       } catch (error) {
         console.error('Failed to save dashboard:', error);
         throw error;

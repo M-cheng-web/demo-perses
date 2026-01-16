@@ -7,6 +7,7 @@
 
 import { onUnmounted, type Ref } from 'vue';
 import type { EChartsType } from 'echarts/core';
+import { subscribeWindowResize } from '/#/runtime/windowEvents';
 
 /**
  * 使 ECharts 图表自动响应容器大小变化
@@ -19,6 +20,7 @@ export function useChartResize(
 ) {
   let resizeObserver: ResizeObserver | null = null;
   let animationFrameId: number | null = null;
+  let unsubscribeWindowResize: null | (() => void) = null;
 
   const handleResize = () => {
     // 使用 requestAnimationFrame 优化性能，避免在动画期间频繁resize
@@ -68,8 +70,9 @@ export function useChartResize(
   function initChartResize() {
     // 需要延迟1s再初始化，确保容器大小已确定
     setTimeout(() => {
-      // 监听窗口 resize
-      window.addEventListener('resize', debouncedResize);
+      // 监听窗口 resize（集中管理，避免多实例重复绑定）
+      unsubscribeWindowResize?.();
+      unsubscribeWindowResize = subscribeWindowResize(debouncedResize);
 
       // 监听容器 resize（用于 grid-layout 拖拽调整大小）
       if (chartRef.value && typeof ResizeObserver !== 'undefined') {
@@ -110,7 +113,8 @@ export function useChartResize(
    * 销毁图表 resize
    */
   function destroyChartResize() {
-    window.removeEventListener('resize', debouncedResize);
+    unsubscribeWindowResize?.();
+    unsubscribeWindowResize = null;
 
     if (timeoutId !== null) {
       clearTimeout(timeoutId);

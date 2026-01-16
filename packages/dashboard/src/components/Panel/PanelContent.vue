@@ -1,3 +1,11 @@
+<!--
+  文件说明：面板内容渲染容器
+
+  说明：
+  - 负责把 panel.type 映射到具体渲染组件（通过 PanelRegistry）
+  - 负责向 QueryScheduler 注册 panel，并拿到 loading/error/results
+  - 负责在渲染前应用 transformations（数据变换层）
+-->
 <template>
   <div :class="bem()">
     <div v-if="loading" :class="bem('loading')">
@@ -8,7 +16,7 @@
       <div v-if="error" :class="bem('error')">
         <Alert type="error" show-icon :message="error" />
       </div>
-      <component v-else-if="chartComponent" :is="chartComponent" :panel="panel" :query-results="queryResults" />
+      <component v-else-if="chartComponent" :is="chartComponent" :panel="panel" :query-results="displayResults" />
       <div v-else :class="bem('empty')">
         <Empty description="未配置图表类型" />
       </div>
@@ -17,21 +25,14 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch, onMounted } from 'vue';
+  import { computed } from 'vue';
   import { Alert, Loading, Empty } from '@grafana-fast/component';
-  import { storeToRefs } from '@grafana-fast/store';
-  import type { Panel, QueryResult } from '@grafana-fast/types';
-  import { useTimeRangeStore } from '/#/stores';
-  import { mockDataManager } from '/#/mock';
-  import { PanelType } from '/#/enums/panelType';
+  import type { Panel } from '@grafana-fast/types';
   import { createNamespace } from '/#/utils';
-  import TimeSeriesChart from '/#/components/Charts/TimeSeriesChart.vue';
-  import PieChart from '/#/components/Charts/PieChart.vue';
-  import BarChart from '/#/components/Charts/BarChart.vue';
-  import StatPanel from '/#/components/Charts/StatPanel.vue';
-  import TableChart from '/#/components/Charts/TableChart.vue';
-  import GaugeChart from '/#/components/Charts/GaugeChart.vue';
-  import HeatmapChart from '/#/components/Charts/HeatmapChart.vue';
+  import { usePanelRegistry } from '/#/runtime/useInjected';
+  import { getPiniaQueryScheduler } from '/#/runtime/piniaAttachments';
+  import UnsupportedPanel from '/#/components/Panel/UnsupportedPanel.vue';
+  import { applyTransformations } from '/#/transformations';
 
   const [_, bem] = createNamespace('panel-content');
 
@@ -39,58 +40,22 @@
     panel: Panel;
   }>();
 
-  const timeRangeStore = useTimeRangeStore();
-  const { absoluteTimeRange } = storeToRefs(timeRangeStore);
+  const registry = usePanelRegistry();
 
-  const loading = ref(false);
-  const error = ref('');
-  const queryResults = ref<QueryResult[]>([]);
+  const scheduler = getPiniaQueryScheduler();
+  const panelRef = computed<Panel>(() => props.panel);
+  const { loading, error, results: queryResults } = scheduler.registerPanel(props.panel.id, panelRef);
+  const displayResults = computed(() => applyTransformations(queryResults.value, props.panel.transformations));
 
   // 根据面板类型选择组件
   const chartComponent = computed(() => {
-    const typeMap: Record<string, any> = {
-      [PanelType.TIMESERIES]: TimeSeriesChart,
-      [PanelType.BAR]: BarChart,
-      [PanelType.PIE]: PieChart,
-      [PanelType.STAT]: StatPanel,
-      [PanelType.TABLE]: TableChart,
-      [PanelType.GAUGE]: GaugeChart,
-      [PanelType.HEATMAP]: HeatmapChart,
-    };
-    return typeMap[props.panel.type];
+    const type = props.panel.type;
+    if (!type) return null;
+    const plugin = registry.get(type);
+    return plugin?.component ?? UnsupportedPanel;
   });
 
-  // 执行查询
-  const executeQueries = async () => {
-    if (!props.panel.queries || props.panel.queries.length === 0) {
-      queryResults.value = [];
-      return;
-    }
-
-    loading.value = true;
-    error.value = '';
-
-    try {
-      const absRange = absoluteTimeRange.value;
-      const results = await mockDataManager.executeQueries(props.panel.queries, {
-        from: absRange.from,
-        to: absRange.to,
-      });
-      queryResults.value = results;
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '查询失败';
-      console.error('Query execution failed:', err);
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  // 监听时间范围和查询变化
-  watch([absoluteTimeRange, () => props.panel.queries], executeQueries, { deep: true });
-
-  onMounted(() => {
-    executeQueries();
-  });
+  // 查询执行由中心调度器统一管理（timeRange + variables + panel queries）。
 </script>
 
 <style scoped lang="less">

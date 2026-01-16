@@ -1,3 +1,10 @@
+<!--
+  文件说明：演示站点 - Dashboard 入口页
+
+  作用：
+  - 作为回归验证平台，集成 useDashboardSdk + panelRegistry + apiClient（默认 mock）
+  - 提供调试信息面板（容器尺寸/当前 endpoint 等）
+-->
 <template>
   <div class="dp-dashboard-view">
     <div v-if="state.dashboard" class="dp-dashboard-view__meta">
@@ -8,6 +15,7 @@
       <div class="dp-dashboard-view__actions">
         <Segmented v-model:value="themeModel" size="small" :options="themeOptions" />
         <Button size="small" type="ghost" @click="goComponents">组件库</Button>
+        <Button size="small" type="ghost" @click="goPerf">性能压测</Button>
         <Button size="small" type="ghost" @click="reloadDashboard">重新加载</Button>
         <Button size="small" type="ghost" @click="setQuickRange">最近 5 分钟</Button>
         <Button size="small" type="ghost" @click="handleRefresh">刷新时间范围</Button>
@@ -34,12 +42,15 @@
   import { Button, List, Modal, Segmented } from '@grafana-fast/component';
   import { useDashboardSdk, DashboardApi } from '@grafana-fast/hooks';
   import type { DashboardTheme } from '@grafana-fast/dashboard';
+  import { PanelPlugins } from '@grafana-fast/panels';
 
   const router = useRouter();
   const dashboardRef = ref<HTMLElement | null>(null);
   const debugOpen = ref(false);
+  const panelRegistry = PanelPlugins.all().exclude([]).build();
   const { state, actions, containerSize, api, ready, mountDashboard, unmountDashboard, theme } = useDashboardSdk(dashboardRef, {
     dashboardId: 'default',
+    panelRegistry,
     apiConfig: {
       dsn: 'https://api.example.com',
       endpoints: {
@@ -78,6 +89,7 @@
     });
 
   const goComponents = () => router.push('/components');
+  const goPerf = () => router.push('/perf');
 </script>
 
 <style scoped lang="less">

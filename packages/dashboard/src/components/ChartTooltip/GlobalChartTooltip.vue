@@ -1,3 +1,11 @@
+<!--
+  组件说明：全局 Tooltip（GlobalChartTooltip）
+
+  用途：
+  - 统一渲染 Tooltip（Teleport 到 body），避免被容器 overflow 裁剪
+  - 支持“固定 Tooltip”与“展开全部 series”等交互
+  - Tooltip 的位置与数据由 Tooltip Store 驱动（可跨 Drawer/Modal 等 Teleport 场景）
+-->
 <template>
   <Teleport to="body">
     <div v-if="isVisible" ref="tooltipRef" :class="[bem(), bem({ pinned: isPinned })]" :style="tooltipStyle">

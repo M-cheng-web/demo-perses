@@ -1,0 +1,149 @@
+/**
+ * QueryRunner（单次执行层）
+ *
+ * 这是 “调度器（QueryScheduler）” 之下的执行器：
+ * - 负责把 CanonicalQuery + QueryContext 变成 QueryResult[]
+ * - 负责变量插值（interpolateExpr）
+ * - 负责并发控制、缓存、in-flight 去重（同一 key 的重复请求复用同一个 Promise）
+ * - 负责取消（AbortSignal）
+ *
+ * 设计原则：
+ * - QueryRunner 不关心 UI（面板布局/组件），只专注“如何稳定执行查询”
+ * - 具体请求如何发出由 @grafana-fast/api 的实现层决定（mock/http/prom-direct）
+ */
+import type { GrafanaFastApiClient } from '@grafana-fast/api';
+import type { CanonicalQuery, QueryContext, QueryResult } from '@grafana-fast/types';
+import { interpolateExpr } from './interpolate';
+
+export interface QueryRunnerOptions {
+  /**
+   * 最大并发数（默认 6）
+   * - 防止一个 dashboard 里大量 panel 同时刷新导致请求风暴
+   */
+  maxConcurrency?: number;
+  /**
+   * 缓存 TTL（毫秒）
+   * - 0 表示禁用缓存
+   * - 对 “now” 类相对时间的 dashboard，建议 TTL 较短（避免误用过期数据）
+   */
+  cacheTtlMs?: number;
+}
+
+interface CacheEntry {
+  timestamp: number;
+  promise?: Promise<QueryResult>;
+  result?: QueryResult;
+}
+
+function stableStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+export class QueryRunner {
+  private api: GrafanaFastApiClient;
+  private options: Required<QueryRunnerOptions>;
+  private cache = new Map<string, CacheEntry>();
+  private inflight = 0;
+  private queue: Array<() => void> = [];
+
+  constructor(api: GrafanaFastApiClient, options: QueryRunnerOptions = {}) {
+    this.api = api;
+    this.options = {
+      maxConcurrency: options.maxConcurrency ?? 6,
+      cacheTtlMs: options.cacheTtlMs ?? 5_000,
+    };
+  }
+
+  private async runWithConcurrency<T>(task: () => Promise<T>): Promise<T> {
+    if (this.inflight >= this.options.maxConcurrency) {
+      await new Promise<void>((resolve) => this.queue.push(resolve));
+    }
+    this.inflight++;
+    try {
+      return await task();
+    } finally {
+      this.inflight--;
+      const next = this.queue.shift();
+      next?.();
+    }
+  }
+
+  private buildCacheKey(query: CanonicalQuery, context: QueryContext, interpolatedExpr: string): string {
+    const tr = context.timeRange;
+    const from = typeof tr.from === 'number' ? tr.from : String(tr.from);
+    const to = typeof tr.to === 'number' ? tr.to : String(tr.to);
+    return [
+      query.datasourceRef?.type ?? 'unknown',
+      query.datasourceRef?.uid ?? 'unknown',
+      query.format ?? 'time_series',
+      query.instant ? 'instant' : 'range',
+      query.minStep ?? '',
+      from,
+      to,
+      interpolatedExpr,
+    ].join('::');
+  }
+
+  /**
+   * 执行一组查询（面板通常包含 A/B/C... 多条 query）
+   *
+   * 内置能力：
+   * - 变量插值：先把 expr 里的变量替换成最终表达式
+   * - 缓存：同 datasource + timeRange + expr 的结果可复用（TTL 内）
+   * - in-flight 去重：同 key 的并发请求复用同一 Promise
+   * - 并发限制：控制同时飞行中的请求数量
+   */
+  async executeQueries(
+    queries: CanonicalQuery[],
+    context: QueryContext,
+    variables: Record<string, string | string[]>,
+    variableMeta: Record<string, { includeAll?: boolean; allValue?: string; multi?: boolean }>,
+    options: { signal?: AbortSignal } = {}
+  ): Promise<QueryResult[]> {
+    const visible = queries.filter((q) => !q.hide);
+    const tasks = visible.map(async (q) => {
+      const expr = interpolateExpr(q.expr, variables, variableMeta, { multiJoin: 'regex' });
+      const cacheKey = this.buildCacheKey(q, context, expr);
+      const now = Date.now();
+
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        const fresh = this.options.cacheTtlMs > 0 && now - cached.timestamp <= this.options.cacheTtlMs;
+        if (fresh && cached.result) return cached.result;
+        if (cached.promise) return cached.promise;
+      }
+
+      const promise = this.runWithConcurrency(async () => {
+        const resultList = await this.api.query.executeQueries([{ ...q, expr }], context, options.signal ? { signal: options.signal } : undefined);
+        const result = resultList[0] ?? { queryId: q.id, refId: q.refId, expr, data: [], error: '空结果' };
+        return { ...result, refId: q.refId };
+      });
+
+      this.cache.set(cacheKey, { timestamp: now, promise });
+
+      try {
+        const result = await promise;
+        this.cache.set(cacheKey, { timestamp: Date.now(), result });
+        return result;
+      } catch (err) {
+        // 写入一个短暂的“负缓存”：避免同一错误导致的高频重试（hot loop）
+        this.cache.set(cacheKey, {
+          timestamp: Date.now(),
+          result: { queryId: q.id, refId: q.refId, expr, data: [], error: (err as any)?.message ?? stableStringify(err) },
+        });
+        throw err;
+      }
+    });
+
+    return Promise.all(tasks);
+  }
+
+  invalidateAll() {
+    // 清空缓存：用于“强制刷新”或“切换 datasource 后失效”
+    this.cache.clear();
+  }
+}

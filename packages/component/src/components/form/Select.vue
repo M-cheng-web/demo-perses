@@ -7,6 +7,7 @@
       { 'is-open': open, 'is-disabled': disabled, 'is-clearable': showClear, 'is-multiple': isMultiple },
     ]"
     ref="rootRef"
+    :style="rootStyle"
   >
     <div
       ref="controlRef"
@@ -19,8 +20,10 @@
     >
       <div v-if="isMultiple" :class="bem('tags')">
         <Tag
-          v-for="item in selectedOptions"
+          v-for="(item, idx) in selectedOptions"
           :key="item.value"
+          v-show="idx < visibleTagCount"
+          :data-gf-value="String(item.value)"
           :class="bem('tag')"
           :size="size === 'small' ? 'small' : 'middle'"
           variant="neutral"
@@ -28,7 +31,16 @@
           closable
           @close="() => removeValue(item.value)"
         >
-          {{ item.label }}
+          {{ formatTagLabel(item.label) }}
+        </Tag>
+        <Tag
+          v-if="collapsedTagCount > 0"
+          :class="[bem('tag'), bem('tag-summary')]"
+          :size="size === 'small' ? 'small' : 'middle'"
+          variant="neutral"
+          radius="sm"
+        >
+          +{{ collapsedTagCount }}
         </Tag>
         <input
           v-if="showSearch"
@@ -125,6 +137,23 @@
       showSearch?: boolean;
       /** 搜索过滤策略（默认 label includes） */
       filterOption?: boolean | ((input: string, option: Option) => boolean);
+      /**
+       * 多选时最多展示多少个 tag：
+       * - number：固定显示前 N 个
+       * - 'responsive'：根据容器宽度自动计算可显示的数量
+       */
+      maxTagCount?: number | 'responsive';
+      /**
+       * 多选 tag 文案最大长度（超过后截断并加 …）
+       */
+      maxTagTextLength?: number;
+      /**
+       * 组件宽度：
+       * - 不传：默认跟随父容器（在 flex 场景下可占据剩余空间）
+       * - 传入 number：按 px
+       * - 传入 string：例如 '240px' / '50%' / 'auto'
+       */
+      width?: number | string;
     }>(),
     {
       options: () => [],
@@ -135,6 +164,9 @@
       size: 'middle',
       showSearch: false,
       filterOption: true,
+      maxTagCount: undefined,
+      maxTagTextLength: undefined,
+      width: undefined,
     }
   );
 
@@ -153,6 +185,7 @@
   const open = ref(false);
   const search = ref('');
   const activeIndex = ref(0);
+  const responsiveTagCount = ref<number>(Number.POSITIVE_INFINITY);
   let openedByFocusIn = false;
   let pointerDownInside = false;
   let clearPointerDownTimer: number | null = null;
@@ -166,6 +199,12 @@
   const isTags = computed(() => props.mode === 'tags');
   const showClear = computed(() => props.allowClear && hasValue.value);
 
+  const rootStyle = computed<Record<string, string> | undefined>(() => {
+    if (props.width === undefined || props.width === null || props.width === '') return undefined;
+    const w = typeof props.width === 'number' ? `${props.width}px` : String(props.width);
+    return { width: w };
+  });
+
   const selectedOptions = computed<Option[]>(() => {
     if (isMultiple.value) {
       const values: any[] = Array.isArray(props.value) ? props.value : [];
@@ -173,6 +212,28 @@
     }
     const found = props.options.find((opt) => opt.value === props.value);
     return found ? [found] : [];
+  });
+
+  const formatTagLabel = (label: string) => {
+    const maxLen = props.maxTagTextLength;
+    const raw = String(label ?? '');
+    if (!maxLen || maxLen <= 0) return raw;
+    if (raw.length <= maxLen) return raw;
+    return `${raw.slice(0, maxLen)}…`;
+  };
+
+  const visibleTagCount = computed(() => {
+    if (!isMultiple.value) return Number.POSITIVE_INFINITY;
+    if (props.maxTagCount === 'responsive') return responsiveTagCount.value;
+    if (typeof props.maxTagCount === 'number') return Math.max(0, props.maxTagCount);
+    return Number.POSITIVE_INFINITY;
+  });
+
+  const collapsedTagCount = computed(() => {
+    if (!isMultiple.value) return 0;
+    const total = selectedOptions.value.length;
+    const visible = Number.isFinite(visibleTagCount.value) ? visibleTagCount.value : total;
+    return Math.max(0, total - visible);
   });
 
   const hasValue = computed(() =>
@@ -378,7 +439,19 @@
 
   const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
   let rafId: number | null = null;
+  let tagRafId: number | null = null;
   let resizeObserver: ResizeObserver | null = null;
+  const tagWidthCache = new Map<string, number>();
+
+  const estimateTagWidth = (tagEl: HTMLElement) => {
+    // 一个非常粗略的估算：用于无法测量宽度（display:none）时的兜底
+    // 注意：tag 内部还包含关闭按钮，因此用 textContent 只能近似估计。
+    const text = (tagEl.textContent ?? '').trim();
+    const perChar = 7; // 经验值：中文/英文平均宽度
+    const base = 34; // padding/border/close button 的保守预留
+    const estimated = text.length * perChar + base;
+    return clamp(estimated, 36, 260);
+  };
 
   const scheduleSyncDropdownPosition = () => {
     if (!open.value) return;
@@ -387,6 +460,98 @@
       rafId = null;
       syncDropdownPosition();
     });
+  };
+
+  const scheduleSyncTagCount = () => {
+    if (!isMultiple.value) return;
+    if (props.maxTagCount !== 'responsive') return;
+    if (tagRafId != null) return;
+    tagRafId = requestAnimationFrame(() => {
+      tagRafId = null;
+      syncResponsiveTagCount();
+    });
+  };
+
+  const syncResponsiveTagCount = async () => {
+    if (!isMultiple.value) return;
+    if (props.maxTagCount !== 'responsive') return;
+    const control = controlRef.value;
+    if (!control) return;
+
+    // 这里采用一个相对保守的估算：
+    // - 控制区右侧有 suffix（清空按钮 + 箭头），需要预留空间
+    // - 多选 tag 容器会包含一个搜索 input（如果开启），也需要预留
+    //
+    // 该逻辑的目标是“足够好用”，而不是像 antd 一样做极端精确的像素级对齐。
+    await nextTick();
+
+    const tagsWrap = control.querySelector(`.${bem('tags')}`) as HTMLElement | null;
+    if (!tagsWrap) return;
+
+    const allTags = Array.from(tagsWrap.querySelectorAll(`.${bem('tag')}`)).filter(
+      (el) => !(el as HTMLElement).classList.contains(bem('tag-summary'))
+    ) as HTMLElement[];
+    const total = allTags.length;
+    if (!total) {
+      responsiveTagCount.value = Number.POSITIVE_INFINITY;
+      return;
+    }
+
+    const wrapWidth = tagsWrap.clientWidth;
+    // 这里取的是 tags 容器自身的宽度（flex: 1 的区域），它已经不包含右侧 suffix 区域，
+    // 因此不需要再额外扣除 clear/arrow 的宽度，否则会过于保守。
+    const suffixWidth = 0;
+    const inputReserve = props.showSearch ? 50 : 0; // 预留一点给输入框/光标
+    const paddingReserve = 12; // 左右 padding/gap 的保守预留
+
+    // “+N” 汇总 tag 的预留宽度（保守值，避免频繁抖动）
+    const summaryReserve = 44;
+
+    // 可用于 tag 的宽度
+    const available = Math.max(0, wrapWidth - suffixWidth - inputReserve - paddingReserve);
+
+    // 先假设不需要 summary，尝试放下全部
+    let used = 0;
+    let fit = 0;
+    for (let i = 0; i < allTags.length; i++) {
+      const el = allTags[i];
+      if (!el) break;
+      const key = el?.dataset?.gfValue;
+      const measured = el?.offsetWidth ?? 0;
+      const w = measured > 0 ? measured : (key ? tagWidthCache.get(key) : undefined) ?? estimateTagWidth(el);
+      if (measured > 0 && key) tagWidthCache.set(key, measured);
+      if (used + w <= available) {
+        used += w;
+        fit++;
+      } else {
+        break;
+      }
+    }
+
+    if (fit >= total) {
+      responsiveTagCount.value = total;
+      return;
+    }
+
+    // 需要 summary 时，重新计算：预留 summaryReserve
+    used = 0;
+    fit = 0;
+    const availableWithSummary = Math.max(0, available - summaryReserve);
+    for (let i = 0; i < allTags.length; i++) {
+      const el = allTags[i];
+      if (!el) break;
+      const key = el?.dataset?.gfValue;
+      const measured = el?.offsetWidth ?? 0;
+      const w = measured > 0 ? measured : (key ? tagWidthCache.get(key) : undefined) ?? estimateTagWidth(el);
+      if (measured > 0 && key) tagWidthCache.set(key, measured);
+      if (used + w <= availableWithSummary) {
+        used += w;
+        fit++;
+      } else {
+        break;
+      }
+    }
+    responsiveTagCount.value = Math.max(0, fit);
   };
 
   const syncDropdownPosition = async () => {
@@ -428,9 +593,11 @@
     if (typeof window !== 'undefined' && 'ResizeObserver' in window) {
       resizeObserver = new ResizeObserver(() => {
         scheduleSyncDropdownPosition();
+        scheduleSyncTagCount();
       });
       if (controlRef.value) resizeObserver.observe(controlRef.value);
     }
+    scheduleSyncTagCount();
   });
 
   onBeforeUnmount(() => {
@@ -440,6 +607,7 @@
     if (resizeObserver) resizeObserver.disconnect();
     resizeObserver = null;
     if (rafId != null) cancelAnimationFrame(rafId);
+    if (tagRafId != null) cancelAnimationFrame(tagRafId);
     if (clearPointerDownTimer != null) window.clearTimeout(clearPointerDownTimer);
     clearPointerDownTimer = null;
   });
@@ -479,6 +647,14 @@
     },
     { deep: true }
   );
+
+  watch(
+    () => selectedOptions.value.map((v) => v.value).join('|'),
+    async () => {
+      await nextTick();
+      scheduleSyncTagCount();
+    }
+  );
 </script>
 
 <style scoped lang="less">
@@ -486,6 +662,8 @@
     position: relative;
     width: 100%;
     font-size: var(--gf-font-size-sm);
+    min-width: 0;
+    flex: 1 1 auto;
 
     &__control {
       display: inline-flex;
@@ -495,8 +673,10 @@
       cursor: pointer;
     }
 
-    /* Keep the outer control height consistent between single/multiple when selected:
-     * multiple tags are taller than plain text, so we reduce vertical padding to stay within control height tokens.
+    /*
+     * 说明：保持单选/多选在“已选择”状态下的控件高度一致
+     * - 多选的 tag 容器通常会比纯文本更高
+     * - 因此这里会稍微减小 vertical padding，让整体落在统一的 control height token 内
      */
     &.is-multiple &__control.gf-control {
       padding-top: 2px;

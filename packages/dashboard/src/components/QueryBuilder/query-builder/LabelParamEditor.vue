@@ -33,7 +33,7 @@
 <script setup lang="ts">
   import { Select } from '@grafana-fast/component';
   import { ref, watch } from 'vue';
-  import { queryLabelKeys } from '/#/api/querybuilder/prometheusApi';
+  import { useApiClient } from '/#/runtime/useInjected';
   import { promQueryModeller } from '/#/components/QueryBuilder/lib/PromQueryModeller';
 
   interface Props {
@@ -55,6 +55,7 @@
   const labelOptions = ref<{ label: string; value: string }[]>([]);
   const loading = ref(false);
   const labelsLoaded = ref(false);
+  const api = useApiClient();
 
   watch(
     () => props.modelValue,
@@ -76,9 +77,11 @@
     try {
       // 构建当前查询的标签选择器表达式
       const expr = buildLabelSelectorExpr();
+      const metricFromSelector = expr.match(/__name__\\s*=\\s*\"([^\"]+)\"/)?.[1];
+      const metric = metricFromSelector || props.query?.metric || '';
 
-      // 获取可用的标签键
-      const labels = await queryLabelKeys(expr);
+      // 获取可用的标签键（Prometheus-like）
+      const labels = metric ? await api.query.fetchLabelKeys(metric) : ['instance', 'job'];
 
       labelOptions.value = labels.map((label) => ({
         label,

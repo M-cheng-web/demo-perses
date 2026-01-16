@@ -1,3 +1,10 @@
+<!--
+  组件说明：面板组右侧操作区（PanelGroupRightActions）
+
+  用途：
+  - 添加面板、编辑面板组、上移/下移排序、删除面板组
+  - 主要在编辑模式下出现（由上层控制渲染条件）
+-->
 <template>
   <div :class="bem()">
     <Tooltip title="添加面板">
@@ -88,4 +95,3 @@
     }
   }
 </style>
-

@@ -109,7 +109,9 @@ export const useTooltipStore = defineStore('tooltip', {
      * 获取当前使用的鼠标位置（固定优先，否则使用全局位置）
      */
     currentPosition(): MousePosition | null {
-      return this.pinnedPosition || this.globalMousePosition;
+      // Prefer per-chart mouse position (from ECharts events) so Tooltip still follows
+      // when charts are rendered inside Teleport containers (Modal/Drawer).
+      return this.pinnedPosition || this.mousePosition || this.globalMousePosition;
     },
 
     /**

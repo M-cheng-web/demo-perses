@@ -1,3 +1,10 @@
+<!--
+  文件说明：变量选择器（Dashboard 工具栏中的变量 UI）
+
+  说明：
+  - 这个组件只负责渲染与触发 change
+  - 变量 options/当前值的归一化与 query-based options 解析由 variables store + @grafana-fast/api 实现层负责
+-->
 <template>
   <div v-if="variables && variables.length > 0" :class="bem()">
     <div v-for="variable in variables" :key="variable.id" :class="bem('item')">
@@ -5,12 +12,12 @@
 
       <!-- 选择 -->
       <Select
-        v-if="variable.type === 'select'"
+        v-if="variable.type === 'select' || variable.type === 'query'"
         v-model:value="variableValues[variable.name]"
         :mode="variable.multi ? 'multiple' : undefined"
         :style="{ minWidth: '150px' }"
         :placeholder="`请选择 ${variable.label}`"
-        :options="formatOptions(variable.options)"
+        :options="formatOptions(variable)"
         @change="(value: any) => handleVariableChange(variable.name, value)"
       />
 
@@ -49,13 +56,18 @@
 
   const variableValues = ref<Record<string, string | string[] | any>>({});
 
-  // 将变量 options 规范化为 Select 组件支持的 { label, value }
-  const formatOptions = (options: any[] = []) =>
-    options.map((opt) => ({
+  // 将变量 options 规范化为 Select 组件支持的 { label, value }，并处理 includeAll
+  const formatOptions = (variable: DashboardVariable) => {
+    const options = (variable.options ?? []).map((opt: any) => ({
       label: opt.label ?? opt.text ?? opt.value ?? '',
       value: opt.value ?? opt.label ?? opt.text ?? '',
       disabled: opt.disabled ?? false,
     }));
+    if (variable.includeAll) {
+      return [{ label: 'All', value: 'all' }, ...options];
+    }
+    return options;
+  };
 
   // 初始化变量值
   const initializeValues = () => {
@@ -65,7 +77,9 @@
     props.variables.forEach((variable) => {
       // 如果是多选模式，确保值是数组
       if (variable.multi) {
-        values[variable.name] = variable.current || [];
+        if (Array.isArray(variable.current)) values[variable.name] = variable.current;
+        else if (typeof variable.current === 'string' && variable.current) values[variable.name] = [variable.current];
+        else values[variable.name] = [];
       } else {
         values[variable.name] = variable.current || '';
       }

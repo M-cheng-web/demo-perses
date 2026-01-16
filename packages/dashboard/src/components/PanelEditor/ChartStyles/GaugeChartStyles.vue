@@ -166,7 +166,13 @@
                 <span :class="bem('threshold-color')" :style="{ backgroundColor: threshold.color }"></span>
                 <Input v-model:value="threshold.name" size="small" placeholder="阈值名称" style="width: 80px" />
                 <Input v-model:value="threshold.color" size="small" placeholder="#52c41a" style="width: 110px" />
-                <InputNumber v-model:value="threshold.value" size="small" style="width: 110px" placeholder="0" />
+                <InputNumber
+                  :value="threshold.value ?? undefined"
+                  size="small"
+                  style="width: 110px"
+                  placeholder="0"
+                  @update:value="(v: number | null | undefined) => (threshold.value = v ?? null)"
+                />
                 <Button v-if="localOptions.thresholds.steps.length > 1" type="text" size="small" danger @click="removeThreshold(index)">
                   <template #icon><DeleteOutlined /></template>
                 </Button>
@@ -197,6 +203,7 @@
   import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
   import { deepClone, createNamespace } from '/#/utils';
   import { getDefaultGaugeChartOptions } from '../ChartStylesDefaultOptions/gaugeChartDefaultOptions';
+  import { deepMerge } from './utils';
   import { Switch, Segmented, Button, InputNumber, Select, Input } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('gauge-chart-styles');
@@ -211,12 +218,7 @@
     (e: 'update:options', options: any): void;
   }>();
 
-  const localOptions = ref(
-    deepClone({
-      ...getDefaultGaugeChartOptions(),
-      ...props.options,
-    })
-  );
+  const localOptions = ref(deepClone(deepMerge(getDefaultGaugeChartOptions(), props.options ?? {})));
 
   /**
    * 将颜色从一种色调偏移到另一种色调（往危险色偏移）
@@ -301,10 +303,7 @@
     () => props.options,
     (newVal) => {
       if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
-        localOptions.value = deepClone({
-          ...getDefaultGaugeChartOptions(),
-          ...newVal,
-        });
+        localOptions.value = deepClone(deepMerge(getDefaultGaugeChartOptions(), newVal ?? {}));
       }
     },
     { deep: true }

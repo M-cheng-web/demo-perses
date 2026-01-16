@@ -1,3 +1,12 @@
+<!--
+  文件说明：Dashboard 工具栏
+
+  职责：
+  - 编辑模式开关/保存
+  - 时间范围选择 + 手动刷新
+  - 变量区展示与变更写回（variables store 与 dashboard JSON 同步）
+  - JSON 导入/导出（导入时会走 schema migration）
+-->
 <template>
   <div :class="bem()">
     <!-- 第一层：标题和编辑模式按钮 -->
@@ -22,23 +31,11 @@
     <!-- 第二层：变量选择器和控制按钮 -->
     <div :class="bem('controls')">
       <div :class="bem('controls-left')">
-        <VariableSelector :variables="currentDashboard?.variables" @change="handleVariableChange" />
+        <VariableSelector :variables="resolvedVariables" @change="handleVariableChange" />
       </div>
       <div :class="bem('controls-right')">
         <!-- 时间范围选择器 -->
-        <Select
-          v-model:value="selectedTimeRange"
-          style="width: 160px"
-          size="small"
-          :options="[
-            { label: '最近 5 分钟', value: 'now-5m' },
-            { label: '最近 15 分钟', value: 'now-15m' },
-            { label: '最近 1 小时', value: 'now-1h' },
-            { label: '最近 6 小时', value: 'now-6h' },
-            { label: '最近 24 小时', value: 'now-24h' },
-          ]"
-          @change="(value: any) => handleTimeRangeChange(value as string)"
-        />
+        <TimeRangePicker v-model:value="selectedTimeRange" @change="handleTimeRangeChange" />
 
         <!-- 刷新按钮 -->
         <Button :icon="h(ReloadOutlined)" size="small" @click="handleRefresh" />
@@ -79,7 +76,7 @@
 
 <script setup lang="ts">
   import { ref, computed, h, onUnmounted } from 'vue';
-  import { Select, Dropdown, Menu, Space, Modal } from '@grafana-fast/component';
+  import { TimeRangePicker, Dropdown, Menu, Space, Modal } from '@grafana-fast/component';
   import { Button } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import {
@@ -91,20 +88,30 @@
     SettingOutlined,
     PlusOutlined,
   } from '@ant-design/icons-vue';
-  import { useDashboardStore, useTimeRangeStore } from '/#/stores';
+  import { useDashboardStore, useTimeRangeStore, useVariablesStore } from '/#/stores';
   import { message } from '@grafana-fast/component';
   import JsonEditor from '/#/components/Common/JsonEditor.vue';
   import VariableSelector from '/#/components/Common/VariableSelector.vue';
   import { createNamespace } from '/#/utils';
+  import { migrateDashboard } from '@grafana-fast/types';
 
   const [_, bem] = createNamespace('dashboard-toolbar');
 
   const dashboardStore = useDashboardStore();
   const timeRangeStore = useTimeRangeStore();
+  const variablesStore = useVariablesStore();
 
   const { currentDashboard, isEditMode, isSaving } = storeToRefs(dashboardStore);
+  const { options: variableOptions } = storeToRefs(variablesStore as any);
 
   const dashboardName = computed(() => currentDashboard.value?.name || 'Dashboard');
+  const resolvedVariables = computed(() => {
+    const vars = currentDashboard.value?.variables ?? [];
+    return vars.map((v) => ({
+      ...v,
+      options: variableOptions.value?.[v.name] ?? v.options,
+    }));
+  });
 
   const selectedTimeRange = ref('now-1h');
   let autoRefreshTimer: number | null = null;
@@ -168,8 +175,10 @@
 
   const handleVariableChange = (variables: Record<string, string | string[]>) => {
     console.log('Variables changed:', variables);
-    // 可以在这里触发查询更新
-    timeRangeStore.refresh();
+    variablesStore.setValues(variables);
+    // write back to Dashboard JSON for export/save
+    variablesStore.applyToDashboard(currentDashboard.value ?? null);
+    // Query refresh is handled by QueryScheduler/QueryRunner (scoped), no longer by global refresh().
   };
 
   const handleManageVariables = () => {
@@ -207,7 +216,7 @@
     reader.onload = (e) => {
       try {
         const json = e.target?.result as string;
-        const dashboard = JSON.parse(json);
+        const dashboard = migrateDashboard(JSON.parse(json));
 
         // 验证 dashboard 格式
         if (!dashboard.name || !dashboard.panelGroups) {
@@ -244,7 +253,7 @@
 
   const handleApplyJson = () => {
     try {
-      const dashboard = JSON.parse(dashboardJson.value);
+      const dashboard = migrateDashboard(JSON.parse(dashboardJson.value));
       dashboardStore.currentDashboard = dashboard;
       jsonModalVisible.value = false;
       message.success('应用成功');

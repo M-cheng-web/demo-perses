@@ -92,6 +92,7 @@
   import { ref, watch } from 'vue';
   import { deepClone, createNamespace } from '/#/utils';
   import { getDefaultTableChartOptions } from '../ChartStylesDefaultOptions/tableChartDefaultOptions';
+  import { deepMerge } from './utils';
   import { Switch, Select, Button } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('table-chart-styles');
@@ -107,12 +108,7 @@
   }>();
 
   // 合并默认配置和传入的配置
-  const localOptions = ref(
-    deepClone({
-      ...getDefaultTableChartOptions(),
-      ...props.options,
-    })
-  );
+  const localOptions = ref(deepClone(deepMerge(getDefaultTableChartOptions(), props.options ?? {})));
 
   // 恢复默认设置
   const resetToDefaults = () => {
@@ -135,10 +131,7 @@
     () => props.options,
     (newVal) => {
       if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
-        localOptions.value = deepClone({
-          ...getDefaultTableChartOptions(),
-          ...newVal,
-        });
+        localOptions.value = deepClone(deepMerge(getDefaultTableChartOptions(), newVal ?? {}));
       }
     },
     { deep: true }

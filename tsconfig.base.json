@@ -1,6 +1,7 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -18,6 +19,8 @@
       "@grafana-fast/dashboard": ["packages/dashboard/src/index.ts"],
       "@grafana-fast/component": ["packages/component/src/index.ts"],
       "@grafana-fast/hooks": ["packages/hook/src/index.ts"],
+      "@grafana-fast/api": ["packages/api/src/index.ts"],
+      "@grafana-fast/panels": ["packages/panels/src/index.ts"],
       "@grafana-fast/store": ["packages/store/src/index.ts"],
       "@grafana-fast/types": ["packages/types/src/index.ts"],
       "@grafana-fast/types/*": ["packages/types/src/*"]

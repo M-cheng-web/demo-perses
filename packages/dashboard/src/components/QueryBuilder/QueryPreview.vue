@@ -1,3 +1,11 @@
+<!--
+  组件说明：PromQL 预览（QueryPreview）
+
+  用途：
+  - 展示最终用于执行的 promql（或“无查询”占位）
+  - 一键复制到剪贴板，便于排查与调试
+  - 可选展示错误列表（例如解析/校验错误）
+-->
 <template>
   <div :class="bem()">
     <div :class="bem('content')">

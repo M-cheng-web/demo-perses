@@ -67,10 +67,11 @@
   import { ref, watch, onMounted } from 'vue';
   import { PlusOutlined, CloseOutlined } from '@ant-design/icons-vue';
   import type { QueryBuilderLabelFilter } from '/#/components/QueryBuilder/lib/types';
-  import { fetchLabelKeys, fetchLabelValues } from '/#/api/querybuilder/prometheusApi';
+  import { useApiClient } from '/#/runtime/useInjected';
   import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('label-filters');
+  const api = useApiClient();
 
   interface Props {
     modelValue: QueryBuilderLabelFilter[];
@@ -107,7 +108,7 @@
 
     loadingKeys.value = true;
     try {
-      const keys = await fetchLabelKeys(props.metric);
+      const keys = await api.query.fetchLabelKeys(props.metric);
       labelOptions.value = keys.map((k) => ({ label: k, value: k }));
     } catch (error) {
       console.error('Failed to load label keys:', error);
@@ -178,7 +179,7 @@
         }
       });
 
-      const values = await fetchLabelValues(props.metric || '', labelName, otherLabels);
+      const values = await api.query.fetchLabelValues(props.metric || '', labelName, otherLabels);
       labelValueOptions.value[index] = values.map((v) => ({ label: v, value: v }));
     } catch (error) {
       console.error('Failed to load label values:', error);

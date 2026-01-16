@@ -1,3 +1,11 @@
+<!--
+  组件说明：单个面板容器（Panel）
+
+  用途：
+  - 根据 panelId 从 store 取出面板数据并渲染
+  - 组合：PanelRightActions（操作区）+ PanelContent（内容区）
+  - 当面板数据缺失时展示错误态，避免页面崩溃
+-->
 <template>
   <Panel v-if="panel" :title="panel.name" :description="panel.description" size="small" :hoverable="true" :body-padding="false">
     <template #right="{ hovered }">

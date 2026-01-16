@@ -1,3 +1,11 @@
+/**
+ * @grafana-fast/dashboard 的 Vite 构建配置
+ *
+ * 说明：
+ * - dashboard 作为 library 产物对外发布，走 `build.lib` 产出 ESM/CJS
+ * - 运行时依赖（vue/echarts/dayjs 等）通过 rollup external 排除，交给宿主应用提供
+ * - `/#/` alias 用于包内部的绝对导入路径（仅在本包源码内使用）
+ */
 import path from 'path';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
@@ -35,6 +43,7 @@ export default defineConfig({
         'vue',
         '@grafana-fast/store',
         '@grafana-fast/component',
+        '@grafana-fast/api',
         '@ant-design/icons-vue',
         'echarts',
         'dayjs',
@@ -42,7 +51,6 @@ export default defineConfig({
         'axios',
         'lodash-es',
         'uuid',
-        'monaco-editor',
         'vue-grid-layout-v3',
       ],
       output: {

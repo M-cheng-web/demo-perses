@@ -1,0 +1,27 @@
+{
+  "name": "@grafana-fast/api",
+  "version": "0.1.0",
+  "description": "Data access layer (contracts + implementations) for grafana-fast.",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c ../../scripts/rollup.config.js"
+  },
+  "dependencies": {
+    "@grafana-fast/types": "workspace:*"
+  },
+  "license": "MIT"
+}
+

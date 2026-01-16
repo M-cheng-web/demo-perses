@@ -10,4 +10,3 @@ export const packagesDir = path.resolve(rootDir, 'packages');
 export function resolveFromRoot(...parts: string[]) {
   return path.resolve(rootDir, ...parts);
 }
-

@@ -40,7 +40,7 @@
   import { Button, Select } from '@grafana-fast/component';
   import { ref, computed, onMounted, watch } from 'vue';
   import { AppstoreOutlined } from '@ant-design/icons-vue';
-  import { fetchMetrics } from '/#/api/querybuilder/prometheusApi';
+  import { useApiClient } from '/#/runtime/useInjected';
   import MetricsModal from './MetricsModal.vue';
   import { createNamespace } from '/#/utils';
 
@@ -61,6 +61,7 @@
   const metrics = ref<string[]>([]);
   const loading = ref(false);
   const modalOpen = ref(false);
+  const api = useApiClient();
 
   const metricOptions = computed(() => {
     return metrics.value.map((metric) => ({
@@ -80,7 +81,7 @@
   const loadMetrics = async (search?: string) => {
     loading.value = true;
     try {
-      metrics.value = await fetchMetrics(search);
+      metrics.value = await api.query.fetchMetrics(search);
     } catch (error) {
       console.error('Failed to load metrics:', error);
     } finally {

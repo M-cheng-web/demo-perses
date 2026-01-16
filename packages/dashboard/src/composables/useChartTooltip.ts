@@ -239,9 +239,18 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
 
     const chartId = getChartId();
 
-    // 鼠标移动事件（设置活跃图表，位置由 Dashboard 全局管理）
-    const mousemoveListener = () => {
-      tooltipStore.setActiveChart(chartId);
+    // 鼠标移动事件：
+    // - 设置活跃图表
+    // - 同步鼠标位置（用于 Teleport 场景：Modal/Drawer 内图表无法触发 Dashboard root 的 mousemove）
+    const mousemoveListener = (params: any) => {
+      const { offsetX, offsetY, event } = params ?? {};
+      const position: MousePosition = {
+        x: typeof offsetX === 'number' ? offsetX : 0,
+        y: typeof offsetY === 'number' ? offsetY : 0,
+        pageX: typeof event?.pageX === 'number' ? event.pageX : 0,
+        pageY: typeof event?.pageY === 'number' ? event.pageY : 0,
+      };
+      tooltipStore.updateMousePosition(chartId, position);
     };
 
     // 鼠标离开事件

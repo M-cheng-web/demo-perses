@@ -148,6 +148,7 @@
   import { ref, watch } from 'vue';
   import { deepClone, createNamespace } from '/#/utils';
   import { getDefaultPieChartOptions } from '../ChartStylesDefaultOptions/pieChartDefaultOptions';
+  import { deepMerge } from './utils';
   import { Switch, Select, Segmented, Slider, Button } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('pie-chart-styles');
@@ -163,12 +164,7 @@
   }>();
 
   // 合并默认配置和传入的配置
-  const localOptions = ref(
-    deepClone({
-      ...getDefaultPieChartOptions(),
-      ...props.options,
-    })
-  );
+  const localOptions = ref(deepClone(deepMerge(getDefaultPieChartOptions(), props.options ?? {})));
 
   // 恢复默认设置
   const resetToDefaults = () => {
@@ -191,10 +187,7 @@
     () => props.options,
     (newVal) => {
       if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
-        localOptions.value = deepClone({
-          ...getDefaultPieChartOptions(),
-          ...newVal,
-        });
+        localOptions.value = deepClone(deepMerge(getDefaultPieChartOptions(), newVal ?? {}));
       }
     },
     { deep: true }

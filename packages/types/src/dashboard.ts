@@ -10,6 +10,11 @@ import type { TimeRange } from './timeRange';
  * Dashboard 定义
  */
 export interface Dashboard {
+  /**
+   * Dashboard JSON schema 版本号（用于导入/导出迁移）
+   * - 业务侧导入旧 JSON 时应先 migrate 到当前版本
+   */
+  schemaVersion?: number;
   /** Dashboard ID */
   id: ID;
   /** Dashboard 名称 */
@@ -42,18 +47,32 @@ export interface DashboardVariable {
   label: string;
   /** 变量类型 */
   type: VariableType;
+  /**
+   * query 类型变量：数据源（例如 prometheus）
+   * - 仅用于 UI 与实现层选择服务；真正执行由 @grafana-fast/api 实现决定
+   */
+  datasource?: string;
+  /**
+   * query 类型变量：查询表达式（由实现层解释）
+   * - Prometheus 常见：label_values(...) / metrics / series
+   */
+  query?: string;
   /** 变量选项 */
   options: VariableOption[];
   /** 当前值 */
   current: string | string[];
   /** 是否支持多选 */
   multi?: boolean;
+  /** 是否包含 “All” 选项（Grafana 语义） */
+  includeAll?: boolean;
+  /** All 的实际值（通常为 '.*'），由插值层按策略解释 */
+  allValue?: string;
 }
 
 /**
  * 变量类型
  */
-export type VariableType = 'select' | 'input' | 'constant';
+export type VariableType = 'select' | 'input' | 'constant' | 'query';
 
 /**
  * 变量选项
@@ -63,6 +82,18 @@ export interface VariableOption {
   text: string;
   /** 实际值 */
   value: string;
+}
+
+/**
+ * 当前变量运行时状态（用于执行/插值/刷新调度）
+ */
+export interface VariablesState {
+  /** 当前变量值：key 为变量 name */
+  values: Record<string, string | string[]>;
+  /** 当前变量 options：key 为变量 name（用于 select/query 变量渲染） */
+  options: Record<string, VariableOption[]>;
+  /** 上次更新的时间戳（ms） */
+  lastUpdatedAt: number;
 }
 
 /**

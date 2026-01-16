@@ -1,3 +1,10 @@
+<!--
+  文件说明：演示站点 - 组件展示页
+
+  作用：
+  - 用于快速浏览 @grafana-fast/component 的视觉密度与交互一致性
+  - 作为 UI 组件回归测试的人工入口
+-->
 <template>
   <ConfigProvider theme="inherit">
     <div class="dp-component-showcase">
@@ -33,7 +40,7 @@
             <Button size="small" type="primary">Small</Button>
             <Button size="middle" type="primary">Middle</Button>
             <Button size="large" type="primary">Large</Button>
-            <Button size="small" type="ghost" shortcut="Ctrl+K">Shortcut</Button>
+            <Button size="small" type="ghost">Shortcut</Button>
           </Space>
         </Card>
 
