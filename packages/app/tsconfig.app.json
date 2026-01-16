@@ -11,6 +11,7 @@
       "@grafana-fast/component": ["../component/src/index.ts"],
       "@grafana-fast/store": ["../store/src/index.ts"],
       "@grafana-fast/hooks": ["../hook/src/index.ts"],
+      "@grafana-fast/json-editor": ["../json-editor/src/index.ts"],
       "@grafana-fast/types": ["../types/src/index.ts"],
       "@grafana-fast/types/*": ["../types/src/*"]
     },

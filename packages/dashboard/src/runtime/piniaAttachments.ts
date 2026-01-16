@@ -6,7 +6,7 @@
  * - 这类代码无法依赖 Vue 的 provide/inject（因为不一定有组件上下文）
  *
  * 方案：
- * - 把 apiClient / panelRegistry / queryScheduler 等运行时依赖挂到 pinia 实例上
+ * - 把 apiClient / queryScheduler 等运行时依赖挂到 pinia 实例上
  * - 在组件树内依旧可以使用 inject（keys.ts），两者保持一致
  *
  * 多实例要求：
@@ -15,12 +15,10 @@
  */
 import { getActivePinia, type Pinia } from '@grafana-fast/store';
 import { createMockApiClient, type GrafanaFastApiClient } from '@grafana-fast/api';
-import { createBuiltInPanelRegistry, type PanelRegistry } from './panels';
 import { effectScope, type EffectScope } from 'vue';
 import { createQueryScheduler } from '/#/query/queryScheduler';
 
 const API_FIELD = '__gfApiClient';
-const PANEL_REGISTRY_FIELD = '__gfPanelRegistry';
 const QUERY_SCHEDULER_FIELD = '__gfQueryScheduler';
 const QUERY_SCHEDULER_SCOPE_FIELD = '__gfQuerySchedulerScope';
 
@@ -42,22 +40,6 @@ export function getPiniaApiClient(pinia?: Pinia): GrafanaFastApiClient {
   const p = pinia ?? (getActivePinia() as any as Pinia | undefined);
   const api = p ? ((p as any)[API_FIELD] as GrafanaFastApiClient | undefined) : undefined;
   return api ?? createMockApiClient();
-}
-
-/**
- * 绑定 panelRegistry 到 pinia（面板插件注册表）
- */
-export function setPiniaPanelRegistry(pinia: Pinia, registry: PanelRegistry) {
-  (pinia as any)[PANEL_REGISTRY_FIELD] = registry;
-}
-
-/**
- * 获取 pinia 上绑定的 panelRegistry（若不存在则回退到内置面板）
- */
-export function getPiniaPanelRegistry(pinia?: Pinia): PanelRegistry {
-  const p = pinia ?? (getActivePinia() as any as Pinia | undefined);
-  const r = p ? ((p as any)[PANEL_REGISTRY_FIELD] as PanelRegistry | undefined) : undefined;
-  return r ?? createBuiltInPanelRegistry();
 }
 
 /**

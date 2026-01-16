@@ -38,6 +38,15 @@ export interface PackageMeta {
 
 export const packages: PackageMeta[] = [
   {
+    name: 'json-editor',
+    packageName: '@grafana-fast/json-editor',
+    display: 'JSON Editor',
+    description: '轻量 JSON 编辑器（导入/导出 + 诊断 + 严格校验阻断）。',
+    category: 'library',
+    publish: true,
+    external: ['vue', '@grafana-fast/component', '@grafana-fast/types', 'jsonc-parser'],
+  },
+  {
     name: 'api',
     packageName: '@grafana-fast/api',
     display: 'API',
@@ -45,15 +54,6 @@ export const packages: PackageMeta[] = [
     category: 'library',
     publish: true,
     external: ['@grafana-fast/types'],
-  },
-  {
-    name: 'panels',
-    packageName: '@grafana-fast/panels',
-    display: 'Panels',
-    description: '面板插件注册与筛选工具（all/exclude/insert）。',
-    category: 'library',
-    publish: true,
-    external: ['vue', '@grafana-fast/dashboard'],
   },
   {
     name: 'types',
@@ -88,7 +88,7 @@ export const packages: PackageMeta[] = [
     description: 'grafana-fast 的仪表板体验包。',
     category: 'library',
     publish: true,
-    external: ['vue', 'dayjs', 'echarts', '@grafana-fast/api'],
+    external: ['vue', 'echarts', '@grafana-fast/api'],
   },
   {
     name: 'hook',

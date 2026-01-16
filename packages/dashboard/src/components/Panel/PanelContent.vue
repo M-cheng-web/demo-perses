@@ -2,7 +2,7 @@
   文件说明：面板内容渲染容器
 
   说明：
-  - 负责把 panel.type 映射到具体渲染组件（通过 PanelRegistry）
+  - 负责把 panel.type 映射到具体渲染组件（内置 panels）
   - 负责向 QueryScheduler 注册 panel，并拿到 loading/error/results
   - 负责在渲染前应用 transformations（数据变换层）
 -->
@@ -29,7 +29,7 @@
   import { Alert, Loading, Empty } from '@grafana-fast/component';
   import type { Panel } from '@grafana-fast/types';
   import { createNamespace } from '/#/utils';
-  import { usePanelRegistry } from '/#/runtime/useInjected';
+  import { getBuiltInPanelRegistry } from '/#/runtime/panels';
   import { getPiniaQueryScheduler } from '/#/runtime/piniaAttachments';
   import UnsupportedPanel from '/#/components/Panel/UnsupportedPanel.vue';
   import { applyTransformations } from '/#/transformations';
@@ -40,7 +40,7 @@
     panel: Panel;
   }>();
 
-  const registry = usePanelRegistry();
+  const registry = getBuiltInPanelRegistry();
 
   const scheduler = getPiniaQueryScheduler();
   const panelRef = computed<Panel>(() => props.panel);

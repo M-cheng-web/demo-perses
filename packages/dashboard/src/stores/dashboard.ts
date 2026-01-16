@@ -5,7 +5,6 @@
 import { defineStore } from '@grafana-fast/store';
 import type { Dashboard, PanelGroup, Panel, PanelLayout, ID } from '@grafana-fast/types';
 import { generateId, deepClone } from '/#/utils';
-import { migrateDashboard } from '@grafana-fast/types';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
 
 interface DashboardState {
@@ -75,8 +74,8 @@ export const useDashboardStore = defineStore('dashboard', {
       try {
         const api = getPiniaApiClient();
         const dashboard = await api.dashboard.loadDashboard(id);
-        // Always normalize/migrate to current schema before putting into store.
-        this.currentDashboard = deepClone(migrateDashboard(dashboard));
+        // 按当前策略：不做历史 schema 兼容/迁移；API 返回什么就用什么（外部应保证是当前结构）。
+        this.currentDashboard = deepClone(dashboard);
       } catch (error) {
         console.error('Failed to load dashboard:', error);
       }

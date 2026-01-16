@@ -301,3 +301,9 @@ AI 一旦进入“可观测数据域”，会马上遇到企业级合规与安�
 - 架构概览：`packages/docs/guide/architecture.md`
 - Dashboard JSON 与迁移：`packages/docs/guide/dashboard-json.md`
 - Panels 插件化：`packages/docs/guide/panels.md`
+
+
+## 个人总结
++ json编辑器私有化
++ 多Panels的分页加载
++ 加入AI能力

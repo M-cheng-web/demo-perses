@@ -1,27 +1,16 @@
-# Dashboard JSON（schemaVersion + migration）
+# Dashboard JSON（复制/粘贴导入导出）
 
-Dashboard 支持通过复制/粘贴 JSON 导入导出。为避免未来结构升级导致旧 JSON 报废，引入：
+Dashboard 支持通过复制/粘贴 JSON 导入导出。
 
-- `schemaVersion`：每份 Dashboard JSON 的结构版本
-- `migrateDashboard()`：导入时将旧版本 JSON 迁移到当前版本
+当前策略是“严格模式”：
+- 如果 JSON 不合法：编辑器内部直接报错，不会影响外部
+- 外部只会拿到“通过校验的 JSON”（避免外部状态被非法内容污染）
 
 ## 设计目标
 
-- v1 JSON 在 v2/v3 仍可导入
-- 不要求与 Grafana/Perses JSON 兼容（内部迁移优先）
-- 未注册的面板类型不丢失：使用 `UnsupportedPanel` 占位并保留原始 options
+- 导入体验清晰：告诉用户哪里错了（行/列 + 高亮行）
+- 外部状态稳定：只有合法内容才会同步到外部
 
 ## 使用建议
 
-导入时：
-
-```ts
-import { migrateDashboard } from '@grafana-fast/types';
-
-const normalized = migrateDashboard(JSON.parse(rawJson));
-```
-
-导出时：
-
-- 建议直接导出 store 中的 `currentDashboard`（已是当前 schema）
-
+导入时建议走 `DashboardJsonEditor`，由编辑器负责校验与阻断。

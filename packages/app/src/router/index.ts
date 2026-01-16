@@ -17,6 +17,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ComponentShowcase.vue'),
   },
   {
+    path: '/json-editor',
+    name: 'JsonEditorShowcase',
+    component: () => import('@/views/JsonEditorShowcase.vue'),
+  },
+  {
     path: '/perf',
     name: 'PerformanceView',
     component: () => import('@/views/PerformanceView.vue'),

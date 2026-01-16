@@ -6,8 +6,8 @@
  * - 运行时需要根据 type 找到对应的 Vue 渲染组件
  *
  * 设计目标：
- * - 支持“插件化”：宿主应用可注入自定义面板，也可替换/裁剪内置面板
- * - 支持“宽松模式”：当 type 未注册时，UI 使用 UnsupportedPanel 占位并保留原始 options
+ * - 当前阶段：dashboard 内置全部 Panel（不提供 “all/exclude/insert” 这类对外筛选 API）
+ * - 当 type 未注册时：渲染层仍需兜底（例如用 UnsupportedPanel），避免运行时崩溃
  */
 import type { Component } from 'vue';
 import TimeSeriesChart from '/#/components/Charts/TimeSeriesChart.vue';
@@ -54,6 +54,15 @@ export interface PanelRegistry {
 }
 
 /**
+ * 内置面板 registry 的单例实例
+ *
+ * 说明：
+ * - 当前阶段 dashboard 内置全部面板类型，因此无需外部注入 registry
+ * - 这里提供一个单例，避免在多个组件中反复 new Map
+ */
+let builtInRegistrySingleton: PanelRegistry | null = null;
+
+/**
  * 由插件列表构建一个 registry
  * - 内部用 Map 做 O(1) 查找
  * - 同 type 后写入会覆盖前写入（由调用方决定顺序）
@@ -75,8 +84,7 @@ export function createPanelRegistry(plugins: PanelPlugin[]): PanelRegistry {
  * 内置面板 registry（默认能力）
  *
  * 说明：
- * - 宿主应用可以通过 `provide(GF_PANEL_REGISTRY_KEY, registry)` 覆盖它
- * - 如果宿主没有注入 registry，则 dashboard 仍可运行（保证开箱即用）
+ * - 当前阶段不支持外部注入/裁剪：dashboard 内置全部面板，保证开箱即用
  */
 export function createBuiltInPanelRegistry(): PanelRegistry {
   return createPanelRegistry([
@@ -88,4 +96,12 @@ export function createBuiltInPanelRegistry(): PanelRegistry {
     { type: 'gauge', displayName: '仪表盘', component: GaugeChart },
     { type: 'heatmap', displayName: '热力图', component: HeatmapChart },
   ]);
+}
+
+/**
+ * 获取内置面板 registry（单例）
+ */
+export function getBuiltInPanelRegistry(): PanelRegistry {
+  if (!builtInRegistrySingleton) builtInRegistrySingleton = createBuiltInPanelRegistry();
+  return builtInRegistrySingleton;
 }

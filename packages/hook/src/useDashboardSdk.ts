@@ -12,7 +12,6 @@ import { computed, createApp, defineComponent, h, onMounted, onUnmounted, ref, w
 import { createPinia, getActivePinia, setActivePinia } from '@grafana-fast/store';
 import type { Pinia } from '@grafana-fast/store';
 import type { Dashboard, Panel, PanelGroup, PanelLayout, ID, TimeRange } from '@grafana-fast/types';
-import { migrateDashboard } from '@grafana-fast/types';
 import {
   initDashboardTheme,
   getStoredThemePreference,
@@ -30,48 +29,27 @@ import {
   createHttpApiClient,
   createMockApiClient,
   createPrometheusDirectApiClient,
+  HttpApiEndpointKey,
+  DEFAULT_HTTP_API_ENDPOINTS,
   type ApiImplementationKind,
   type GrafanaFastApiClient,
 } from '@grafana-fast/api';
-import type { PanelRegistry } from '@grafana-fast/dashboard';
-import { setPiniaApiClient, setPiniaPanelRegistry, disposePiniaQueryScheduler, createBuiltInPanelRegistry } from '@grafana-fast/dashboard';
+import { setPiniaApiClient, disposePiniaQueryScheduler } from '@grafana-fast/dashboard';
 
 const DEFAULT_DSN = '/api';
 
-export const DashboardApi = {
-  /** GET /dashboards/:id - 获取单个 Dashboard */
-  LoadDashboard: 'LoadDashboard',
-  /** POST /dashboards - 保存 Dashboard */
-  SaveDashboard: 'SaveDashboard',
-  /** DELETE /dashboards/:id - 删除 Dashboard */
-  DeleteDashboard: 'DeleteDashboard',
-  /** GET /dashboards - 查询全部 Dashboard 列表 */
-  AllDashboards: 'AllDashboards',
-  /** GET /dashboards/default - 获取默认 Dashboard */
-  DefaultDashboard: 'DefaultDashboard',
-  /** POST /query/execute - 执行单条查询 */
-  ExecuteQuery: 'ExecuteQuery',
-  /** POST /queries/execute - 执行多条查询 */
-  ExecuteQueries: 'ExecuteQueries',
-  /** GET /datasources/:id - 获取数据源 */
-  GetDatasource: 'GetDatasource',
-  /** GET /datasources/default - 获取默认数据源 */
-  DefaultDatasource: 'DefaultDatasource',
-} as const;
-
-export type DashboardApi = (typeof DashboardApi)[keyof typeof DashboardApi];
-
-export const DEFAULT_DASHBOARD_ENDPOINTS: Record<DashboardApi, string> = {
-  [DashboardApi.LoadDashboard]: '/dashboards/:id',
-  [DashboardApi.SaveDashboard]: '/dashboards',
-  [DashboardApi.DeleteDashboard]: '/dashboards/:id',
-  [DashboardApi.AllDashboards]: '/dashboards',
-  [DashboardApi.DefaultDashboard]: '/dashboards/default',
-  [DashboardApi.ExecuteQuery]: '/query/execute',
-  [DashboardApi.ExecuteQueries]: '/queries/execute',
-  [DashboardApi.GetDatasource]: '/datasources/:id',
-  [DashboardApi.DefaultDatasource]: '/datasources/default',
-};
+/**
+ * DashboardApi（对外导出）
+ *
+ * 说明：
+ * - 这里保持原来的 export 名称（DashboardApi / DEFAULT_DASHBOARD_ENDPOINTS），避免上层改动
+ * - 但内部实现改为复用 @grafana-fast/api 的 HttpApiEndpointKey/DEFAULT_HTTP_API_ENDPOINTS：
+ *   - endpoint key 统一来源，避免 dashboard/hook/api 三处各写一份导致不一致
+ *   - 未来接入真实后端时，主要在 @grafana-fast/api 的 http 实现层维护路径与 DTO 适配
+ */
+export const DashboardApi = HttpApiEndpointKey;
+export type DashboardApi = HttpApiEndpointKey;
+export const DEFAULT_DASHBOARD_ENDPOINTS: Record<DashboardApi, string> = DEFAULT_HTTP_API_ENDPOINTS;
 
 export interface DashboardSdkOptions {
   /** 指定加载的 dashboard id，默认加载 default */
@@ -98,14 +76,6 @@ export interface DashboardSdkOptions {
    * - 需要在运行时切换不同数据源或不同后端实例
    */
   apiClient?: GrafanaFastApiClient;
-  /**
-   * 面板注册表（Panel Registry / 插件系统）
-   *
-   * 说明：
-   * - 用于“面板类型 -> 面板渲染/编辑能力”的映射
-   * - 不传时默认使用内置面板（createBuiltInPanelRegistry）
-   */
-  panelRegistry?: PanelRegistry;
   /**
    * Pinia 实例隔离策略（用于同一页面挂载多个 dashboard 的场景）
    *
@@ -153,7 +123,7 @@ export interface ResolvedDashboardSdkApiConfig {
 }
 
 export interface DashboardSdkActions {
-  /** 按 id 加载 dashboard（内部会进行 schema migration） */
+  /** 按 id 加载 dashboard（不做历史 schema 迁移，依赖后端/宿主保证结构正确） */
   loadDashboard: (id: ID) => Promise<unknown>;
   /** 保存当前 dashboard（落库或写回后端/本地实现） */
   saveDashboard: () => Promise<unknown>;
@@ -273,12 +243,8 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
         ? createPrometheusDirectApiClient({ apiConfig: options.apiConfig })
         : createMockApiClient());
 
-  // 面板注册表（插件系统）
-  const resolvedPanelRegistry: PanelRegistry = options.panelRegistry ?? createBuiltInPanelRegistry();
-
-  // 把 runtime 依赖挂到 pinia 实例上，让 dashboard 内部 store 可以在“无全局单例”的情况下获取到 apiClient/panelRegistry
+  // 把 runtime 依赖挂到 pinia 实例上，让 dashboard 内部 store 可以在“无全局单例”的情况下获取到 apiClient
   setPiniaApiClient(pinia, resolvedApiClient);
-  setPiniaPanelRegistry(pinia, resolvedPanelRegistry);
 
   const dashboardStore = useDashboardStore(pinia);
   const timeRangeStore = useTimeRangeStore(pinia);
@@ -298,7 +264,6 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
         h(DashboardView, {
           theme: theme.value,
           apiClient: resolvedApiClient,
-          panelRegistry: resolvedPanelRegistry,
           runtimeId,
         });
     },
@@ -434,7 +399,8 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     loadDashboard: (id: ID) => dashboardStore.loadDashboard(id),
     saveDashboard: () => dashboardStore.saveDashboard(),
     setDashboard: (dashboard: Dashboard) => {
-      dashboardStore.currentDashboard = migrateDashboard(dashboard);
+      // 按当前策略：不做历史 schema 迁移；宿主传入的 dashboard 必须符合当前结构
+      dashboardStore.currentDashboard = dashboard;
     },
     // 编辑模式切换
     toggleEditMode: () => dashboardStore.toggleEditMode(),

@@ -97,7 +97,6 @@
   },
   "dependencies": {
     "vue": "^3.2.41",
-    "dayjs": "^1.11.6",
     "easyqrcodejs": "^4.4.13",
     "js-cookie": "^3.0.1"
   }

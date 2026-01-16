@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@grafana-fast/types": ["../types/dist/index.d.ts"],
+      "@grafana-fast/types/*": ["../types/dist/*"],
+      "@grafana-fast/component": ["../component/dist/index.d.ts"],
+      "@grafana-fast/component/*": ["../component/dist/*"]
+    },
+    "composite": true,
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": []
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.d.ts"],
+  "references": [{ "path": "../types" }, { "path": "../component" }]
+}

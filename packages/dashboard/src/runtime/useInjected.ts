@@ -10,8 +10,7 @@
  */
 import { inject } from 'vue';
 import { createMockApiClient, type GrafanaFastApiClient } from '@grafana-fast/api';
-import { GF_API_KEY, GF_PANEL_REGISTRY_KEY, GF_RUNTIME_KEY, type DashboardRuntimeContext } from './keys';
-import { createBuiltInPanelRegistry, type PanelRegistry } from './panels';
+import { GF_API_KEY, GF_RUNTIME_KEY, type DashboardRuntimeContext } from './keys';
 
 /**
  * 获取当前运行时 API Client
@@ -19,14 +18,6 @@ import { createBuiltInPanelRegistry, type PanelRegistry } from './panels';
  */
 export function useApiClient(): GrafanaFastApiClient {
   return inject(GF_API_KEY, createMockApiClient());
-}
-
-/**
- * 获取当前运行时 PanelRegistry
- * - 默认回退到内置面板集合
- */
-export function usePanelRegistry(): PanelRegistry {
-  return inject(GF_PANEL_REGISTRY_KEY, createBuiltInPanelRegistry());
 }
 
 /**

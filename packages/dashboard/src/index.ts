@@ -3,7 +3,7 @@
  *
  * 对外暴露内容包括：
  * - DashboardView：Dashboard 根组件（宿主应用可直接挂载）
- * - runtime：运行时注入 key、panel registry、piniaAttachments 等（用于多实例与插件化）
+ * - runtime：运行时注入 key、piniaAttachments 等（用于多实例隔离）
  * - stores：dashboard/timeRange/editor/tooltip/variables 等 store（供 hooks 与宿主高级用法）
  * - types：透出 @grafana-fast/types（方便宿主应用一站式引用类型）
  *
@@ -23,7 +23,6 @@ export { DashboardView };
  * runtime 注入 key / registry 等稳定导出面
  */
 export * from '/#/runtime/keys';
-export * from '/#/runtime/panels';
 export * from '/#/runtime/piniaAttachments';
 
 /**

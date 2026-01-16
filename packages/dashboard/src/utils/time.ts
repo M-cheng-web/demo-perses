@@ -2,8 +2,47 @@
  * 时间处理工具函数
  */
 
-import dayjs from 'dayjs';
 import type { TimeRange, AbsoluteTimeRange, Timestamp } from '@grafana-fast/types';
+
+function isValidTimestamp(ts: number): boolean {
+  return Number.isFinite(ts) && !Number.isNaN(ts);
+}
+
+function parseDateLikeToTimestamp(value: string): Timestamp {
+  // 说明：
+  // - dayjs 之前会“尽量解析”一些非标准格式；现在我们严格依赖浏览器/JS 引擎的 Date.parse 行为
+  // - 建议外部只传 ISO8601 或者 `now-1h` 这类相对语法
+  const ts = Date.parse(value);
+  return isValidTimestamp(ts) ? ts : Date.now();
+}
+
+function pad(num: number, len = 2): string {
+  return String(num).padStart(len, '0');
+}
+
+/**
+ * 格式化 Date（支持常用 token）
+ *
+ * 支持 token：
+ * - YYYY MM DD HH mm ss SSS
+ *
+ * 注意：
+ * - 这里只实现项目当前用到的格式化能力（避免引入 dayjs）
+ * - 默认使用本地时区（与 dayjs 默认行为一致）
+ */
+function formatDate(date: Date, format: string): string {
+  const replacements: Record<string, string> = {
+    YYYY: String(date.getFullYear()),
+    MM: pad(date.getMonth() + 1),
+    DD: pad(date.getDate()),
+    HH: pad(date.getHours()),
+    mm: pad(date.getMinutes()),
+    ss: pad(date.getSeconds()),
+    SSS: pad(date.getMilliseconds(), 3),
+  };
+
+  return format.replace(/YYYY|MM|DD|HH|mm|ss|SSS/g, (token) => replacements[token] ?? token);
+}
 
 /**
  * 解析相对时间字符串（如 "now-1h"）
@@ -24,22 +63,31 @@ export function parseRelativeTime(relativeTime: string): Timestamp {
   const value = parseInt(match[1] || '0', 10);
   const unit = match[2] || 'h';
 
-  const unitMap: Record<string, dayjs.ManipulateType> = {
-    s: 'second',
-    m: 'minute',
-    h: 'hour',
-    d: 'day',
-    w: 'week',
-    M: 'month',
-    y: 'year',
+  // 固定毫秒单位：秒/分/时/天/周
+  const msMap: Record<string, number> = {
+    s: 1000,
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+    w: 7 * 24 * 60 * 60 * 1000,
   };
 
-  const manipulateType = unitMap[unit];
-  if (!manipulateType) {
-    return now;
+  if (unit in msMap) {
+    return now - value * (msMap[unit] ?? 0);
   }
 
-  return dayjs().subtract(value, manipulateType).valueOf();
+  // 月/年：使用 Date 的 setMonth/setFullYear 处理（避免纯毫秒造成月长度差异问题）
+  const d = new Date(now);
+  if (unit === 'M') {
+    d.setMonth(d.getMonth() - value);
+    return d.getTime();
+  }
+  if (unit === 'y') {
+    d.setFullYear(d.getFullYear() - value);
+    return d.getTime();
+  }
+
+  return now;
 }
 
 /**
@@ -54,7 +102,7 @@ export function parseTimeRange(timeRange: TimeRange): AbsoluteTimeRange {
     if (timeRange.from.startsWith('now')) {
       from = parseRelativeTime(timeRange.from);
     } else {
-      from = dayjs(timeRange.from).valueOf();
+      from = parseDateLikeToTimestamp(timeRange.from);
     }
   } else {
     from = timeRange.from;
@@ -65,7 +113,7 @@ export function parseTimeRange(timeRange: TimeRange): AbsoluteTimeRange {
     if (timeRange.to.startsWith('now')) {
       to = parseRelativeTime(timeRange.to);
     } else {
-      to = dayjs(timeRange.to).valueOf();
+      to = parseDateLikeToTimestamp(timeRange.to);
     }
   } else {
     to = timeRange.to;
@@ -78,7 +126,9 @@ export function parseTimeRange(timeRange: TimeRange): AbsoluteTimeRange {
  * 格式化时间戳
  */
 export function formatTimestamp(timestamp: Timestamp, format: string = 'YYYY-MM-DD HH:mm:ss'): string {
-  return dayjs(timestamp).format(format);
+  const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(Number(timestamp));
+  if (!isValidTimestamp(date.getTime())) return '';
+  return formatDate(date, format);
 }
 
 /**

@@ -15,7 +15,9 @@ const useDist = process.env.GF_USE_DIST === '1';
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
-  plugins: [vue()],
+  // 说明：在 pnpm + workspace 下，vite/plugin-vue 可能出现“重复 vite 类型”导致的 TS 类型不兼容。
+  // 这不影响实际运行与构建产物，因此这里做一个窄范围的类型收敛，避免阻断 `pnpm build`。
+  plugins: [vue() as any],
   resolve: {
     alias: {
       '@': resolveFromRoot('./src'),
@@ -28,7 +30,7 @@ export default defineConfig({
             '@grafana-fast/store': resolveFromRoot('../store/src/index.ts'),
             '@grafana-fast/hooks': resolveFromRoot('../hook/src/index.ts'),
             '@grafana-fast/api': resolveFromRoot('../api/src/index.ts'),
-            '@grafana-fast/panels': resolveFromRoot('../panels/src/index.ts'),
+            '@grafana-fast/json-editor': resolveFromRoot('../json-editor/src/index.ts'),
             '@grafana-fast/types': resolveFromRoot('../types/src/index.ts'),
           }),
     },
@@ -38,18 +40,6 @@ export default defineConfig({
       less: {
         additionalData: useDist ? '' : `@import \"/#/assets/styles/variables.less\"; @import \"/#/assets/styles/mixins.less\";`,
         javascriptEnabled: true,
-      },
-    },
-  },
-  optimizeDeps: {
-    include: ['monaco-editor'],
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          monaco: ['monaco-editor'],
-        },
       },
     },
   },

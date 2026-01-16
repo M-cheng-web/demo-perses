@@ -27,26 +27,19 @@
   import { Button, InputNumber } from '@grafana-fast/component';
   import { useDashboardSdk } from '@grafana-fast/hooks';
   import type { Dashboard } from '@grafana-fast/types';
-  import { PanelPlugins } from '@grafana-fast/panels';
 
   const router = useRouter();
   const dashboardRef = ref<HTMLElement | null>(null);
   const panelCount = ref(100);
 
-  const panelRegistry = PanelPlugins.all().build();
   const { actions } = useDashboardSdk(dashboardRef, {
     dashboardId: 'default',
-    panelRegistry,
   });
 
   const generateDashboard = (count: number): Dashboard => {
     const now = Date.now();
     const panels = Array.from({ length: count }).map((_, i) => {
       const id = `p-${i + 1}`;
-      const row = Math.floor(i / 3);
-      const col = i % 3;
-      const x = col * 16;
-      const y = row * 10;
       return {
         id,
         name: `Panel ${i + 1}`,

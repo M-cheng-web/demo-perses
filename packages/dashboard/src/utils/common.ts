@@ -2,14 +2,27 @@
  * 通用工具函数
  */
 
-import { v4 as uuidv4 } from 'uuid';
-
 /**
- * 生成 UUID
+ * 生成唯一 ID（用于 dashboard/panel/group 等）
  */
 export function generateId(): string {
-  return uuidv4();
+  // 优先使用浏览器/运行时提供的 crypto.randomUUID（无额外依赖、碰撞概率极低）
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+
+  // 兜底：在极端环境（无 randomUUID）下，使用 “时间 + 随机 + 自增” 组合生成
+  // 说明：
+  // - 不追求 RFC4122 规范，只追求在前端交互场景足够唯一
+  // - 生成结果仍然是字符串，可直接用于 dashboard/panel/group 的 id
+  const now = Date.now().toString(16);
+  const rand = Math.random().toString(16).slice(2);
+  generateIdCounter = (generateIdCounter + 1) % 0xffff;
+  const seq = generateIdCounter.toString(16).padStart(4, '0');
+  return `id-${now}-${seq}-${rand}`;
 }
+
+let generateIdCounter = 0;
 
 /**
  * 深度克隆

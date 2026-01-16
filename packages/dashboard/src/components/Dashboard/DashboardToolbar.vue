@@ -5,7 +5,7 @@
   - 编辑模式开关/保存
   - 时间范围选择 + 手动刷新
   - 变量区展示与变更写回（variables store 与 dashboard JSON 同步）
-  - JSON 导入/导出（导入时会走 schema migration）
+  - JSON 导入/导出（严格模式：非法 JSON 不会污染外部状态）
 -->
 <template>
   <div :class="bem()">
@@ -60,7 +60,13 @@
 
     <!-- JSON 查看/编辑模态框 -->
     <Modal v-model:open="jsonModalVisible" title="Dashboard JSON" :width="800" destroyOnClose :maskClosable="false">
-      <JsonEditor v-model="dashboardJson" :read-only="jsonModalMode === 'view'" @validate="handleJsonValidate" />
+      <DashboardJsonEditor
+        ref="dashboardJsonEditorRef"
+        v-model="dashboardJson"
+        :read-only="jsonModalMode === 'view'"
+        :validate="validateDashboardStrict"
+        @validate="handleJsonValidate"
+      />
       <template #footer>
         <Space>
           <Button @click="jsonModalVisible = false">取消</Button>
@@ -88,12 +94,13 @@
     SettingOutlined,
     PlusOutlined,
   } from '@ant-design/icons-vue';
-  import { useDashboardStore, useTimeRangeStore, useVariablesStore } from '/#/stores';
-  import { message } from '@grafana-fast/component';
-  import JsonEditor from '/#/components/Common/JsonEditor.vue';
-  import VariableSelector from '/#/components/Common/VariableSelector.vue';
-  import { createNamespace } from '/#/utils';
-  import { migrateDashboard } from '@grafana-fast/types';
+	  import { useDashboardStore, useTimeRangeStore, useVariablesStore } from '/#/stores';
+	  import { message } from '@grafana-fast/component';
+	  import { DashboardJsonEditor } from '@grafana-fast/json-editor';
+	  import type { Dashboard } from '@grafana-fast/types';
+	  import VariableSelector from '/#/components/Common/VariableSelector.vue';
+	  import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
+	  import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('dashboard-toolbar');
 
@@ -122,6 +129,13 @@
   const dashboardJson = ref('');
   const isJsonValid = ref(true);
   const fileInputRef = ref<HTMLInputElement>();
+  const dashboardJsonEditorRef = ref<
+    | null
+    | {
+        getDraftText: () => string;
+        getDashboard: () => Dashboard;
+      }
+  >(null);
 
   const handleTimeRangeChange = (value: string) => {
     timeRangeStore.setTimeRange({
@@ -215,17 +229,12 @@
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const json = e.target?.result as string;
-        const dashboard = migrateDashboard(JSON.parse(json));
-
-        // 验证 dashboard 格式
-        if (!dashboard.name || !dashboard.panelGroups) {
-          message.error('无效的 Dashboard JSON 格式');
-          return;
-        }
-
-        dashboardStore.currentDashboard = dashboard;
-        message.success('导入成功');
+        // 统一走 JSON 编辑器：非法 JSON 只在编辑器内部报错，不会污染外部状态
+        const json = String(e.target?.result ?? '');
+        dashboardJson.value = json;
+        jsonModalMode.value = 'edit';
+        jsonModalVisible.value = true;
+        message.success('已加载 JSON，请检查并点击“应用”');
       } catch (error) {
         console.error('导入失败：JSON 格式错误', error);
       }
@@ -253,12 +262,17 @@
 
   const handleApplyJson = () => {
     try {
-      const dashboard = migrateDashboard(JSON.parse(dashboardJson.value));
+      const dashboard = dashboardJsonEditorRef.value?.getDashboard();
+      if (!dashboard) {
+        message.error('无法应用：Dashboard JSON 不合法');
+        return;
+      }
       dashboardStore.currentDashboard = dashboard;
       jsonModalVisible.value = false;
       message.success('应用成功');
     } catch (error) {
       console.error('应用失败：JSON 格式错误', error);
+      message.error((error as Error)?.message ?? '应用失败');
     }
   };
 

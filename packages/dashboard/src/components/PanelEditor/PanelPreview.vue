@@ -18,7 +18,7 @@
   import { useTimeRangeStore, useVariablesStore } from '/#/stores';
   import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
   import { QueryRunner } from '/#/query/queryRunner';
-  import { usePanelRegistry } from '/#/runtime/useInjected';
+  import { getBuiltInPanelRegistry } from '/#/runtime/panels';
   import UnsupportedPanel from '/#/components/Panel/UnsupportedPanel.vue';
   import { createNamespace } from '/#/utils';
 
@@ -38,7 +38,7 @@
 
   const timeRangeStore = useTimeRangeStore();
   const variablesStore = useVariablesStore();
-  const registry = usePanelRegistry();
+  const registry = getBuiltInPanelRegistry();
   const queryResults = ref<QueryResult[]>([]);
 	  const isLoading = ref(false);
   let abortController: AbortController | null = null;

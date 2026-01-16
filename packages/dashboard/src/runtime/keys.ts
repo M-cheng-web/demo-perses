@@ -3,7 +3,6 @@
  *
  * 这些 key 用于在 Dashboard 组件树中注入/获取运行时依赖：
  * - API Client：数据访问层（mock/http/prometheus-direct），屏蔽后端变化
- * - PanelRegistry：面板插件注册表（支持插件化与缺失面板的宽松降级）
  * - RuntimeContext：当前 Dashboard 实例的运行时上下文（多实例隔离/事件作用域）
  *
  * 注意：
@@ -12,7 +11,6 @@
  */
 import type { InjectionKey, Ref } from 'vue';
 import type { GrafanaFastApiClient } from '@grafana-fast/api';
-import type { PanelRegistry } from '../runtime/panels';
 
 export interface DashboardRuntimeContext {
   /**
@@ -37,10 +35,6 @@ export interface DashboardRuntimeContext {
  * 注入：API Client（数据访问层）
  */
 export const GF_API_KEY: InjectionKey<GrafanaFastApiClient> = Symbol('grafana-fast:api');
-/**
- * 注入：Panel Registry（面板插件注册表）
- */
-export const GF_PANEL_REGISTRY_KEY: InjectionKey<PanelRegistry> = Symbol('grafana-fast:panel-registry');
 /**
  * 注入：Runtime Context（多实例上下文）
  */

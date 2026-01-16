@@ -77,7 +77,7 @@
 
               <!-- JSON 编辑器 -->
               <TabPane name="json" tab="JSON 编辑">
-                <JsonEditor v-model="jsonValue" @validate="handleJsonValidate" />
+                <JsonEditorLite v-model="jsonDraft" :height="360" :validate="validatePanelStrict" @validate="handleJsonValidate" />
               </TabPane>
             </Tabs>
           </div>
@@ -103,7 +103,7 @@
   import { useDashboardStore, useEditorStore } from '/#/stores';
   import { generateId, deepClone, createNamespace } from '/#/utils';
   import { PanelType } from '/#/enums/panelType';
-  import { usePanelRegistry } from '/#/runtime/useInjected';
+  import { getBuiltInPanelRegistry } from '/#/runtime/panels';
   import TimeSeriesChartStyles from './ChartStyles/TimeSeriesChartStyles.vue';
   import BarChartStyles from './ChartStyles/BarChartStyles.vue';
   import PieChartStyles from './ChartStyles/PieChartStyles.vue';
@@ -111,9 +111,10 @@
   import HeatmapChartStyles from './ChartStyles/HeatmapChartStyles.vue';
   import StatPanelStyles from './ChartStyles/StatPanelStyles.vue';
   import TableChartStyles from './ChartStyles/TableChartStyles.vue';
-  import type { Panel } from '@grafana-fast/types';
-  import JsonEditor from '/#/components/Common/JsonEditor.vue';
-  import PanelPreview from './PanelPreview.vue';
+	  import type { Panel } from '@grafana-fast/types';
+	  import { JsonEditorLite, analyzeJsonText } from '@grafana-fast/json-editor';
+	  import { validatePanelStrict } from '/#/utils/strictJsonValidators';
+	  import PanelPreview from './PanelPreview.vue';
   import DataQueryTab from './DataQueryTab.vue';
   import { getDefaultTimeSeriesOptions } from './ChartStylesDefaultOptions/timeSeriesDefaultOptions';
   import { getDefaultBarChartOptions } from './ChartStylesDefaultOptions/barChartDefaultOptions';
@@ -127,7 +128,7 @@
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
-  const panelRegistry = usePanelRegistry();
+  const panelRegistry = getBuiltInPanelRegistry();
 
   const { isDrawerOpen, editingPanel, editingMode, targetGroupId, originalPanelId } = storeToRefs(editorStore);
   const { currentDashboard } = storeToRefs(dashboardStore);
@@ -138,6 +139,7 @@
   const selectedGroupId = ref<string>('');
   const panelPreviewRef = ref<InstanceType<typeof PanelPreview>>();
   const dataQueryTabRef = ref<InstanceType<typeof DataQueryTab>>();
+  const jsonDraft = ref<string>('');
 
   // 获取面板组列表
 	  const panelGroupOptions = computed(() => {
@@ -148,7 +150,7 @@
 	    }));
 	  });
 
-  // 面板类型选项（来自 registry，支持插件化）
+  // 面板类型选项（当前阶段：来自内置 panels 列表）
   const panelTypeOptions = computed(() => {
     const plugins = panelRegistry.list();
     return plugins.map((p) => ({ label: p.displayName, value: p.type }));
@@ -196,25 +198,29 @@
     },
   });
 
-  // JSON 编辑器值 - 优化为实时双向绑定
-  const jsonValue = computed({
-    get: () => JSON.stringify(formData, null, 2),
-    set: (value: string) => {
-      try {
-        const parsed = JSON.parse(value);
-        // 直接更新 formData，触发预览更新
-        Object.assign(formData, parsed);
-        isJsonValid.value = true;
-      } catch (error) {
-        // JSON 解析错误，设置验证状态为无效
-        isJsonValid.value = false;
-      }
-    },
-  });
-
   const handleJsonValidate = (isValid: boolean) => {
     isJsonValid.value = isValid;
   };
+
+  // 当切换到 JSON tab 时，用当前表单值刷新一份草稿（避免在用户编辑时被自动覆盖）
+  watch(
+    () => activeTab.value,
+    (tab) => {
+      if (tab !== 'json') return;
+      jsonDraft.value = JSON.stringify(formData, null, 2);
+    }
+  );
+
+  // JSON 草稿变更：当草稿成为合法 JSON 时，再写回到 formData（不阻塞用户输入过程）
+  watch(
+    () => jsonDraft.value,
+    (text) => {
+      const d = analyzeJsonText(text ?? '');
+      if (!d.ok) return;
+      if (!d.value || typeof d.value !== 'object') return;
+      Object.assign(formData, d.value as any);
+    }
+  );
 
   // 监听 drawer 打开
   watch(() => isDrawerOpen.value, (open) => {

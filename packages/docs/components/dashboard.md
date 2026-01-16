@@ -21,7 +21,7 @@ useDashboardSdk(hostRef, { dashboardId: 'default' });
 - 宿主应用需要注册：
   - `@grafana-fast/store`（Pinia + stores）
   - `@grafana-fast/component`（UI kit，全局样式与基础组件）
-- `@grafana-fast/dashboard` / `@grafana-fast/hooks` 的 `peerDependencies` 需要由宿主提供（例如 `vue`、`echarts`、`dayjs`）。
+- `@grafana-fast/dashboard` / `@grafana-fast/hooks` 的 `peerDependencies` 需要由宿主提供（例如 `vue`、`echarts`）。
 - `/#/` 是 **dashboard 包内部** 的源码绝对路径别名，不建议在业务侧或其它包中使用。
 
 ## 导出内容

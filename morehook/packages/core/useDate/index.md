@@ -4,7 +4,7 @@ category: Time
 
 # useDate
 
-操作时间，返回期望格式（内部使用了 dayjs）
+操作时间，返回期望格式（使用原生 Date 实现，不依赖 dayjs）
 
 ## Usage
 

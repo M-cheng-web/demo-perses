@@ -2,7 +2,7 @@
   文件说明：Dashboard 根组件
 
   职责：
-  - 提供运行时依赖（apiClient / panelRegistry / runtimeContext）
+  - 提供运行时依赖（apiClient / runtimeContext）
   - 渲染工具栏、面板组、编辑器、全屏弹窗、全局 Tooltip 等
   - 处理多实例隔离：鼠标跟踪、依赖注入与 pinia 附加依赖绑定
 -->
@@ -52,10 +52,8 @@
   import type { PanelGroup } from '@grafana-fast/types';
   import type { GrafanaFastApiClient } from '@grafana-fast/api';
   import { createMockApiClient } from '@grafana-fast/api';
-  import type { PanelRegistry } from '/#/runtime/panels';
-  import { createBuiltInPanelRegistry } from '/#/runtime/panels';
-  import { GF_API_KEY, GF_PANEL_REGISTRY_KEY, GF_RUNTIME_KEY } from '/#/runtime/keys';
-  import { setPiniaApiClient, setPiniaPanelRegistry } from '/#/runtime/piniaAttachments';
+  import { GF_API_KEY, GF_RUNTIME_KEY } from '/#/runtime/keys';
+  import { setPiniaApiClient } from '/#/runtime/piniaAttachments';
 
   const [_, bem] = createNamespace('dashboard');
 
@@ -74,11 +72,6 @@
        */
       apiClient?: GrafanaFastApiClient;
       /**
-       * Optional panel registry override (plugins).
-       * When not provided, dashboard uses built-in panels.
-       */
-      panelRegistry?: PanelRegistry;
-      /**
        * Optional runtime id for multi-instance isolation.
        * When not provided, a random id is generated.
        */
@@ -87,7 +80,6 @@
     {
       theme: 'inherit',
       apiClient: undefined,
-      panelRegistry: undefined,
       runtimeId: undefined,
     }
   );
@@ -110,9 +102,7 @@
 
   // Provide runtime-scoped dependencies
   const apiClient = computed(() => props.apiClient ?? createMockApiClient());
-  const panelRegistry = computed(() => props.panelRegistry ?? createBuiltInPanelRegistry());
   provide(GF_API_KEY, apiClient.value);
-  provide(GF_PANEL_REGISTRY_KEY, panelRegistry.value);
   provide(GF_RUNTIME_KEY, { id: runtimeId.value, rootEl });
 
   // NOTE: inject() must be called during setup (not inside onMounted).
@@ -124,7 +114,6 @@
     const active = injectedPinia ?? getActivePinia();
     if (active) {
       setPiniaApiClient(active, apiClient.value);
-      setPiniaPanelRegistry(active, panelRegistry.value);
     }
   });
 

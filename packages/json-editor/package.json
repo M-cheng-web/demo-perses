@@ -1,0 +1,36 @@
+{
+  "name": "@grafana-fast/json-editor",
+  "version": "0.1.0",
+  "description": "Lightweight JSON editor for grafana-fast (import/export + diagnostics + strict validation gate).",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c ../../scripts/rollup.config.js",
+    "build:types": "pnpm -C ../types run build && pnpm -C ../component run build:types && vue-tsc --project tsconfig.json --declaration --emitDeclarationOnly --outDir dist"
+  },
+  "dependencies": {
+    "@grafana-fast/component": "workspace:*",
+    "@grafana-fast/types": "workspace:*",
+    "jsonc-parser": "^3.3.1"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vue-tsc": "^3.1.3"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "license": "MIT"
+}
