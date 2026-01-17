@@ -15,9 +15,10 @@
         v-if="variable.type === 'select' || variable.type === 'query'"
         v-model:value="variableValues[variable.name]"
         :mode="variable.multi ? 'multiple' : undefined"
-        :style="{ minWidth: '150px' }"
+        :style="{ minWidth: '200px' }"
         :placeholder="`请选择 ${variable.label}`"
         :options="formatOptions(variable)"
+        :max-tag-count="2"
         @change="(value: any) => handleVariableChange(variable.name, value)"
       />
 

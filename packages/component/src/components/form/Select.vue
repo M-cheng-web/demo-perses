@@ -517,7 +517,7 @@
       if (!el) break;
       const key = el?.dataset?.gfValue;
       const measured = el?.offsetWidth ?? 0;
-      const w = measured > 0 ? measured : (key ? tagWidthCache.get(key) : undefined) ?? estimateTagWidth(el);
+      const w = measured > 0 ? measured : ((key ? tagWidthCache.get(key) : undefined) ?? estimateTagWidth(el));
       if (measured > 0 && key) tagWidthCache.set(key, measured);
       if (used + w <= available) {
         used += w;
@@ -541,7 +541,7 @@
       if (!el) break;
       const key = el?.dataset?.gfValue;
       const measured = el?.offsetWidth ?? 0;
-      const w = measured > 0 ? measured : (key ? tagWidthCache.get(key) : undefined) ?? estimateTagWidth(el);
+      const w = measured > 0 ? measured : ((key ? tagWidthCache.get(key) : undefined) ?? estimateTagWidth(el));
       if (measured > 0 && key) tagWidthCache.set(key, measured);
       if (used + w <= availableWithSummary) {
         used += w;

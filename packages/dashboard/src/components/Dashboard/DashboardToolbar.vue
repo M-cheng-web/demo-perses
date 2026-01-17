@@ -94,13 +94,13 @@
     SettingOutlined,
     PlusOutlined,
   } from '@ant-design/icons-vue';
-	  import { useDashboardStore, useTimeRangeStore, useVariablesStore } from '/#/stores';
-	  import { message } from '@grafana-fast/component';
-	  import { DashboardJsonEditor } from '@grafana-fast/json-editor';
-	  import type { Dashboard } from '@grafana-fast/types';
-	  import VariableSelector from '/#/components/Common/VariableSelector.vue';
-	  import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
-	  import { createNamespace } from '/#/utils';
+  import { useDashboardStore, useTimeRangeStore, useVariablesStore } from '/#/stores';
+  import { message } from '@grafana-fast/component';
+  import { DashboardJsonEditor } from '@grafana-fast/json-editor';
+  import type { Dashboard } from '@grafana-fast/types';
+  import VariableSelector from '/#/components/Common/VariableSelector.vue';
+  import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
+  import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('dashboard-toolbar');
 
@@ -129,13 +129,10 @@
   const dashboardJson = ref('');
   const isJsonValid = ref(true);
   const fileInputRef = ref<HTMLInputElement>();
-  const dashboardJsonEditorRef = ref<
-    | null
-    | {
-        getDraftText: () => string;
-        getDashboard: () => Dashboard;
-      }
-  >(null);
+  const dashboardJsonEditorRef = ref<null | {
+    getDraftText: () => string;
+    getDashboard: () => Dashboard;
+  }>(null);
 
   const handleTimeRangeChange = (value: string) => {
     timeRangeStore.setTimeRange({
