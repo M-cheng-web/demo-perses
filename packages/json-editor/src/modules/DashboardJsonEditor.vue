@@ -56,6 +56,15 @@
     />
 
     <Alert
+      v-else-if="diagnostics.json.ok && diagnostics.looksLikeDashboard && diagnostics.schemaVersionOk === false"
+      type="error"
+      show-icon
+      message="Dashboard schemaVersion 不匹配"
+      :description="diagnostics.schemaVersionError || 'schemaVersion 不匹配。该内容不会同步到外部。'"
+      style="margin-top: 10px"
+    />
+
+    <Alert
       v-else-if="validatorErrors.length > 0"
       type="error"
       show-icon
@@ -188,7 +197,7 @@
       validating.value = false;
 
       const d = diagnostics.value;
-      const ok = d.json.ok && d.looksLikeDashboard && validatorErrors.value.length === 0;
+      const ok = d.json.ok && d.looksLikeDashboard && d.schemaVersionOk !== false && validatorErrors.value.length === 0;
 
       // 外部校验结束后，如果此时内容仍然是当前 draft，且校验通过，则将其同步到外部
       if (ok && draftText.value === text && text !== (props.modelValue ?? '')) {
@@ -216,7 +225,7 @@
   const canSyncToOuter = computed(() => {
     if (validating.value) return false;
     const d = diagnostics.value;
-    return d.json.ok && d.looksLikeDashboard && validatorErrors.value.length === 0;
+    return d.json.ok && d.looksLikeDashboard && d.schemaVersionOk !== false && validatorErrors.value.length === 0;
   });
 
   const setDraft = (value: string) => {
@@ -231,7 +240,7 @@
 
     // 没有外部校验器时：可以在本次输入内直接决定是否同步（更跟手）
     if (!props.validate) {
-      const ok = d.json.ok && d.looksLikeDashboard;
+      const ok = d.json.ok && d.looksLikeDashboard && d.schemaVersionOk !== false;
       if (ok && value !== (props.modelValue ?? '')) emit('update:modelValue', value);
       emit('validate', ok);
       return;

@@ -34,7 +34,7 @@ export default defineConfig({
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
-      external: ['vue', '@ant-design/icons-vue'],
+      external: ['vue', '@ant-design/icons-vue', '@grafana-fast/utils'],
       output: {
         globals: {
           vue: 'Vue',

@@ -42,7 +42,7 @@
   import { computed } from 'vue';
   import { ThunderboltOutlined } from '@ant-design/icons-vue';
   import { message } from '@grafana-fast/component';
-  import type { PromVisualQuery } from '/#/components/QueryBuilder/lib/types';
+  import type { PromVisualQuery } from '@grafana-fast/utils';
   import { createNamespace } from '/#/utils';
   import { Alert } from '@grafana-fast/component';
 

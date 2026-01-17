@@ -35,8 +35,9 @@ import {
   type GrafanaFastApiClient,
 } from '@grafana-fast/api';
 import { setPiniaApiClient, disposePiniaQueryScheduler } from '@grafana-fast/dashboard';
+import { createPrefixedId, url } from '@grafana-fast/utils';
 
-const DEFAULT_DSN = '/api';
+const DEFAULT_BASE_URL = '/api';
 
 /**
  * DashboardApi（对外导出）
@@ -58,7 +59,7 @@ export interface DashboardSdkOptions {
   pinia?: Pinia;
   /** 是否自动加载 dashboard 数据，默认为 true */
   autoLoad?: boolean;
-  /** 自定义数据源根路径（dsn）以及接口路径配置 */
+  /** 自定义 API 根路径（baseUrl）以及接口路径配置 */
   apiConfig?: DashboardSdkApiConfig;
   /**
    * 选择 API 的实现方式（实现层），默认使用 `mock`
@@ -112,13 +113,13 @@ export interface DashboardSdkState {
 
 export interface DashboardSdkApiConfig {
   /** API 根路径，例如 `/api`，用于拼接 endpoints */
-  dsn?: string;
+  baseUrl?: string;
   /** 自定义 endpoints 覆盖（未提供的项会使用 DEFAULT_DASHBOARD_ENDPOINTS） */
   endpoints?: Partial<Record<DashboardApi, string>>;
 }
 
 export interface ResolvedDashboardSdkApiConfig {
-  dsn: string;
+  baseUrl: string;
   endpoints: Record<DashboardApi, string>;
 }
 
@@ -182,7 +183,7 @@ export interface UseDashboardSdkResult {
   containerSize: Ref<{ width: number; height: number }>;
   /** 聚合后的只读状态（对外稳定形态） */
   state: ComputedRef<DashboardSdkState>;
-  /** 解析后的 API 配置（dsn + endpoints 完整 URL），方便调试 */
+  /** 解析后的 API 配置（baseUrl + endpoints 完整 URL），方便调试 */
   api: ComputedRef<ResolvedDashboardSdkApiConfig>;
   /** 对外操作集合（稳定 API 面） */
   actions: DashboardSdkActions;
@@ -255,7 +256,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const dashboardApp = ref<App<Element> | null>(null);
   const themePreference = ref<DashboardThemePreference>('system');
   const theme = ref<DashboardTheme>('light');
-  const runtimeId = `sdk-${resolvedApiClient.kind}-${typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : Math.random().toString(16).slice(2)}`;
+  const runtimeId = `sdk-${resolvedApiClient.kind}-${createPrefixedId('rt')}`;
 
   const DashboardSdkRoot = defineComponent({
     name: 'DashboardSdkRoot',
@@ -280,18 +281,18 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
 
   let resizeObserver: ResizeObserver | null = null;
 
-  // 将 dsn 与自定义 endpoints 合并为完整 URL，暴露给外部调试/使用
+  // 将 baseUrl 与自定义 endpoints 合并为完整 URL，暴露给外部调试/使用
   const resolvedApiConfig = computed<ResolvedDashboardSdkApiConfig>(() => {
-    const dsn = (options.apiConfig?.dsn ?? DEFAULT_DSN).replace(/\/$/, '');
+    const baseUrl = url.normalizeBase(options.apiConfig?.baseUrl ?? DEFAULT_BASE_URL);
     const overrides = options.apiConfig?.endpoints ?? {};
     const endpoints: Record<DashboardApi, string> = { ...DEFAULT_DASHBOARD_ENDPOINTS, ...overrides };
     const resolved: Record<DashboardApi, string> = Object.fromEntries(
       Object.entries(endpoints).map(([key, value]) => {
-        const normalized = value.startsWith('http') ? value : `${dsn}${value.startsWith('/') ? value : `/${value}`}`;
+        const normalized = url.resolveEndpoint(baseUrl, value);
         return [key as DashboardApi, normalized];
       })
     ) as Record<DashboardApi, string>;
-    return { dsn, endpoints: resolved };
+    return { baseUrl, endpoints: resolved };
   });
 
   const isDashboardMounted = ref(false);

@@ -22,7 +22,7 @@
 
       <span class="header-label" style="margin-left: 16px">向量匹配</span>
       <Select
-        v-model:value="localQuery.vectorMatchesType"
+        v-model:value="vectorMatchType"
         :options="vectorMatchTypeOptions"
         style="width: 100px"
         size="small"
@@ -30,7 +30,7 @@
       />
 
       <Input
-        v-model:value="localQuery.vectorMatches"
+        v-model:value="vectorMatchLabels"
         placeholder="label1, label2"
         size="small"
         style="width: 200px; margin-left: 8px"
@@ -95,8 +95,8 @@
   import OperationsList from './OperationsList.vue';
   import NestedQueryList from './NestedQueryList.vue';
   import QueryExplain from './QueryExplain.vue';
-  import { promQueryModeller } from '/#/components/QueryBuilder/lib/PromQueryModeller';
-  import type { PromVisualQueryBinary, PromVisualQuery } from '/#/components/QueryBuilder/lib/types';
+  import { promQueryModeller } from '@grafana-fast/utils';
+  import type { PromVisualQueryBinary, PromVisualQuery } from '@grafana-fast/utils';
   import { Alert } from '@grafana-fast/component';
 
   interface Props {
@@ -114,20 +114,39 @@
   const props = defineProps<Props>();
   const emit = defineEmits<Emits>();
 
-  // 初始化 localQuery，确保可选字段有默认值
+  type VectorMatchType = 'on' | 'ignoring';
+
+  function normalizeLabelList(value: string): string[] {
+    return String(value)
+      .split(',')
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0);
+  }
+
+  function toVectorMatching(type?: VectorMatchType | '', labels?: string) {
+    if (!type) return undefined;
+    const parsed = normalizeLabelList(labels ?? '');
+    if (parsed.length === 0) return undefined;
+    return { type, labels: parsed } as const;
+  }
+
+  const vectorMatchType = ref<VectorMatchType | ''>((props.nestedQuery.vectorMatching?.type ?? '') as VectorMatchType | '');
+  const vectorMatchLabels = ref<string>((props.nestedQuery.vectorMatching?.labels ?? []).join(', '));
+
+  // 初始化 localQuery：仅保留结构化 vectorMatching（项目未上线，无需旧字段兜底）
   const localQuery = ref<PromVisualQueryBinary>({
     ...props.nestedQuery,
-    vectorMatchesType: props.nestedQuery.vectorMatchesType || undefined,
-    vectorMatches: props.nestedQuery.vectorMatches || undefined,
+    vectorMatching: toVectorMatching(vectorMatchType.value, vectorMatchLabels.value),
   });
 
   watch(
     () => props.nestedQuery,
     (newValue) => {
+      vectorMatchType.value = (newValue.vectorMatching?.type ?? '') as VectorMatchType | '';
+      vectorMatchLabels.value = (newValue.vectorMatching?.labels ?? []).join(', ');
       localQuery.value = {
         ...newValue,
-        vectorMatchesType: newValue.vectorMatchesType || undefined,
-        vectorMatches: newValue.vectorMatches || undefined,
+        vectorMatching: toVectorMatching(vectorMatchType.value, vectorMatchLabels.value),
       };
     },
     { deep: true }
@@ -151,6 +170,7 @@
 
   // 向量匹配类型选项
   const vectorMatchTypeOptions = [
+    { label: '-', value: '' },
     { label: 'on', value: 'on' },
     { label: 'ignoring', value: 'ignoring' },
   ];
@@ -160,6 +180,10 @@
   };
 
   const handleChange = () => {
+    localQuery.value = {
+      ...localQuery.value,
+      vectorMatching: toVectorMatching(vectorMatchType.value, vectorMatchLabels.value),
+    };
     emit('update', props.index, localQuery.value);
   };
 

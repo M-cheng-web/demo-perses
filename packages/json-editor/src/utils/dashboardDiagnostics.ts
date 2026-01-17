@@ -9,6 +9,7 @@
  * - 这里的“looksLikeDashboard”只是启发式判断，用于 UI 提示与阻断“非 dashboard JSON”向外更新。
  */
 import type { Dashboard } from '@grafana-fast/types';
+import { CURRENT_DASHBOARD_SCHEMA_VERSION } from '@grafana-fast/types';
 import type { DashboardSummary, JsonTextDiagnostics } from '../types';
 import { analyzeJsonText } from './jsonDiagnostics';
 
@@ -17,6 +18,10 @@ export interface DashboardTextDiagnostics {
   json: JsonTextDiagnostics;
   /** 是否看起来像 Dashboard JSON（启发式） */
   looksLikeDashboard: boolean;
+  /** schemaVersion 是否匹配当前版本（仅 looksLikeDashboard 时有意义） */
+  schemaVersionOk?: boolean;
+  /** schemaVersion 错误提示（仅 schemaVersionOk=false 时存在） */
+  schemaVersionError?: string;
   /** 解析后的 dashboard（仅 json.ok && looksLikeDashboard 时存在） */
   dashboard?: Dashboard;
   /** 精简摘要（仅 json.ok && looksLikeDashboard 时存在） */
@@ -46,6 +51,8 @@ export function analyzeDashboardText(text: string): DashboardTextDiagnostics {
   }
 
   const dashboard = value as Dashboard;
+  const schemaVersion = (dashboard as any).schemaVersion;
+  const schemaVersionOk = schemaVersion === CURRENT_DASHBOARD_SCHEMA_VERSION;
   const panelGroupCount = dashboard.panelGroups?.length ?? 0;
   const panelCount = (dashboard.panelGroups ?? []).reduce((acc, g) => acc + (g.panels?.length ?? 0), 0);
   const variableCount = (dashboard as any).variables?.length ?? 0;
@@ -53,6 +60,10 @@ export function analyzeDashboardText(text: string): DashboardTextDiagnostics {
   return {
     json,
     looksLikeDashboard: true,
+    schemaVersionOk,
+    schemaVersionError: schemaVersionOk
+      ? undefined
+      : `dashboard.schemaVersion 必须为 ${CURRENT_DASHBOARD_SCHEMA_VERSION}（当前为 ${schemaVersion ?? 'undefined'}）`,
     dashboard,
     summary: {
       panelGroupCount,

@@ -20,15 +20,18 @@ async function main() {
   consola.start('构建 shared types');
   run('pnpm -C packages/types run build');
 
+  consola.start('构建 utils 包');
+  run('pnpm -C packages/utils run build');
+
   consola.start('构建 API 包');
   run('pnpm -C packages/api run build');
 
   consola.start('构建 store 包');
   run('pnpm -C packages/store run build');
 
- consola.start('构建 UI component 包');
- run('pnpm -C packages/component run build');
- run('pnpm -C packages/component run build:types');
+  consola.start('构建 UI component 包');
+  run('pnpm -C packages/component run build');
+  run('pnpm -C packages/component run build:types');
 
   consola.start('构建 json-editor 包');
   run('pnpm -C packages/json-editor run build');

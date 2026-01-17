@@ -70,11 +70,28 @@ type QueryBuilderOperationRenderer = (model: QueryBuilderOperation, def: QueryBu
 
 // ==================== 查询模型 ====================
 
+/**
+ * PromQL Vector Matching（用于二元运算 on()/ignoring()）
+ *
+ * 说明：
+ * - 仅保留结构化版本：避免 “有 type 没 labels / 有 labels 没 type” 的半残状态
+ * - UI/序列化建议直接存 `labels: string[]`，不要再用逗号字符串
+ */
+export interface VectorMatching {
+  type: 'on' | 'ignoring';
+  /**
+   * label 列表（已拆分、无需手动拼接逗号）
+   */
+  labels: string[];
+}
+
 // 二元查询
 export interface VisualQueryBinary<T> {
   operator: string;
-  vectorMatchesType?: 'on' | 'ignoring';
-  vectorMatches?: string;
+  /**
+   * Vector Matching（推荐使用）
+   */
+  vectorMatching?: VectorMatching;
   query: T;
 }
 
@@ -93,7 +110,6 @@ export interface QueryPanel {
   refId: string; // A, B, C, D... 查询标识符
   query: PromVisualQuery; // Prometheus 查询对象
   hide?: boolean; // 是否在结果中隐藏
-  datasource?: string; // 数据源
 }
 
 // ==================== 建模器接口 ====================
@@ -315,7 +331,6 @@ export function createDefaultQueryPanel(refId: string): QueryPanel {
       operations: [],
     },
     hide: false,
-    datasource: 'prometheus',
   };
 }
 

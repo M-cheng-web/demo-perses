@@ -50,7 +50,7 @@
   const { state, actions, containerSize, api, ready, mountDashboard, unmountDashboard, theme } = useDashboardSdk(dashboardRef, {
     dashboardId: 'default',
     apiConfig: {
-      dsn: 'https://api.example.com',
+      baseUrl: 'https://api.example.com',
       endpoints: {
         [DashboardApi.ExecuteQueries]: '/custom/execute',
       },
@@ -59,7 +59,7 @@
 
   const debugItems = computed(() => [
     { key: 'size', label: '容器尺寸', value: `${containerSize.value.width} × ${containerSize.value.height}` },
-    { key: 'dsn', label: '当前 DSN', value: api.value.dsn },
+    { key: 'baseUrl', label: '当前 BaseUrl', value: api.value.baseUrl },
     { key: 'load', label: '加载接口', value: api.value.endpoints[DashboardApi.LoadDashboard] },
     { key: 'query', label: '查询接口', value: api.value.endpoints[DashboardApi.ExecuteQueries] },
     { key: 'ready', label: '挂载状态', value: ready.value ? '已挂载' : '挂载中' },

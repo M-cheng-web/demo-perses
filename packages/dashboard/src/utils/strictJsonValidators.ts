@@ -19,11 +19,9 @@
 
 import type { JsonTextValidator } from '@grafana-fast/json-editor';
 import type { Dashboard, DashboardVariable } from '@grafana-fast/types';
+import { CURRENT_DASHBOARD_SCHEMA_VERSION } from '@grafana-fast/types';
+import { isPlainObject } from '@grafana-fast/utils';
 import { getBuiltInPanelRegistry } from '/#/runtime/panels';
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
-}
 
 function supportedPanelTypes(): string[] {
   return getBuiltInPanelRegistry()
@@ -121,6 +119,23 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
   // 我们只在校验逻辑里“按需读取字段”，因此通过 unknown 过一层即可。
   const dashboard = parsedValue as unknown as Dashboard;
   const errors: string[] = [];
+
+  // 基础字段校验：避免导入后出现“看似成功，但运行时异常/状态不一致”
+  const schemaVersion = (dashboard as any).schemaVersion;
+  if (schemaVersion !== CURRENT_DASHBOARD_SCHEMA_VERSION) {
+    errors.push(`dashboard.schemaVersion 必须为 ${CURRENT_DASHBOARD_SCHEMA_VERSION}（当前为 ${schemaVersion ?? 'undefined'}）`);
+  }
+
+  if (typeof (dashboard as any).name !== 'string' || !(dashboard as any).name.trim()) {
+    errors.push('dashboard.name 必填');
+  }
+
+  const refreshInterval = (dashboard as any).refreshInterval;
+  if (typeof refreshInterval !== 'number' || Number.isNaN(refreshInterval)) {
+    errors.push('dashboard.refreshInterval 必须是 number');
+  } else if (refreshInterval < 0) {
+    errors.push('dashboard.refreshInterval 不能为负数');
+  }
 
   if (!Array.isArray((dashboard as any).panelGroups)) {
     errors.push('dashboard.panelGroups 必须是数组');

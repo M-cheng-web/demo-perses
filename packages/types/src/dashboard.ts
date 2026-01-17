@@ -11,8 +11,11 @@ import type { TimeRange } from './timeRange';
  */
 export interface Dashboard {
   /**
-   * Dashboard JSON schema 版本号（用于导入/导出迁移）
-   * - 业务侧导入旧 JSON 时应先 migrate 到当前版本
+   * Dashboard JSON schema 版本号（保留字段）
+   *
+   * 说明：
+   * - 当前项目未上线阶段不提供内置 migration
+   * - 未来如需做“导入旧 JSON”的演进，可基于该字段实现迁移策略
    */
   schemaVersion?: number;
   /** Dashboard ID */
@@ -36,6 +39,15 @@ export interface Dashboard {
 }
 
 /**
+ * 当前 Dashboard JSON schema 版本号
+ *
+ * 说明：
+ * - 用于“导入/导出 JSON”的一致性校验（不做 migration 时也建议保留）
+ * - 当未来 schema 发生不兼容变更时，可以递增该值并实现迁移策略
+ */
+export const CURRENT_DASHBOARD_SCHEMA_VERSION = 1 as const;
+
+/**
  * Dashboard 变量
  */
 export interface DashboardVariable {
@@ -48,17 +60,18 @@ export interface DashboardVariable {
   /** 变量类型 */
   type: VariableType;
   /**
-   * query 类型变量：数据源（例如 prometheus）
-   * - 仅用于 UI 与实现层选择服务；真正执行由 @grafana-fast/api 实现决定
-   */
-  datasource?: string;
-  /**
    * query 类型变量：查询表达式（由实现层解释）
    * - Prometheus 常见：label_values(...) / metrics / series
    */
   query?: string;
-  /** 变量选项 */
-  options: VariableOption[];
+  /**
+   * 变量选项（可选）
+   *
+   * 说明：
+   * - 对于 query 型变量：options 通常由运行时解析/刷新得到，不一定需要持久化到 Dashboard JSON
+   * - 对于静态 select 变量：可以直接在 JSON 中提供 options
+   */
+  options?: VariableOption[];
   /** 当前值 */
   current: string | string[];
   /** 是否支持多选 */

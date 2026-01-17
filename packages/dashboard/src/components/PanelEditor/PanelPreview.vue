@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-	  import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+	  import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 	  import { Empty } from '@grafana-fast/component';
   import type { Panel, QueryResult, QueryContext } from '@grafana-fast/types';
   import { useTimeRangeStore, useVariablesStore } from '/#/stores';
@@ -103,9 +103,9 @@
         // 重新渲染
         const temp = queryResults.value;
         queryResults.value = [];
-        setTimeout(() => {
+        void nextTick(() => {
           queryResults.value = temp;
-        }, 0);
+        });
       }
     }
   );

@@ -40,6 +40,11 @@ export * from '/#/stores/variables';
 export * from '/#/api/theme';
 
 /**
+ * JSON 严格校验器（可选，供宿主/演示页面复用）
+ */
+export * from '/#/utils/strictJsonValidators';
+
+/**
  * 透出公共类型（为了让宿主应用更方便地引用 dashboard JSON/types）
  */
 export * from '@grafana-fast/types';

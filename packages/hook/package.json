@@ -23,6 +23,7 @@
     "@grafana-fast/api": "workspace:*",
     "@grafana-fast/store": "workspace:*",
     "@grafana-fast/dashboard": "workspace:*",
+    "@grafana-fast/utils": "workspace:*",
     "@grafana-fast/types": "workspace:*"
   },
   "peerDependencies": {

@@ -44,6 +44,7 @@ export default defineConfig({
         '@grafana-fast/store',
         '@grafana-fast/component',
         '@grafana-fast/api',
+        '@grafana-fast/utils',
         '@ant-design/icons-vue',
         '@grafana-fast/types',
         'echarts',

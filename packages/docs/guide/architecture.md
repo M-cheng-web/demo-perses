@@ -2,7 +2,7 @@
 
 本仓库的目标是提供「可嵌入的 Dashboard SDK」与「可扩展的仪表板体验」，因此整体架构拆分为：
 
-- `@grafana-fast/types`：领域模型（Dashboard/Panel/Query/Variable 等）
+- `@grafana-fast/types`：领域模型（Dashboard/Panel/CanonicalQuery/Variable 等）
 - `@grafana-fast/api`：数据访问层（契约层 + 实现层），屏蔽后端入参/出参变化对 UI 核心包的影响
 - `@grafana-fast/dashboard`：仪表板体验（渲染 + 编辑 + QueryBuilder + Tooltip 联动）
 - `@grafana-fast/hooks`：组合式 SDK，提供 `useDashboardSdk` 用于嵌入

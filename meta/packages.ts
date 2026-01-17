@@ -38,13 +38,22 @@ export interface PackageMeta {
 
 export const packages: PackageMeta[] = [
   {
+    name: 'utils',
+    packageName: '@grafana-fast/utils',
+    display: 'Utils',
+    description: 'grafana-fast 公共工具函数（bem/time/http/common 等）。',
+    category: 'library',
+    publish: true,
+    external: ['@grafana-fast/types'],
+  },
+  {
     name: 'json-editor',
     packageName: '@grafana-fast/json-editor',
     display: 'JSON Editor',
     description: '轻量 JSON 编辑器（导入/导出 + 诊断 + 严格校验阻断）。',
     category: 'library',
     publish: true,
-    external: ['vue', '@grafana-fast/component', '@grafana-fast/types', 'jsonc-parser'],
+    external: ['vue', '@grafana-fast/component', '@grafana-fast/types', '@grafana-fast/utils', 'jsonc-parser'],
   },
   {
     name: 'api',
@@ -53,7 +62,7 @@ export const packages: PackageMeta[] = [
     description: 'grafana-fast 的数据访问层（契约层 + 实现层）。',
     category: 'library',
     publish: true,
-    external: ['@grafana-fast/types'],
+    external: ['@grafana-fast/types', '@grafana-fast/utils'],
   },
   {
     name: 'types',
@@ -88,7 +97,7 @@ export const packages: PackageMeta[] = [
     description: 'grafana-fast 的仪表板体验包。',
     category: 'library',
     publish: true,
-    external: ['vue', 'echarts', '@grafana-fast/api'],
+    external: ['vue', 'echarts', '@grafana-fast/api', '@grafana-fast/utils'],
   },
   {
     name: 'hook',

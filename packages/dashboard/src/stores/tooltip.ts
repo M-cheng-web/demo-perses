@@ -59,7 +59,7 @@ interface TooltipState {
   activeChartId: string | null;
   /** 全局鼠标位置（Dashboard 层面监听） */
   globalMousePosition: MousePosition | null;
-  /** 当前鼠标位置（图表内部监听，已废弃，保留用于兼容） */
+  /** 当前鼠标位置（图表内部监听，用于 Teleport 场景下的位置同步） */
   mousePosition: MousePosition | null;
   /** 固定时的鼠标位置 */
   pinnedPosition: MousePosition | null;

@@ -186,12 +186,12 @@
 
 <script setup lang="ts">
   import { Button, Cascader, Checkbox, Dropdown, Input, InputNumber, Menu, MenuItem, Select, Tooltip } from '@grafana-fast/component';
-  import { ref, watch, computed, nextTick } from 'vue';
+  import { ref, watch, computed, nextTick, onBeforeUnmount } from 'vue';
   import { PlusOutlined, CloseOutlined, InfoCircleOutlined, HolderOutlined, DownOutlined, ArrowRightOutlined } from '@ant-design/icons-vue';
   import LabelParamEditor from './LabelParamEditor.vue';
-  import { promQueryModeller } from '/#/components/QueryBuilder/lib/PromQueryModeller';
-  import type { QueryBuilderOperation } from '/#/components/QueryBuilder/lib/types';
-  import { createNamespace } from '/#/utils';
+  import { promQueryModeller } from '@grafana-fast/utils';
+  import type { QueryBuilderOperation } from '@grafana-fast/utils';
+  import { createNamespace, debounceCancellable } from '/#/utils';
 
   const [_, bem] = createNamespace('operations-list');
 
@@ -217,6 +217,27 @@
   const draggedIndex = ref<number | null>(null);
 
   const categories = computed(() => promQueryModeller.getCategories());
+
+  // 用 cancellable timer 管理闪烁效果，避免组件卸载后仍触发 setTimeout
+  const flashTimers = new Map<number, ReturnType<typeof debounceCancellable<() => void>>>();
+
+  const scheduleUnflash = (index: number) => {
+    const existing = flashTimers.get(index);
+    existing?.cancel();
+
+    const timer = debounceCancellable(() => {
+      flashingOperations.value.delete(index);
+      flashTimers.delete(index);
+    }, 1000);
+
+    flashTimers.set(index, timer);
+    timer();
+  };
+
+  onBeforeUnmount(() => {
+    for (const t of flashTimers.values()) t.cancel();
+    flashTimers.clear();
+  });
 
   // 构建级联选择器选项（过滤掉 hideFromList 的操作）
   const cascaderOptions = computed(() => {
@@ -266,9 +287,7 @@
     // 添加闪烁效果
     flashingOperations.value.add(newOperationIndex);
     nextTick(() => {
-      setTimeout(() => {
-        flashingOperations.value.delete(newOperationIndex);
-      }, 1000);
+      scheduleUnflash(newOperationIndex);
     });
 
     // 对于二元查询等特殊操作，需要通知父组件整个查询对象已更新
@@ -309,7 +328,7 @@
 
     if (!newOpDef) return;
 
-    // 复制默认参数，并用当前参数覆盖兼容的部分
+    // 复制默认参数，并尽量复用“同类型”的旧参数（提升切换替代操作时的体验）
     const newParams = [...newOpDef.defaultParams];
     for (let i = 0; i < Math.min(operation.params.length, newParams.length); i++) {
       const currentParamDef = currentOpDef?.params[i];

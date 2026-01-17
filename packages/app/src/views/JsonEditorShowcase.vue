@@ -65,11 +65,9 @@
   import { computed, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { Button, Card, ConfigProvider, Flex, Segmented, Space, Switch, Tag, message } from '@grafana-fast/component';
-  import { getAppliedDashboardTheme, setDashboardThemePreference, type DashboardTheme } from '@grafana-fast/dashboard';
+  import { getAppliedDashboardTheme, setDashboardThemePreference, validateDashboardStrict, type DashboardTheme } from '@grafana-fast/dashboard';
   import { DashboardJsonEditor, JsonEditorLite } from '@grafana-fast/json-editor';
-  import type { JsonTextValidator } from '@grafana-fast/json-editor';
   import { createMockApiClient } from '@grafana-fast/api';
-  import type { Dashboard } from '@grafana-fast/types';
 
   const router = useRouter();
 
@@ -94,46 +92,6 @@
   const applyOk = ref<boolean>(false);
 
   const strictValidationEnabled = ref(true);
-
-  const validateDashboardStrict: JsonTextValidator = (_text: string, parsedValue: unknown | undefined) => {
-    const errors: string[] = [];
-
-    const dashboard = parsedValue as Dashboard | undefined;
-    if (!dashboard || typeof dashboard !== 'object') {
-      // 注意：DashboardJsonEditor 本身会阻断“非 dashboard JSON”向外同步；
-      // 这里额外给出一条更明确的错误，方便外部校验体系统一展示。
-      errors.push('不是有效的 Dashboard JSON（缺少 panelGroups 等字段）');
-      return errors;
-    }
-
-    if (!dashboard.name || !String(dashboard.name).trim()) {
-      errors.push('dashboard.name 必填');
-    }
-
-    if (typeof dashboard.refreshInterval !== 'number' || Number.isNaN(dashboard.refreshInterval)) {
-      errors.push('dashboard.refreshInterval 必须是 number');
-    } else if (dashboard.refreshInterval < 0) {
-      errors.push('dashboard.refreshInterval 不能为负数');
-    }
-
-    if (!Array.isArray(dashboard.panelGroups)) {
-      errors.push('dashboard.panelGroups 必须是数组');
-      return errors;
-    }
-
-    dashboard.panelGroups.forEach((g, gi) => {
-      if (!g.id) errors.push(`panelGroups[${gi}].id 必填`);
-      if (!Array.isArray(g.panels)) errors.push(`panelGroups[${gi}].panels 必须是数组`);
-      (g.panels ?? []).forEach((p, pi) => {
-        if (!p.id) errors.push(`panelGroups[${gi}].panels[${pi}].id 必填`);
-        if (!p.name) errors.push(`panelGroups[${gi}].panels[${pi}].name 必填`);
-        if (!p.type) errors.push(`panelGroups[${gi}].panels[${pi}].type 必填`);
-        if (!Array.isArray(p.queries)) errors.push(`panelGroups[${gi}].panels[${pi}].queries 必须是数组`);
-      });
-    });
-
-    return errors;
-  };
 
   const api = createMockApiClient();
 

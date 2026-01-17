@@ -32,6 +32,9 @@
     "build:types": "vue-tsc --project tsconfig.json --declaration --emitDeclarationOnly --outDir dist",
     "preview": "vite preview"
   },
+  "dependencies": {
+    "@grafana-fast/utils": "workspace:*"
+  },
   "peerDependencies": {
     "@ant-design/icons-vue": "^7.0.1",
     "vue": "^3.5.0"

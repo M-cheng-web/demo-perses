@@ -10,9 +10,10 @@ const dist = path.join(pkgRoot, 'dist');
 const pkgName = path.basename(pkgRoot);
 
 const externalsByPkg = {
-  api: ['@grafana-fast/types'],
-  'json-editor': ['vue', '@grafana-fast/component', '@grafana-fast/types', 'jsonc-parser'],
-  hook: ['vue', '@grafana-fast/store', '@grafana-fast/dashboard', '@grafana-fast/types', '@grafana-fast/api'],
+  utils: ['@grafana-fast/types'],
+  api: ['@grafana-fast/types', '@grafana-fast/utils'],
+  'json-editor': ['vue', '@grafana-fast/component', '@grafana-fast/types', '@grafana-fast/utils', 'jsonc-parser'],
+  hook: ['vue', '@grafana-fast/store', '@grafana-fast/dashboard', '@grafana-fast/types', '@grafana-fast/api', '@grafana-fast/utils'],
   panels: ['vue', '@grafana-fast/dashboard'],
   store: ['vue'],
 };
@@ -83,7 +84,7 @@ export default [
           input: entry,
           output: { file: path.join(dist, 'index.d.ts'), format: 'es' },
           plugins: [dts()],
-          external: [/\.css$/, /\.less$/],
+          external: [...external, /\.css$/, /\.less$/],
         },
       ]),
 ];

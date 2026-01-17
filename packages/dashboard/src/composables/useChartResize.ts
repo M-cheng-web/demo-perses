@@ -8,6 +8,7 @@
 import { onUnmounted, type Ref } from 'vue';
 import type { EChartsType } from 'echarts/core';
 import { subscribeWindowResize } from '/#/runtime/windowEvents';
+import { debounceCancellable } from '@grafana-fast/utils';
 
 /**
  * 使 ECharts 图表自动响应容器大小变化
@@ -21,6 +22,7 @@ export function useChartResize(
   let resizeObserver: ResizeObserver | null = null;
   let animationFrameId: number | null = null;
   let unsubscribeWindowResize: null | (() => void) = null;
+  let initTimeoutId: number | null = null;
 
   const handleResize = () => {
     // 使用 requestAnimationFrame 优化性能，避免在动画期间频繁resize
@@ -51,17 +53,8 @@ export function useChartResize(
     });
   };
 
-  // 使用防抖避免频繁触发
-  let timeoutId: number | null = null;
-  const debouncedResize = () => {
-    if (timeoutId !== null) {
-      clearTimeout(timeoutId);
-    }
-    timeoutId = window.setTimeout(() => {
-      handleResize();
-      timeoutId = null;
-    }, 50); // 50ms 延迟，平衡响应速度和性能
-  };
+  // 使用防抖避免频繁触发（可取消，避免卸载后仍触发）
+  const debouncedResize = debounceCancellable(handleResize, 50); // 50ms 延迟，平衡响应速度和性能
 
   /**
    * 初始化图表 resize
@@ -69,7 +62,11 @@ export function useChartResize(
    */
   function initChartResize() {
     // 需要延迟1s再初始化，确保容器大小已确定
-    setTimeout(() => {
+    if (initTimeoutId !== null) {
+      clearTimeout(initTimeoutId);
+    }
+    initTimeoutId = window.setTimeout(() => {
+      initTimeoutId = null;
       // 监听窗口 resize（集中管理，避免多实例重复绑定）
       unsubscribeWindowResize?.();
       unsubscribeWindowResize = subscribeWindowResize(debouncedResize);
@@ -116,9 +113,11 @@ export function useChartResize(
     unsubscribeWindowResize?.();
     unsubscribeWindowResize = null;
 
-    if (timeoutId !== null) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
+    debouncedResize.cancel();
+
+    if (initTimeoutId !== null) {
+      clearTimeout(initTimeoutId);
+      initTimeoutId = null;
     }
 
     if (animationFrameId !== null) {

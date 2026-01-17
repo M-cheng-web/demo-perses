@@ -1,3 +1,5 @@
+import { createTimeout, type TimeoutHandle } from '@grafana-fast/utils';
+
 type MessageType = 'info' | 'success' | 'error' | 'warning' | 'loading';
 
 export interface MessageOptions {
@@ -20,7 +22,7 @@ const ensureContainer = () => {
 };
 
 const instances = new Map<string, HTMLElement>();
-const timers = new WeakMap<HTMLElement, number>();
+const timers = new WeakMap<HTMLElement, TimeoutHandle>();
 
 const resolveOptions = (input: MessageInput, type?: MessageType, duration?: number): MessageOptions => {
   if (typeof input === 'string') {
@@ -32,13 +34,13 @@ const resolveOptions = (input: MessageInput, type?: MessageType, duration?: numb
 const removeItem = (item: HTMLElement, key?: string) => {
   const timerId = timers.get(item);
   if (timerId) {
-    window.clearTimeout(timerId);
+    timerId.cancel();
     timers.delete(item);
   }
 
   item.classList.add('is-leave');
   item.classList.remove('is-visible');
-  window.setTimeout(() => item.remove(), 220);
+  createTimeout(() => item.remove(), 220);
   if (key) instances.delete(key);
 };
 
@@ -87,8 +89,8 @@ const show = (input: MessageInput, preset?: MessageType, presetDuration?: number
     const existing = instances.get(key)!;
     updateItem(existing, content, type);
     const timerId = timers.get(existing);
-    if (timerId) window.clearTimeout(timerId);
-    if (duration !== 0) timers.set(existing, window.setTimeout(() => removeItem(existing, key), duration));
+    timerId?.cancel();
+    if (duration !== 0) timers.set(existing, createTimeout(() => removeItem(existing, key), duration));
     return;
   }
 
@@ -106,7 +108,7 @@ const show = (input: MessageInput, preset?: MessageType, presetDuration?: number
   });
 
   if (duration !== 0) {
-    timers.set(item, window.setTimeout(() => removeItem(item, key), duration));
+    timers.set(item, createTimeout(() => removeItem(item, key), duration));
   }
 };
 

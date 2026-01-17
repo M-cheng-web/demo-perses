@@ -66,8 +66,10 @@ importers:
   packages/api:
     specifiers:
       '@grafana-fast/types': workspace:*
+      '@grafana-fast/utils': workspace:*
     dependencies:
       '@grafana-fast/types': link:../types
+      '@grafana-fast/utils': link:../utils
 
   packages/app:
     specifiers:
@@ -117,12 +119,15 @@ importers:
   packages/component:
     specifiers:
       '@ant-design/icons-vue': ^7.0.1
+      '@grafana-fast/utils': workspace:*
       '@vitejs/plugin-vue': ^6.0.1
       less: ^4.4.2
       typescript: ~5.9.3
       vite: ^7.2.2
       vue: ^3.5.24
       vue-tsc: ^3.1.3
+    dependencies:
+      '@grafana-fast/utils': link:../utils
     devDependencies:
       '@ant-design/icons-vue': 7.0.1_vue@3.5.26
       '@vitejs/plugin-vue': 6.0.3_vite@7.3.1+vue@3.5.26
@@ -140,6 +145,7 @@ importers:
       '@grafana-fast/json-editor': workspace:*
       '@grafana-fast/store': workspace:*
       '@grafana-fast/types': workspace:*
+      '@grafana-fast/utils': workspace:*
       '@interactjs/core': 1.10.27
       '@interactjs/utils': 1.10.27
       '@vitejs/plugin-vue': ^6.0.1
@@ -157,6 +163,7 @@ importers:
       '@grafana-fast/json-editor': link:../json-editor
       '@grafana-fast/store': link:../store
       '@grafana-fast/types': link:../types
+      '@grafana-fast/utils': link:../utils
       '@interactjs/core': 1.10.27_@interactjs+utils@1.10.27
       '@interactjs/utils': 1.10.27
       vue-grid-layout-v3: 3.1.2_yrzeorwrqldesewh6ytjnwq6b4
@@ -197,12 +204,14 @@ importers:
     specifiers:
       '@grafana-fast/component': workspace:*
       '@grafana-fast/types': workspace:*
+      '@grafana-fast/utils': workspace:*
       jsonc-parser: ^3.3.1
       typescript: ~5.9.3
       vue-tsc: ^3.1.3
     dependencies:
       '@grafana-fast/component': link:../component
       '@grafana-fast/types': link:../types
+      '@grafana-fast/utils': link:../utils
       jsonc-parser: 3.3.1
     devDependencies:
       typescript: 5.9.3
@@ -213,6 +222,12 @@ importers:
 
   packages/types:
     specifiers: {}
+
+  packages/utils:
+    specifiers:
+      '@grafana-fast/types': workspace:*
+    dependencies:
+      '@grafana-fast/types': link:../types
 
 packages:
 

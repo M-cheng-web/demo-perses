@@ -96,12 +96,12 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, reactive, watch } from 'vue';
+  import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
   import { storeToRefs } from '@grafana-fast/store';
   import { Drawer, Form, FormItem, Select, Input, Textarea, Row, Col, Flex, message } from '@grafana-fast/component';
   import { Button, Tabs, TabPane, Empty } from '@grafana-fast/component';
   import { useDashboardStore, useEditorStore } from '/#/stores';
-  import { generateId, deepClone, createNamespace } from '/#/utils';
+  import { createPrefixedId, debounceCancellable, deepClone, createNamespace } from '/#/utils';
   import { PanelType } from '/#/enums/panelType';
   import { getBuiltInPanelRegistry } from '/#/runtime/panels';
   import TimeSeriesChartStyles from './ChartStyles/TimeSeriesChartStyles.vue';
@@ -223,8 +223,17 @@
   );
 
   // 监听 drawer 打开
+  const scheduleExecuteQueries = debounceCancellable(() => {
+    panelPreviewRef.value?.executeQueries();
+  }, 100);
+
+  onBeforeUnmount(() => {
+    scheduleExecuteQueries.cancel();
+  });
+
   watch(() => isDrawerOpen.value, (open) => {
     isOpen.value = open;
+    scheduleExecuteQueries.cancel();
     if (open) {
       if (editingPanel.value) {
         Object.assign(formData, deepClone(editingPanel.value));
@@ -234,10 +243,8 @@
 
       // 如果是编辑模式且有查询配置，初始化时自动执行一次查询
       if (editingMode.value === 'edit' && formData.queries && formData.queries.length > 0) {
-        // 使用 nextTick 确保组件已完全渲染
-        setTimeout(() => {
-          panelPreviewRef.value?.executeQueries();
-        }, 100);
+        // 延迟执行：避免 drawer 初次打开时 DOM/图表尚未就绪
+        scheduleExecuteQueries();
       }
     }
   });
@@ -329,7 +336,7 @@
         // 创建新面板
         const newPanel: Panel = {
           ...deepClone(formData),
-          id: generateId(),
+          id: createPrefixedId('p'),
         };
         dashboardStore.addPanel(selectedGroupId.value, newPanel);
         message.success('面板创建成功');

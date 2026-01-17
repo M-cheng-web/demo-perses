@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
   import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-  import { createNamespace, lockBodyScroll, unlockBodyScroll } from '../../utils';
+  import { createNamespace, createTimeout, lockBodyScroll, unlockBodyScroll, type TimeoutHandle } from '../../utils';
   import Button from '../base/Button.vue';
 
   defineOptions({ name: 'GfDrawer', inheritAttrs: false });
@@ -73,7 +73,7 @@
   const isRendered = ref(false);
   const isMaskVisible = ref(false);
   const isPanelVisible = ref(false);
-  const timeoutIds: number[] = [];
+  const timeouts: TimeoutHandle[] = [];
   let rafId: number | null = null;
   let isFirstSync = true;
 
@@ -82,10 +82,7 @@
       cancelAnimationFrame(rafId);
       rafId = null;
     }
-    while (timeoutIds.length) {
-      const id = timeoutIds.pop();
-      if (id != null) window.clearTimeout(id);
-    }
+    while (timeouts.length) timeouts.pop()?.cancel();
   };
 
   const openWithAnimation = async () => {
@@ -98,8 +95,8 @@
     rafId = requestAnimationFrame(() => {
       if (props.mask) isMaskVisible.value = true;
       const delay = props.mask ? PANEL_OPEN_DELAY_MS : 0;
-      timeoutIds.push(
-        window.setTimeout(() => {
+      timeouts.push(
+        createTimeout(() => {
           isPanelVisible.value = true;
         }, delay)
       );
@@ -111,24 +108,18 @@
     isPanelVisible.value = false;
 
     if (props.mask) {
-      timeoutIds.push(
-        window.setTimeout(() => {
-          isMaskVisible.value = false;
-        }, PANEL_TRANSITION_MS)
-      );
-      timeoutIds.push(
-        window.setTimeout(() => {
-          isRendered.value = false;
-        }, PANEL_TRANSITION_MS + MASK_TRANSITION_MS)
-      );
+      timeouts.push(createTimeout(() => {
+        isMaskVisible.value = false;
+      }, PANEL_TRANSITION_MS));
+      timeouts.push(createTimeout(() => {
+        isRendered.value = false;
+      }, PANEL_TRANSITION_MS + MASK_TRANSITION_MS));
       return;
     }
 
-    timeoutIds.push(
-      window.setTimeout(() => {
-        isRendered.value = false;
-      }, PANEL_TRANSITION_MS)
-    );
+    timeouts.push(createTimeout(() => {
+      isRendered.value = false;
+    }, PANEL_TRANSITION_MS));
   };
 
   const panelStyle = computed(() => {

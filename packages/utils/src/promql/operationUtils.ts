@@ -25,12 +25,16 @@ import type {
   QueryWithOperations,
 } from './shared/types';
 import { PromVisualQueryOperationCategory } from './types';
+import { quotePromqlString } from './shared/rendering/escape';
+import { deepCloneStructured } from '../common';
+import type { PromVisualQuery } from './types';
+import { aggById, aggWithoutId } from './ids';
 
 /**
  * 左侧函数渲染器: func(innerExpr, param1, param2)
  */
 export function functionRendererLeft(model: QueryBuilderOperation, def: QueryBuilderOperationDef, innerExpr: string): string {
-  const params = renderParams(model, def, innerExpr);
+  const params = renderParams(model, def);
   const str = model.id + '(';
 
   if (innerExpr) {
@@ -44,7 +48,7 @@ export function functionRendererLeft(model: QueryBuilderOperation, def: QueryBui
  * 右侧函数渲染器: func(param1, param2, innerExpr)
  */
 export function functionRendererRight(model: QueryBuilderOperation, def: QueryBuilderOperationDef, innerExpr: string): string {
-  const params = renderParams(model, def, innerExpr);
+  const params = renderParams(model, def);
   const str = model.id + '(';
 
   if (innerExpr) {
@@ -73,23 +77,23 @@ export function rangeRendererRightWithParams(model: QueryBuilderOperation, def: 
  */
 function rangeRendererWithParams(model: QueryBuilderOperation, def: QueryBuilderOperationDef, innerExpr: string, renderLeft: boolean): string {
   if (def.params.length < 2) {
-    throw `Cannot render a function with params of length [${def.params.length}]`;
+    throw new Error(`Cannot render a function with params of length [${def.params.length}]`);
   }
 
-  const rangeVector = (model.params ?? [])[0] ?? '5m';
+  const modelParams = model.params ?? [];
+  const rangeVector = modelParams[0] ?? '5m';
 
   // 渲染剩余参数（去掉第一个范围参数）
   const params = renderParams(
     {
       ...model,
-      params: model.params.slice(1),
+      params: modelParams.slice(1),
     },
     {
       ...def,
       params: def.params.slice(1),
       defaultParams: def.defaultParams.slice(1),
-    },
-    innerExpr
+    }
   );
 
   const str = model.id + '(';
@@ -105,11 +109,11 @@ function rangeRendererWithParams(model: QueryBuilderOperation, def: QueryBuilder
 /**
  * 渲染参数
  */
-function renderParams(model: QueryBuilderOperation, def: QueryBuilderOperationDef, _innerExpr: string) {
+function renderParams(model: QueryBuilderOperation, def: QueryBuilderOperationDef) {
   return (model.params ?? []).map((value, index) => {
     const paramDef = def.params[index];
     if (paramDef?.type === 'string') {
-      return `"${value}"`;
+      return quotePromqlString(String(value));
     }
     return value;
   });
@@ -192,14 +196,14 @@ export function createAggregationOperation(name: string, overrides: Partial<Quer
       alternativesKey: 'plain aggregations',
       category: PromVisualQueryOperationCategory.Aggregations,
       renderer: functionRendererLeft,
-      paramChangedHandler: getOnLabelAddedHandler(`__${name}_by`),
+      paramChangedHandler: getOnLabelAddedHandler(aggById(name)),
       explainHandler: getAggregationExplainer(name, ''),
       addOperationHandler: defaultAddOperationHandler,
       ...overrides,
     },
     // 2. By 聚合: sum by(label1, label2)(metric)
     {
-      id: `__${name}_by`,
+      id: aggById(name),
       name: `${getPromOperationDisplayName(name)} by`,
       params: [
         {
@@ -222,7 +226,7 @@ export function createAggregationOperation(name: string, overrides: Partial<Quer
     },
     // 3. Without 聚合: sum without(label1)(metric)
     {
-      id: `__${name}_without`,
+      id: aggWithoutId(name),
       name: `${getPromOperationDisplayName(name)} without`,
       params: [
         {
@@ -269,9 +273,15 @@ export function createAggregationOperationWithParam(
     operations[1].defaultParams = [...paramsDef.defaultParams, ''];
     operations[2].defaultParams = [...paramsDef.defaultParams, ''];
     operations[1].renderer = getAggregationByRendererWithParameter(name);
-    operations[2].renderer = getAggregationByRendererWithParameter(name);
+    operations[2].renderer = getAggregationWithoutRendererWithParameter(name);
   }
   return operations;
+}
+
+function normalizeLabelParams(values: QueryBuilderOperationParamValue[]): string[] {
+  return (values ?? [])
+    .map((v) => String(v).trim())
+    .filter((v) => v.length > 0);
 }
 
 /**
@@ -279,11 +289,11 @@ export function createAggregationOperationWithParam(
  */
 export function getAggregationByRenderer(aggregation: string) {
   return function aggregationRenderer(model: QueryBuilderOperation, _def: QueryBuilderOperationDef, innerExpr: string): string {
-    const labels = model.params.filter((p) => p !== '').join(', ');
+    const labels = normalizeLabelParams(model.params).join(', ');
     if (!labels) {
       return `${aggregation}(${innerExpr})`;
     }
-    return `${aggregation} by(${labels}) (${innerExpr})`;
+    return `${aggregation} by(${labels})(${innerExpr})`;
   };
 }
 
@@ -292,11 +302,11 @@ export function getAggregationByRenderer(aggregation: string) {
  */
 function getAggregationWithoutRenderer(aggregation: string) {
   return function aggregationRenderer(model: QueryBuilderOperation, _def: QueryBuilderOperationDef, innerExpr: string): string {
-    const labels = model.params.filter((p) => p !== '').join(', ');
+    const labels = normalizeLabelParams(model.params).join(', ');
     if (!labels) {
       return `${aggregation}(${innerExpr})`;
     }
-    return `${aggregation} without(${labels}) (${innerExpr})`;
+    return `${aggregation} without(${labels})(${innerExpr})`;
   };
 }
 
@@ -306,16 +316,36 @@ function getAggregationWithoutRenderer(aggregation: string) {
 function getAggregationByRendererWithParameter(aggregation: string) {
   return function aggregationRenderer(model: QueryBuilderOperation, def: QueryBuilderOperationDef, innerExpr: string): string {
     const restParamIndex = def.params.findIndex((param) => param.restParam);
-    const params = model.params.slice(0, restParamIndex);
-    const restParams = model.params.slice(restParamIndex).filter((p) => p !== '');
+    const params = restParamIndex >= 0 ? model.params.slice(0, restParamIndex) : model.params;
+    const restParams = normalizeLabelParams(restParamIndex >= 0 ? model.params.slice(restParamIndex) : []);
 
-    const renderedParams = params.map((param, idx) => (def.params[idx]?.type === 'string' ? `"${param}"` : param)).join(', ');
+    const renderedParams = params
+      .map((param, idx) => (def.params[idx]?.type === 'string' ? quotePromqlString(String(param)) : param))
+      .join(', ');
 
     if (restParams.length === 0) {
       return `${aggregation}(${renderedParams}, ${innerExpr})`;
     }
 
-    return `${aggregation} by(${restParams.join(', ')}) (${renderedParams}, ${innerExpr})`;
+    return `${aggregation} by(${restParams.join(', ')})(${renderedParams}, ${innerExpr})`;
+  };
+}
+
+function getAggregationWithoutRendererWithParameter(aggregation: string) {
+  return function aggregationRenderer(model: QueryBuilderOperation, def: QueryBuilderOperationDef, innerExpr: string): string {
+    const restParamIndex = def.params.findIndex((param) => param.restParam);
+    const params = restParamIndex >= 0 ? model.params.slice(0, restParamIndex) : model.params;
+    const restParams = normalizeLabelParams(restParamIndex >= 0 ? model.params.slice(restParamIndex) : []);
+
+    const renderedParams = params
+      .map((param, idx) => (def.params[idx]?.type === 'string' ? quotePromqlString(String(param)) : param))
+      .join(', ');
+
+    if (restParams.length === 0) {
+      return `${aggregation}(${renderedParams}, ${innerExpr})`;
+    }
+
+    return `${aggregation} without(${restParams.join(', ')})(${renderedParams}, ${innerExpr})`;
   };
 }
 
@@ -325,16 +355,16 @@ function getAggregationByRendererWithParameter(aggregation: string) {
 export function getAggregationExplainer(aggregationName: string, mode: 'by' | 'without' | '') {
   return function aggregationExplainer(model: QueryBuilderOperation): string {
     const labels = model.params
-      .filter((p) => p !== '')
+      .map((p) => String(p).trim())
+      .filter((p) => p.length > 0)
       .map((label) => `\`${label}\``)
       .join(' 和 ');
-    const labelWord = model.params.length > 1 ? '标签' : '标签';
 
     switch (mode) {
       case 'by':
-        return labels ? `按 ${labels} ${labelWord}分组计算 ${aggregationName}，保留这些标签` : `计算所有维度的 ${aggregationName}`;
+        return labels ? `按 ${labels} 分组计算 ${aggregationName}，保留这些标签` : `计算所有维度的 ${aggregationName}`;
       case 'without':
-        return labels ? `计算 ${aggregationName}，排除 ${labels} ${labelWord}，保留其他所有标签` : `计算所有维度的 ${aggregationName}`;
+        return labels ? `计算 ${aggregationName}，排除 ${labels}，保留其他所有标签` : `计算所有维度的 ${aggregationName}`;
       default:
         return `计算所有维度的 ${aggregationName}`;
     }
@@ -346,7 +376,7 @@ export function getAggregationExplainer(aggregationName: string, mode: 'by' | 'w
  */
 export function getLastLabelRemovedHandler(changeToOperationId: string) {
   return function onParamChanged(_index: number, op: QueryBuilderOperation, _def: QueryBuilderOperationDef): QueryBuilderOperation {
-    const validParams = op.params.filter((p) => p !== '');
+    const validParams = normalizeLabelParams(op.params);
     // 如果没有有效参数了，切换回普通聚合
     if (validParams.length === 0) {
       return {
@@ -364,7 +394,7 @@ export function getLastLabelRemovedHandler(changeToOperationId: string) {
  */
 export function getOnLabelAddedHandler(changeToOperationId: string) {
   return function onParamChanged(_index: number, op: QueryBuilderOperation, _def: QueryBuilderOperationDef): QueryBuilderOperation {
-    const validParams = op.params.filter((p) => p !== '');
+    const validParams = normalizeLabelParams(op.params);
     // 如果有有效参数，切换到 by 版本
     if (validParams.length > 0 && op.id !== changeToOperationId) {
       return {
@@ -386,14 +416,22 @@ export function getOnLabelAddedHandler(changeToOperationId: string) {
  *
  * 注意：必须进行深拷贝，避免数据共享问题
  */
-export function addNestedQueryHandler(_def: QueryBuilderOperationDef, query: any): any {
+export function addNestedQueryHandler(_def: QueryBuilderOperationDef, query: PromVisualQuery): PromVisualQuery {
+  // 说明：
+  // - 这里的 query 来自 modeller 的“当前查询对象”
+  // - 仅复制一份“基础查询”，避免把 binaryQueries 也递归拷进去导致模型膨胀
+  const baseQuery: PromVisualQuery = {
+    metric: query?.metric ?? '',
+    labels: Array.isArray(query?.labels) ? query.labels : [],
+    operations: Array.isArray(query?.operations) ? query.operations : [],
+  };
   return {
     ...query,
     binaryQueries: [
       ...(query.binaryQueries ?? []),
       {
         operator: '/',
-        query: JSON.parse(JSON.stringify(query)), // 深拷贝，避免引用共享
+        query: deepCloneStructured(baseQuery),
       },
     ],
   };

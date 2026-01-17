@@ -36,14 +36,6 @@ export const HttpApiEndpointKey = {
   DefaultDashboard: 'DefaultDashboard',
 
   // --- Query ---
-  /**
-   * POST /query/execute - 执行单条查询（占位）
-   *
-   * 说明：
-   * - 当前 contracts 主要使用 executeQueries（批量）作为统一入口
-   * - 这里保留 ExecuteQuery 是为了兼容/对齐 hook 层历史命名，后续可按需要决定是否真正实现
-   */
-  ExecuteQuery: 'ExecuteQuery',
   /** POST /queries/execute - 执行多条查询（推荐：面板通常包含多条 query） */
   ExecuteQueries: 'ExecuteQueries',
   /** GET /query/metrics - 拉取 metric 列表（QueryBuilder 用） */
@@ -91,7 +83,6 @@ export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
   [HttpApiEndpointKey.DefaultDashboard]: '/dashboards/default',
 
   // --- Query ---
-  [HttpApiEndpointKey.ExecuteQuery]: '/query/execute',
   [HttpApiEndpointKey.ExecuteQueries]: '/queries/execute',
   [HttpApiEndpointKey.FetchMetrics]: '/query/metrics',
   [HttpApiEndpointKey.FetchLabelKeys]: '/query/label-keys',

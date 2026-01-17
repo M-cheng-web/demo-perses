@@ -13,7 +13,7 @@ const root = ref<HTMLElement | null>(null);
 const { state, actions, containerSize, api } = useDashboardSdk(root, {
   dashboardId: 'default',
   apiConfig: {
-    dsn: 'https://api.example.com',
+    baseUrl: 'https://api.example.com',
   },
 });
 </script>
@@ -39,7 +39,7 @@ const { state, actions, containerSize, api } = useDashboardSdk(root, {
 - `containerSize`：跟踪传入 `ref` 的容器尺寸，便于外部布局计算。
 - `ready`：hook 初始化完成的标记。
 - `targetRef`：透传的容器 `ref`，内部已绑定鼠标事件用于 Tooltip 全局坐标。
-- `api`：包含当前 dsn 与计算后的接口路径，可通过 `apiConfig` 定制。
+- `api`：包含当前 baseUrl 与计算后的接口路径，可通过 `apiConfig` 定制。
 - `mountDashboard/unmountDashboard`：手动控制 Dashboard 挂载/卸载。
 
 ## 接口枚举

@@ -52,6 +52,7 @@
   import type { PanelGroup } from '@grafana-fast/types';
   import type { GrafanaFastApiClient } from '@grafana-fast/api';
   import { createMockApiClient } from '@grafana-fast/api';
+  import { createPrefixedId } from '@grafana-fast/utils';
   import { GF_API_KEY, GF_RUNTIME_KEY } from '/#/runtime/keys';
   import { setPiniaApiClient } from '/#/runtime/piniaAttachments';
 
@@ -95,10 +96,7 @@
 
   const emptyText = computed(() => DASHBOARD_EMPTY_TEXT);
 
-  const runtimeId = computed(
-    () =>
-      props.runtimeId ?? (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `rt-${Math.random().toString(16).slice(2)}`)
-  );
+  const runtimeId = computed(() => props.runtimeId ?? createPrefixedId('rt'));
 
   // Provide runtime-scoped dependencies
   const apiClient = computed(() => props.apiClient ?? createMockApiClient());

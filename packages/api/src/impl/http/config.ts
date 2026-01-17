@@ -2,7 +2,7 @@
  * 文件说明：HTTP 实现层的配置定义与归一化
  *
  * 目标：
- * - 让调用方（hook/app）以“少心智负担”的方式配置真实后端接入（dsn/baseUrl、鉴权、超时等）
+ * - 让调用方（hook/app）以“少心智负担”的方式配置真实后端接入（baseUrl、鉴权、超时等）
  * - 同时让实现层内部保持可维护：所有参数先归一化为 ResolvedHttpApiClientConfig
  *
  * 重要原则：
@@ -13,6 +13,7 @@
 import type { FetchLike, HeadersLike, HttpClientConfig } from './fetchClient';
 import type { HttpApiEndpointKey } from './endpoints';
 import { resolveHttpApiEndpoints } from './endpoints';
+import { normalizeBaseUrl } from '@grafana-fast/utils';
 
 /**
  * 鉴权配置（可选）
@@ -61,12 +62,6 @@ export interface HttpApiClientConfig {
    * - "https://example.com/api"
    */
   baseUrl?: string;
-
-  /**
-   * dsn（历史命名，等价于 baseUrl）
-   * - 为了兼容当前 hook 的 options.apiConfig.dsn
-   */
-  dsn?: string;
 
   /**
    * 默认超时（毫秒）
@@ -138,7 +133,7 @@ const DEFAULT_HTTP_BASE_URL = '/api';
  * 将外部传入的 apiConfig 归一化为内部使用的结构
  */
 export function resolveHttpApiClientConfig(apiConfig: HttpApiClientConfig | undefined): ResolvedHttpApiClientConfig {
-  const baseUrl = (apiConfig?.baseUrl ?? apiConfig?.dsn ?? DEFAULT_HTTP_BASE_URL).replace(/\/$/, '');
+  const baseUrl = normalizeBaseUrl(apiConfig?.baseUrl ?? DEFAULT_HTTP_BASE_URL);
 
   const getHeaders = composeGetHeaders(apiConfig);
 

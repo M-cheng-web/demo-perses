@@ -105,7 +105,7 @@
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { CheckOutlined, CloseOutlined, DownOutlined } from '@ant-design/icons-vue';
-  import { createNamespace } from '../../utils';
+  import { createNamespace, debounceCancellable } from '../../utils';
   import Tag from '../base/Tag.vue';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
@@ -188,7 +188,9 @@
   const responsiveTagCount = ref<number>(Number.POSITIVE_INFINITY);
   let openedByFocusIn = false;
   let pointerDownInside = false;
-  let clearPointerDownTimer: number | null = null;
+  const clearPointerDownInside = debounceCancellable(() => {
+    pointerDownInside = false;
+  }, 0);
   const controlSizeClass = computed(() => {
     if (props.size === 'small') return 'gf-control--size-small';
     if (props.size === 'large') return 'gf-control--size-large';
@@ -284,11 +286,8 @@
   const handlePointerDownInside = () => {
     if (props.disabled) return;
     pointerDownInside = true;
-    if (clearPointerDownTimer != null) window.clearTimeout(clearPointerDownTimer);
-    clearPointerDownTimer = window.setTimeout(() => {
-      pointerDownInside = false;
-      clearPointerDownTimer = null;
-    }, 0);
+    clearPointerDownInside.cancel();
+    clearPointerDownInside();
   };
 
   const handleFocusIn = (evt: FocusEvent) => {
@@ -608,8 +607,7 @@
     resizeObserver = null;
     if (rafId != null) cancelAnimationFrame(rafId);
     if (tagRafId != null) cancelAnimationFrame(tagRafId);
-    if (clearPointerDownTimer != null) window.clearTimeout(clearPointerDownTimer);
-    clearPointerDownTimer = null;
+    clearPointerDownInside.cancel();
   });
 
   watch(

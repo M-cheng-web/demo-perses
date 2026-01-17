@@ -32,6 +32,7 @@ export default defineConfig({
             '@grafana-fast/api': resolveFromRoot('../api/src/index.ts'),
             '@grafana-fast/json-editor': resolveFromRoot('../json-editor/src/index.ts'),
             '@grafana-fast/types': resolveFromRoot('../types/src/index.ts'),
+            '@grafana-fast/utils': resolveFromRoot('../utils/src/index.ts'),
           }),
     },
   },

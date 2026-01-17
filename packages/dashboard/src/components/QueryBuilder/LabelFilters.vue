@@ -66,7 +66,7 @@
   import { Button, Select } from '@grafana-fast/component';
   import { ref, watch, onMounted } from 'vue';
   import { PlusOutlined, CloseOutlined } from '@ant-design/icons-vue';
-  import type { QueryBuilderLabelFilter } from '/#/components/QueryBuilder/lib/types';
+  import type { QueryBuilderLabelFilter } from '@grafana-fast/utils';
   import { useApiClient } from '/#/runtime/useInjected';
   import { createNamespace } from '/#/utils';
 

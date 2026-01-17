@@ -28,8 +28,6 @@ export * from './dashboard';
 export * from './datasource';
 // QueryBuilder 结构（可视化构建 query 的中间模型）
 export * from './queryBuilder';
-// Dashboard schemaVersion 迁移
-export * from './migrations/dashboard';
 // 从 prometheus 导出，但排除 DataPoint (使用 query.ts 中的 DataPoint)
 export type {
   PrometheusQueryResult,

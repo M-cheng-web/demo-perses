@@ -9,26 +9,6 @@ import type { DatasourceRef } from './queryModel';
 /**
  * 查询定义
  */
-export interface Query {
-  /** 查询 ID */
-  id: ID;
-  /** 数据源名称 */
-  datasource: string;
-  /** PromQL 表达式 */
-  expr: string;
-  /** 图例格式模板 */
-  legendFormat?: string;
-  /** 最小步长（秒） */
-  minStep?: number;
-  /** 查询格式 */
-  format?: QueryFormat;
-  /** 是否即时查询 */
-  instant?: boolean;
-}
-
-/**
- * 查询格式
- */
 export type QueryFormat = 'time_series' | 'table' | 'heatmap';
 
 /**

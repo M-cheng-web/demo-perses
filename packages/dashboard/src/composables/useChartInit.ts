@@ -32,6 +32,14 @@ export function useChartInit<T = ECharts>(options: {
   const isInitialized = ref(false);
   const isLoading = ref(true);
   const isInitializing = ref(false); // 防止重复初始化
+  let initRafId: number | null = null;
+
+  onUnmounted(() => {
+    if (initRafId !== null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(initRafId);
+    }
+    initRafId = null;
+  });
 
   /**
    * 等待容器具备非 0 的宽高（避免 ECharts init 时出现 0x0 的 warning）
@@ -81,7 +89,16 @@ export function useChartInit<T = ECharts>(options: {
       };
 
       try {
-        setTimeout(async () => {
+        const schedule = (fn: () => void) => {
+          if (typeof requestAnimationFrame === 'function') {
+            initRafId = requestAnimationFrame(fn);
+            return;
+          }
+          // 非浏览器/无 raf 环境：退化为 microtask
+          Promise.resolve().then(fn);
+        };
+
+        schedule(async () => {
           const dom = resolveDom();
           if (!dom) {
             // DOM 尚未就绪或已被卸载，等待下一次依赖变更再尝试
@@ -104,7 +121,7 @@ export function useChartInit<T = ECharts>(options: {
             onChartCreated(chartInstance);
           }
           resolve(true);
-        }, 0);
+        });
       } catch (error) {
         console.error('[useChartInit] Failed to initialize chart instance:', error);
         resolve(false);

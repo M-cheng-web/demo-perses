@@ -212,7 +212,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, h, ref, watch } from 'vue';
+  import { computed, h, onBeforeUnmount, ref, watch } from 'vue';
   import {
     Button,
     FormItem,
@@ -246,8 +246,8 @@
   import QueryPreview from '/#/components/QueryBuilder/QueryPreview.vue';
   import QueryExplain from '/#/components/QueryBuilder/query-builder/QueryExplain.vue';
   import QueryPatternsModal from '/#/components/QueryBuilder/QueryPatternsModal.vue';
-  import { promQueryModeller } from '/#/components/QueryBuilder/lib/PromQueryModeller';
-  import { createNamespace } from '/#/utils';
+  import { promQueryModeller } from '@grafana-fast/utils';
+  import { createNamespace, debounceCancellable } from '/#/utils';
   import type { CanonicalQuery, DatasourceRef, PromVisualQuery, QueryPanel } from '@grafana-fast/types';
 
   const [_, bem] = createNamespace('data-query-tab');
@@ -276,6 +276,15 @@
   const currentPatternQueryIndex = ref<number>(0); // 记录当前要填充模板的查询索引
   const highlightedOpIndex = ref<number>();
   const isInitialized = ref(false); // 标记是否已初始化，避免重复初始化
+
+  // 高亮清理：以“最后一次高亮”为准（避免多次 setTimeout 叠加导致提前清理）
+  const clearHighlightedOp = debounceCancellable(() => {
+    highlightedOpIndex.value = undefined;
+  }, 2000);
+
+  onBeforeUnmount(() => {
+    clearHighlightedOp.cancel();
+  });
 
   // Builder 模式的状态（独立维护）
   const builderQueryPanels = ref<QueryPanel[]>([]);
@@ -325,7 +334,6 @@
           operations: [],
         },
         hide: _q.hide || false,
-        datasource: 'prometheus',
       }));
 
       // 从旧格式转换 - Code 模式
@@ -337,7 +345,6 @@
           operations: [],
         },
         hide: _q.hide || false,
-        datasource: 'prometheus',
       }));
 
       // 初始化代码模式的值
@@ -355,7 +362,6 @@
             operations: [],
           },
           hide: false,
-          datasource: 'prometheus',
         },
       ];
 
@@ -369,7 +375,6 @@
             operations: [],
           },
           hide: false,
-          datasource: 'prometheus',
         },
       ];
 
@@ -417,7 +422,6 @@
           operations: [],
         },
         hide: false,
-        datasource: 'prometheus',
       });
     } else {
       const newRefId = String.fromCharCode(65 + codeQueryPanels.value.length);
@@ -429,7 +433,6 @@
           operations: [],
         },
         hide: false,
-        datasource: 'prometheus',
       });
       codePromQLs.value.push('');
       legendFormats.value.push('');
@@ -548,11 +551,8 @@
   // 高亮操作
   const handleHighlightOperation = (index: number | null) => {
     highlightedOpIndex.value = index ?? undefined;
-    if (index !== null) {
-      setTimeout(() => {
-        highlightedOpIndex.value = undefined;
-      }, 2000);
-    }
+    clearHighlightedOp.cancel();
+    if (index !== null) clearHighlightedOp();
   };
 
   // 代码模式变化

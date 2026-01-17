@@ -84,15 +84,12 @@
       size?: 'small' | 'middle' | 'large';
       /** 禁用状态 */
       disabled?: boolean;
-      /** 兼容旧 API：不再渲染搜索 UI */
-      showSearch?: any;
     }>(),
     {
       options: () => [],
       placeholder: '请选择',
       size: 'middle',
       disabled: false,
-      showSearch: false,
     }
   );
 

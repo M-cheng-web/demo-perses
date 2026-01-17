@@ -1,111 +1,22 @@
 /**
- * 通用工具函数
+ * dashboard 内部通用工具
+ *
+ * 说明：
+ * - 实现收敛到 @grafana-fast/utils，避免在多个包内重复维护
+ * - 该文件仅作为 dashboard 包内部的导出路径（/#+/utils/common）
  */
 
-/**
- * 生成唯一 ID（用于 dashboard/panel/group 等）
- */
-export function generateId(): string {
-  // 优先使用浏览器/运行时提供的 crypto.randomUUID（无额外依赖、碰撞概率极低）
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-
-  // 兜底：在极端环境（无 randomUUID）下，使用 “时间 + 随机 + 自增” 组合生成
-  // 说明：
-  // - 不追求 RFC4122 规范，只追求在前端交互场景足够唯一
-  // - 生成结果仍然是字符串，可直接用于 dashboard/panel/group 的 id
-  const now = Date.now().toString(16);
-  const rand = Math.random().toString(16).slice(2);
-  generateIdCounter = (generateIdCounter + 1) % 0xffff;
-  const seq = generateIdCounter.toString(16).padStart(4, '0');
-  return `id-${now}-${seq}-${rand}`;
-}
-
-let generateIdCounter = 0;
-
-/**
- * 深度克隆
- */
-export function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
-}
-
-/**
- * 防抖
- */
-export function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-
-  return function (this: any, ...args: Parameters<T>) {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => {
-      func.apply(this, args);
-    }, wait);
-  };
-}
-
-/**
- * 节流
- */
-export function throttle<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
-  let inThrottle = false;
-
-  return function (this: any, ...args: Parameters<T>) {
-    if (!inThrottle) {
-      func.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => {
-        inThrottle = false;
-      }, wait);
-    }
-  };
-}
-
-/**
- * 延迟执行
- */
-export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * 安全地访问嵌套属性
- */
-export function get(obj: any, path: string, defaultValue?: any): any {
-  const keys = path.split('.');
-  let result = obj;
-
-  for (const key of keys) {
-    if (result == null) {
-      return defaultValue;
-    }
-    result = result[key];
-  }
-
-  return result ?? defaultValue;
-}
-
-/**
- * 检查是否为空
- */
-export function isEmpty(value: any): boolean {
-  if (value == null) return true;
-  if (typeof value === 'string') return value.trim() === '';
-  if (Array.isArray(value)) return value.length === 0;
-  if (typeof value === 'object') return Object.keys(value).length === 0;
-  return false;
-}
-
-/**
- * 去除对象中的 undefined 值
- */
-export function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
-  const result: any = {};
-  Object.keys(obj).forEach((key) => {
-    if (obj[key] !== undefined) {
-      result[key] = obj[key];
-    }
-  });
-  return result;
-}
+export {
+  generateId,
+  createPrefixedId,
+  deepClone,
+  deepCloneStructured,
+  debounce,
+  debounceCancellable,
+  throttle,
+  throttleCancellable,
+  sleep,
+  get,
+  isEmpty,
+  removeUndefined,
+} from '@grafana-fast/utils';

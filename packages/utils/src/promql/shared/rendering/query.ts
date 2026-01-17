@@ -66,10 +66,7 @@ export function renderQuery(
       const rightOperand = renderNestedPart(binQuery.query, operationsRegistry);
 
       // 如果存在，添加向量匹配
-      let vectorMatchingStr = '';
-      if (binQuery.vectorMatches) {
-        vectorMatchingStr = `${binQuery.vectorMatchesType}(${binQuery.vectorMatches}) `;
-      }
+      const vectorMatchingStr = renderVectorMatching(binQuery);
 
       // 组合左右操作数与操作符
       queryString = `${queryString} ${binQuery.operator} ${vectorMatchingStr}${rightOperand}`;
@@ -111,10 +108,14 @@ function renderNestedPart(query: PrometheusVisualQuery, operationsRegistry?: Map
 /**
  * 渲染二元查询
  */
-export function renderBinaryQueries(queryString: string, binaryQueries?: Array<VisualQueryBinary<PrometheusVisualQuery>>): string {
+export function renderBinaryQueries(
+  queryString: string,
+  binaryQueries?: Array<VisualQueryBinary<PrometheusVisualQuery>>,
+  operationsRegistry?: Map<string, QueryBuilderOperationDef>
+): string {
   if (binaryQueries) {
     for (const binQuery of binaryQueries) {
-      queryString = `${renderBinaryQuery(queryString, binQuery)}`;
+      queryString = `${renderBinaryQuery(queryString, binQuery, operationsRegistry)}`;
     }
   }
   return queryString;
@@ -123,12 +124,37 @@ export function renderBinaryQueries(queryString: string, binaryQueries?: Array<V
 /**
  * 渲染单个二元查询
  */
-function renderBinaryQuery(leftOperand: string, binaryQuery: VisualQueryBinary<PrometheusVisualQuery>): string {
+function renderBinaryQuery(
+  leftOperand: string,
+  binaryQuery: VisualQueryBinary<PrometheusVisualQuery>,
+  operationsRegistry?: Map<string, QueryBuilderOperationDef>
+): string {
   let result = leftOperand + ` ${binaryQuery.operator} `;
 
-  if (binaryQuery.vectorMatches) {
-    result += `${binaryQuery.vectorMatchesType}(${binaryQuery.vectorMatches}) `;
+  result += renderVectorMatching(binaryQuery);
+
+  return result + renderNestedPart(binaryQuery.query, operationsRegistry);
+}
+
+type VectorMatching = {
+  type: 'on' | 'ignoring';
+  labels: string[];
+};
+
+function normalizeLabelList(values: string[]): string[] {
+  return (values ?? [])
+    .map((v) => String(v).trim())
+    .filter((v) => v.length > 0);
+}
+
+function renderVectorMatching(binary: {
+  vectorMatching?: VectorMatching;
+}): string {
+  if (binary.vectorMatching) {
+    const labels = normalizeLabelList(binary.vectorMatching.labels);
+    if (!binary.vectorMatching.type || labels.length === 0) return '';
+    return `${binary.vectorMatching.type}(${labels.join(', ')}) `;
   }
 
-  return result + renderQuery(binaryQuery.query, true);
+  return '';
 }

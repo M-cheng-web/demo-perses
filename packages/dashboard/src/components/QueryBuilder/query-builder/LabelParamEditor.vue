@@ -34,7 +34,7 @@
   import { Select } from '@grafana-fast/component';
   import { ref, watch } from 'vue';
   import { useApiClient } from '/#/runtime/useInjected';
-  import { promQueryModeller } from '/#/components/QueryBuilder/lib/PromQueryModeller';
+  import { promQueryModeller } from '@grafana-fast/utils';
 
   interface Props {
     modelValue: string;

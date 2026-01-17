@@ -24,23 +24,12 @@ import type {
 export abstract class PromQueryModellerBase implements VisualQueryModeller {
   protected operationsRegistry: Map<string, QueryBuilderOperationDef> = new Map();
   private categories: string[] = [];
-  private operationsMapCache: Map<string, QueryBuilderOperationDef> | null = null;
 
   constructor(getOperations: () => QueryBuilderOperationDef[]) {
     const operations = getOperations();
     operations.forEach((op) => {
       this.operationsRegistry.set(op.id, op);
     });
-  }
-
-  private getOperationsMap(): Map<string, QueryBuilderOperationDef> {
-    if (!this.operationsMapCache) {
-      this.operationsMapCache = new Map<string, QueryBuilderOperationDef>();
-      this.operationsRegistry.forEach((op, key) => {
-        this.operationsMapCache!.set(key, op);
-      });
-    }
-    return this.operationsMapCache;
   }
 
   protected setOperationCategories(categories: string[]) {
@@ -64,11 +53,11 @@ export abstract class PromQueryModellerBase implements VisualQueryModeller {
   }
 
   renderOperations(queryString: string, operations: QueryBuilderOperation[]): string {
-    return renderOperations(queryString, operations, this.getOperationsMap());
+    return renderOperations(queryString, operations, this.operationsRegistry);
   }
 
   renderBinaryQueries(queryString: string, binaryQueries?: Array<VisualQueryBinary<PrometheusVisualQuery>>): string {
-    return renderBinaryQueries(queryString, binaryQueries);
+    return renderBinaryQueries(queryString, binaryQueries, this.operationsRegistry);
   }
 
   renderLabels(labels: QueryBuilderLabelFilter[]): string {
@@ -76,10 +65,10 @@ export abstract class PromQueryModellerBase implements VisualQueryModeller {
   }
 
   renderQuery(query: PrometheusVisualQuery, nested?: boolean): string {
-    return renderQuery(query, nested, this.getOperationsMap());
+    return renderQuery(query, nested, this.operationsRegistry);
   }
 
   hasBinaryOp(query: PrometheusVisualQuery): boolean {
-    return hasBinaryOp(query, this.getOperationsMap());
+    return hasBinaryOp(query, this.operationsRegistry);
   }
 }

@@ -199,9 +199,9 @@
 
         <Card title="List (Variants / Slots)" size="small" :bordered="true">
           <Space direction="vertical" :size="10" style="width: 100%">
-            <div class="dp-component-showcase__hint">KV：适合调试信息（插槽按 item.key：#dsn、#ready ...）</div>
+            <div class="dp-component-showcase__hint">KV：适合调试信息（插槽按 item.key：#baseUrl、#ready ...）</div>
             <List :items="listKvItems" variant="kv" size="small" :split="false" :hoverable="true">
-              <template #dsn="{ value }">
+              <template #baseUrl="{ value }">
                 <span class="dp-component-showcase__mono">{{ value }}</span>
               </template>
               <template #ready="{ value, item }">
@@ -213,7 +213,7 @@
 
             <div class="dp-component-showcase__hint">Lines：无外边框，一行行样式集合（适合弹窗/详情页）</div>
             <List :items="listKvItems" variant="lines" size="small" :split="false" :hoverable="true">
-              <template #dsn="{ value }">
+              <template #baseUrl="{ value }">
                 <span class="dp-component-showcase__mono">{{ value }}</span>
               </template>
               <template #ready="{ value, item }">
@@ -324,8 +324,8 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, reactive, ref } from 'vue';
-  import { useRouter } from 'vue-router';
+	  import { computed, onBeforeUnmount, reactive, ref } from 'vue';
+	  import { useRouter } from 'vue-router';
   import {
     Alert,
     Button,
@@ -362,8 +362,9 @@
     TabPane,
     Tooltip,
     message,
-  } from '@grafana-fast/component';
-  import { getAppliedDashboardTheme, setDashboardThemePreference, type DashboardTheme } from '@grafana-fast/dashboard';
+	  } from '@grafana-fast/component';
+	  import { getAppliedDashboardTheme, setDashboardThemePreference, type DashboardTheme } from '@grafana-fast/dashboard';
+	  import { debounceCancellable } from '@grafana-fast/utils';
 
   const router = useRouter();
 
@@ -478,20 +479,27 @@
     else message.error('校验未通过，请检查红色提示');
   };
 
-  const handleResetValidate = () => {
-    validateFormRef.value?.resetFields?.();
-    validateFormRef.value?.clearValidate?.();
-  };
+	  const handleResetValidate = () => {
+	    validateFormRef.value?.resetFields?.();
+	    validateFormRef.value?.clearValidate?.();
+	  };
 
-  const triggerLoading = async () => {
-    if (loadingBtn.value) return;
-    loadingBtn.value = true;
-    message.loading({ content: '处理中...', key: 'demo-loading', duration: 0 });
-    window.setTimeout(() => {
-      loadingBtn.value = false;
-      message.success({ content: '完成', key: 'demo-loading', duration: 1500 });
-    }, 900);
-  };
+	  const finishLoading = debounceCancellable(() => {
+	    loadingBtn.value = false;
+	    message.success({ content: '完成', key: 'demo-loading', duration: 1500 });
+	  }, 900);
+
+	  onBeforeUnmount(() => {
+	    finishLoading.cancel();
+	  });
+
+	  const triggerLoading = async () => {
+	    if (loadingBtn.value) return;
+	    loadingBtn.value = true;
+	    message.loading({ content: '处理中...', key: 'demo-loading', duration: 0 });
+	    finishLoading.cancel();
+	    finishLoading();
+	  };
 
   const goHome = () => router.push('/home');
   const goJsonEditor = () => router.push('/json-editor');
@@ -526,7 +534,7 @@
 
   const listKvItems = computed(() => [
     { key: 'size', label: '容器尺寸', value: '1280 × 720', kind: 'plain' },
-    { key: 'dsn', label: '当前 DSN', value: 'https://api.example.com', kind: 'dsn' },
+    { key: 'baseUrl', label: '当前 BaseUrl', value: 'https://api.example.com', kind: 'plain' },
     { key: 'load', label: '加载接口', value: '/custom/load', kind: 'plain' },
     { key: 'query', label: '查询接口', value: '/custom/execute', kind: 'plain' },
     { key: 'ready', label: '挂载状态', value: '已挂载', kind: 'status', color: 'var(--gf-color-success)' },

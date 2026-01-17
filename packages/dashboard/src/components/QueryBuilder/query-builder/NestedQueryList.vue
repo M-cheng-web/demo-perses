@@ -34,7 +34,7 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
   import NestedQuery from './NestedQuery.vue';
-  import type { PromVisualQuery, PromVisualQueryBinary } from '/#/components/QueryBuilder/lib/types';
+  import type { PromVisualQuery, PromVisualQueryBinary } from '@grafana-fast/utils';
   import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('nested-query-list');

@@ -32,6 +32,7 @@ import {
 import type { QueryBuilderOperation, QueryBuilderOperationDef, VisualQueryModeller } from './shared/types';
 import { PromOperationId, PromVisualQueryOperationCategory } from './types';
 import type { PromVisualQuery } from './types';
+import { quotePromqlString } from './shared/rendering/escape';
 
 export function getOperationDefinitions(): QueryBuilderOperationDef[] {
   const list: QueryBuilderOperationDef[] = [
@@ -340,10 +341,13 @@ function operationTypeChangedHandlerForRangeFunction(operation: QueryBuilderOper
  * Label join 渲染器
  */
 function labelJoinRenderer(model: QueryBuilderOperation, _def: QueryBuilderOperationDef, innerExpr: string): string {
-  const paramZero = model.params[0] ?? '';
-  const paramOne = model.params[1] ?? '';
-  const separator = `"${paramOne}"`;
-  return `${model.id}(${innerExpr}, "${paramZero}", ${separator}, "${model.params.slice(2).join(separator)}")`;
+  const destinationLabel = String(model.params[0] ?? '');
+  const separator = String(model.params[1] ?? '');
+  const sourceLabels = model.params.slice(2).map((v) => String(v)).filter((v) => v.trim().length > 0);
+
+  // PromQL: label_join(v instant-vector, dst_label string, separator string, src_label_1 string, src_label_2 string, ...)
+  const args = [innerExpr, quotePromqlString(destinationLabel), quotePromqlString(separator), ...sourceLabels.map(quotePromqlString)];
+  return `${model.id}(${args.join(', ')})`;
 }
 
 function createSimpleFunction(name: string, category: string): QueryBuilderOperationDef {

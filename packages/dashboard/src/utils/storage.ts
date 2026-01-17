@@ -1,91 +1,63 @@
 /**
- * LocalStorage 存储工具
- * 提供类型安全的 localStorage 操作
+ * LocalStorage 存储工具（dashboard 内部）
+ *
+ * 说明：
+ * - 底层实现收敛到 @grafana-fast/utils（createPrefixedStorage）
+ * - 该文件保留原导出（StorageManager/StorageKeys）以避免影响现有调用
  */
+
+import { createPrefixedStorage } from '@grafana-fast/utils';
 
 const STORAGE_PREFIX = 'perses_demo_';
 
-export class StorageManager {
-  /**
-   * 获取完整的 storage key
-   */
-  private static getKey(key: string): string {
-    return `${STORAGE_PREFIX}${key}`;
-  }
+const storage = createPrefixedStorage(STORAGE_PREFIX);
 
+export class StorageManager {
   /**
    * 存储数据
    */
   static setItem<T>(key: string, value: T): void {
-    try {
-      const serialized = JSON.stringify(value);
-      localStorage.setItem(this.getKey(key), serialized);
-    } catch (error) {
-      console.error(`Error saving to localStorage (key: ${key}):`, error);
-    }
+    storage.setItem<T>(key, value);
   }
 
   /**
    * 获取数据
    */
   static getItem<T>(key: string): T | null {
-    try {
-      const serialized = localStorage.getItem(this.getKey(key));
-      if (serialized === null) {
-        return null;
-      }
-      return JSON.parse(serialized) as T;
-    } catch (error) {
-      console.error(`Error reading from localStorage (key: ${key}):`, error);
-      return null;
-    }
+    return storage.getItem<T>(key);
   }
 
   /**
    * 删除数据
    */
   static removeItem(key: string): void {
-    try {
-      localStorage.removeItem(this.getKey(key));
-    } catch (error) {
-      console.error(`Error removing from localStorage (key: ${key}):`, error);
-    }
+    storage.removeItem(key);
   }
 
   /**
    * 清空所有数据（仅清空带前缀的）
    */
   static clear(): void {
-    try {
-      const keys = Object.keys(localStorage);
-      keys.forEach((key) => {
-        if (key.startsWith(STORAGE_PREFIX)) {
-          localStorage.removeItem(key);
-        }
-      });
-    } catch (error) {
-      console.error('Error clearing localStorage:', error);
-    }
+    storage.clear();
   }
 
   /**
    * 检查键是否存在
    */
   static hasItem(key: string): boolean {
-    return localStorage.getItem(this.getKey(key)) !== null;
+    return storage.hasItem(key);
   }
 
   /**
    * 获取所有键
    */
   static getAllKeys(): string[] {
-    const keys = Object.keys(localStorage);
-    return keys.filter((key) => key.startsWith(STORAGE_PREFIX)).map((key) => key.replace(STORAGE_PREFIX, ''));
+    return storage.getAllKeys();
   }
 }
 
 /**
- * 数据库键常量
+ * 数据库键常量（dashboard 语义）
  */
 export const StorageKeys = {
   DASHBOARDS: 'dashboards',
@@ -95,3 +67,4 @@ export const StorageKeys = {
   TIME_RANGE: 'time_range',
   VARIABLES: 'variables',
 } as const;
+

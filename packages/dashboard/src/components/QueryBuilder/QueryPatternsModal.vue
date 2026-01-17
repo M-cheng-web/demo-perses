@@ -79,8 +79,8 @@
   import { Button, Card, Divider, Modal, Tag } from '@grafana-fast/component';
   import { ref, watch } from 'vue';
   import { message } from '@grafana-fast/component';
-  import { promQueryModeller } from '/#/components/QueryBuilder/lib/PromQueryModeller';
-  import type { PromQueryPattern, PromVisualQuery } from '/#/components/QueryBuilder/lib/types';
+  import { promQueryModeller } from '@grafana-fast/utils';
+  import type { PromQueryPattern, PromVisualQuery } from '@grafana-fast/utils';
   import { createNamespace } from '/#/utils';
   import { Alert } from '@grafana-fast/component';
 

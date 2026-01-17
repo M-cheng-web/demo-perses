@@ -23,6 +23,7 @@
   "dependencies": {
     "@grafana-fast/component": "workspace:*",
     "@grafana-fast/types": "workspace:*",
+    "@grafana-fast/utils": "workspace:*",
     "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {

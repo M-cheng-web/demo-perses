@@ -4,7 +4,7 @@
 
 import { defineStore } from '@grafana-fast/store';
 import type { Dashboard, PanelGroup, Panel, PanelLayout, ID } from '@grafana-fast/types';
-import { generateId, deepClone } from '/#/utils';
+import { createPrefixedId, deepClone } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
 
 interface DashboardState {
@@ -113,7 +113,7 @@ export const useDashboardStore = defineStore('dashboard', {
       if (!this.currentDashboard) return;
 
       const newGroup: PanelGroup = {
-        id: generateId(),
+        id: createPrefixedId('pg'),
         title: group.title || '新面板组',
         description: group.description,
         isCollapsed: false,
@@ -273,7 +273,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
       const newPanel: Panel = {
         ...deepClone(panel),
-        id: generateId(),
+        id: createPrefixedId('p'),
         name: `${panel.name} (副本)`,
       };
 

@@ -12,38 +12,20 @@
  * 参考 Grafana: packages/grafana-prometheus/src/querybuilder/shared/rendering/labels.ts
  */
 import type { QueryBuilderLabelFilter } from '../types';
+import { quotePromqlString } from './escape';
 
 /**
  * 渲染标签过滤器为 PromQL 格式: {label1="value1", label2="value2"}
  */
 export function renderLabels(labels: QueryBuilderLabelFilter[]): string {
-  if (labels.length === 0) {
-    return '';
-  }
-
-  let expr = '{';
-  for (const filter of labels) {
-    if (expr !== '{') {
-      expr += ', ';
-    }
-    expr += `${filter.label}${filter.op}"${filter.value}"`;
-  }
-
-  return expr + `}`;
+  if (labels.length === 0) return '';
+  return `{${renderLabelsWithoutBrackets(labels).join(', ')}}`;
 }
 
 /**
  * 渲染标签过滤器（不带花括号）
  */
 export function renderLabelsWithoutBrackets(labels: QueryBuilderLabelFilter[]): string[] {
-  if (labels.length === 0) {
-    return [];
-  }
-
-  const renderedLabels: string[] = [];
-  for (const filter of labels) {
-    renderedLabels.push(`${filter.label}${filter.op}"${filter.value}"`);
-  }
-
-  return renderedLabels;
+  if (labels.length === 0) return [];
+  return labels.map((filter) => `${filter.label}${filter.op}${quotePromqlString(filter.value)}`);
 }

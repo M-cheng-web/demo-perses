@@ -20,7 +20,8 @@
     "build": "rollup -c ../../scripts/rollup.config.js"
   },
   "dependencies": {
-    "@grafana-fast/types": "workspace:*"
+    "@grafana-fast/types": "workspace:*",
+    "@grafana-fast/utils": "workspace:*"
   },
   "license": "MIT"
 }
