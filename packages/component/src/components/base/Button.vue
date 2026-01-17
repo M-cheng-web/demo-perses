@@ -89,7 +89,6 @@
     --gf-btn-shadow-hover: var(--gf-shadow-1);
     position: relative;
     display: inline-flex;
-    align-self: center;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;

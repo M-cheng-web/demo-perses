@@ -127,7 +127,8 @@
     &__actions {
       display: flex;
       gap: 8px;
-      // flex-wrap: wrap;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
     &__canvas {

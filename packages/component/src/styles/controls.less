@@ -63,3 +63,48 @@
   color: var(--gf-text-secondary);
   letter-spacing: 0.01em;
 }
+
+/*
+ * Flex alignment utilities / safeguards
+ *
+ * Background:
+ * - In toolbars, parents often use `display: flex` without `align-items`,
+ *   and the default `align-items: stretch` can unintentionally stretch
+ *   controls (buttons/tags/segmented/etc.) to mismatched heights.
+ *
+ * Strategy:
+ * - Default common interactive controls to `align-self: center` so they keep
+ *   intrinsic height when placed in a flex row.
+ * - Provide opt-in override classes when stretching is desired.
+ */
+
+:where(
+    .gf-button,
+    .gf-tag,
+    .gf-segmented,
+    .gf-input,
+    .gf-select,
+    .gf-cascader,
+    .gf-checkbox,
+    .gf-input-number,
+    .gf-dropdown,
+    .gf-tooltip,
+    .gf-popconfirm,
+    .gf-loading,
+    .gf-spin,
+    .gf-datetime-range-picker
+  ) {
+  align-self: center;
+}
+
+.gf-align-stretch {
+  align-self: stretch;
+}
+
+.gf-align-start {
+  align-self: flex-start;
+}
+
+.gf-align-end {
+  align-self: flex-end;
+}
