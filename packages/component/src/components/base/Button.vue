@@ -89,16 +89,20 @@
     --gf-btn-shadow-hover: var(--gf-shadow-1);
     position: relative;
     display: inline-flex;
+    align-self: center;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
     gap: 6px;
     padding: 6px 10px;
+    min-height: var(--gf-control-height-md, 32px);
     border-radius: var(--gf-radius-sm);
     border: 1px solid var(--gf-btn-border);
     background: var(--gf-btn-bg);
     color: var(--gf-btn-color);
     font-size: var(--gf-font-size-sm);
     line-height: 1;
+    white-space: nowrap;
     cursor: pointer;
     transition:
       background var(--gf-motion-normal) var(--gf-easing),
@@ -168,6 +172,7 @@
 
     &--size-small {
       padding: 5px 8px;
+      min-height: var(--gf-control-height-sm, 26px);
       border-radius: var(--gf-radius-xs);
       font-size: var(--gf-font-size-xs);
       gap: 5px;
@@ -175,7 +180,8 @@
 
     &--size-large {
       padding: 8px 12px;
-      font-size: var(--gf-font-size-md);
+      min-height: var(--gf-control-height-lg, 36px);
+      font-size: var(--gf-font-size-lg);
     }
 
     &--block {

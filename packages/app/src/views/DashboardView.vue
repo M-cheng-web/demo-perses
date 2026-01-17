@@ -13,17 +13,17 @@
         <span>模式: {{ state.isEditMode ? '编辑' : '浏览' }}</span>
       </div>
       <div class="dp-dashboard-view__actions">
-        <Segmented v-model:value="themeModel" size="small" :options="themeOptions" />
-        <Button size="small" type="ghost" @click="goComponents">组件库</Button>
-        <Button size="small" type="ghost" @click="goJsonEditor">JSON Editor 测试</Button>
-        <Button size="small" type="ghost" @click="goPerf">性能压测</Button>
-        <Button size="small" type="ghost" @click="reloadDashboard">重新加载</Button>
-        <Button size="small" type="ghost" @click="setQuickRange">最近 5 分钟</Button>
-        <Button size="small" type="ghost" @click="handleRefresh">刷新时间范围</Button>
-        <Button size="small" type="ghost" @click="mountDashboard">挂载</Button>
-        <Button size="small" type="ghost" @click="unmountDashboard">卸载</Button>
-        <Button size="small" type="ghost" @click="debugOpen = true">调试信息</Button>
-        <Button size="small" type="primary" @click="actions.toggleEditMode">
+        <Segmented v-model:value="themeModel" :options="themeOptions" />
+        <Button type="primary" @click="goComponents">组件库</Button>
+        <Button type="ghost" @click="goJsonEditor">JSON Editor 测试</Button>
+        <Button type="ghost" @click="goPerf">性能压测</Button>
+        <Button type="ghost" @click="reloadDashboard">重新加载</Button>
+        <Button type="ghost" @click="setQuickRange">最近 5 分钟</Button>
+        <Button type="ghost" @click="handleRefresh">刷新时间范围</Button>
+        <Button type="ghost" @click="mountDashboard">挂载</Button>
+        <Button type="ghost" @click="unmountDashboard">卸载</Button>
+        <Button type="ghost" @click="debugOpen = true">调试信息</Button>
+        <Button type="primary" @click="actions.toggleEditMode">
           {{ state.isEditMode ? '退出编辑' : '进入编辑' }}
         </Button>
       </div>
@@ -32,7 +32,7 @@
     <div class="dp-dashboard-view__canvas" ref="dashboardRef"></div>
 
     <Modal v-model:open="debugOpen" title="调试信息" :width="560" @cancel="debugOpen = false">
-      <List :items="debugItems" variant="lines" size="small" :split="false" />
+      <List :items="debugItems" variant="lines" :split="false" />
     </Modal>
   </div>
 </template>
@@ -127,7 +127,7 @@
     &__actions {
       display: flex;
       gap: 8px;
-      flex-wrap: wrap;
+      // flex-wrap: wrap;
     }
 
     &__canvas {
