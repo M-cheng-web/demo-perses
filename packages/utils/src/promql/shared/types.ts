@@ -25,4 +25,3 @@ export type {
 export interface QueryWithOperations {
   operations: QueryBuilderOperation[];
 }
-

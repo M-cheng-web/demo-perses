@@ -1,7 +1,7 @@
 <!-- 组件说明：菜单子项，触发 click 事件回传键值 -->
 <template>
   <li :class="bem()" @click="handleClick">
-    <slot />
+    <slot></slot>
   </li>
 </template>
 

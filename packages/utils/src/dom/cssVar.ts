@@ -28,4 +28,3 @@ export function readCssVar(target: HTMLElement | null | undefined, name: CssVarN
   const value = getComputedStyle(el).getPropertyValue(name);
   return value?.trim() || fallback;
 }
-

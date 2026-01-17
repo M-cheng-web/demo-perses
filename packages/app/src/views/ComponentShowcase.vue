@@ -324,8 +324,8 @@
 </template>
 
 <script setup lang="ts">
-	  import { computed, onBeforeUnmount, reactive, ref } from 'vue';
-	  import { useRouter } from 'vue-router';
+  import { computed, onBeforeUnmount, reactive, ref } from 'vue';
+  import { useRouter } from 'vue-router';
   import {
     Alert,
     Button,
@@ -362,9 +362,9 @@
     TabPane,
     Tooltip,
     message,
-	  } from '@grafana-fast/component';
-	  import { getAppliedDashboardTheme, setDashboardThemePreference, type DashboardTheme } from '@grafana-fast/dashboard';
-	  import { debounceCancellable } from '@grafana-fast/utils';
+  } from '@grafana-fast/component';
+  import { getAppliedDashboardTheme, setDashboardThemePreference, type DashboardTheme } from '@grafana-fast/dashboard';
+  import { debounceCancellable } from '@grafana-fast/utils';
 
   const router = useRouter();
 
@@ -479,27 +479,27 @@
     else message.error('校验未通过，请检查红色提示');
   };
 
-	  const handleResetValidate = () => {
-	    validateFormRef.value?.resetFields?.();
-	    validateFormRef.value?.clearValidate?.();
-	  };
+  const handleResetValidate = () => {
+    validateFormRef.value?.resetFields?.();
+    validateFormRef.value?.clearValidate?.();
+  };
 
-	  const finishLoading = debounceCancellable(() => {
-	    loadingBtn.value = false;
-	    message.success({ content: '完成', key: 'demo-loading', duration: 1500 });
-	  }, 900);
+  const finishLoading = debounceCancellable(() => {
+    loadingBtn.value = false;
+    message.success({ content: '完成', key: 'demo-loading', duration: 1500 });
+  }, 900);
 
-	  onBeforeUnmount(() => {
-	    finishLoading.cancel();
-	  });
+  onBeforeUnmount(() => {
+    finishLoading.cancel();
+  });
 
-	  const triggerLoading = async () => {
-	    if (loadingBtn.value) return;
-	    loadingBtn.value = true;
-	    message.loading({ content: '处理中...', key: 'demo-loading', duration: 0 });
-	    finishLoading.cancel();
-	    finishLoading();
-	  };
+  const triggerLoading = async () => {
+    if (loadingBtn.value) return;
+    loadingBtn.value = true;
+    message.loading({ content: '处理中...', key: 'demo-loading', duration: 0 });
+    finishLoading.cancel();
+    finishLoading();
+  };
 
   const goHome = () => router.push('/home');
   const goJsonEditor = () => router.push('/json-editor');

@@ -1,7 +1,7 @@
 <!-- 组件说明：Tabs 内的单个选项卡面板 -->
 <template>
   <div v-show="isActive" :class="bem()">
-    <slot />
+    <slot></slot>
   </div>
 </template>
 

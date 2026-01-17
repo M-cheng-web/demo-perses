@@ -65,4 +65,3 @@
     emit('change', value);
   };
 </script>
-

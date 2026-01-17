@@ -58,9 +58,31 @@ export class QueryRunner {
     };
   }
 
-  private async runWithConcurrency<T>(task: () => Promise<T>): Promise<T> {
+  private createAbortError(): Error {
+    const err = new Error('Aborted');
+    (err as any).name = 'AbortError';
+    return err;
+  }
+
+  private isAbortError(err: unknown): boolean {
+    return (err as any)?.name === 'AbortError';
+  }
+
+  private async runWithConcurrency<T>(task: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+    if (signal?.aborted) throw this.createAbortError();
+
     if (this.inflight >= this.options.maxConcurrency) {
-      await new Promise<void>((resolve) => this.queue.push(resolve));
+      const waitForSlot = new Promise<void>((resolve) => this.queue.push(resolve));
+      if (!signal) {
+        await waitForSlot;
+      } else {
+        await Promise.race([
+          waitForSlot,
+          new Promise<void>((_, reject) => {
+            signal.addEventListener('abort', () => reject(this.createAbortError()), { once: true });
+          }),
+        ]);
+      }
     }
     this.inflight++;
     try {
@@ -105,7 +127,9 @@ export class QueryRunner {
     options: { signal?: AbortSignal } = {}
   ): Promise<QueryResult[]> {
     const visible = queries.filter((q) => !q.hide);
-    const tasks = visible.map(async (q) => {
+    const tasks = visible.map(async (q): Promise<QueryResult> => {
+      if (options.signal?.aborted) throw this.createAbortError();
+
       const expr = interpolateExpr(q.expr, variables, variableMeta, { multiJoin: 'regex' });
       const cacheKey = this.buildCacheKey(q, context, expr);
       const now = Date.now();
@@ -121,7 +145,7 @@ export class QueryRunner {
         const resultList = await this.api.query.executeQueries([{ ...q, expr }], context, options.signal ? { signal: options.signal } : undefined);
         const result = resultList[0] ?? { queryId: q.id, refId: q.refId, expr, data: [], error: '空结果' };
         return { ...result, refId: q.refId };
-      });
+      }, options.signal);
 
       this.cache.set(cacheKey, { timestamp: now, promise });
 
@@ -130,16 +154,45 @@ export class QueryRunner {
         this.cache.set(cacheKey, { timestamp: Date.now(), result });
         return result;
       } catch (err) {
+        if (this.isAbortError(err)) {
+          // Abort 不应污染缓存，否则可能导致后续复用一个已取消的 promise。
+          this.cache.delete(cacheKey);
+          throw err;
+        }
         // 写入一个短暂的“负缓存”：避免同一错误导致的高频重试（hot loop）
-        this.cache.set(cacheKey, {
-          timestamp: Date.now(),
-          result: { queryId: q.id, refId: q.refId, expr, data: [], error: (err as any)?.message ?? stableStringify(err) },
-        });
-        throw err;
+        const errorResult: QueryResult = {
+          queryId: q.id,
+          refId: q.refId,
+          expr,
+          data: [],
+          error: (err as any)?.message ?? stableStringify(err),
+        };
+        this.cache.set(cacheKey, { timestamp: Date.now(), result: errorResult });
+        return errorResult;
       }
     });
 
-    return Promise.all(tasks);
+    const settled = await Promise.allSettled(tasks);
+    if (options.signal?.aborted) throw this.createAbortError();
+
+    // 任意 query 被 abort，视为这次 panel refresh 被取消（不落地结果）。
+    for (const s of settled) {
+      if (s.status === 'rejected' && this.isAbortError(s.reason)) {
+        throw s.reason;
+      }
+    }
+
+    return settled.map((s) => {
+      if (s.status === 'fulfilled') return s.value;
+      // 非 abort 的异常已在 task 内归一化为 QueryResult.error；这里兜底一下（理论上不会走到）
+      return {
+        queryId: 'unknown',
+        refId: 'unknown',
+        expr: '',
+        data: [],
+        error: (s.reason as any)?.message ?? stableStringify(s.reason),
+      };
+    });
   }
 
   invalidateAll() {

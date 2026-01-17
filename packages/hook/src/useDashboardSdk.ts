@@ -397,8 +397,22 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
 
   const actions: DashboardSdkActions = {
     // Dashboard 数据加载/保存
-    loadDashboard: (id: ID) => dashboardStore.loadDashboard(id),
-    saveDashboard: () => dashboardStore.saveDashboard(),
+    loadDashboard: async (id: ID) => {
+      try {
+        return await dashboardStore.loadDashboard(id);
+      } catch (error) {
+        options.onError?.(error);
+        throw error;
+      }
+    },
+    saveDashboard: async () => {
+      try {
+        return await dashboardStore.saveDashboard();
+      } catch (error) {
+        options.onError?.(error);
+        throw error;
+      }
+    },
     setDashboard: (dashboard: Dashboard) => {
       // 按当前策略：不做历史 schema 迁移；宿主传入的 dashboard 必须符合当前结构
       dashboardStore.currentDashboard = dashboard;

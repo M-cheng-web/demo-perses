@@ -6,7 +6,7 @@
       <span v-if="computedRequired" :class="bem('asterisk')">*</span>
     </label>
     <div :class="bem('control')">
-      <slot />
+      <slot></slot>
       <p v-if="hasError" :class="bem('error')">{{ validateMessage }}</p>
       <p v-if="help" :class="bem('help')">{{ help }}</p>
     </div>

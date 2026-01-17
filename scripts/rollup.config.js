@@ -39,7 +39,10 @@ function vueSfcMinimal() {
       if (!id.endsWith('.vue')) return null;
 
       // 为了让编译结果在不同文件间稳定，使用一个简单的 hash 作为 SFC scope id
-      const hash = Buffer.from(id).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
+      const hash = Buffer.from(id)
+        .toString('base64')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .slice(0, 8);
       const { descriptor } = parse(code, { filename: id });
 
       // json-editor 组件全部使用 <script setup>；如果未来出现普通 <script>，也能兼容

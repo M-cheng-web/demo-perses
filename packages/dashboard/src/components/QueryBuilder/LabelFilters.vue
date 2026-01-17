@@ -215,18 +215,18 @@
       gap: 6px;
     }
 
-	    &__item {
-	      display: flex;
-	      gap: 6px;
-	      align-items: center;
-	      padding: 4px;
-	      background: var(--gf-color-surface-muted);
-	      border-radius: var(--gf-radius-xs);
+    &__item {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 4px;
+      background: var(--gf-color-surface-muted);
+      border-radius: var(--gf-radius-xs);
 
-	      &:hover {
-	        background: var(--gf-color-fill);
-	      }
-	    }
+      &:hover {
+        background: var(--gf-color-fill);
+      }
+    }
 
     &__add-btn {
       width: fit-content !important;

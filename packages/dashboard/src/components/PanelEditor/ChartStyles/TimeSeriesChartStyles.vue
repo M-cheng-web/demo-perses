@@ -201,12 +201,12 @@
   </div>
 </template>
 
-  <script setup lang="ts">
-	  import { ref, watch } from 'vue';
-	  import { deepClone, createNamespace } from '/#/utils';
-	  import { getDefaultTimeSeriesOptions } from '../ChartStylesDefaultOptions/timeSeriesDefaultOptions';
-	  import { deepMerge } from './utils';
-	  import { Switch, Select, Segmented, Button, Input, InputNumber, Slider } from '@grafana-fast/component';
+<script setup lang="ts">
+  import { ref, watch } from 'vue';
+  import { deepClone, createNamespace } from '/#/utils';
+  import { getDefaultTimeSeriesOptions } from '../ChartStylesDefaultOptions/timeSeriesDefaultOptions';
+  import { deepMerge } from './utils';
+  import { Switch, Select, Segmented, Button, Input, InputNumber, Slider } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('timeseries-chart-styles');
 
@@ -221,7 +221,7 @@
   }>();
 
   // 合并默认配置和传入的配置
-	  const localOptions = ref(deepClone(deepMerge(getDefaultTimeSeriesOptions(), props.options ?? {})));
+  const localOptions = ref(deepClone(deepMerge(getDefaultTimeSeriesOptions(), props.options ?? {})));
 
   // 恢复默认设置
   const resetToDefaults = () => {
@@ -243,13 +243,13 @@
   watch(
     () => props.options,
     (newVal) => {
-	      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
-	        localOptions.value = deepClone(deepMerge(getDefaultTimeSeriesOptions(), newVal ?? {}));
-	      }
-	    },
-	    { deep: true }
-	  );
-	</script>
+      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
+        localOptions.value = deepClone(deepMerge(getDefaultTimeSeriesOptions(), newVal ?? {}));
+      }
+    },
+    { deep: true }
+  );
+</script>
 
 <style scoped lang="less">
   .dp-timeseries-chart-styles {

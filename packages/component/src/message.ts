@@ -90,7 +90,11 @@ const show = (input: MessageInput, preset?: MessageType, presetDuration?: number
     updateItem(existing, content, type);
     const timerId = timers.get(existing);
     timerId?.cancel();
-    if (duration !== 0) timers.set(existing, createTimeout(() => removeItem(existing, key), duration));
+    if (duration !== 0)
+      timers.set(
+        existing,
+        createTimeout(() => removeItem(existing, key), duration)
+      );
     return;
   }
 
@@ -108,7 +112,10 @@ const show = (input: MessageInput, preset?: MessageType, presetDuration?: number
   });
 
   if (duration !== 0) {
-    timers.set(item, createTimeout(() => removeItem(item, key), duration));
+    timers.set(
+      item,
+      createTimeout(() => removeItem(item, key), duration)
+    );
   }
 };
 

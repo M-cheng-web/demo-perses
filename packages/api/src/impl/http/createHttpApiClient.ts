@@ -43,4 +43,3 @@ export function createHttpApiClient(options: CreateHttpApiClientOptions = {}): G
     variable: createHttpVariableService({ queryService }),
   };
 }
-

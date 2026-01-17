@@ -104,9 +104,7 @@ export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
  * - 你在 hook/app 里用 apiConfig.endpoints 覆盖某几个路径
  * - 未覆盖的部分仍使用默认值，避免“只改一个 endpoint 导致其他 key undefined”
  */
-export function resolveHttpApiEndpoints(
-  overrides: Partial<Record<HttpApiEndpointKey, string>> | undefined
-): Record<HttpApiEndpointKey, string> {
+export function resolveHttpApiEndpoints(overrides: Partial<Record<HttpApiEndpointKey, string>> | undefined): Record<HttpApiEndpointKey, string> {
   return {
     ...DEFAULT_HTTP_API_ENDPOINTS,
     ...(overrides ?? {}),

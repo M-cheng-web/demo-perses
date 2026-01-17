@@ -343,7 +343,10 @@ function operationTypeChangedHandlerForRangeFunction(operation: QueryBuilderOper
 function labelJoinRenderer(model: QueryBuilderOperation, _def: QueryBuilderOperationDef, innerExpr: string): string {
   const destinationLabel = String(model.params[0] ?? '');
   const separator = String(model.params[1] ?? '');
-  const sourceLabels = model.params.slice(2).map((v) => String(v)).filter((v) => v.trim().length > 0);
+  const sourceLabels = model.params
+    .slice(2)
+    .map((v) => String(v))
+    .filter((v) => v.trim().length > 0);
 
   // PromQL: label_join(v instant-vector, dst_label string, separator string, src_label_1 string, src_label_2 string, ...)
   const args = [innerExpr, quotePromqlString(destinationLabel), quotePromqlString(separator), ...sourceLabels.map(quotePromqlString)];

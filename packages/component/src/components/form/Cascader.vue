@@ -1,15 +1,8 @@
 <!-- 组件说明：级联选择器（多级面板），用于逐级选择路径 -->
 <template>
   <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-open': open, 'is-disabled': disabled }]" ref="rootRef">
-    <div
-      v-if="$slots.default"
-      ref="triggerRef"
-      :class="bem('trigger')"
-      tabindex="0"
-      @click="toggle"
-      @keydown="handleKeydown"
-    >
-      <slot />
+    <div v-if="$slots.default" ref="triggerRef" :class="bem('trigger')" tabindex="0" @click="toggle" @keydown="handleKeydown">
+      <slot></slot>
     </div>
 
     <div
@@ -345,7 +338,9 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      transition: background var(--gf-motion-fast) var(--gf-easing), color var(--gf-motion-fast) var(--gf-easing);
+      transition:
+        background var(--gf-motion-fast) var(--gf-easing),
+        color var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
         background: var(--gf-primary-soft);

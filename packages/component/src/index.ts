@@ -48,6 +48,7 @@ export { default as Panel } from './components/layout/Panel.vue';
 export { default as Dropdown } from './components/navigation/Dropdown.vue';
 export { default as Menu } from './components/navigation/Menu.vue';
 export { default as MenuItem } from './components/navigation/MenuItem.vue';
+export { default as Pagination } from './components/navigation/Pagination.vue';
 
 // 反馈组件
 export { default as Modal } from './components/feedback/Modal.vue';
@@ -65,6 +66,7 @@ export { default as List } from './components/data/List.vue';
 
 export { message } from './message';
 export * from './types';
+export * from './composables/usePagination';
 export { gfAntdTokensCssVar } from './theme/antdTokens';
 export { default as gfAntdTokensCssVarJson } from './theme/antdTokens.cssvar.json';
 
@@ -99,6 +101,7 @@ import PanelComp from './components/layout/Panel.vue';
 import DropdownComp from './components/navigation/Dropdown.vue';
 import MenuComp from './components/navigation/Menu.vue';
 import MenuItemComp from './components/navigation/MenuItem.vue';
+import PaginationComp from './components/navigation/Pagination.vue';
 import ModalComp from './components/feedback/Modal.vue';
 import DrawerComp from './components/feedback/Drawer.vue';
 import PopconfirmComp from './components/feedback/Popconfirm.vue';
@@ -142,6 +145,7 @@ const exportedComponents = {
   Dropdown: DropdownComp,
   Menu: MenuComp,
   MenuItem: MenuItemComp,
+  Pagination: PaginationComp,
   Modal: ModalComp,
   Drawer: DrawerComp,
   Popconfirm: PopconfirmComp,

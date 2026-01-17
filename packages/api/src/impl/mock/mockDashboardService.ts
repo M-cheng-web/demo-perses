@@ -15,6 +15,57 @@ function nowTs() {
 
 function createDefaultDashboard(): Dashboard {
   const now = nowTs();
+  const createLargeGroup = () => {
+    const totalPanels = 1000;
+    const panels = Array.from({ length: totalPanels }).map((_, idx) => {
+      const n = idx + 1;
+      const id = `panel-big-${n}`;
+      return {
+        id,
+        name: `Large Panel #${n}`,
+        type: 'timeseries',
+        queries: [
+          {
+            id: `q-big-${n}`,
+            refId: 'A',
+            datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
+            expr: 'cpu_usage',
+            legendFormat: 'CPU {{cpu}}',
+            format: 'time_series',
+            instant: false,
+            hide: false,
+            minStep: 15,
+          },
+        ],
+        options: {
+          legend: { show: true, position: 'bottom' },
+          format: { unit: 'percent', decimals: 2 },
+          specific: { mode: 'line', stackMode: 'none' },
+        },
+      };
+    });
+
+    // Layout: 4 columns per row (12 each), 48 total.
+    const w = 12;
+    const h = 6;
+    const cols = 4;
+    const layout = panels.map((p, idx) => {
+      const x = (idx % cols) * w;
+      const y = Math.floor(idx / cols) * h;
+      return { i: p.id, x, y, w, h, minW: 8, minH: 4 };
+    });
+
+    return {
+      id: 'group-large-1k',
+      title: '大规模面板组（1k panels / 虚拟化 & 可视刷新验证）',
+      description: '用于验证：只渲染/只刷新 viewport + 上下 0.5 屏；滚动时渐进刷新；避免请求风暴。',
+      isCollapsed: true,
+      order: 99,
+      panels,
+      layout,
+    };
+  };
+
   return {
     schemaVersion: 1,
     id: 'default',
@@ -147,6 +198,7 @@ function createDefaultDashboard(): Dashboard {
           { i: 'panel-5', x: 28, y: 8, w: 20, h: 11, minW: 8, minH: 6 },
         ],
       },
+      createLargeGroup(),
     ],
     timeRange: { from: 'now-1h', to: 'now' },
     refreshInterval: 0,

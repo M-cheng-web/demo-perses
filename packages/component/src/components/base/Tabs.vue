@@ -2,17 +2,12 @@
 <template>
   <div :class="bem()">
     <div :class="bem('nav')">
-      <div
-        v-for="tab in panes"
-        :key="tab.key"
-        :class="[bem('tab'), { 'is-active': tab.key === current }]"
-        @click="setActive(tab.key)"
-      >
+      <div v-for="tab in panes" :key="tab.key" :class="[bem('tab'), { 'is-active': tab.key === current }]" @click="setActive(tab.key)">
         {{ tab.label }}
       </div>
     </div>
     <div :class="bem('content')">
-      <slot />
+      <slot></slot>
     </div>
   </div>
 </template>
@@ -88,7 +83,9 @@
       cursor: pointer;
       color: var(--gf-text-secondary);
       font-size: var(--gf-font-size-sm);
-      transition: background var(--gf-motion-fast) var(--gf-easing), color var(--gf-motion-fast) var(--gf-easing);
+      transition:
+        background var(--gf-motion-fast) var(--gf-easing),
+        color var(--gf-motion-fast) var(--gf-easing);
 
       &.is-active {
         background: var(--gf-color-primary-soft);

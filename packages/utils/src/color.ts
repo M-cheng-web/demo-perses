@@ -87,4 +87,3 @@ export function getColorByThreshold(value: number, thresholds: Array<{ value: nu
 
   return sorted[sorted.length - 1]?.color || '#5470c6';
 }
-

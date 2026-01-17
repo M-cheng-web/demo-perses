@@ -178,4 +178,3 @@ export function createPrefixedStorage(prefix: string, options: CreatePrefixedSto
     getAllKeys: () => safeKeys().map((k) => k.slice(prefix.length)),
   };
 }
-

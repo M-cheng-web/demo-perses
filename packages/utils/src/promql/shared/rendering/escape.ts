@@ -11,12 +11,7 @@
  * 转义为 PromQL string literal 内部内容（不包含外层引号）
  */
 export function escapePromqlString(value: string): string {
-  return String(value)
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t');
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
 }
 
 /**
@@ -25,4 +20,3 @@ export function escapePromqlString(value: string): string {
 export function quotePromqlString(value: string): string {
   return `"${escapePromqlString(value)}"`;
 }
-

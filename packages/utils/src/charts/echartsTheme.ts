@@ -85,13 +85,8 @@ export function getEChartsThemeForTarget(target?: HTMLElement | null): EChartsTh
         textStyle: {
           color: tooltipText,
         },
-        extraCssText: `box-shadow: ${readCssVar(target, '--gf-shadow-1', 'none')}; border-radius: ${readCssVar(
-          target,
-          '--gf-radius-md',
-          '4px'
-        )};`,
+        extraCssText: `box-shadow: ${readCssVar(target, '--gf-shadow-1', 'none')}; border-radius: ${readCssVar(target, '--gf-radius-md', '4px')};`,
       },
     },
   };
 }
-

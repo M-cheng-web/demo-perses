@@ -67,4 +67,3 @@ export const StorageKeys = {
   TIME_RANGE: 'time_range',
   VARIABLES: 'variables',
 } as const;
-

@@ -1,15 +1,7 @@
 <!-- 组件说明：简单滑块，支持最小/最大/步长控制 -->
 <template>
   <div :class="bem()">
-    <input
-      type="range"
-      :min="min"
-      :max="max"
-      :step="step"
-      :value="value"
-      :class="bem('track')"
-      @input="handleInput"
-    />
+    <input type="range" :min="min" :max="max" :step="step" :value="value" :class="bem('track')" @input="handleInput" />
     <div :class="bem('value')">{{ value }}</div>
   </div>
 </template>
@@ -21,7 +13,7 @@
 
   defineOptions({ name: 'GfSlider' });
 
-  const props = withDefaults(
+  withDefaults(
     defineProps<{
       /** 当前值 */
       value?: number;

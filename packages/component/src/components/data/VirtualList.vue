@@ -43,7 +43,7 @@
 
   const startIndex = computed(() => Math.max(0, Math.floor(scrollTop.value / props.itemHeight) - props.overscan));
   const endIndex = computed(() => {
-    const viewport = typeof props.height === 'number' ? props.height : root.value?.clientHeight ?? 360;
+    const viewport = typeof props.height === 'number' ? props.height : (root.value?.clientHeight ?? 360);
     const visibleCount = Math.ceil(viewport / props.itemHeight) + props.overscan * 2;
     return Math.min(props.items.length, startIndex.value + visibleCount);
   });
@@ -89,4 +89,3 @@
     }
   }
 </style>
-

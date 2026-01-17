@@ -271,16 +271,16 @@
     });
   };
 
-	  const removeThreshold = (index: number | string) => {
-	    const numericIndex = typeof index === 'string' ? Number(index) : index;
-	    if (!Number.isFinite(numericIndex)) {
-	      return;
-	    }
-	    // 确保至少保留一个阈值
-	    if (localOptions.value.thresholds.steps.length > 1) {
-	      localOptions.value.thresholds.steps.splice(numericIndex, 1);
-	    }
-	  };
+  const removeThreshold = (index: number | string) => {
+    const numericIndex = typeof index === 'string' ? Number(index) : index;
+    if (!Number.isFinite(numericIndex)) {
+      return;
+    }
+    // 确保至少保留一个阈值
+    if (localOptions.value.thresholds.steps.length > 1) {
+      localOptions.value.thresholds.steps.splice(numericIndex, 1);
+    }
+  };
 
   // 恢复默认设置
   const resetToDefaults = () => {

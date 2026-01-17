@@ -25,4 +25,3 @@ export function aggById(baseAggregationId: string): string {
 export function aggWithoutId(baseAggregationId: string): string {
   return `__${baseAggregationId}_without`;
 }
-

@@ -29,6 +29,14 @@ export interface DashboardRuntimeContext {
    * - 在 Teleport（Modal/Drawer）场景下，有些事件需要其他策略兜底
    */
   rootEl?: Ref<HTMLElement | null>;
+  /**
+   * Dashboard 的滚动容器（如果可用）。
+   *
+   * 用途：
+   * - “只刷新可视区域”与虚拟化：需要知道当前 viewport
+   * - 多实例隔离：不要依赖 window/document 的全局滚动
+   */
+  scrollEl?: Ref<HTMLElement | null>;
 }
 
 /**

@@ -15,9 +15,9 @@
           <div :class="bem('section-body')">
             <Row :gutter="16">
               <Col :span="12">
-	                <FormItem label="面板组" required>
-	                  <Select :options="panelGroupOptions" v-model:value="selectedGroupId" placeholder="请选择面板组" />
-	                </FormItem>
+                <FormItem label="面板组" required>
+                  <Select :options="panelGroupOptions" v-model:value="selectedGroupId" placeholder="请选择面板组" />
+                </FormItem>
               </Col>
               <Col :span="12">
                 <FormItem label="面板名称" required>
@@ -111,10 +111,10 @@
   import HeatmapChartStyles from './ChartStyles/HeatmapChartStyles.vue';
   import StatPanelStyles from './ChartStyles/StatPanelStyles.vue';
   import TableChartStyles from './ChartStyles/TableChartStyles.vue';
-	  import type { Panel } from '@grafana-fast/types';
-	  import { JsonEditorLite, analyzeJsonText } from '@grafana-fast/json-editor';
-	  import { validatePanelStrict } from '/#/utils/strictJsonValidators';
-	  import PanelPreview from './PanelPreview.vue';
+  import type { Panel } from '@grafana-fast/types';
+  import { JsonEditorLite, analyzeJsonText } from '@grafana-fast/json-editor';
+  import { validatePanelStrict } from '/#/utils/strictJsonValidators';
+  import PanelPreview from './PanelPreview.vue';
   import DataQueryTab from './DataQueryTab.vue';
   import { getDefaultTimeSeriesOptions } from './ChartStylesDefaultOptions/timeSeriesDefaultOptions';
   import { getDefaultBarChartOptions } from './ChartStylesDefaultOptions/barChartDefaultOptions';
@@ -142,13 +142,13 @@
   const jsonDraft = ref<string>('');
 
   // 获取面板组列表
-	  const panelGroupOptions = computed(() => {
-	    const groups = currentDashboard.value?.panelGroups ?? [];
-	    return groups.map((group) => ({
-	      label: group.title,
-	      value: group.id,
-	    }));
-	  });
+  const panelGroupOptions = computed(() => {
+    const groups = currentDashboard.value?.panelGroups ?? [];
+    return groups.map((group) => ({
+      label: group.title,
+      value: group.id,
+    }));
+  });
 
   // 面板类型选项（当前阶段：来自内置 panels 列表）
   const panelTypeOptions = computed(() => {
@@ -231,23 +231,26 @@
     scheduleExecuteQueries.cancel();
   });
 
-  watch(() => isDrawerOpen.value, (open) => {
-    isOpen.value = open;
-    scheduleExecuteQueries.cancel();
-    if (open) {
-      if (editingPanel.value) {
-        Object.assign(formData, deepClone(editingPanel.value));
-      }
-      // 初始化选中的面板组
-      selectedGroupId.value = targetGroupId.value || '';
+  watch(
+    () => isDrawerOpen.value,
+    (open) => {
+      isOpen.value = open;
+      scheduleExecuteQueries.cancel();
+      if (open) {
+        if (editingPanel.value) {
+          Object.assign(formData, deepClone(editingPanel.value));
+        }
+        // 初始化选中的面板组
+        selectedGroupId.value = targetGroupId.value || '';
 
-      // 如果是编辑模式且有查询配置，初始化时自动执行一次查询
-      if (editingMode.value === 'edit' && formData.queries && formData.queries.length > 0) {
-        // 延迟执行：避免 drawer 初次打开时 DOM/图表尚未就绪
-        scheduleExecuteQueries();
+        // 如果是编辑模式且有查询配置，初始化时自动执行一次查询
+        if (editingMode.value === 'edit' && formData.queries && formData.queries.length > 0) {
+          // 延迟执行：避免 drawer 初次打开时 DOM/图表尚未就绪
+          scheduleExecuteQueries();
+        }
       }
     }
-  });
+  );
 
   // 监听面板类型变化，自动切换到对应的默认配置
   watch(

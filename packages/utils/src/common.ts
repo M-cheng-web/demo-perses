@@ -140,21 +140,16 @@ export function debounce<T extends (...args: any[]) => any>(func: T, wait: numbe
  */
 export function debounceCancellable<T extends (...args: any[]) => any>(func: T, wait: number): CancellableFn<T> {
   let timeout: ReturnType<typeof setTimeout> | null = null;
-  let lastArgs: Parameters<T> | null = null;
-  let lastThis: any = null;
+  let pendingInvoke: (() => void) | null = null;
 
   const invoke = () => {
-    if (!lastArgs) return;
-    const args = lastArgs;
-    const ctx = lastThis;
-    lastArgs = null;
-    lastThis = null;
-    func.apply(ctx, args);
+    pendingInvoke?.();
+    pendingInvoke = null;
   };
 
   const wrapped = function (this: any, ...args: Parameters<T>) {
-    lastArgs = args;
-    lastThis = this;
+    // Use an arrow to capture `this` without aliasing it (ESLint no-this-alias)
+    pendingInvoke = () => func.apply(this, args);
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => {
       timeout = null;
@@ -165,8 +160,7 @@ export function debounceCancellable<T extends (...args: any[]) => any>(func: T, 
   wrapped.cancel = () => {
     if (timeout) clearTimeout(timeout);
     timeout = null;
-    lastArgs = null;
-    lastThis = null;
+    pendingInvoke = null;
   };
 
   wrapped.flush = () => {
@@ -207,8 +201,7 @@ export function throttle<T extends (...args: any[]) => any>(func: T, wait: numbe
 export function throttleCancellable<T extends (...args: any[]) => any>(func: T, wait: number): CancellableFn<T> {
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let inThrottle = false;
-  let lastArgs: Parameters<T> | null = null;
-  let lastThis: any = null;
+  let pendingInvoke: (() => void) | null = null;
 
   const invoke = (ctx: any, args: Parameters<T>) => {
     func.apply(ctx, args);
@@ -219,13 +212,10 @@ export function throttleCancellable<T extends (...args: any[]) => any>(func: T, 
     timeout = setTimeout(() => {
       timeout = null;
       inThrottle = false;
-      if (lastArgs) {
-        const args = lastArgs;
-        const ctx = lastThis;
-        lastArgs = null;
-        lastThis = null;
+      if (pendingInvoke) {
         // 执行 trailing，并重新进入 throttle 窗口
-        invoke(ctx, args);
+        pendingInvoke();
+        pendingInvoke = null;
         inThrottle = true;
         scheduleTrailing();
       }
@@ -239,25 +229,20 @@ export function throttleCancellable<T extends (...args: any[]) => any>(func: T, 
       scheduleTrailing();
       return;
     }
-    lastArgs = args;
-    lastThis = this;
+    // Use an arrow to capture `this` without aliasing it (ESLint no-this-alias)
+    pendingInvoke = () => invoke(this, args);
   } as CancellableFn<T>;
 
   wrapped.cancel = () => {
     if (timeout) clearTimeout(timeout);
     timeout = null;
     inThrottle = false;
-    lastArgs = null;
-    lastThis = null;
+    pendingInvoke = null;
   };
 
   wrapped.flush = () => {
-    if (!lastArgs) return;
-    const args = lastArgs;
-    const ctx = lastThis;
-    lastArgs = null;
-    lastThis = null;
-    invoke(ctx, args);
+    pendingInvoke?.();
+    pendingInvoke = null;
   };
 
   return wrapped;

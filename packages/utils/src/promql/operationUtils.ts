@@ -279,9 +279,7 @@ export function createAggregationOperationWithParam(
 }
 
 function normalizeLabelParams(values: QueryBuilderOperationParamValue[]): string[] {
-  return (values ?? [])
-    .map((v) => String(v).trim())
-    .filter((v) => v.length > 0);
+  return (values ?? []).map((v) => String(v).trim()).filter((v) => v.length > 0);
 }
 
 /**
@@ -319,9 +317,7 @@ function getAggregationByRendererWithParameter(aggregation: string) {
     const params = restParamIndex >= 0 ? model.params.slice(0, restParamIndex) : model.params;
     const restParams = normalizeLabelParams(restParamIndex >= 0 ? model.params.slice(restParamIndex) : []);
 
-    const renderedParams = params
-      .map((param, idx) => (def.params[idx]?.type === 'string' ? quotePromqlString(String(param)) : param))
-      .join(', ');
+    const renderedParams = params.map((param, idx) => (def.params[idx]?.type === 'string' ? quotePromqlString(String(param)) : param)).join(', ');
 
     if (restParams.length === 0) {
       return `${aggregation}(${renderedParams}, ${innerExpr})`;
@@ -337,9 +333,7 @@ function getAggregationWithoutRendererWithParameter(aggregation: string) {
     const params = restParamIndex >= 0 ? model.params.slice(0, restParamIndex) : model.params;
     const restParams = normalizeLabelParams(restParamIndex >= 0 ? model.params.slice(restParamIndex) : []);
 
-    const renderedParams = params
-      .map((param, idx) => (def.params[idx]?.type === 'string' ? quotePromqlString(String(param)) : param))
-      .join(', ');
+    const renderedParams = params.map((param, idx) => (def.params[idx]?.type === 'string' ? quotePromqlString(String(param)) : param)).join(', ');
 
     if (restParams.length === 0) {
       return `${aggregation}(${renderedParams}, ${innerExpr})`;

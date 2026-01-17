@@ -4,4 +4,3 @@ declare module 'vue-grid-layout-v3' {
   const plugin: any;
   export default plugin;
 }
-

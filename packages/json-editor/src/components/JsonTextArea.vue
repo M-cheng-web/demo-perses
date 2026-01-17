@@ -28,13 +28,7 @@
       <!-- 背景高亮层：只负责“错误行背景色”，不渲染文本（避免与 textarea 的字体/选区冲突） -->
       <div :class="bem('highlight')">
         <div :class="bem('highlightInner')" :style="translateStyle">
-          <div
-            v-for="n in lineCount"
-            :key="n"
-            :class="[bem('highlightLine'), { 'is-error': n === errorLine }]"
-          >
-            &nbsp;
-          </div>
+          <div v-for="n in lineCount" :key="n" :class="[bem('highlightLine'), { 'is-error': n === errorLine }]"> &nbsp; </div>
         </div>
       </div>
 

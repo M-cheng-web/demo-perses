@@ -14,6 +14,8 @@ interface DashboardState {
   isEditMode: boolean;
   /** 是否正在保存 */
   isSaving: boolean;
+  /** 最近一次 load/save 的错误（用于 UI 展示与宿主接管） */
+  lastError: string | null;
   /** 全屏查看的面板 */
   viewPanelId: { groupId: ID; panelId: ID } | null;
 }
@@ -23,6 +25,7 @@ export const useDashboardStore = defineStore('dashboard', {
     currentDashboard: null,
     isEditMode: false,
     isSaving: false,
+    lastError: null,
     viewPanelId: null,
   }),
 
@@ -71,13 +74,17 @@ export const useDashboardStore = defineStore('dashboard', {
      * 加载 Dashboard
      */
     async loadDashboard(id: ID) {
+      this.lastError = null;
       try {
-        const api = getPiniaApiClient();
+        const api = getPiniaApiClient(this.$pinia);
         const dashboard = await api.dashboard.loadDashboard(id);
         // 按当前策略：不做历史 schema 兼容/迁移；API 返回什么就用什么（外部应保证是当前结构）。
         this.currentDashboard = deepClone(dashboard);
       } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load dashboard';
+        this.lastError = message;
         console.error('Failed to load dashboard:', error);
+        throw error;
       }
     },
 
@@ -88,10 +95,13 @@ export const useDashboardStore = defineStore('dashboard', {
       if (!this.currentDashboard) return;
 
       this.isSaving = true;
+      this.lastError = null;
       try {
-        const api = getPiniaApiClient();
+        const api = getPiniaApiClient(this.$pinia);
         await api.dashboard.saveDashboard(this.currentDashboard);
       } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to save dashboard';
+        this.lastError = message;
         console.error('Failed to save dashboard:', error);
         throw error;
       } finally {

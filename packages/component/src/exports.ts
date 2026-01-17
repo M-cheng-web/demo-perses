@@ -43,6 +43,7 @@ export { default as Panel } from './components/layout/Panel.vue';
 export { default as Dropdown } from './components/navigation/Dropdown.vue';
 export { default as Menu } from './components/navigation/Menu.vue';
 export { default as MenuItem } from './components/navigation/MenuItem.vue';
+export { default as Pagination } from './components/navigation/Pagination.vue';
 
 // 反馈组件
 export { default as Modal } from './components/feedback/Modal.vue';
@@ -60,5 +61,6 @@ export { default as List } from './components/data/List.vue';
 
 export { message } from './message';
 export * from './types';
+export * from './composables/usePagination';
 export { gfAntdTokensCssVar } from './theme/antdTokens';
 export { default as gfAntdTokensCssVarJson } from './theme/antdTokens.cssvar.json';

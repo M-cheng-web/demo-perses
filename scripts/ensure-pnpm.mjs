@@ -5,4 +5,3 @@ if (!userAgent.includes('pnpm')) {
   console.error('This repo uses pnpm. Please run: pnpm install');
   process.exit(1);
 }
-

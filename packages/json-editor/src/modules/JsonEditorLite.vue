@@ -15,11 +15,7 @@
   <div :class="[bem(), themeClass]" :data-gf-theme="themeDataAttr">
     <Flex v-if="showToolbar" justify="between" align="center" :gap="10" style="margin-bottom: 10px">
       <Space :size="8">
-        <Tag
-          :variant="tagVariant"
-          :color="tagColor"
-          radius="pill"
-        >
+        <Tag :variant="tagVariant" :color="tagColor" radius="pill">
           {{ tagText }}
         </Tag>
         <span v-if="!diagnostics.ok && diagnostics.error" :class="bem('pos')">
@@ -34,13 +30,7 @@
       </Space>
     </Flex>
 
-    <JsonTextArea
-      :model-value="draftText"
-      :read-only="readOnly"
-      :height="normalizedHeight"
-      :error-line="errorLine"
-      @update:modelValue="setDraft"
-    />
+    <JsonTextArea :model-value="draftText" :read-only="readOnly" :height="normalizedHeight" :error-line="errorLine" @update:model-value="setDraft" />
 
     <Alert
       v-if="!diagnostics.ok && diagnostics.error"
@@ -51,13 +41,7 @@
       style="margin-top: 10px"
     />
 
-    <Alert
-      v-else-if="validatorErrors.length > 0"
-      type="error"
-      show-icon
-      message="校验未通过"
-      style="margin-top: 10px"
-    >
+    <Alert v-else-if="validatorErrors.length > 0" type="error" show-icon message="校验未通过" style="margin-top: 10px">
       <template #description>
         <div v-for="(line, idx) in validatorErrors" :key="idx" style="margin: 2px 0">
           {{ line }}
@@ -161,7 +145,7 @@
     return props.theme === 'dark' ? 'gf-theme-dark' : 'gf-theme-blue';
   });
 
-  const errorLine = computed(() => (diagnostics.value.ok ? null : diagnostics.value.error?.line ?? null));
+  const errorLine = computed(() => (diagnostics.value.ok ? null : (diagnostics.value.error?.line ?? null)));
 
   const recompute = (text: string) => {
     const d = analyzeJsonText(text ?? '');

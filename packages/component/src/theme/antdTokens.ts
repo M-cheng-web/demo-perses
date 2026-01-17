@@ -73,4 +73,3 @@ export const gfAntdTokensCssVar: AntdTokenMap = {
   motionDurationMid: 'var(--gf-motion-normal)',
   motionEaseInOut: 'var(--gf-easing)',
 };
-

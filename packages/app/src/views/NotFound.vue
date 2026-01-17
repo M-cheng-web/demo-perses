@@ -42,7 +42,9 @@
       background: var(--gf-color-surface);
       border: 1px solid var(--gf-color-border);
       border-radius: var(--gf-radius-md);
-      transition: box-shadow var(--gf-motion-normal) var(--gf-easing), border-color var(--gf-motion-normal) var(--gf-easing),
+      transition:
+        box-shadow var(--gf-motion-normal) var(--gf-easing),
+        border-color var(--gf-motion-normal) var(--gf-easing),
         transform var(--gf-motion-normal) var(--gf-easing);
     }
 

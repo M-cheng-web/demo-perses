@@ -142,14 +142,10 @@ type VectorMatching = {
 };
 
 function normalizeLabelList(values: string[]): string[] {
-  return (values ?? [])
-    .map((v) => String(v).trim())
-    .filter((v) => v.length > 0);
+  return (values ?? []).map((v) => String(v).trim()).filter((v) => v.length > 0);
 }
 
-function renderVectorMatching(binary: {
-  vectorMatching?: VectorMatching;
-}): string {
+function renderVectorMatching(binary: { vectorMatching?: VectorMatching }): string {
   if (binary.vectorMatching) {
     const labels = normalizeLabelList(binary.vectorMatching.labels);
     if (!binary.vectorMatching.type || labels.length === 0) return '';

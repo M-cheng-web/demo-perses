@@ -1,7 +1,7 @@
 <!-- 图表预览 -->
 <template>
   <div :class="bem()">
-	    <div :class="bem('content')">
+    <div :class="bem('content')">
       <div v-if="showHeader" :class="bem('header')">
         <div :class="bem('title')">预览</div>
       </div>
@@ -12,8 +12,8 @@
 </template>
 
 <script setup lang="ts">
-	  import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
-	  import { Empty } from '@grafana-fast/component';
+  import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+  import { Empty } from '@grafana-fast/component';
   import type { Panel, QueryResult, QueryContext } from '@grafana-fast/types';
   import { useTimeRangeStore, useVariablesStore } from '/#/stores';
   import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
@@ -40,7 +40,7 @@
   const variablesStore = useVariablesStore();
   const registry = getBuiltInPanelRegistry();
   const queryResults = ref<QueryResult[]>([]);
-	  const isLoading = ref(false);
+  const isLoading = ref(false);
   let abortController: AbortController | null = null;
 
   // 根据面板类型选择对应的图表组件

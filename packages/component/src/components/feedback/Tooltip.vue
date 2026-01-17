@@ -20,7 +20,7 @@
 
   defineOptions({ name: 'GfTooltip' });
 
-  const props = defineProps<{
+  defineProps<{
     /** 提示文案或插槽内容 */
     title?: string;
   }>();

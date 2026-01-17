@@ -46,7 +46,7 @@
     try {
       await navigator.clipboard.writeText(props.promql);
       message.success('已复制到剪贴板');
-    } catch (error) {
+    } catch {
       message.error('复制失败');
     }
   };

@@ -20,6 +20,7 @@
         <Button type="ghost" @click="reloadDashboard">重新加载</Button>
         <Button type="ghost" @click="setQuickRange">最近 5 分钟</Button>
         <Button type="ghost" @click="handleRefresh">刷新时间范围</Button>
+        <Button type="ghost" @click="schedulerOpen = true">调度器监控</Button>
         <Button type="ghost" @click="mountDashboard">挂载</Button>
         <Button type="ghost" @click="unmountDashboard">卸载</Button>
         <Button type="ghost" @click="debugOpen = true">调试信息</Button>
@@ -34,6 +35,14 @@
     <Modal v-model:open="debugOpen" title="调试信息" :width="560" @cancel="debugOpen = false">
       <List :items="debugItems" variant="lines" :split="false" />
     </Modal>
+
+    <Modal v-model:open="schedulerOpen" title="调度器监控（可视优先刷新）" :width="720" @cancel="schedulerOpen = false">
+      <div class="dp-dashboard-view__scheduler-actions">
+        <Button type="ghost" @click="refreshVisibleNow">刷新可视区域</Button>
+        <Button type="ghost" @click="clearQueryCacheNow">清空查询缓存</Button>
+      </div>
+      <List :items="schedulerItems" variant="lines" :split="false" />
+    </Modal>
   </div>
 </template>
 
@@ -43,11 +52,13 @@
   import { Button, List, Modal, Segmented } from '@grafana-fast/component';
   import { useDashboardSdk, DashboardApi } from '@grafana-fast/hooks';
   import type { DashboardTheme } from '@grafana-fast/dashboard';
+  import { getPiniaQueryScheduler } from '@grafana-fast/dashboard';
 
   const router = useRouter();
   const dashboardRef = ref<HTMLElement | null>(null);
   const debugOpen = ref(false);
-  const { state, actions, containerSize, api, ready, mountDashboard, unmountDashboard, theme } = useDashboardSdk(dashboardRef, {
+  const schedulerOpen = ref(false);
+  const { pinia, state, actions, containerSize, api, ready, mountDashboard, unmountDashboard, theme } = useDashboardSdk(dashboardRef, {
     dashboardId: 'default',
     apiConfig: {
       baseUrl: 'https://api.example.com',
@@ -57,6 +68,8 @@
     },
   });
 
+  const scheduler = computed(() => getPiniaQueryScheduler(pinia));
+
   const debugItems = computed(() => [
     { key: 'size', label: '容器尺寸', value: `${containerSize.value.width} × ${containerSize.value.height}` },
     { key: 'baseUrl', label: '当前 BaseUrl', value: api.value.baseUrl },
@@ -65,6 +78,26 @@
     { key: 'ready', label: '挂载状态', value: ready.value ? '已挂载' : '挂载中' },
     { key: 'theme', label: '主题', value: theme.value },
   ]);
+
+  const schedulerItems = computed(() => {
+    const debugRef = (scheduler.value as any).debug;
+    const snap = debugRef?.value ?? ((scheduler.value as any).getDebugSnapshot ? (scheduler.value as any).getDebugSnapshot() : null);
+    const top = (snap?.topPending ?? []) as Array<{ panelId: string; priority: number; reason: string; ageMs: number }>;
+    return [
+      { key: 'visiblePanels', label: '可视 panels（viewport + 0.5 屏）', value: String(snap?.visiblePanels ?? '-') },
+      { key: 'registeredPanels', label: '已注册 panels', value: String(snap?.registeredPanels ?? '-') },
+      { key: 'pendingTasks', label: '待执行任务', value: String(snap?.pendingTasks ?? '-') },
+      { key: 'inflight', label: '执行中 panels', value: String(snap?.inflightPanels ?? '-') },
+      { key: 'maxPanelConcurrency', label: '面板并发上限', value: String(snap?.maxPanelConcurrency ?? '-') },
+      { key: 'conditionGeneration', label: '全局条件代际（time/var）', value: String(snap?.conditionGeneration ?? '-') },
+      { key: 'queueGeneration', label: '队列代际（取消/切换）', value: String(snap?.queueGeneration ?? '-') },
+      {
+        key: 'topPending',
+        label: '队列头部（最多 12 条）',
+        value: top.length ? top.map((t) => `${t.panelId} | p=${t.priority} | ${t.reason} | ${Math.round(t.ageMs)}ms`).join('\n') : '(空)',
+      },
+    ];
+  });
 
   const themeOptions = [
     { label: 'Light', value: 'light' },
@@ -78,8 +111,16 @@
     },
   });
 
-  const reloadDashboard = () => actions.loadDashboard('default');
+  const reloadDashboard = async () => {
+    try {
+      await actions.loadDashboard('default');
+    } catch {
+      // demo page: errors are surfaced via console / onError hook in host apps
+    }
+  };
   const handleRefresh = () => actions.refreshTimeRange();
+  const refreshVisibleNow = () => (scheduler.value as any).refreshVisible?.();
+  const clearQueryCacheNow = () => (scheduler.value as any).invalidateAll?.();
   const setQuickRange = () =>
     actions.setTimeRange({
       from: 'now-5m',
@@ -129,6 +170,14 @@
       gap: 8px;
       align-items: center;
       flex-wrap: wrap;
+    }
+
+    &__scheduler-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding-bottom: 8px;
     }
 
     &__canvas {

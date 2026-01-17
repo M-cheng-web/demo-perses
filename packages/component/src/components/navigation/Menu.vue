@@ -1,18 +1,13 @@
 <!-- 组件说明：简易菜单列表，可传入 items 或自定义插槽 -->
 <template>
   <ul :class="bem()">
-    <li
-      v-for="item in normalizedItems"
-      :key="item.key"
-      :class="bem('item')"
-      @click="handleClick(item)"
-    >
+    <li v-for="item in normalizedItems" :key="item.key" :class="bem('item')" @click="handleClick(item)">
       <span v-if="item.icon" :class="bem('icon')">
         <component :is="item.icon" />
       </span>
       <span>{{ item.label }}</span>
     </li>
-    <slot />
+    <slot></slot>
   </ul>
 </template>
 

@@ -13,7 +13,7 @@
       <DashboardToolbar />
 
       <!-- 面板组列表 -->
-      <div :class="bem('content')">
+      <div ref="contentEl" :class="bem('content')">
         <Empty v-if="!panelGroups.length" :description="emptyText">
           <Button v-if="isEditMode" type="primary" @click="handleAddPanelGroup"> 创建面板组 </Button>
         </Empty>
@@ -93,6 +93,7 @@
   const fullscreenModalRef = ref<InstanceType<typeof PanelFullscreenModal>>();
   const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
   const rootEl = ref<HTMLElement | null>(null);
+  const contentEl = ref<HTMLElement | null>(null);
 
   const emptyText = computed(() => DASHBOARD_EMPTY_TEXT);
 
@@ -101,7 +102,7 @@
   // Provide runtime-scoped dependencies
   const apiClient = computed(() => props.apiClient ?? createMockApiClient());
   provide(GF_API_KEY, apiClient.value);
-  provide(GF_RUNTIME_KEY, { id: runtimeId.value, rootEl });
+  provide(GF_RUNTIME_KEY, { id: runtimeId.value, rootEl, scrollEl: contentEl });
 
   // NOTE: inject() must be called during setup (not inside onMounted).
   const injectedPinia = inject<Pinia | undefined>('pinia', undefined);

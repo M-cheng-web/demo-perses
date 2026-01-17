@@ -23,7 +23,10 @@
   );
 
   const [_, bem] = createNamespace('col');
-  const gutter = inject<ComputedRef<[number, number]>>('gf-row-gutter', computed(() => [0, 0] as [number, number]));
+  const gutter = inject<ComputedRef<[number, number]>>(
+    'gf-row-gutter',
+    computed(() => [0, 0] as [number, number])
+  );
 
   const colStyle = computed(() => {
     const width = `${(props.span / 24) * 100}%`;

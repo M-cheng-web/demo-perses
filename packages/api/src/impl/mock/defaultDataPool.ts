@@ -12,7 +12,14 @@ import type { TimeSeriesData } from '@grafana-fast/types';
 
 type DataPoint = [number, number];
 
-function generateTimeSeriesValues(startTime: number, count: number, interval: number, baseValue: number, variance: number, trend: number = 0): DataPoint[] {
+function generateTimeSeriesValues(
+  startTime: number,
+  count: number,
+  interval: number,
+  baseValue: number,
+  variance: number,
+  trend: number = 0
+): DataPoint[] {
   const values: DataPoint[] = [];
   for (let i = 0; i < count; i++) {
     const timestamp = startTime + i * interval;
@@ -36,32 +43,60 @@ const DEFAULT_DATA_POOL: Record<string, () => TimeSeriesData[]> = {
   cpu_usage: () => {
     const { start, interval, count } = getDefaultTimeRange();
     return [
-      { metric: { __name__: 'cpu_usage', __legend__: 'CPU Core 1', cpu: '1', instance: 'server-1' }, values: generateTimeSeriesValues(start, count, interval, 35, 8, 0.05) },
-      { metric: { __name__: 'cpu_usage', __legend__: 'CPU Core 2', cpu: '2', instance: 'server-1' }, values: generateTimeSeriesValues(start, count, interval, 42, 10, 0.08) },
-      { metric: { __name__: 'cpu_usage', __legend__: 'CPU Core 3', cpu: '3', instance: 'server-1' }, values: generateTimeSeriesValues(start, count, interval, 28, 7, 0.02) },
-      { metric: { __name__: 'cpu_usage', __legend__: 'CPU Core 4', cpu: '4', instance: 'server-1' }, values: generateTimeSeriesValues(start, count, interval, 38, 9, 0.03) },
+      {
+        metric: { __name__: 'cpu_usage', __legend__: 'CPU Core 1', cpu: '1', instance: 'server-1' },
+        values: generateTimeSeriesValues(start, count, interval, 35, 8, 0.05),
+      },
+      {
+        metric: { __name__: 'cpu_usage', __legend__: 'CPU Core 2', cpu: '2', instance: 'server-1' },
+        values: generateTimeSeriesValues(start, count, interval, 42, 10, 0.08),
+      },
+      {
+        metric: { __name__: 'cpu_usage', __legend__: 'CPU Core 3', cpu: '3', instance: 'server-1' },
+        values: generateTimeSeriesValues(start, count, interval, 28, 7, 0.02),
+      },
+      {
+        metric: { __name__: 'cpu_usage', __legend__: 'CPU Core 4', cpu: '4', instance: 'server-1' },
+        values: generateTimeSeriesValues(start, count, interval, 38, 9, 0.03),
+      },
     ];
   },
   avg_cpu_usage: () => {
     const { start, interval, count } = getDefaultTimeRange();
-    return [{ metric: { __name__: 'cpu_usage', __legend__: '平均 CPU 使用率' }, values: generateTimeSeriesValues(start, count, interval, 36, 3.5, 0.03) }];
+    return [
+      { metric: { __name__: 'cpu_usage', __legend__: '平均 CPU 使用率' }, values: generateTimeSeriesValues(start, count, interval, 36, 3.5, 0.03) },
+    ];
   },
   max_cpu_usage: () => {
     const { start, interval, count } = getDefaultTimeRange();
-    return [{ metric: { __name__: 'cpu_usage', __legend__: '最大 CPU 使用率' }, values: generateTimeSeriesValues(start, count, interval, 54, 7.5, 0.05) }];
+    return [
+      { metric: { __name__: 'cpu_usage', __legend__: '最大 CPU 使用率' }, values: generateTimeSeriesValues(start, count, interval, 54, 7.5, 0.05) },
+    ];
   },
   memory_usage: () => {
     const { start, interval, count } = getDefaultTimeRange();
     return [
-      { metric: { __name__: 'memory_usage', __legend__: 'used', type: 'used', instance: 'server-1' }, values: generateTimeSeriesValues(start, count, interval, 12.5, 0.8, 0.015) },
-      { metric: { __name__: 'memory_usage', __legend__: 'cached', type: 'cached', instance: 'server-1' }, values: generateTimeSeriesValues(start, count, interval, 3.2, 0.3, 0.005) },
+      {
+        metric: { __name__: 'memory_usage', __legend__: 'used', type: 'used', instance: 'server-1' },
+        values: generateTimeSeriesValues(start, count, interval, 12.5, 0.8, 0.015),
+      },
+      {
+        metric: { __name__: 'memory_usage', __legend__: 'cached', type: 'cached', instance: 'server-1' },
+        values: generateTimeSeriesValues(start, count, interval, 3.2, 0.3, 0.005),
+      },
     ];
   },
   up: () => {
     const { start, interval, count } = getDefaultTimeRange();
     return [
-      { metric: { __name__: 'up', __legend__: 'server-1', instance: 'server-1' }, values: generateTimeSeriesValues(start, count, interval, 1, 0.1, 0) },
-      { metric: { __name__: 'up', __legend__: 'server-2', instance: 'server-2' }, values: generateTimeSeriesValues(start, count, interval, 1, 0.1, 0) },
+      {
+        metric: { __name__: 'up', __legend__: 'server-1', instance: 'server-1' },
+        values: generateTimeSeriesValues(start, count, interval, 1, 0.1, 0),
+      },
+      {
+        metric: { __name__: 'up', __legend__: 'server-2', instance: 'server-2' },
+        values: generateTimeSeriesValues(start, count, interval, 1, 0.1, 0),
+      },
     ];
   },
 };

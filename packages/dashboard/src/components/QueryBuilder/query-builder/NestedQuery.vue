@@ -21,13 +21,7 @@
       <Select v-model:value="localQuery.operator" :options="operatorOptions" style="width: 80px" size="small" @change="handleOperatorChange" />
 
       <span class="header-label" style="margin-left: 16px">向量匹配</span>
-      <Select
-        v-model:value="vectorMatchType"
-        :options="vectorMatchTypeOptions"
-        style="width: 100px"
-        size="small"
-        @change="handleChange"
-      />
+      <Select v-model:value="vectorMatchType" :options="vectorMatchTypeOptions" style="width: 100px" size="small" @change="handleChange" />
 
       <Input
         v-model:value="vectorMatchLabels"
@@ -209,7 +203,7 @@
   const renderNestedQuery = (): string => {
     try {
       return promQueryModeller.renderQuery(localQuery.value.query);
-    } catch (error) {
+    } catch {
       return '';
     }
   };

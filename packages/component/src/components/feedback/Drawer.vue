@@ -108,18 +108,24 @@
     isPanelVisible.value = false;
 
     if (props.mask) {
-      timeouts.push(createTimeout(() => {
-        isMaskVisible.value = false;
-      }, PANEL_TRANSITION_MS));
-      timeouts.push(createTimeout(() => {
-        isRendered.value = false;
-      }, PANEL_TRANSITION_MS + MASK_TRANSITION_MS));
+      timeouts.push(
+        createTimeout(() => {
+          isMaskVisible.value = false;
+        }, PANEL_TRANSITION_MS)
+      );
+      timeouts.push(
+        createTimeout(() => {
+          isRendered.value = false;
+        }, PANEL_TRANSITION_MS + MASK_TRANSITION_MS)
+      );
       return;
     }
 
-    timeouts.push(createTimeout(() => {
-      isRendered.value = false;
-    }, PANEL_TRANSITION_MS));
+    timeouts.push(
+      createTimeout(() => {
+        isRendered.value = false;
+      }, PANEL_TRANSITION_MS)
+    );
   };
 
   const panelStyle = computed(() => {

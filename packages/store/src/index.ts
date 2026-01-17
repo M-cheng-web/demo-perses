@@ -9,7 +9,7 @@
  * - 组件上下文内优先使用 `inject('pinia')` 获取当前实例（避免依赖全局 activePinia）
  * - 组件上下文外（例如纯模块作用域代码）仍可回退到 activePinia（由 createPinia.install/setActivePinia 设置）
  */
-import { computed, getCurrentInstance, inject, reactive, toRef, type App, type ComputedRef, type Ref } from 'vue';
+import { computed, getCurrentInstance, inject, markRaw, reactive, toRef, type App, type ComputedRef, type Ref } from 'vue';
 
 export interface Pinia {
   /**
@@ -73,6 +73,11 @@ type StoreInstance<S extends StateTree, A extends Record<string, StoreAction>, G
   StoreGettersResult<S, G> & {
     $id: string;
     $state: S;
+    /**
+     * 当前 store 绑定的 pinia 实例（多实例隔离关键）
+     * - 允许在组件上下文外依旧拿到“正确的” pinia（避免依赖全局 activePinia 串实例）
+     */
+    $pinia: Pinia;
   };
 
 export interface DefineStoreOptions<S extends StateTree, A extends Record<string, StoreAction>, G extends Record<string, StoreGetter<S>>> {
@@ -100,8 +105,13 @@ export function defineStore<
 
     const state = reactive(options.state()) as S;
     const store: any = state;
-    store.$id = id;
-    store.$state = state;
+    Object.defineProperties(store, {
+      $id: { value: id, enumerable: false, configurable: true, writable: false },
+      $state: { value: state, enumerable: false, configurable: true, writable: false },
+      // markRaw() is important: Vue reactive proxy must return the exact value for
+      // non-writable properties; otherwise Proxy invariants can throw at runtime.
+      $pinia: { value: markRaw(targetPinia), enumerable: false, configurable: true, writable: false },
+    });
 
     // 将 getters 挂到 store 上（以 computed 的形式暴露为只读属性）
     if (options.getters) {

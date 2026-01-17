@@ -61,10 +61,7 @@ export function applyDashboardTheme(theme: DashboardTheme) {
   document.documentElement.dataset[DATASET_KEY] = theme;
 }
 
-export function setDashboardThemePreference(
-  preference: DashboardThemePreference,
-  options: SetDashboardThemeOptions = {}
-): DashboardTheme {
+export function setDashboardThemePreference(preference: DashboardThemePreference, options: SetDashboardThemeOptions = {}): DashboardTheme {
   const { persist = true } = options;
   const theme = resolveTheme(preference);
   applyDashboardTheme(theme);
@@ -85,4 +82,3 @@ export function initDashboardTheme(options: InitDashboardThemeOptions = {}): Das
   const stored = getStoredThemePreference();
   return setDashboardThemePreference(stored ?? defaultPreference, { persist });
 }
-

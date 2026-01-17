@@ -572,7 +572,9 @@
       background: var(--gf-color-surface);
       border: 1px solid var(--gf-color-border-muted);
       border-radius: var(--gf-radius-xs);
-      transition: border-color var(--gf-motion-fast) var(--gf-easing), box-shadow var(--gf-motion-fast) var(--gf-easing);
+      transition:
+        border-color var(--gf-motion-fast) var(--gf-easing),
+        box-shadow var(--gf-motion-fast) var(--gf-easing);
       min-width: 240px;
       max-width: 420px;
 

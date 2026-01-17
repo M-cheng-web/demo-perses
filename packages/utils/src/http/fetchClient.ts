@@ -7,7 +7,7 @@
  * - 不强绑业务 DTO：该文件只解决 transport（HTTP）层问题，DTO 适配应放在具体服务实现中
  */
 
-import { isAbsoluteUrl, joinUrl, toQueryString } from '../url';
+import { joinUrl, toQueryString } from '../url';
 import type { UrlQueryValue } from '../url';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

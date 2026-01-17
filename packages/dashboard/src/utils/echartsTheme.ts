@@ -7,4 +7,3 @@
  */
 
 export { getEChartsPalette, getEChartsTheme, getEChartsThemeForTarget } from '@grafana-fast/utils';
-

@@ -46,7 +46,7 @@ export const useVariablesStore = defineStore('variables', {
      * 初始化变量（通常在 dashboard load/import 后调用）
      */
     async initializeFromDashboard(dashboard: Dashboard | null) {
-      const api = getPiniaApiClient();
+      const api = getPiniaApiClient(this.$pinia);
       const vars = dashboard?.variables ?? [];
       this.variables = vars;
 

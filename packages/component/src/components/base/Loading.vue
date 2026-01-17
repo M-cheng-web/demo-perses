@@ -1,7 +1,7 @@
 <!-- 组件说明：小型加载指示器，可附带文字 -->
 <template>
   <div :class="bem()">
-    <span :class="bem('dot')" />
+    <span :class="bem('dot')"></span>
     <span v-if="text" :class="bem('text')">{{ text }}</span>
   </div>
 </template>

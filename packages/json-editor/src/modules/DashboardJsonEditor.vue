@@ -29,13 +29,7 @@
       </Space>
     </Flex>
 
-    <JsonTextArea
-      :model-value="draftText"
-      :read-only="readOnly"
-      :height="normalizedHeight"
-      :error-line="errorLine"
-      @update:modelValue="setDraft"
-    />
+    <JsonTextArea :model-value="draftText" :read-only="readOnly" :height="normalizedHeight" :error-line="errorLine" @update:model-value="setDraft" />
 
     <Alert
       v-if="!diagnostics.json.ok && diagnostics.json.error"
@@ -64,13 +58,7 @@
       style="margin-top: 10px"
     />
 
-    <Alert
-      v-else-if="validatorErrors.length > 0"
-      type="error"
-      show-icon
-      message="Dashboard 校验未通过"
-      style="margin-top: 10px"
-    >
+    <Alert v-else-if="validatorErrors.length > 0" type="error" show-icon message="Dashboard 校验未通过" style="margin-top: 10px">
       <template #description>
         <div v-for="(line, idx) in validatorErrors" :key="idx" style="margin: 2px 0">
           {{ line }}
@@ -171,7 +159,7 @@
   let validateSeq = 0;
   let validateTimer: number | null = null;
 
-  const errorLine = computed(() => (diagnostics.value.json.ok ? null : diagnostics.value.json.error?.line ?? null));
+  const errorLine = computed(() => (diagnostics.value.json.ok ? null : (diagnostics.value.json.error?.line ?? null)));
 
   const runExternalValidate = async (text: string, parsedValue: unknown | undefined) => {
     const fn = props.validate;

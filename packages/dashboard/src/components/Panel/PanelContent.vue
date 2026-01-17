@@ -8,15 +8,24 @@
 -->
 <template>
   <div :class="bem()">
-    <div v-if="loading" :class="bem('loading')">
-      <Loading text="加载中..." />
-    </div>
-
     <div :class="bem('wrapper')">
-      <div v-if="error" :class="bem('error')">
-        <Alert type="error" show-icon :message="error" />
+      <div v-if="fatalError" :class="bem('error')">
+        <Alert type="error" show-icon :message="fatalError" />
       </div>
-      <component v-else-if="chartComponent" :is="chartComponent" :panel="panel" :query-results="displayResults" />
+      <div v-else-if="!hasVisibleQueries" :class="bem('empty')">
+        <Empty description="未配置查询" />
+      </div>
+      <div v-else-if="chartComponent" :class="bem('content')">
+        <div v-if="queryErrorText && !loading" :class="bem('warning')">
+          <Alert type="warning" show-icon :message="queryErrorText" />
+        </div>
+        <div :class="bem('chart')">
+          <div v-if="loading" :class="bem('loading')">
+            <Loading text="加载中..." />
+          </div>
+          <component :is="chartComponent" :panel="panel" :query-results="displayResults" />
+        </div>
+      </div>
       <div v-else :class="bem('empty')">
         <Empty description="未配置图表类型" />
       </div>
@@ -47,6 +56,26 @@
   const { loading, error, results: queryResults } = scheduler.registerPanel(props.panel.id, panelRef);
   const displayResults = computed(() => applyTransformations(queryResults.value, props.panel.transformations));
 
+  const hasVisibleQueries = computed(() => (props.panel.queries ?? []).some((q) => !q.hide));
+
+  const fatalError = computed(() => error.value);
+
+  const queryErrorText = computed(() => {
+    const errors = displayResults.value
+      .map((r) => {
+        const msg = (r as any)?.error;
+        if (!msg) return '';
+        const refId = (r as any)?.refId || (r as any)?.queryId || 'query';
+        return `${refId}: ${String(msg)}`;
+      })
+      .filter(Boolean);
+
+    if (!errors.length) return '';
+    // Keep it short; detailed view belongs in a future Query Inspector.
+    const uniq = Array.from(new Set(errors));
+    return uniq.length === 1 ? uniq[0]! : `${uniq[0]} 等 ${uniq.length} 个错误`;
+  });
+
   // 根据面板类型选择组件
   const chartComponent = computed(() => {
     const type = props.panel.type;
@@ -69,12 +98,24 @@
     flex-direction: column;
     height: 100%;
 
+    &__chart {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
     &__loading {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      inset: 0;
       z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: color-mix(in srgb, var(--gf-color-surface), transparent 45%);
+      backdrop-filter: blur(1px);
+      pointer-events: all;
     }
 
     &__wrapper {
@@ -84,6 +125,17 @@
       min-height: 0;
       width: 100%;
       height: 100%;
+    }
+
+    &__content {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    &__warning {
+      padding: @spacing-sm-2;
     }
 
     &__error,

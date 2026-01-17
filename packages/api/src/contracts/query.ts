@@ -41,12 +41,7 @@ export interface QueryService {
    */
   fetchMetrics: (search?: string, options?: ExecuteQueriesOptions) => Promise<string[]>;
   fetchLabelKeys: (metric: string, options?: ExecuteQueriesOptions) => Promise<string[]>;
-  fetchLabelValues: (
-    metric: string,
-    labelKey: string,
-    otherLabels?: Record<string, string>,
-    options?: ExecuteQueriesOptions
-  ) => Promise<string[]>;
+  fetchLabelValues: (metric: string, labelKey: string, otherLabels?: Record<string, string>, options?: ExecuteQueriesOptions) => Promise<string[]>;
 
   /**
    * （可选）为 query 型变量解析 options：

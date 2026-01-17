@@ -154,12 +154,12 @@
   </div>
 </template>
 
-  <script setup lang="ts">
-	  import { ref, watch } from 'vue';
-	  import { deepClone, createNamespace } from '/#/utils';
-	  import { getDefaultBarChartOptions } from '../ChartStylesDefaultOptions/barChartDefaultOptions';
-	  import { deepMerge } from './utils';
-	  import { Switch, Select, Segmented, Button, Input, InputNumber } from '@grafana-fast/component';
+<script setup lang="ts">
+  import { ref, watch } from 'vue';
+  import { deepClone, createNamespace } from '/#/utils';
+  import { getDefaultBarChartOptions } from '../ChartStylesDefaultOptions/barChartDefaultOptions';
+  import { deepMerge } from './utils';
+  import { Switch, Select, Segmented, Button, Input, InputNumber } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('bar-chart-styles');
 
@@ -174,7 +174,7 @@
   }>();
 
   // 合并默认配置和传入的配置
-	  const localOptions = ref(deepClone(deepMerge(getDefaultBarChartOptions(), props.options ?? {})));
+  const localOptions = ref(deepClone(deepMerge(getDefaultBarChartOptions(), props.options ?? {})));
 
   // 恢复默认设置
   const resetToDefaults = () => {
@@ -196,13 +196,13 @@
   watch(
     () => props.options,
     (newVal) => {
-	      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
-	        localOptions.value = deepClone(deepMerge(getDefaultBarChartOptions(), newVal ?? {}));
-	      }
-	    },
-	    { deep: true }
-	  );
-	</script>
+      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
+        localOptions.value = deepClone(deepMerge(getDefaultBarChartOptions(), newVal ?? {}));
+      }
+    },
+    { deep: true }
+  );
+</script>
 
 <style scoped lang="less">
   .dp-bar-chart-styles {
