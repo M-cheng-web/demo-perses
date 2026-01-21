@@ -63,7 +63,13 @@
             <Tabs v-model:activeKey="activeTab" :class="bem('tabs')">
               <!-- 数据查询 -->
               <TabPane name="query" tab="数据查询">
-                <DataQueryTab ref="dataQueryTabRef" :queries="formData.queries" @update:queries="handleQueriesUpdate" @execute="handleExecuteQuery" />
+                <DataQueryTab
+                  ref="dataQueryTabRef"
+                  :session-key="editorSessionKey"
+                  :queries="formData.queries"
+                  @update:queries="handleQueriesUpdate"
+                  @execute="handleExecuteQuery"
+                />
               </TabPane>
 
               <!-- 图表样式 -->
@@ -138,7 +144,13 @@
   const isJsonValid = ref(true);
   const selectedGroupId = ref<string>('');
   const panelPreviewRef = ref<InstanceType<typeof PanelPreview>>();
-  const dataQueryTabRef = ref<InstanceType<typeof DataQueryTab>>();
+  const dataQueryTabRef = ref<
+    | null
+    | (InstanceType<typeof DataQueryTab> & {
+        validateAndGetQueriesForSave: () => { ok: boolean; errors: Array<{ refId: string; message: string }>; queries: any[] };
+        validateAndGetQueriesForExecute: () => { ok: boolean; errors: Array<{ refId: string; message: string }>; queries: any[] };
+      })
+  >(null);
   const jsonDraft = ref<string>('');
 
   // 获取面板组列表
@@ -270,24 +282,44 @@
     formData.queries = queries;
   };
 
+  const editorSessionKey = computed(() => {
+    // Any change to this value should force DataQueryTab to rebuild its internal drafts from props.
+    // - Open/close changes
+    // - Switching between create/edit
+    // - Switching between different panels (originalPanelId)
+    return [
+      isDrawerOpen.value ? 'open' : 'closed',
+      editingMode.value,
+      originalPanelId?.value ?? 'new',
+      editingPanel.value?.id ?? 'no-panel',
+      targetGroupId.value ?? 'no-group',
+    ].join('::');
+  });
+
   // 执行查询
   const handleExecuteQuery = () => {
-    // 获取最新的查询数据（但不更新 formData.queries，避免触发重新初始化）
-    let queries: any[] = [];
-    if (dataQueryTabRef.value) {
-      queries = dataQueryTabRef.value.getQueries();
+    const result = dataQueryTabRef.value?.validateAndGetQueriesForExecute?.();
+    if (!result) {
+      message.error('查询编辑器未就绪，请稍后重试');
+      return;
     }
 
-    // 基本校验
-    if (!queries || queries.length === 0) {
+    if (!result.ok) {
+      activeTab.value = 'query';
+      for (const e of result.errors) {
+        message.error(`查询 ${e.refId}: ${e.message}`);
+      }
+      return;
+    }
+
+    const queries = result.queries ?? [];
+    if (!queries.length) {
       message.warning('请至少添加一个查询');
       return;
     }
 
-    // 临时更新 formData.queries 用于查询执行，但不触发 watch
-    // 使用 Object.defineProperty 直接赋值，避免响应式触发
-    const tempQueries = formData.queries;
-    formData.queries = queries;
+    // 更新 formData.queries 用于查询执行（不会自动请求；仅供预览组件读取）
+    formData.queries = queries as any;
 
     // 执行查询并更新预览
     message.loading({ content: '正在执行查询...', key: 'executeQuery', duration: 0 });
@@ -301,8 +333,6 @@
       })
       .catch((error) => {
         message.error({ content: `查询执行失败: ${error.message || '未知错误'}`, key: 'executeQuery', duration: 3 });
-        // 查询失败时，恢复原来的 queries
-        formData.queries = tempQueries;
       });
   };
 
@@ -329,6 +359,22 @@
       message.error('JSON 格式错误，请检查');
       return;
     }
+
+    // 保存前：强制校验并同步 DataQueryTab 的最新编辑结果（不依赖是否点过“执行查询”）
+    const qres = dataQueryTabRef.value?.validateAndGetQueriesForSave?.();
+    if (!qres) {
+      message.error('查询编辑器未就绪，请稍后重试');
+      return;
+    }
+
+    if (!qres.ok) {
+      activeTab.value = 'query';
+      for (const e of qres.errors) {
+        message.error(`查询 ${e.refId}: ${e.message}`);
+      }
+      return;
+    }
+    formData.queries = (qres.queries ?? []) as any;
 
     if (formData.queries.length === 0) {
       message.warning('建议至少添加一个查询');

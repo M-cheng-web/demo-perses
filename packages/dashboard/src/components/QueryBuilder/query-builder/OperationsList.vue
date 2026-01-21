@@ -44,23 +44,12 @@
               <HolderOutlined />
             </div>
             <div :class="bem('card-header-content')">
-              <Dropdown :trigger="['click']" v-model:open="operationDropdownOpen[index]">
-                <Button size="small" type="text" :class="bem('name-button')">
-                  {{ getOperationName(operation.id) }}
-                  <DownOutlined style="margin-left: 4px; font-size: 10px" />
-                </Button>
-                <template #overlay>
-                  <Menu @click="(e: any) => handleOperationMenuClick(index, e.key)">
-                    <MenuItem v-for="alt in getAlternativeOperations(operation.id)" :key="alt.id">
-                      {{ alt.name }}
-                    </MenuItem>
-                  </Menu>
-                </template>
-              </Dropdown>
+              <Button size="small" type="text" :class="bem('name-button')">
+                {{ getOperationName(operation.id) }}
+              </Button>
             </div>
             <div :class="bem('card-header-actions')">
-              <Tooltip v-if="getOperationDoc(operation)" placement="top">
-                <template #title>{{ getOperationDoc(operation) }}</template>
+              <Tooltip v-if="getOperationDoc(operation)" :title="getOperationDoc(operation)">
                 <Button type="text" size="small">
                   <template #icon><InfoCircleOutlined /></template>
                 </Button>
@@ -185,9 +174,9 @@
 </template>
 
 <script setup lang="ts">
-  import { Button, Cascader, Checkbox, Dropdown, Input, InputNumber, Menu, MenuItem, Select, Tooltip } from '@grafana-fast/component';
+  import { Button, Cascader, Checkbox, Input, InputNumber, Select, Tooltip } from '@grafana-fast/component';
   import { ref, watch, computed, nextTick, onBeforeUnmount } from 'vue';
-  import { PlusOutlined, CloseOutlined, InfoCircleOutlined, HolderOutlined, DownOutlined, ArrowRightOutlined } from '@ant-design/icons-vue';
+  import { PlusOutlined, CloseOutlined, InfoCircleOutlined, HolderOutlined, ArrowRightOutlined } from '@ant-design/icons-vue';
   import LabelParamEditor from './LabelParamEditor.vue';
   import { promQueryModeller } from '@grafana-fast/utils';
   import type { QueryBuilderOperation } from '@grafana-fast/utils';
@@ -204,7 +193,15 @@
 
   interface Emits {
     (e: 'update:modelValue', value: QueryBuilderOperation[]): void;
-    (e: 'queryUpdate', query: any): void; // 用于通知完整查询对象的更新（如 binaryQueries）
+    /**
+     * Emit when the whole query object needs to be updated (e.g. binaryQueries changes).
+     *
+     * Notes:
+     * - Prefer kebab-case event name in templates: `@query-update`
+     * - Keep camelCase for backward compatibility.
+     */
+    (e: 'query-update', query: any): void;
+    (e: 'queryUpdate', query: any): void;
   }
 
   const props = defineProps<Props>();
@@ -213,7 +210,6 @@
   const operations = ref<QueryBuilderOperation[]>([...props.modelValue]);
   const selectedNewOperation = ref<any[]>([]);
   const flashingOperations = ref<Set<number>>(new Set());
-  const operationDropdownOpen = ref<Record<number, boolean>>({});
   const draggedIndex = ref<number | null>(null);
 
   const categories = computed(() => promQueryModeller.getCategories());
@@ -294,7 +290,8 @@
     // 参考 Grafana OperationList.tsx 第 69 行
     if (updatedQuery.binaryQueries !== props.currentQuery?.binaryQueries) {
       emit('update:modelValue', operations.value);
-      // 发射整个查询对象的更新
+      // 发射整个查询对象的更新（兼容两种事件名）
+      emit('query-update', updatedQuery);
       emit('queryUpdate', updatedQuery);
     } else {
       handleOperationChange();
@@ -309,44 +306,8 @@
     handleOperationChange();
   };
 
-  // 获取替代操作列表
-  const getAlternativeOperations = (operationId: string) => {
-    const opDef = promQueryModeller.getOperationDef(operationId);
-    if (!opDef || !opDef.alternativesKey) {
-      return [];
-    }
-    return promQueryModeller.getAlternativeOperations(opDef.alternativesKey);
-  };
-
-  // 处理操作菜单点击
-  const handleOperationMenuClick = (opIndex: number, newOperationId: string) => {
-    const operation = operations.value[opIndex];
-    if (!operation) return;
-
-    const currentOpDef = promQueryModeller.getOperationDef(operation.id);
-    const newOpDef = promQueryModeller.getOperationDef(newOperationId);
-
-    if (!newOpDef) return;
-
-    // 复制默认参数，并尽量复用“同类型”的旧参数（提升切换替代操作时的体验）
-    const newParams = [...newOpDef.defaultParams];
-    for (let i = 0; i < Math.min(operation.params.length, newParams.length); i++) {
-      const currentParamDef = currentOpDef?.params[i];
-      const newParamDef = newOpDef.params[i];
-      if (currentParamDef && newParamDef && newParamDef.type === currentParamDef.type) {
-        const paramValue = operation.params[i];
-        if (paramValue !== undefined) {
-          newParams[i] = paramValue;
-        }
-      }
-    }
-
-    const changedOp = { ...operation, params: newParams, id: newOperationId };
-    operations.value[opIndex] = newOpDef.changeTypeHandler ? newOpDef.changeTypeHandler(changedOp, newOpDef) : changedOp;
-
-    handleOperationChange();
-    operationDropdownOpen.value[opIndex] = false;
-  };
+  // 说明：按产品决策，操作一旦被添加后不允许通过 UI 切换为其他操作类型；
+  // 如需更换，请删除该操作并重新添加。
 
   // 参数变化处理
   const handleParamChange = (opIndex: number, paramIndex: number, value: any) => {
@@ -356,6 +317,14 @@
     operation.params[paramIndex] = value;
 
     const opDef = promQueryModeller.getOperationDef(operation.id);
+    const paramDef = opDef?.params?.[Math.min((opDef?.params?.length ?? 1) - 1, paramIndex)];
+
+    if (paramDef?.editor === 'LabelParamEditor' && paramDef.restParam) {
+      const normalized = String(value ?? '').trim();
+      if (!normalized) {
+        operation.params.splice(paramIndex, 1);
+      }
+    }
 
     // 使用参数变化处理器（如果有）
     if (opDef?.paramChangedHandler) {
@@ -459,6 +428,13 @@
   const getVisibleParams = (operation: QueryBuilderOperation): any[] => {
     const opDef = promQueryModeller.getOperationDef(operation.id);
     if (!opDef || !opDef.params || opDef.params.length === 0) return [];
+
+    if (operation.params.length === 0) {
+      const first = opDef.params[0];
+      if (first && first.restParam && first.optional && first.editor === 'LabelParamEditor') {
+        return [first];
+      }
+    }
 
     // Grafana 逻辑：直接遍历 operation.params，对每个参数值返回对应的参数定义
     // 如果是 restParam，多个参数值使用同一个参数定义（通过 Math.min 实现）

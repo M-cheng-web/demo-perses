@@ -1,17 +1,17 @@
 <!-- 组件说明：悬停提示气泡，跟随触发元素定位 -->
 <template>
-  <span :class="bem()" ref="triggerRef" @mouseenter="openTooltip" @mouseleave="closeTooltip">
+  <span :class="bem()" ref="triggerRef" v-bind="$attrs" @mouseenter="openTooltip" @mouseleave="closeTooltip">
     <slot></slot>
+    <Teleport to="body">
+      <transition name="fade">
+        <div v-if="visible" :class="bem('popup')" :style="popupStyle" ref="popupRef">
+          <slot name="title">
+            {{ title }}
+          </slot>
+        </div>
+      </transition>
+    </Teleport>
   </span>
-  <Teleport to="body">
-    <transition name="fade">
-      <div v-if="visible" :class="bem('popup')" :style="popupStyle" ref="popupRef">
-        <slot name="title">
-          {{ title }}
-        </slot>
-      </div>
-    </transition>
-  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -20,10 +20,20 @@
 
   defineOptions({ name: 'GfTooltip' });
 
-  defineProps<{
-    /** 提示文案或插槽内容 */
-    title?: string;
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      /** 提示文案或插槽内容 */
+      title?: string;
+      /**
+       * 气泡位置
+       * - 目前仅支持 top/bottom/left/right（满足 QueryBuilder 的基本需求）
+       */
+      placement?: 'top' | 'bottom' | 'left' | 'right';
+    }>(),
+    {
+      placement: 'top',
+    }
+  );
 
   const [_, bem] = createNamespace('tooltip');
   const triggerRef = ref<HTMLElement>();
@@ -47,8 +57,22 @@
 
     left = clamp(left, padding + popupRect.width / 2, window.innerWidth - padding - popupRect.width / 2);
 
-    if (top - popupRect.height < padding) {
+    if (props.placement === 'bottom') {
       top = rect.bottom + popupRect.height + 8;
+      if (top - popupRect.height < padding) top = rect.bottom + popupRect.height + 8;
+    } else if (props.placement === 'left') {
+      left = rect.left - 8;
+      top = rect.top + rect.height / 2 + popupRect.height;
+      left = clamp(left, padding + popupRect.width / 2, window.innerWidth - padding - popupRect.width / 2);
+    } else if (props.placement === 'right') {
+      left = rect.right + 8;
+      top = rect.top + rect.height / 2 + popupRect.height;
+      left = clamp(left, padding + popupRect.width / 2, window.innerWidth - padding - popupRect.width / 2);
+    } else {
+      // default: top
+      if (top - popupRect.height < padding) {
+        top = rect.bottom + popupRect.height + 8;
+      }
     }
 
     popupStyle.value = {

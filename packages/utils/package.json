@@ -18,7 +18,8 @@
   ],
   "scripts": {
     "build": "rollup -c ../../scripts/rollup.config.js",
-    "test:promql": "esno scripts/promql-render.test.ts"
+    "test:promql": "esno scripts/promql-render.test.ts",
+    "test:promql-parse": "esno scripts/promql-parse.test.ts"
   },
   "dependencies": {
     "@grafana-fast/types": "workspace:*"

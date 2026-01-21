@@ -5,6 +5,7 @@
 import type { ID, KeyValue, Timestamp } from './common';
 import type { TimeRange } from './timeRange';
 import type { DatasourceRef } from './queryModel';
+import type { PromVisualQuery } from './queryBuilder';
 
 /**
  * 查询定义
@@ -33,6 +34,15 @@ export interface CanonicalQuery {
   datasourceRef: DatasourceRef;
   /** 查询表达式（PromQL 或其他实现层可解释的语法） */
   expr: string;
+  /**
+   * （可选）结构化可视化查询模型（QueryBuilder）
+   *
+   * 说明：
+   * - 这是为了让 Builder 模式在“无需完整 PromQL parser”的情况下实现稳定反显（round-trip）
+   * - QueryRunner/执行层只依赖 expr，不依赖该字段
+   * - 当该字段存在时，UI 可优先使用它来反显 builder 表单（更可靠）
+   */
+  visualQuery?: PromVisualQuery;
   /** 图例格式（可选，面板/图表层解释） */
   legendFormat?: string;
   /** 最小步长（秒，部分实现层会用于 query_range 的 step 计算） */

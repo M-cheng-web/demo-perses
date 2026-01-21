@@ -11,7 +11,12 @@
   >
     <div
       ref="controlRef"
-      :class="[bem('control'), 'gf-control', controlSizeClass, { 'gf-control--disabled': disabled }]"
+      :class="[
+        bem('control'),
+        variant === 'text' ? bem('control--text') : 'gf-control',
+        variant === 'text' ? undefined : controlSizeClass,
+        { 'gf-control--disabled': disabled },
+      ]"
       tabindex="0"
       @click="handleTriggerClick"
       @pointerdown="handlePointerDownInside"
@@ -54,19 +59,18 @@
         />
       </div>
       <template v-else>
-        <span v-if="selectedOptions[0] && !(showSearch && open)" :class="bem('value')">{{ selectedOptions[0].label }}</span>
-        <span v-else-if="!(showSearch && open)" :class="bem('placeholder')">{{ placeholder }}</span>
-        <input
-          v-if="showSearch"
-          v-show="open"
-          ref="searchInputRef"
-          v-model="search"
-          :class="bem('search-input')"
-          type="text"
-          :placeholder="selectedOptions[0] ? '搜索...' : placeholder"
-          @click.stop="handleSearchClick"
-          @keydown.stop="handleSearchKeydown"
-        />
+        <template v-if="selectedOptions[0]">
+          <slot
+            name="value"
+            :option="selectedOptions[0]"
+            :value="selectedOptions[0].value"
+            :label="selectedOptions[0].label"
+            :open="open"
+          >
+            <span :class="bem('value')">{{ selectedOptions[0].label }}</span>
+          </slot>
+        </template>
+        <span v-else :class="bem('placeholder')">{{ placeholder }}</span>
       </template>
       <span :class="bem('suffix')">
         <button v-if="showClear" type="button" :class="bem('clear')" tabindex="-1" aria-label="清空" @click.stop="clearValue">
@@ -81,7 +85,17 @@
     <Teleport to="body">
       <transition name="fade">
         <div v-if="open" :class="bem('dropdown')" :style="dropdownStyle" ref="dropdownRef">
-          <div :class="bem('options')">
+          <div v-if="showSearch && !isMultiple" :class="bem('dropdown-search')" @click.stop>
+            <input
+              ref="searchInputRef"
+              v-model="search"
+              :class="bem('dropdown-search-input')"
+              type="text"
+              :placeholder="selectedOptions[0] ? '搜索...' : placeholder"
+              @keydown.stop="handleSearchKeydown"
+            />
+          </div>
+          <div :class="bem('options')" :style="optionsStyle">
             <div
               v-for="(option, idx) in filteredOptions"
               :key="option.value"
@@ -94,7 +108,7 @@
                 <CheckOutlined />
               </span>
             </div>
-            <div v-if="filteredOptions.length === 0" :class="bem('empty')">无可选项</div>
+            <div v-if="filteredOptions.length === 0" :class="bem('empty')">{{ emptyText }}</div>
           </div>
         </div>
       </transition>
@@ -123,6 +137,10 @@
       value?: any;
       /** 选项列表 */
       options?: Option[];
+      /** 是否加载中（用于异步 options） */
+      loading?: boolean;
+      /** 空状态文案（当 filteredOptions 为空时展示） */
+      notFoundContent?: string;
       /** 占位提示 */
       placeholder?: string;
       /** 禁用状态 */
@@ -154,9 +172,23 @@
        * - 传入 string：例如 '240px' / '50%' / 'auto'
        */
       width?: number | string;
+      /**
+       * 下拉弹窗的最大高度（options 区域），超出后滚动。
+       * - number: px
+       * - string: 例如 '240px'
+       */
+      dropdownMaxHeight?: number | string;
+      /**
+       * 展示样式：
+       * - default: 带边框的标准表单控件
+       * - text: 纯文本触发器（无边框），用于 toolbar / inline 场景
+       */
+      variant?: 'default' | 'text';
     }>(),
     {
       options: () => [],
+      loading: false,
+      notFoundContent: undefined,
       placeholder: '请选择',
       disabled: false,
       allowClear: false,
@@ -167,12 +199,15 @@
       maxTagCount: undefined,
       maxTagTextLength: undefined,
       width: undefined,
+      dropdownMaxHeight: 240,
+      variant: 'default',
     }
   );
 
   const emit = defineEmits<{
     (e: 'update:value', value: any): void;
     (e: 'change', value: any): void;
+    (e: 'dropdown-visible-change', visible: boolean): void;
   }>();
 
   const [_, bem] = createNamespace('select');
@@ -255,6 +290,19 @@
     return props.options.filter((opt) => filterFn.value(search.value, opt));
   });
 
+  const optionsStyle = computed<Record<string, string> | undefined>(() => {
+    const h = props.dropdownMaxHeight;
+    if (h === undefined || h === null || h === '') return undefined;
+    const v = typeof h === 'number' ? `${h}px` : String(h);
+    return { maxHeight: v };
+  });
+
+  const emptyText = computed(() => {
+    if (typeof props.notFoundContent === 'string' && props.notFoundContent.length > 0) return props.notFoundContent;
+    if (props.loading) return '加载中...';
+    return '无可选项';
+  });
+
   const setActiveIndex = (idx: number) => {
     activeIndex.value = idx;
   };
@@ -315,6 +363,8 @@
     open.value = false;
     openedByFocusIn = false;
   };
+
+  watch(open, (v) => emit('dropdown-visible-change', v));
 
   const handleSearchClick = () => {
     if (props.disabled) return;
@@ -381,6 +431,7 @@
   };
 
   const selectOption = (option: Option) => {
+    if (props.loading) return;
     if (option.disabled) return;
     if (isMultiple.value) {
       const current = Array.isArray(props.value) ? [...props.value] : [];
@@ -671,6 +722,14 @@
       cursor: pointer;
     }
 
+    &__control--text {
+      border: none;
+      background: transparent;
+      padding: 0;
+      min-height: auto;
+      box-shadow: none;
+    }
+
     /*
      * 说明：保持单选/多选在“已选择”状态下的控件高度一致
      * - 多选的 tag 容器通常会比纯文本更高
@@ -804,8 +863,32 @@
       overflow: hidden;
     }
 
+    &__dropdown-search {
+      padding: 6px;
+      border-bottom: 1px solid var(--gf-color-border-muted);
+      background: var(--gf-color-surface);
+    }
+
+    &__dropdown-search-input {
+      width: 100%;
+      border: 1px solid var(--gf-border);
+      border-radius: var(--gf-radius-sm);
+      background: var(--gf-color-surface);
+      color: var(--gf-text);
+      padding: 6px 10px;
+      font-size: var(--gf-font-size-sm);
+      line-height: 1.35;
+      outline: none;
+
+      &:focus,
+      &:focus-visible {
+        border-color: var(--gf-color-focus-border);
+        box-shadow: var(--gf-focus-ring);
+      }
+    }
+
     &__options {
-      max-height: 280px;
+      max-height: 240px;
       overflow: auto;
       padding: 6px;
     }

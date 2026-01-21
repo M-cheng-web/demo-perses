@@ -29,6 +29,10 @@ export type {
 
 export { PromOperationId, PromVisualQueryOperationCategory, PromQueryPatternType } from './types';
 
+// PromQL -> VisualQuery (best-effort) parser
+export { parsePromqlToVisualQuery, promqlParser } from './parsePromqlToVisualQuery';
+export type { ParsePromqlToVisualQueryResult, PromqlParseConfidence, PromqlParseWarning, PromqlParseWarningCode } from './parsePromqlToVisualQuery';
+
 // 工具函数
 export { getAggregationOperations } from './aggregations';
 export { getOperationDefinitions } from './operations';

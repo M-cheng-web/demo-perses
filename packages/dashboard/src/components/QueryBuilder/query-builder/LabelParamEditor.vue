@@ -19,12 +19,11 @@
     :options="labelOptions"
     :loading="loading"
     placeholder="选择标签"
-    show-search
     allow-clear
-    :filter-option="filterOption"
     :not-found-content="loading ? '加载中...' : '未找到标签'"
-    @change="(value: any) => handleChange(value as string)"
+    @change="handleChange"
     @dropdown-visible-change="handleDropdownVisibleChange"
+    :dropdown-max-height="200"
     size="small"
     style="min-width: 120px"
   />
@@ -37,7 +36,7 @@
   import { promQueryModeller } from '@grafana-fast/utils';
 
   interface Props {
-    modelValue: string;
+    modelValue: string | undefined;
     index: number;
     query?: any;
     datasource?: any;
@@ -51,7 +50,7 @@
   const props = defineProps<Props>();
   const emit = defineEmits<Emits>();
 
-  const localValue = ref(props.modelValue);
+  const localValue = ref<string | undefined>(props.modelValue);
   const labelOptions = ref<{ label: string; value: string }[]>([]);
   const loading = ref(false);
   const labelsLoaded = ref(false);
@@ -121,13 +120,10 @@
     }
   };
 
-  const handleChange = (value: string) => {
-    emit('update:modelValue', value);
-    emit('change', value);
-  };
-
-  const filterOption = (input: string, option: any) => {
-    return option.value.toLowerCase().includes(input.toLowerCase());
+  const handleChange = (value: string | undefined) => {
+    const next = value ?? '';
+    emit('update:modelValue', next);
+    emit('change', next);
   };
 </script>
 

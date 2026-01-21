@@ -229,6 +229,7 @@ export function getOperationDefinitions(): QueryBuilderOperationDef[] {
       params: [],
       defaultParams: [],
       category: PromVisualQueryOperationCategory.Time,
+      alternativesKey: 'time-functions',
       renderer: (model) => `${model.id}()`,
       addOperationHandler: defaultAddOperationHandler,
       explainHandler: () => '返回当前 Unix 时间戳',
@@ -360,6 +361,9 @@ function createSimpleFunction(name: string, category: string): QueryBuilderOpera
     params: [],
     defaultParams: [],
     category,
+    // Allow switching between time functions via the operation dropdown.
+    // This avoids an "empty dropdown" UX when a time op is added.
+    alternativesKey: category === PromVisualQueryOperationCategory.Time ? 'time-functions' : undefined,
     renderer: functionRendererLeft,
     addOperationHandler: defaultAddOperationHandler,
     explainHandler: () => {
