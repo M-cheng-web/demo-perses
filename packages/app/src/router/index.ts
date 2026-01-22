@@ -22,6 +22,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/JsonEditorShowcase.vue'),
   },
   {
+    path: '/promql',
+    name: 'PromqlShowcase',
+    component: () => import('@/views/PromqlShowcase.vue'),
+  },
+  {
     path: '/perf',
     name: 'PerformanceView',
     component: () => import('@/views/PerformanceView.vue'),

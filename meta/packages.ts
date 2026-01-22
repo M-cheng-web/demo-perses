@@ -47,6 +47,15 @@ export const packages: PackageMeta[] = [
     external: ['@grafana-fast/types'],
   },
   {
+    name: 'promql',
+    packageName: '@grafana-fast/promql',
+    display: 'PromQL',
+    description: 'PromQL 解析（AST/diagnostics）与编辑器侧转换逻辑（Code <-> Builder）。',
+    category: 'library',
+    publish: true,
+    external: ['@grafana-fast/types', '@grafana-fast/utils', '@prometheus-io/lezer-promql', '@lezer/common', '@lezer/lr', '@lezer/highlight'],
+  },
+  {
     name: 'json-editor',
     packageName: '@grafana-fast/json-editor',
     display: 'JSON Editor',

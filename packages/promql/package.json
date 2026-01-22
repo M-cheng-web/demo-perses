@@ -1,0 +1,33 @@
+{
+  "name": "@grafana-fast/promql",
+  "version": "0.1.0",
+  "description": "PromQL parsing (AST/diagnostics) and editor-side conversions for grafana-fast.",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c ../../scripts/rollup.config.js",
+    "test:parser": "node --experimental-specifier-resolution=node scripts/promql-parser.test.mjs",
+    "test:ast": "node --experimental-specifier-resolution=node scripts/promql-ast.test.mjs"
+  },
+  "dependencies": {
+    "@grafana-fast/types": "workspace:*",
+    "@grafana-fast/utils": "workspace:*",
+    "@lezer/common": "^1.2.3",
+    "@lezer/highlight": "^1.2.3",
+    "@lezer/lr": "^1.4.3",
+    "@prometheus-io/lezer-promql": "^0.308.0"
+  },
+  "license": "MIT"
+}

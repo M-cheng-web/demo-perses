@@ -21,6 +21,7 @@
       "@grafana-fast/hooks": ["packages/hook/src/index.ts"],
       "@grafana-fast/api": ["packages/api/src/index.ts"],
       "@grafana-fast/json-editor": ["packages/json-editor/src/index.ts"],
+      "@grafana-fast/promql": ["packages/promql/src/index.ts"],
       "@grafana-fast/utils": ["packages/utils/src/index.ts"],
       "@grafana-fast/panels": ["packages/panels/src/index.ts"],
       "@grafana-fast/store": ["packages/store/src/index.ts"],

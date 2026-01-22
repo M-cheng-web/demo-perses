@@ -16,6 +16,7 @@
         <Segmented v-model:value="themeModel" :options="themeOptions" />
         <Button type="primary" @click="goComponents">组件库</Button>
         <Button type="ghost" @click="goJsonEditor">JSON Editor 测试</Button>
+        <Button type="ghost" @click="goPromql">PromQL 测试</Button>
         <Button type="ghost" @click="goPerf">性能压测</Button>
         <Button type="ghost" @click="reloadDashboard">重新加载</Button>
         <Button type="ghost" @click="setQuickRange">最近 5 分钟</Button>
@@ -130,6 +131,7 @@
   const goComponents = () => router.push('/components');
   const goPerf = () => router.push('/perf');
   const goJsonEditor = () => router.push('/json-editor');
+  const goPromql = () => router.push('/promql');
 </script>
 
 <style scoped lang="less">

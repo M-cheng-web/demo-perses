@@ -6,6 +6,7 @@
     "paths": {
       "/#/*": ["src/*"],
       "@grafana-fast/dashboard": ["src/index.ts"],
+      "@grafana-fast/promql": ["../promql/dist/index.d.ts"],
       "@grafana-fast/types": ["../types/dist/index.d.ts"],
       "@grafana-fast/types/*": ["../types/dist/*"],
       "@grafana-fast/store": ["../store/dist/index.d.ts"],

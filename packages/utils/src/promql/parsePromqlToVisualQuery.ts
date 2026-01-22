@@ -5,7 +5,7 @@ import { promQueryModeller } from './PromQueryModeller';
 
 export type PromqlParseConfidence = 'exact' | 'partial' | 'selector-only';
 
-export type PromqlParseWarningCode = 'UNKNOWN_WRAPPER' | 'UNPARSED_EXPRESSION';
+export type PromqlParseWarningCode = 'UNKNOWN_WRAPPER' | 'UNPARSED_EXPRESSION' | 'UNSUPPORTED_FEATURE' | 'SYNTAX_ERROR';
 
 export interface PromqlParseWarning {
   code: PromqlParseWarningCode;

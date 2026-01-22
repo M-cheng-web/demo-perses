@@ -23,6 +23,9 @@ async function main() {
   consola.start('构建 utils 包');
   run('pnpm -C packages/utils run build');
 
+  consola.start('构建 promql 包');
+  run('pnpm -C packages/promql run build');
+
   consola.start('构建 API 包');
   run('pnpm -C packages/api run build');
 

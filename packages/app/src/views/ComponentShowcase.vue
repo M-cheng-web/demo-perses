@@ -17,6 +17,7 @@
         <Flex justify="end" :gap="10" wrap>
           <Segmented v-model:value="themeModel" size="small" :options="themeOptions" />
           <Button size="small" type="ghost" @click="goJsonEditor">JSON Editor 测试</Button>
+          <Button size="small" type="ghost" @click="goPromql">PromQL 测试</Button>
           <Button size="small" type="ghost" @click="goHome">返回 Dashboard</Button>
         </Flex>
       </div>
@@ -503,6 +504,7 @@
 
   const goHome = () => router.push('/home');
   const goJsonEditor = () => router.push('/json-editor');
+  const goPromql = () => router.push('/promql');
 
   const handleMenuClick = (payload: any) => {
     const key = typeof payload === 'string' ? payload : payload?.key;

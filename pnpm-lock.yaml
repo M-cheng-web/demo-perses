@@ -78,8 +78,10 @@ importers:
       '@grafana-fast/dashboard': workspace:*
       '@grafana-fast/hooks': workspace:*
       '@grafana-fast/json-editor': workspace:*
+      '@grafana-fast/promql': workspace:*
       '@grafana-fast/store': workspace:*
       '@grafana-fast/types': workspace:*
+      '@grafana-fast/utils': workspace:*
       '@interactjs/core': 1.10.27
       '@interactjs/utils': 1.10.27
       '@types/node': ^24.10.0
@@ -99,8 +101,10 @@ importers:
       '@grafana-fast/dashboard': link:../dashboard
       '@grafana-fast/hooks': link:../hook
       '@grafana-fast/json-editor': link:../json-editor
+      '@grafana-fast/promql': link:../promql
       '@grafana-fast/store': link:../store
       '@grafana-fast/types': link:../types
+      '@grafana-fast/utils': link:../utils
       '@interactjs/core': 1.10.27_@interactjs+utils@1.10.27
       '@interactjs/utils': 1.10.27
       echarts: 6.0.0
@@ -143,6 +147,7 @@ importers:
       '@grafana-fast/api': workspace:*
       '@grafana-fast/component': workspace:*
       '@grafana-fast/json-editor': workspace:*
+      '@grafana-fast/promql': workspace:*
       '@grafana-fast/store': workspace:*
       '@grafana-fast/types': workspace:*
       '@grafana-fast/utils': workspace:*
@@ -161,6 +166,7 @@ importers:
       '@grafana-fast/api': link:../api
       '@grafana-fast/component': link:../component
       '@grafana-fast/json-editor': link:../json-editor
+      '@grafana-fast/promql': link:../promql
       '@grafana-fast/store': link:../store
       '@grafana-fast/types': link:../types
       '@grafana-fast/utils': link:../utils
@@ -194,11 +200,13 @@ importers:
       '@grafana-fast/dashboard': workspace:*
       '@grafana-fast/store': workspace:*
       '@grafana-fast/types': workspace:*
+      '@grafana-fast/utils': workspace:*
     dependencies:
       '@grafana-fast/api': link:../api
       '@grafana-fast/dashboard': link:../dashboard
       '@grafana-fast/store': link:../store
       '@grafana-fast/types': link:../types
+      '@grafana-fast/utils': link:../utils
 
   packages/json-editor:
     specifiers:
@@ -216,6 +224,22 @@ importers:
     devDependencies:
       typescript: 5.9.3
       vue-tsc: 3.2.2_typescript@5.9.3
+
+  packages/promql:
+    specifiers:
+      '@grafana-fast/types': workspace:*
+      '@grafana-fast/utils': workspace:*
+      '@lezer/common': ^1.2.3
+      '@lezer/highlight': ^1.2.3
+      '@lezer/lr': ^1.4.3
+      '@prometheus-io/lezer-promql': ^0.308.0
+    dependencies:
+      '@grafana-fast/types': link:../types
+      '@grafana-fast/utils': link:../utils
+      '@lezer/common': 1.5.0
+      '@lezer/highlight': 1.2.3
+      '@lezer/lr': 1.4.7
+      '@prometheus-io/lezer-promql': 0.308.0_gxoqluvlsrgk2nlh3gvl5ecaby
 
   packages/store:
     specifiers: {}
@@ -914,6 +938,22 @@ packages:
       '@jridgewell/sourcemap-codec': 1.5.5
     dev: true
 
+  /@lezer/common/1.5.0:
+    resolution: {integrity: sha512-PNGcolp9hr4PJdXR4ix7XtixDrClScvtSCYW3rQG106oVMOOI+jFb+0+J3mbeL/53g1Zd6s0kJzaw6Ri68GmAA==}
+    dev: false
+
+  /@lezer/highlight/1.2.3:
+    resolution: {integrity: sha512-qXdH7UqTvGfdVBINrgKhDsVTJTxactNNxLk7+UMwZhU13lMHaOBlJe9Vqp907ya56Y3+ed2tlqzys7jDkTmW0g==}
+    dependencies:
+      '@lezer/common': 1.5.0
+    dev: false
+
+  /@lezer/lr/1.4.7:
+    resolution: {integrity: sha512-wNIFWdSUfX9Jc6ePMzxSPVgTVB4EOfDIwLQLWASyiUdHKaMsiilj9bYiGkGQCKVodd0x6bgQCV207PILGFCF9Q==}
+    dependencies:
+      '@lezer/common': 1.5.0
+    dev: false
+
   /@nodelib/fs.scandir/2.1.5:
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -1088,6 +1128,16 @@ packages:
     resolution: {integrity: sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
     dev: true
+
+  /@prometheus-io/lezer-promql/0.308.0_gxoqluvlsrgk2nlh3gvl5ecaby:
+    resolution: {integrity: sha512-XPkClWsIq5OLwklpSctFIZP+3N20eQsHoV+Q5SpRn5JS0RCf67egWAG8uCCiPNs9hb1t0vazP9kPPkOpxYx4HA==}
+    peerDependencies:
+      '@lezer/highlight': ^1.1.2
+      '@lezer/lr': ^1.2.3
+    dependencies:
+      '@lezer/highlight': 1.2.3
+      '@lezer/lr': 1.4.7
+    dev: false
 
   /@rolldown/pluginutils/1.0.0-beta.53:
     resolution: {integrity: sha512-vENRlFU4YbrwVqNDZ7fLvy+JR1CRkyr01jhSiDpE1u6py3OMzQfztQU2jxykW3ALNxO4kSlqIDeYyD0Y9RcQeQ==}

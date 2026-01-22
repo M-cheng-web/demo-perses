@@ -20,6 +20,7 @@
         <Flex justify="end" :gap="10" wrap>
           <Segmented v-model:value="themeModel" size="small" :options="themeOptions" />
           <Button size="small" type="ghost" @click="goComponents">组件展示</Button>
+          <Button size="small" type="ghost" @click="goPromql">PromQL 测试</Button>
           <Button size="small" type="ghost" @click="goHome">返回 Dashboard</Button>
         </Flex>
       </div>
@@ -73,6 +74,7 @@
 
   const goHome = () => router.push('/home');
   const goComponents = () => router.push('/components');
+  const goPromql = () => router.push('/promql');
 
   const theme = ref<DashboardTheme>(getAppliedDashboardTheme());
   const themeOptions = [

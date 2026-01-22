@@ -33,6 +33,7 @@ export default defineConfig({
             '@grafana-fast/json-editor': resolveFromRoot('../json-editor/src/index.ts'),
             '@grafana-fast/types': resolveFromRoot('../types/src/index.ts'),
             '@grafana-fast/utils': resolveFromRoot('../utils/src/index.ts'),
+            '@grafana-fast/promql': resolveFromRoot('../promql/src/index.ts'),
           }),
     },
   },

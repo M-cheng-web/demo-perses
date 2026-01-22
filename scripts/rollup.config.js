@@ -12,6 +12,7 @@ const pkgName = path.basename(pkgRoot);
 const externalsByPkg = {
   utils: ['@grafana-fast/types'],
   api: ['@grafana-fast/types', '@grafana-fast/utils'],
+  promql: ['@grafana-fast/types', '@grafana-fast/utils', '@prometheus-io/lezer-promql', '@lezer/common', '@lezer/lr', '@lezer/highlight'],
   'json-editor': ['vue', '@grafana-fast/component', '@grafana-fast/types', '@grafana-fast/utils', 'jsonc-parser'],
   hook: ['vue', '@grafana-fast/store', '@grafana-fast/dashboard', '@grafana-fast/types', '@grafana-fast/api', '@grafana-fast/utils'],
   panels: ['vue', '@grafana-fast/dashboard'],

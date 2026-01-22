@@ -17,6 +17,8 @@
     "@grafana-fast/component": "workspace:*",
     "@grafana-fast/json-editor": "workspace:*",
     "@grafana-fast/hooks": "workspace:*",
+    "@grafana-fast/promql": "workspace:*",
+    "@grafana-fast/utils": "workspace:*",
     "@grafana-fast/types": "workspace:*",
     "@grafana-fast/store": "workspace:*",
     "echarts": "^6.0.0",
