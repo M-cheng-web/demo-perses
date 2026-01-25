@@ -48,6 +48,12 @@ Token 同时挂在 `:root` 和主题容器 `.gf-theme-blue` 上，因此你可�
 - `--gf-color-success` / `--gf-color-warning` / `--gf-color-danger`：状态色
 - `--gf-color-zebra`：斑马纹底色（极浅冷灰，用于表格/列表行交替背景）
 
+### Charts
+
+用于图表系列的默认配色（被 `@grafana-fast/utils` 的 ECharts theme helper 读取），保持「蓝色优先」但避免“全是蓝”：
+
+- `--gf-chart-1`..`--gf-chart-8`：默认 series palette（blue / green / amber / red / cyan / violet / orange / slate）
+
 ### Industrial Blue（基于 Ant Design 蓝色系的低饱和版本）
 
 以下为 light 模式的主蓝梯度（对应 `packages/component/src/styles/tokens.less`）：

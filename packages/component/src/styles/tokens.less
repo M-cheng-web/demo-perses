@@ -46,7 +46,7 @@
   --gf-palette-blue-500: #356fcf;
   --gf-palette-blue-600: #2d63c0;
   --gf-palette-blue-700: #2553a6;
-  --gf-palette-blue-soft: rgba(53, 111, 207, 0.12);
+  --gf-palette-blue-soft: rgba(53, 111, 207, 0.1);
 
   --gf-palette-neutral-0: #ffffff;
   --gf-palette-neutral-50: #f7f9fc;
@@ -66,8 +66,8 @@
   --gf-color-primary-hover: var(--gf-palette-blue-600);
   --gf-color-primary-active: var(--gf-palette-blue-700);
   --gf-color-primary-soft: var(--gf-palette-blue-soft);
-  --gf-color-primary-soft-hover: rgba(53, 111, 207, 0.16);
-  --gf-color-primary-soft-active: rgba(53, 111, 207, 0.22);
+  --gf-color-primary-soft-hover: rgba(53, 111, 207, 0.14);
+  --gf-color-primary-soft-active: rgba(53, 111, 207, 0.18);
   --gf-color-primary-border: rgba(53, 111, 207, 0.28);
   --gf-color-primary-border-strong: rgba(53, 111, 207, 0.42);
 
@@ -77,11 +77,13 @@
   --gf-color-surface-raised: rgba(255, 255, 255, 0.92);
 
   /* Ambient background (nginxpulse-inspired, but more industrial) */
-  --gf-bg-glow-1: rgba(53, 111, 207, 0.14);
-  --gf-bg-glow-2: rgba(240, 180, 41, 0.10);
-  --gf-bg-glow-3: rgba(56, 189, 248, 0.08);
+  /* Keep the overall tone "blue-ish", but avoid painting everything blue */
+  --gf-bg-glow-1: rgba(53, 111, 207, 0.11);
+  --gf-bg-glow-2: rgba(240, 180, 41, 0.09);
+  --gf-bg-glow-3: rgba(56, 189, 248, 0.06);
   --gf-bg-haze-top: rgba(255, 255, 255, 0.22);
-  --gf-bg-grid-line: rgba(31, 74, 148, 0.10);
+  /* Neutral grid line (reduce blue cast) */
+  --gf-bg-grid-line: rgba(15, 24, 42, 0.07);
   --gf-bg-grid-size: 28px 28px;
 
   --gf-color-text: var(--gf-palette-neutral-900);
@@ -90,9 +92,10 @@
   --gf-color-text-disabled: rgba(15, 24, 42, 0.38);
 
   /* Border: stronger outline, still subtle */
-  --gf-color-border-muted: rgba(31, 74, 148, 0.12);
-  --gf-color-border: rgba(31, 74, 148, 0.22);
-  --gf-color-border-strong: rgba(31, 74, 148, 0.34);
+  /* Neutral borders: keep contrast without a blue tint everywhere */
+  --gf-color-border-muted: rgba(15, 24, 42, 0.10);
+  --gf-color-border: rgba(15, 24, 42, 0.18);
+  --gf-color-border-strong: rgba(15, 24, 42, 0.28);
 
   /* Neutral fills (hover/selected backgrounds) */
   --gf-color-fill: rgba(15, 24, 42, 0.06);
@@ -120,7 +123,7 @@
 
   /* Kbd / shortcut hint */
   --gf-color-kbd-bg: rgba(15, 24, 42, 0.06);
-  --gf-color-kbd-border: rgba(31, 74, 148, 0.18);
+  --gf-color-kbd-border: rgba(15, 24, 42, 0.16);
   --gf-color-kbd-text: rgba(15, 24, 42, 0.74);
 
   /* Shadows (subtle, consistent) */
@@ -131,15 +134,15 @@
   --gf-color-focus-border: rgba(120, 176, 255, 0.92);
   --gf-focus-ring: 0 0 0 3px rgba(53, 111, 207, 0.22);
 
-  /* Charts: low-saturation blue gradient (use as defaults for ECharts) */
-  --gf-chart-1: #356fcf;
-  --gf-chart-2: #4a86dd;
-  --gf-chart-3: #2d63c0;
-  --gf-chart-4: #2553a6;
-  --gf-chart-5: #5d8fbf;
-  --gf-chart-6: #6d85ad;
-  --gf-chart-7: #4b6f9f;
-  --gf-chart-8: #2f466f;
+  /* Charts: balanced palette (still blue-first, but not all-blue) */
+  --gf-chart-1: #356fcf; /* blue */
+  --gf-chart-2: #22a06b; /* green */
+  --gf-chart-3: #f0b429; /* amber */
+  --gf-chart-4: #e4586c; /* red/pink */
+  --gf-chart-5: #3aa7c2; /* cyan */
+  --gf-chart-6: #7b61d1; /* violet */
+  --gf-chart-7: #fc8452; /* orange */
+  --gf-chart-8: #6d85ad; /* slate */
 
   /* Z-index scale */
   --gf-z-mask: 2400;
@@ -212,7 +215,7 @@
   --gf-palette-blue-500: #67adff;
   --gf-palette-blue-600: #4ba0ff;
   --gf-palette-blue-700: #2f84ec;
-  --gf-palette-blue-soft: rgba(103, 173, 255, 0.16);
+  --gf-palette-blue-soft: rgba(103, 173, 255, 0.14);
 
   --gf-palette-neutral-0: #0f182a;
   --gf-palette-neutral-50: #0b1220;
@@ -231,8 +234,8 @@
   --gf-color-primary-hover: var(--gf-palette-blue-600);
   --gf-color-primary-active: var(--gf-palette-blue-700);
   --gf-color-primary-soft: var(--gf-palette-blue-soft);
-  --gf-color-primary-soft-hover: rgba(103, 173, 255, 0.22);
-  --gf-color-primary-soft-active: rgba(103, 173, 255, 0.3);
+  --gf-color-primary-soft-hover: rgba(103, 173, 255, 0.2);
+  --gf-color-primary-soft-active: rgba(103, 173, 255, 0.26);
   --gf-color-primary-border: rgba(103, 173, 255, 0.34);
   --gf-color-primary-border-strong: rgba(103, 173, 255, 0.5);
 
@@ -242,11 +245,12 @@
   --gf-color-surface-raised: rgba(18, 28, 48, 0.92);
 
   /* Ambient background (nginxpulse-inspired, but more industrial) */
-  --gf-bg-glow-1: rgba(47, 132, 236, 0.34);
-  --gf-bg-glow-2: rgba(255, 209, 102, 0.14);
-  --gf-bg-glow-3: rgba(134, 192, 255, 0.12);
+  /* Dark: slightly calmer glow, keep blue as the primary accent */
+  --gf-bg-glow-1: rgba(47, 132, 236, 0.26);
+  --gf-bg-glow-2: rgba(255, 209, 102, 0.12);
+  --gf-bg-glow-3: rgba(134, 192, 255, 0.10);
   --gf-bg-haze-top: rgba(0, 0, 0, 0.22);
-  --gf-bg-grid-line: rgba(138, 165, 220, 0.14);
+  --gf-bg-grid-line: rgba(230, 237, 247, 0.12);
   --gf-bg-grid-size: 28px 28px;
 
   --gf-color-text: var(--gf-palette-neutral-900);
@@ -254,9 +258,10 @@
   --gf-color-text-tertiary: rgba(230, 237, 247, 0.72);
   --gf-color-text-disabled: rgba(230, 237, 247, 0.42);
 
-  --gf-color-border-muted: rgba(138, 165, 220, 0.14);
-  --gf-color-border: rgba(138, 165, 220, 0.22);
-  --gf-color-border-strong: rgba(138, 165, 220, 0.34);
+  /* Neutral borders in dark (reduce the blue cast) */
+  --gf-color-border-muted: rgba(230, 237, 247, 0.14);
+  --gf-color-border: rgba(230, 237, 247, 0.22);
+  --gf-color-border-strong: rgba(230, 237, 247, 0.34);
 
   --gf-color-fill: rgba(230, 237, 247, 0.08);
   --gf-color-fill-secondary: rgba(230, 237, 247, 0.1);
@@ -281,7 +286,7 @@
   --gf-color-tooltip-text: rgba(230, 237, 247, 0.94);
 
   --gf-color-kbd-bg: rgba(230, 237, 247, 0.08);
-  --gf-color-kbd-border: rgba(138, 165, 220, 0.18);
+  --gf-color-kbd-border: rgba(230, 237, 247, 0.18);
   --gf-color-kbd-text: rgba(230, 237, 247, 0.78);
 
   /* Shadows (only for floating layers) */
@@ -292,15 +297,15 @@
   --gf-color-focus-border: rgba(155, 205, 255, 0.92);
   --gf-focus-ring: 0 0 0 3px rgba(103, 173, 255, 0.26);
 
-  /* Charts: low-saturation blue gradient (use as defaults for ECharts) */
-  --gf-chart-1: #67adff;
-  --gf-chart-2: #86c0ff;
-  --gf-chart-3: #4ba0ff;
-  --gf-chart-4: #2f84ec;
-  --gf-chart-5: #8aa2c8;
-  --gf-chart-6: #5f86c0;
-  --gf-chart-7: #a8b6d6;
-  --gf-chart-8: #3f5f93;
+  /* Charts: balanced palette (still blue-first, but not all-blue) */
+  --gf-chart-1: #67adff; /* blue */
+  --gf-chart-2: #33c28e; /* green */
+  --gf-chart-3: #ffd166; /* amber */
+  --gf-chart-4: #ff6b83; /* red/pink */
+  --gf-chart-5: #73c0de; /* cyan */
+  --gf-chart-6: #b59cff; /* violet */
+  --gf-chart-7: #ff9f6e; /* orange */
+  --gf-chart-8: #a8b4c8; /* slate */
 
   /* Z-index scale */
   --gf-z-mask: 2400;

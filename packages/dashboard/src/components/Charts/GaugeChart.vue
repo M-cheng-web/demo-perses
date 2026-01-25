@@ -130,7 +130,7 @@
   function getColor(value: number): string {
     const thresholds = thresholdsConfig.value.steps || [];
     if (!thresholds.length) {
-      return '#5470c6';
+      return '#356fcf';
     }
 
     // 过滤掉 value 为 null 的阈值，并按值排序
@@ -151,7 +151,7 @@
     }
 
     const firstThreshold = validThresholds[0];
-    return firstThreshold?.color || getEChartsTheme().palette[0] || '#5470c6';
+    return firstThreshold?.color || getEChartsTheme().palette[0] || '#356fcf';
   }
 
   function getChartOption(): EChartsOption {

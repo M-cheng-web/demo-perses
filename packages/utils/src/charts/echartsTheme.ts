@@ -28,11 +28,11 @@ export interface EChartsTheme {
 }
 
 const FALLBACK = {
-  palette: ['#356fcf', '#3f7bd9', '#2c5fb0', '#5d8fbf', '#6d85ad', '#4b6f9f', '#2f466f', '#8ea6c8'],
+  palette: ['#356fcf', '#22a06b', '#f0b429', '#e4586c', '#3aa7c2', '#7b61d1', '#fc8452', '#6d85ad'],
   text: '#0f182a',
   textSecondary: 'rgba(15, 24, 42, 0.62)',
-  borderMuted: 'rgba(31, 74, 148, 0.12)',
-  border: 'rgba(31, 74, 148, 0.22)',
+  borderMuted: 'rgba(15, 24, 42, 0.10)',
+  border: 'rgba(15, 24, 42, 0.18)',
   tooltipBg: 'rgba(15, 24, 42, 0.92)',
   tooltipText: '#f5f8ff',
   surface: '#ffffff',

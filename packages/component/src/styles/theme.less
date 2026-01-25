@@ -53,7 +53,7 @@ body::before {
     linear-gradient(to bottom, var(--gf-bg-grid-line) 1px, transparent 1px);
   background-size: var(--gf-bg-grid-size);
   background-position: 0 0;
-  opacity: 0.55;
+  opacity: 0.42;
   pointer-events: none;
   z-index: 0;
   -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0) 70%);
@@ -67,7 +67,7 @@ body::after {
   background-image: radial-gradient(1300px circle at 10% -15%, var(--gf-bg-glow-1), transparent 66%),
     radial-gradient(760px circle at 86% -8%, var(--gf-bg-glow-2), transparent 62%),
     radial-gradient(1100px circle at 50% 118%, var(--gf-bg-glow-3), transparent 74%);
-  opacity: 0.65;
+  opacity: 0.52;
   pointer-events: none;
   z-index: 0;
 }
@@ -86,12 +86,12 @@ body > * {
 @keyframes gf-ambient-breathe {
   0%,
   100% {
-    opacity: 0.62;
+    opacity: 0.52;
     filter: saturate(1) contrast(1);
   }
   50% {
-    opacity: 0.78;
-    filter: saturate(1.08) contrast(1.02);
+    opacity: 0.66;
+    filter: saturate(1.04) contrast(1.01);
   }
 }
 

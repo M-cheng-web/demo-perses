@@ -8,7 +8,7 @@ import type { ColorScheme } from '@grafana-fast/types';
  * 预定义颜色方案（用于图表系列配色）
  */
 export const COLOR_SCHEMES: Record<ColorScheme, string[]> = {
-  default: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
+  default: ['#356fcf', '#22a06b', '#f0b429', '#e4586c', '#3aa7c2', '#7b61d1', '#fc8452', '#6d85ad', '#ea7ccc'],
   cool: ['#4e79a7', '#59a14f', '#9c755f', '#f28e2b', '#edc948', '#bab0ac', '#e15759', '#b07aa1'],
   warm: ['#e15759', '#f28e2b', '#edc948', '#59a14f', '#4e79a7', '#b07aa1', '#9c755f', '#bab0ac'],
   classic: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f'],
@@ -85,5 +85,5 @@ export function getColorByThreshold(value: number, thresholds: Array<{ value: nu
     if (value >= threshold.value) return threshold.color;
   }
 
-  return sorted[sorted.length - 1]?.color || '#5470c6';
+  return sorted[sorted.length - 1]?.color || '#356fcf';
 }

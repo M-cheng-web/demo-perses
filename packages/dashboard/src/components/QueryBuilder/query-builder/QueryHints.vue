@@ -200,7 +200,7 @@
     border-radius: 4px;
     overflow: hidden;
     background: @background-light;
-    border-left: 3px solid #fa5914; // 提示区块使用橙色强调
+    border-left: 3px solid @warning-color; // 提示区块使用警告色强调（统一 token）
 
     &__header {
       display: flex;
@@ -254,13 +254,13 @@
     }
 
     &__suggestion {
-      background: #fff7e6;
+      background: var(--gf-color-warning-soft);
       padding: 6px 8px;
       border-radius: 2px;
       margin: 6px 0;
-      border-left: 2px solid #faad14;
+      border-left: 2px solid @warning-color;
       font-size: 11px;
-      color: #8c8c8c;
+      color: @text-color-secondary;
     }
   }
 </style>

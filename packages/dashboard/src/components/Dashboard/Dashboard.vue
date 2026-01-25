@@ -184,12 +184,53 @@
 </script>
 
 <style scoped lang="less">
+  @import '/#/assets/styles/variables.less';
+
   .dp-dashboard {
+    // Visual tuning; host apps can override these CSS vars on the mount container.
+    --gf-dashboard-grid-size: 28px;
+    --gf-dashboard-grid-opacity: 0.32;
+
+    position: relative;
+    isolation: isolate;
     display: flex;
     flex-direction: column;
     width: 100%;
     height: 100%;
-    background-color: transparent;
+    background-color: @background-light;
+    background-image:
+      linear-gradient(180deg, var(--gf-bg-haze-top, rgba(255, 255, 255, 0.22)), transparent 45%),
+      radial-gradient(1200px circle at 12% -18%, var(--gf-bg-glow-1, rgba(59, 130, 246, 0.12)), transparent 58%),
+      radial-gradient(900px circle at 90% -12%, var(--gf-bg-glow-2, rgba(34, 197, 94, 0.1)), transparent 55%),
+      radial-gradient(800px circle at 50% 115%, var(--gf-bg-glow-3, rgba(245, 158, 11, 0.08)), transparent 60%);
+    background-attachment: fixed;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, var(--gf-bg-grid-line, rgba(148, 163, 184, 0.18)) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--gf-bg-grid-line, rgba(148, 163, 184, 0.18)) 1px, transparent 1px),
+        linear-gradient(to right, var(--gf-bg-grid-line, rgba(148, 163, 184, 0.18)) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--gf-bg-grid-line, rgba(148, 163, 184, 0.18)) 1px, transparent 1px);
+      background-size:
+        var(--gf-dashboard-grid-size) var(--gf-dashboard-grid-size),
+        var(--gf-dashboard-grid-size) var(--gf-dashboard-grid-size),
+        calc(var(--gf-dashboard-grid-size) * 4) calc(var(--gf-dashboard-grid-size) * 4),
+        calc(var(--gf-dashboard-grid-size) * 4) calc(var(--gf-dashboard-grid-size) * 4);
+      background-position: 0 0;
+      opacity: var(--gf-dashboard-grid-opacity);
+      pointer-events: none;
+      z-index: 0;
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0) 70%);
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0) 70%);
+    }
+
+    > * {
+      position: relative;
+      z-index: 1;
+    }
 
     &__content {
       flex: 1;

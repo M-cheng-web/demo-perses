@@ -220,7 +220,7 @@
           // 从 ECharts option 中获取对应的系列配置
           // 注意：由于隐藏的系列不在 option.series 中，需要使用 visibleSeriesIndex
           const seriesOption = seriesOptions?.[visibleSeriesIndex];
-          const color = seriesOption?.lineStyle?.color || seriesOption?.itemStyle?.color || '#5470c6';
+          const color = seriesOption?.lineStyle?.color || seriesOption?.itemStyle?.color || '#356fcf';
 
           const label = timeSeries.metric.__legend__ || timeSeries.metric.__name__ || `Series ${dataIndex + 1}`;
 
