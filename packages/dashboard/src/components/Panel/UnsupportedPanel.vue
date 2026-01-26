@@ -19,17 +19,17 @@
 
     <div :class="bem('body')">
       <div :class="bem('row')">
-        <div :class="bem('label')">Panel Type</div>
+        <div :class="bem('label')">面板类型</div>
         <div :class="bem('value')">
           <code>{{ missingType }}</code>
         </div>
       </div>
 
       <div :class="bem('row')">
-        <div :class="bem('label')">Raw Options</div>
+        <div :class="bem('label')">原始配置</div>
         <div :class="bem('value')">
           <pre :class="bem('code')">{{ optionsJson }}</pre>
-          <Button size="small" type="ghost" :class="bem('copy')" @click="copyOptions">复制 options JSON</Button>
+          <Button size="small" type="ghost" :class="bem('copy')" @click="copyOptions">复制配置（options）JSON</Button>
         </div>
       </div>
     </div>
@@ -48,7 +48,7 @@
     panel: Panel;
   }>();
 
-  const missingType = computed(() => props.panel.type || '(unknown)');
+  const missingType = computed(() => props.panel.type || '(未知)');
   const optionsJson = computed(() => {
     try {
       return JSON.stringify(props.panel.options ?? {}, null, 2);

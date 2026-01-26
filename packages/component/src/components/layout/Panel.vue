@@ -5,17 +5,43 @@
   - size 用于控制密度（面板组：large；单图表：small）
 -->
 <template>
-  <section
-    :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-hoverable': hoverable, 'is-borderless': bordered === false }]"
+  <div
+    :class="[
+      bem(),
+      bem({ [`size-${size}`]: true }),
+      {
+        'is-hoverable': hoverable,
+        'is-borderless': bordered === false,
+        'is-ghost': ghost,
+        'is-flat': isFlat,
+        'is-collapsible': collapsible,
+      },
+    ]"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
-    <header v-if="hasHeader" :class="bem('header')">
-      <button
+    <div
+      v-if="hasHeader"
+      :class="[bem('header'), { 'is-collapsible': collapsible }]"
+      :role="collapsible ? 'button' : undefined"
+      :tabindex="collapsible ? 0 : undefined"
+      :aria-expanded="collapsible ? !collapsed : undefined"
+      @click="handleHeaderClick"
+      @keydown="handleHeaderKeydown"
+    >
+      <div :class="bem('title-area')">
+        <div v-if="title" :class="bem('title')">{{ title }}</div>
+        <Tooltip v-if="description" :title="description">
+          <span :class="bem('info')" aria-label="描述" @click.stop>i</span>
+        </Tooltip>
+      </div>
+
+      <div
         v-if="collapsible"
-        type="button"
         :class="[bem('collapse'), { 'is-expanded': !collapsed }]"
-        aria-label="toggle collapse"
+        role="button"
+        tabindex="0"
+        aria-label="切换折叠"
         @click.stop="toggleCollapse"
       >
         <svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true">
@@ -24,26 +50,19 @@
             d="M7.2 4.9a1 1 0 0 1 1.4 0l5.2 5.1a1 1 0 0 1 0 1.4l-5.2 5.1a1 1 0 1 1-1.4-1.4l4.5-4.4-4.5-4.4a1 1 0 0 1 0-1.4Z"
           />
         </svg>
-      </button>
-
-      <div :class="bem('title-area')">
-        <div v-if="title" :class="bem('title')">{{ title }}</div>
-        <Tooltip v-if="description" :title="description">
-          <span :class="bem('info')" aria-label="description">i</span>
-        </Tooltip>
       </div>
 
-      <div v-if="$slots.right" :class="bem('right')">
+      <div v-if="$slots.right" :class="bem('right')" @click.stop>
         <slot name="right" :hovered="isHovered"></slot>
       </div>
-    </header>
+    </div>
 
     <Transition name="gf-panel-collapse">
-      <div v-if="!collapsed" :class="[bem('body'), { 'is-body-padded': bodyPadding }]">
+      <div v-if="!collapsed" :class="[bem('body'), { 'is-body-padded': effectiveBodyPadding }]">
         <slot></slot>
       </div>
     </Transition>
-  </section>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -67,6 +86,8 @@
       size?: 'small' | 'middle' | 'large';
       /** 是否展示边框 */
       bordered?: boolean;
+      /** 无边框 + 透明背景（用于“分组/区块”容器，降低层级感） */
+      ghost?: boolean;
       /** hover 是否提升边框/阴影（同时提供 `--panel-hover` 供 hover actions 使用） */
       hoverable?: boolean;
       /** 内容区是否增加 padding（单图表内容常自带 padding，可关闭） */
@@ -79,6 +100,7 @@
       collapsed: false,
       size: 'middle',
       bordered: true,
+      ghost: false,
       hoverable: false,
       bodyPadding: true,
     }
@@ -94,11 +116,25 @@
   const slots = useSlots();
   const hasHeader = computed(() => Boolean(props.title || props.description || props.collapsible || !!slots.right));
   const isHovered = ref(false);
+  const isFlat = computed(() => props.bordered === false);
+  const effectiveBodyPadding = computed(() => (props.bordered === false ? false : props.bodyPadding));
 
   const toggleCollapse = () => {
     const next = !props.collapsed;
     emit('update:collapsed', next);
     emit('toggle', next);
+  };
+
+  const handleHeaderClick = () => {
+    if (!props.collapsible) return;
+    toggleCollapse();
+  };
+
+  const handleHeaderKeydown = (event: KeyboardEvent) => {
+    if (!props.collapsible) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toggleCollapse();
   };
 </script>
 
@@ -149,16 +185,42 @@
       border-color: transparent;
     }
 
+    &.is-ghost {
+      background-color: transparent;
+      border-color: transparent;
+      overflow: visible;
+      box-shadow: none;
+    }
+
+    &.is-ghost.is-hoverable:hover {
+      border-color: transparent;
+      box-shadow: none;
+    }
+
     &__header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       gap: var(--gf-space-2);
       min-height: var(--gf-panel-header-height);
       padding: 0 var(--gf-panel-pad-x);
-      background: color-mix(in srgb, var(--gf-color-surface-muted), transparent 18%);
+      background: var(--gf-color-surface);
       border-bottom: 1px solid var(--gf-color-border-muted);
       flex-shrink: 0;
+
+      &.is-collapsible {
+        cursor: pointer;
+        user-select: none;
+      }
+
+      &.is-collapsible:focus-visible {
+        outline: none;
+        box-shadow: var(--gf-focus-ring);
+      }
+    }
+
+    &.is-ghost &__header {
+      background: color-mix(in srgb, var(--gf-color-surface-muted), transparent 34%);
     }
 
     &__collapse {
@@ -226,12 +288,12 @@
       display: flex;
       align-items: center;
       flex-shrink: 0;
-      margin-left: auto;
     }
 
     &__body {
       flex: 1;
       min-height: 0;
+      margin: 0;
       padding: 0;
     }
 

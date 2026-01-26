@@ -194,11 +194,11 @@
   interface Emits {
     (e: 'update:modelValue', value: QueryBuilderOperation[]): void;
     /**
-     * Emit when the whole query object needs to be updated (e.g. binaryQueries changes).
+     * 当需要更新整份 query 对象时触发（例如 binaryQueries 发生变化）
      *
-     * Notes:
-     * - Prefer kebab-case event name in templates: `@query-update`
-     * - Keep camelCase for backward compatibility.
+     * 注意：
+     * - 模板中优先使用 kebab-case：`@query-update`
+     * - 同时保留 camelCase：用于兼容旧用法
      */
     (e: 'query-update', query: any): void;
     (e: 'queryUpdate', query: any): void;

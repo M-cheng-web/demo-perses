@@ -46,7 +46,7 @@
   const props = defineProps<{
     groupId: ID;
     panel: Panel;
-    /** Panel hover state injected by @grafana-fast/component Panel slot props */
+    /** hover 状态（由 @grafana-fast/component 的 Panel slot props 注入） */
     hovered: boolean;
   }>();
 

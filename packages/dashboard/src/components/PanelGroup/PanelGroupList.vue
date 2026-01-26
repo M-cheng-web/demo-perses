@@ -15,9 +15,11 @@
       size="large"
       :collapsible="true"
       :collapsed="group.isCollapsed"
-      :hoverable="true"
-      :body-padding="true"
-      @update:collapsed="(collapsed) => handleCollapsedChange(group.id, collapsed)"
+      :bordered="false"
+      :ghost="true"
+      :hoverable="false"
+      :body-padding="false"
+      @update:collapsed="(collapsed: boolean) => handleCollapsedChange(group.id, collapsed)"
     >
       <template #right>
         <PanelGroupRightActions

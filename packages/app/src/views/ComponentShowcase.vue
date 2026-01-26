@@ -18,101 +18,101 @@
           <Segmented v-model:value="themeModel" size="small" :options="themeOptions" />
           <Button size="small" type="ghost" @click="goJsonEditor">JSON Editor 测试</Button>
           <Button size="small" type="ghost" @click="goPromql">PromQL 测试</Button>
-          <Button size="small" type="ghost" @click="goHome">返回 Dashboard</Button>
+          <Button size="small" type="ghost" @click="goHome">返回仪表盘</Button>
         </Flex>
       </div>
 
       <div class="dp-component-showcase__grid">
-        <Card title="Buttons" size="small" :bordered="true">
+        <Card title="按钮" size="small" :bordered="true">
           <Space wrap :size="8">
-            <Button type="primary" @click="notify('primary')">Primary</Button>
-            <Button type="default" @click="notify('default')">Default</Button>
-            <Button type="ghost" @click="notify('ghost')">Ghost</Button>
-            <Button type="dashed" @click="notify('dashed')">Dashed</Button>
-            <Button type="text" @click="notify('text')">Text</Button>
-            <Button type="link" @click="notify('link')">Link</Button>
-            <Button danger @click="notify('danger')">Danger</Button>
-            <Button :loading="loadingBtn" type="primary" @click="triggerLoading">Loading</Button>
-            <Button disabled>Disabled</Button>
+            <Button type="primary" @click="notify('主按钮')">主按钮</Button>
+            <Button type="default" @click="notify('默认按钮')">默认</Button>
+            <Button type="ghost" @click="notify('幽灵按钮')">幽灵</Button>
+            <Button type="dashed" @click="notify('虚线按钮')">虚线</Button>
+            <Button type="text" @click="notify('文本按钮')">文本</Button>
+            <Button type="link" @click="notify('链接按钮')">链接</Button>
+            <Button danger @click="notify('危险按钮')">危险</Button>
+            <Button :loading="loadingBtn" type="primary" @click="triggerLoading">加载中</Button>
+            <Button disabled>禁用</Button>
           </Space>
 
           <Divider />
 
           <Space wrap :size="8">
-            <Button size="small" type="primary">Small</Button>
-            <Button size="middle" type="primary">Middle</Button>
-            <Button size="large" type="primary">Large</Button>
-            <Button size="small" type="ghost">Shortcut</Button>
+            <Button size="small" type="primary">小</Button>
+            <Button size="middle" type="primary">中</Button>
+            <Button size="large" type="primary">大</Button>
+            <Button size="small" type="ghost">快捷键</Button>
           </Space>
         </Card>
 
-        <Card title="Tabs / Divider / Tag" size="small" :bordered="true">
+        <Card title="标签页 / 分割线 / 标签" size="small" :bordered="true">
           <Tabs v-model:activeKey="tabsActiveKey">
-            <TabPane name="overview" tab="Overview">
+            <TabPane name="overview" tab="概览">
               <Space direction="vertical" :size="10" style="width: 100%">
-                <div class="dp-component-showcase__hint">Tabs + Tag + Divider + message API</div>
+                <div class="dp-component-showcase__hint">Tabs + Tag + Divider + message API 演示</div>
                 <Space wrap :size="8">
                   <Tag color="var(--gf-color-primary)">core</Tag>
                   <Tag color="var(--gf-color-success)">healthy</Tag>
                   <Tag color="var(--gf-color-warning)">warning</Tag>
                 </Space>
                 <Divider />
-                <Button size="small" type="ghost" @click="notify('tab:overview')">Trigger message</Button>
+                <Button size="small" type="ghost" @click="notify('概览：触发消息')">触发消息</Button>
               </Space>
             </TabPane>
-            <TabPane name="detail" tab="Detail">
-              <div class="dp-component-showcase__hint">这里是 Detail 内容</div>
+            <TabPane name="detail" tab="详情">
+              <div class="dp-component-showcase__hint">这里是详情内容</div>
             </TabPane>
           </Tabs>
         </Card>
 
-        <Card title="Form Controls" size="small" :bordered="true">
+        <Card title="表单控件" size="small" :bordered="true">
           <Form :model="form" layout="vertical">
-            <FormItem label="Input" required>
+            <FormItem label="输入框" required>
               <Input v-model:value="form.name" placeholder="输入名称" allow-clear />
             </FormItem>
 
-            <FormItem label="Textarea">
+            <FormItem label="文本域">
               <Textarea v-model:value="form.desc" :rows="2" placeholder="简短描述" />
             </FormItem>
 
-            <FormItem label="Select">
+            <FormItem label="选择器">
               <Select v-model:value="form.env" :options="envOptions" placeholder="选择环境" allow-clear />
             </FormItem>
 
-            <FormItem label="Select (multiple + search)">
+            <FormItem label="选择器（多选 + 搜索）">
               <Select v-model:value="form.tags" mode="multiple" show-search :options="tagOptions" placeholder="选择标签" allow-clear />
             </FormItem>
 
-            <FormItem label="Select (long list scroll)">
+            <FormItem label="选择器（长列表滚动）">
               <Select v-model:value="form.longEnv" :options="longEnvOptions" placeholder="下拉项很多时出现滚动条" allow-clear />
             </FormItem>
 
-            <FormItem label="InputNumber">
+            <FormItem label="数字输入">
               <InputNumber v-model:value="form.threshold" :min="0" :max="100" />
             </FormItem>
 
-            <FormItem label="Slider">
+            <FormItem label="滑块">
               <Slider v-model:value="form.opacity" :min="0" :max="100" :step="5" />
             </FormItem>
 
-            <FormItem label="Cascader">
+            <FormItem label="级联选择">
               <Cascader v-model:value="form.cascader" :options="cascaderOptions" placeholder="选择路径" />
             </FormItem>
 
-            <FormItem label="Switch / Checkbox">
+            <FormItem label="开关 / 复选框">
               <Space :size="12" wrap>
                 <Space :size="8">
-                  <span class="dp-component-showcase__hint">Switch</span>
+                  <span class="dp-component-showcase__hint">开关</span>
                   <Switch v-model:checked="form.enabled" />
                 </Space>
-                <Checkbox v-model:modelValue="form.checked">Checkbox</Checkbox>
+                <Checkbox v-model:modelValue="form.checked">复选框</Checkbox>
               </Space>
             </FormItem>
           </Form>
         </Card>
 
-        <Card title="Form Validation (provide/inject)" size="small" :bordered="true">
+        <Card title="表单校验（provide/inject）" size="small" :bordered="true">
           <Space direction="vertical" :size="10" style="width: 100%">
             <div class="dp-component-showcase__hint">点击“校验”后，未通过规则的字段下方会显示红色提示。</div>
             <Form ref="validateFormRef" :model="validateForm" :rules="validateRules" layout="vertical">
@@ -146,10 +146,10 @@
           </Space>
         </Card>
 
-        <Card title="Navigation (Dropdown / Menu)" size="small" :bordered="true">
+        <Card title="导航（Dropdown / Menu）" size="small" :bordered="true">
           <Space direction="vertical" :size="10" style="width: 100%">
             <Dropdown>
-              <Button type="ghost">Dropdown Menu</Button>
+              <Button type="ghost">下拉菜单</Button>
               <template #overlay>
                 <Menu :items="menuItems" @click="handleMenuClick" />
               </template>
@@ -157,32 +157,32 @@
 
             <Divider />
 
-            <div class="dp-component-showcase__hint">MenuItem (slot-driven)</div>
+            <div class="dp-component-showcase__hint">MenuItem（slot 驱动）</div>
             <Menu @click="handleMenuClick">
-              <MenuItem eventKey="a">Action A</MenuItem>
-              <MenuItem eventKey="b">Action B</MenuItem>
+              <MenuItem eventKey="a">动作 A</MenuItem>
+              <MenuItem eventKey="b">动作 B</MenuItem>
             </Menu>
           </Space>
         </Card>
 
-        <Card title="Feedback" size="small" :bordered="true">
+        <Card title="反馈" size="small" :bordered="true">
           <Space direction="vertical" :size="10" style="width: 100%">
-            <Alert type="info" show-icon message="Info" description="这是信息提示，保持低饱和与克制对比。" />
-            <Alert type="success" show-icon message="Success" description="成功提示（低饱和绿）。" />
-            <Alert type="warning" show-icon message="Warning" description="警告提示（低饱和黄）。" />
-            <Alert type="error" show-icon message="Error" description="错误提示（低饱和红）。" />
+            <Alert type="info" show-icon message="信息" description="这是信息提示，保持低饱和与克制对比。" />
+            <Alert type="success" show-icon message="成功" description="成功提示（低饱和绿）。" />
+            <Alert type="warning" show-icon message="警告" description="警告提示（低饱和黄）。" />
+            <Alert type="error" show-icon message="错误" description="错误提示（低饱和红）。" />
           </Space>
 
           <Divider />
 
           <Space wrap :size="8">
-            <Button type="primary" @click="modalOpen = true">Open Modal</Button>
-            <Button type="ghost" @click="drawerOpen = true">Open Drawer</Button>
+            <Button type="primary" @click="modalOpen = true">打开 Modal</Button>
+            <Button type="ghost" @click="drawerOpen = true">打开 Drawer</Button>
             <Tooltip title="遵循主题 tooltip（哑光背景 + 冷灰边框）">
-              <Button type="text">Tooltip</Button>
+              <Button type="text">提示</Button>
             </Tooltip>
-            <Popconfirm title="确认执行该操作？" @confirm="notify('confirmed')" @cancel="notify('canceled')">
-              <Button type="text">Popconfirm</Button>
+            <Popconfirm title="确认执行该操作？" @confirm="notify('已确认')" @cancel="notify('已取消')">
+              <Button type="text">二次确认</Button>
             </Popconfirm>
           </Space>
 
@@ -190,15 +190,15 @@
 
           <Space wrap :size="10">
             <Spin tip="加载中..." />
-            <Loading text="Loading..." />
+            <Loading text="加载中..." />
           </Space>
         </Card>
 
-        <Card title="Data Display (Table + Zebra)" size="small" :bordered="true">
+        <Card title="数据展示（Table + 斑马纹）" size="small" :bordered="true">
           <Table :columns="tableColumns" :data-source="tableData" :pagination="tablePagination" size="small" />
         </Card>
 
-        <Card title="List (Variants / Slots)" size="small" :bordered="true">
+        <Card title="列表（Variants / Slots）" size="small" :bordered="true">
           <Space direction="vertical" :size="10" style="width: 100%">
             <div class="dp-component-showcase__hint">KV：适合调试信息（插槽按 item.key：#baseUrl、#ready ...）</div>
             <List :items="listKvItems" variant="kv" size="small" :split="false" :hoverable="true">
@@ -238,19 +238,19 @@
           </Space>
         </Card>
 
-        <Card title="Empty / Alert" size="small" :bordered="true">
+        <Card title="空状态 / 提示" size="small" :bordered="true">
           <Space direction="vertical" :size="10" style="width: 100%">
             <Empty description="暂无告警规则" />
-            <Alert type="success" show-icon message="Saved" description="配置已保存并生效。" />
+            <Alert type="success" show-icon message="已保存" description="配置已保存并生效。" />
           </Space>
         </Card>
 
-        <Card title="Layout (Space / Flex / Row / Col)" size="small" :bordered="true">
+        <Card title="布局（Space / Flex / Row / Col）" size="small" :bordered="true">
           <Space direction="vertical" :size="10" style="width: 100%">
             <div class="dp-component-showcase__hint">Flex</div>
             <Flex justify="between" :gap="10">
-              <Tag color="var(--gf-color-primary)">Left</Tag>
-              <Tag color="var(--gf-color-primary-secondary)">Right</Tag>
+              <Tag color="var(--gf-color-primary)">左侧</Tag>
+              <Tag color="var(--gf-color-primary-secondary)">右侧</Tag>
             </Flex>
 
             <Divider />
@@ -270,14 +270,14 @@
           </Space>
         </Card>
 
-        <Card title="Cards (Zebra)" size="small" :bordered="true">
+        <Card title="卡片（斑马纹）" size="small" :bordered="true">
           <div class="dp-component-showcase__card-list dp-component-showcase__card-list--zebra">
             <div v-for="card in cards" :key="card.key" class="dp-component-showcase__card-wrap">
               <Card :title="card.title" size="small" :bordered="true">
                 <Flex justify="between" :gap="10">
                   <div class="dp-component-showcase__card-meta">
                     <div class="dp-component-showcase__card-desc">{{ card.desc }}</div>
-                    <div class="dp-component-showcase__card-sub">Key: {{ card.key }}</div>
+                    <div class="dp-component-showcase__card-sub">Key：{{ card.key }}</div>
                   </div>
                   <Tag :color="card.tagColor">{{ card.tag }}</Tag>
                 </Flex>
@@ -371,8 +371,8 @@
 
   const theme = ref<DashboardTheme>(getAppliedDashboardTheme());
   const themeOptions = [
-    { label: 'Light', value: 'light' },
-    { label: 'Dark', value: 'dark' },
+    { label: '浅色', value: 'light' },
+    { label: '深色', value: 'dark' },
   ] as const;
 
   const themeModel = computed({
@@ -433,7 +433,7 @@
   const longEnvOptions = Array.from({ length: 80 }, (_, i) => {
     const idx = i + 1;
     return {
-      label: `Option ${String(idx).padStart(2, '0')} - a very long label for scroll demo`,
+      label: `选项 ${String(idx).padStart(2, '0')} - 用于滚动演示的超长标签`,
       value: `opt-${idx}`,
     };
   });
@@ -466,12 +466,12 @@
   ];
 
   const menuItems = [
-    { key: 'reload', label: 'Reload' },
-    { key: 'settings', label: 'Settings' },
+    { key: 'reload', label: '刷新' },
+    { key: 'settings', label: '设置' },
   ];
 
   const notify = (label: string) => {
-    message.success(`action: ${label}`);
+    message.success(`操作：${label}`);
   };
 
   const handleValidate = async () => {
@@ -508,13 +508,13 @@
 
   const handleMenuClick = (payload: any) => {
     const key = typeof payload === 'string' ? payload : payload?.key;
-    notify(`menu:${String(key)}`);
+    notify(`菜单：${String(key)}`);
   };
 
   const tableColumns = [
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Env', dataIndex: 'env', key: 'env' },
-    { title: 'Value', dataIndex: 'value', key: 'value', sorter: (a: any, b: any) => a.value - b.value },
+    { title: '名称', dataIndex: 'name', key: 'name' },
+    { title: '环境', dataIndex: 'env', key: 'env' },
+    { title: '数值', dataIndex: 'value', key: 'value', sorter: (a: any, b: any) => a.value - b.value },
   ];
 
   const tableData = computed(() =>
@@ -543,17 +543,17 @@
   ]);
 
   const listGridItems = computed(() => [
-    { key: 'g1', label: 'Service A', value: '核心服务，吞吐稳定，延迟低。' },
-    { key: 'g2', label: 'Service B', value: '近期有轻微抖动，建议关注错误率。' },
-    { key: 'g3', label: 'Service C', value: '链路依赖较多，建议配置更细粒度告警。' },
-    { key: 'g4', label: 'Service D', value: 'CPU 突增，可能存在热点或流量突刺。' },
+    { key: 'g1', label: '服务 A', value: '核心服务，吞吐稳定，延迟低。' },
+    { key: 'g2', label: '服务 B', value: '近期有轻微抖动，建议关注错误率。' },
+    { key: 'g3', label: '服务 C', value: '链路依赖较多，建议配置更细粒度告警。' },
+    { key: 'g4', label: '服务 D', value: 'CPU 突增，可能存在热点或流量突刺。' },
   ]);
 
   const cards = computed(() => [
-    { key: 'A', title: 'Panel Card A', desc: '用于高密度信息展示的卡片容器。', tag: 'core', tagColor: 'var(--gf-color-primary)' },
-    { key: 'B', title: 'Panel Card B', desc: '偶数项使用极浅冷灰斑马底色。', tag: 'infra', tagColor: 'var(--gf-color-primary-secondary)' },
-    { key: 'C', title: 'Panel Card C', desc: '边框 1px 冷灰蓝，hover 轻投影。', tag: 'metrics', tagColor: 'var(--gf-color-success)' },
-    { key: 'D', title: 'Panel Card D', desc: '圆角统一 2–4px，保持硬朗线条。', tag: 'logs', tagColor: 'var(--gf-color-warning)' },
+    { key: 'A', title: '面板卡片 A', desc: '用于高密度信息展示的卡片容器。', tag: 'core', tagColor: 'var(--gf-color-primary)' },
+    { key: 'B', title: '面板卡片 B', desc: '偶数项使用极浅冷灰斑马底色。', tag: 'infra', tagColor: 'var(--gf-color-primary-secondary)' },
+    { key: 'C', title: '面板卡片 C', desc: '边框 1px 冷灰蓝，hover 轻投影。', tag: 'metrics', tagColor: 'var(--gf-color-success)' },
+    { key: 'D', title: '面板卡片 D', desc: '圆角统一 2–4px，保持硬朗线条。', tag: 'logs', tagColor: 'var(--gf-color-warning)' },
   ]);
 </script>
 

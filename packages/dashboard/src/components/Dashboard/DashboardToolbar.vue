@@ -59,7 +59,7 @@
     </div>
 
     <!-- JSON 查看/编辑模态框 -->
-    <Modal v-model:open="jsonModalVisible" title="Dashboard JSON" :width="800" destroyOnClose :maskClosable="false">
+    <Modal v-model:open="jsonModalVisible" title="仪表盘 JSON" :width="800" destroyOnClose :maskClosable="false">
       <DashboardJsonEditor
         ref="dashboardJsonEditorRef"
         v-model="dashboardJson"
@@ -111,7 +111,7 @@
   const { currentDashboard, isEditMode, isSaving } = storeToRefs(dashboardStore);
   const { options: variableOptions } = storeToRefs(variablesStore as any);
 
-  const dashboardName = computed(() => currentDashboard.value?.name || 'Dashboard');
+  const dashboardName = computed(() => currentDashboard.value?.name || '仪表盘');
   const resolvedVariables = computed(() => {
     const vars = currentDashboard.value?.variables ?? [];
     return vars.map((v) => ({

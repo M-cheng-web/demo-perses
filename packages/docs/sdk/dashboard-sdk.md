@@ -19,7 +19,7 @@ const { state, actions, containerSize, api } = useDashboardSdk(root, {
 </script>
 
 <template>
-  <section>
+  <div>
     <div ref="root" style="min-height: 480px;"></div>
     <aside v-if="state.dashboard">
       <p>面板组数量：{{ state.panelGroups.length }}</p>
@@ -28,7 +28,7 @@ const { state, actions, containerSize, api } = useDashboardSdk(root, {
       <p>加载接口：{{ api.endpoints.LoadDashboard }}</p>
       <button @click="actions.toggleEditMode">切换模式</button>
     </aside>
-  </section>
+  </div>
 </template>
 ```
 

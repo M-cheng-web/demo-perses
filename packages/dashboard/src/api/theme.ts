@@ -3,16 +3,16 @@ export type DashboardThemePreference = DashboardTheme | 'system';
 
 export interface SetDashboardThemeOptions {
   /**
-   * Whether to persist the preference in localStorage.
-   * Defaults to true.
+   * 是否把偏好写入 localStorage
+   * 默认：true
    */
   persist?: boolean;
 }
 
 export interface InitDashboardThemeOptions extends SetDashboardThemeOptions {
   /**
-   * When there is no stored preference, fall back to this preference.
-   * Defaults to 'system'.
+   * 当 localStorage 中没有偏好时，回退到该偏好
+   * 默认：'system'
    */
   defaultPreference?: DashboardThemePreference;
 }
@@ -52,9 +52,9 @@ export function getAppliedDashboardTheme(): DashboardTheme {
 }
 
 /**
- * Apply theme to the document root. This is the recommended global switch:
- * - Tokens in @grafana-fast/component react to :root[data-gf-theme="..."]
- * - Any subtree can still override via ConfigProvider/theme class if needed
+ * 将 theme 应用到 document root（推荐的全局切换方式）：
+ * - @grafana-fast/component 会读取 `:root[data-gf-theme="..."]` 响应 Token
+ * - 如有需要，局部区域仍可通过 ConfigProvider / theme class 覆盖
  */
 export function applyDashboardTheme(theme: DashboardTheme) {
   if (!hasDom()) return;

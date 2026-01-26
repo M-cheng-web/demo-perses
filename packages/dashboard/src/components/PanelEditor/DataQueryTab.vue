@@ -310,9 +310,9 @@
     queries?: CanonicalQuery[];
     datasource?: any;
     /**
-     * Optional session key to force re-initialization.
-     * - When the panel editor switches to another panel, parent should change this value.
-     * - Helps avoid "props update loops" while still supporting external resets.
+     * 可选：session key，用于强制重新初始化
+     * - 当面板编辑器切换到另一个 panel 时，父组件应改变该值
+     * - 在支持外部 reset 的同时，避免出现“props 更新环”的问题
      */
     sessionKey?: string | number;
   }

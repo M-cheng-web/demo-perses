@@ -65,17 +65,16 @@
 }
 
 /*
- * Flex alignment utilities / safeguards
+ * Flex 对齐工具 / 兜底策略
  *
- * Background:
- * - In toolbars, parents often use `display: flex` without `align-items`,
- *   and the default `align-items: stretch` can unintentionally stretch
- *   controls (buttons/tags/segmented/etc.) to mismatched heights.
+ * 背景：
+ * - 工具栏等容器经常使用 `display: flex` 但未显式设置 `align-items`
+ * - 默认的 `align-items: stretch` 可能会把控件（button/tag/segmented 等）
+ *   拉伸到不同高度，导致视觉不一致
  *
- * Strategy:
- * - Default common interactive controls to `align-self: center` so they keep
- *   intrinsic height when placed in a flex row.
- * - Provide opt-in override classes when stretching is desired.
+ * 策略：
+ * - 对常用交互控件默认设置 `align-self: center`，在 flex 行内保持自身高度
+ * - 当确实需要拉伸时，提供可选覆盖 class
  */
 
 :where(

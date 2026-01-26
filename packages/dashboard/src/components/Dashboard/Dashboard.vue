@@ -61,20 +61,20 @@
   const props = withDefaults(
     defineProps<{
       /**
-       * Theme used by the embedded dashboard root.
-       * - 'inherit': follow document / parent tokens (recommended for host apps)
-       * - 'light'/'blue': explicit light scheme
-       * - 'dark': explicit dark scheme
+       * Dashboard 根节点使用的主题模式
+       * - 'inherit': 跟随 document / 父级 tokens（推荐：嵌入到宿主应用时使用）
+       * - 'light'/'blue': 强制浅色方案
+       * - 'dark': 强制深色方案
        */
       theme?: 'blue' | 'light' | 'dark' | 'inherit';
       /**
-       * Optional runtime-provided API client (contracts + implementation).
-       * When not provided, dashboard defaults to mock implementation.
+       * 可选：运行时注入的 apiClient（接口契约 + 实现）
+       * 未提供时默认使用 mock 实现
        */
       apiClient?: GrafanaFastApiClient;
       /**
-       * Optional runtime id for multi-instance isolation.
-       * When not provided, a random id is generated.
+       * 可选：runtime id（用于多实例隔离）
+       * 未提供时会自动生成随机 id
        */
       runtimeId?: string;
     }>(),

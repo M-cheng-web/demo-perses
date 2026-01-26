@@ -31,17 +31,29 @@
       @layout-updated="handleLayoutChange"
     >
       <grid-item
-        v-for="item in renderedLayout"
-        :key="item.i"
-        :x="item.x"
-        :y="item.y"
-        :w="item.w"
-        :h="item.h"
-        :i="item.i"
-        :min-w="item.minW || 6"
-        :min-h="item.minH || 4"
+        v-for="it in renderedItems"
+        :key="it.layout.i"
+        :x="it.layout.x"
+        :y="it.layout.y"
+        :w="it.layout.w"
+        :h="it.layout.h"
+        :i="it.layout.i"
+        :min-w="it.layout.minW || 6"
+        :min-h="it.layout.minH || 4"
       >
-        <Panel :group-id="groupId" :panel-id="item.i" />
+        <Panel v-if="it.panel" :title="it.panel.name" :description="it.panel.description" size="small" :hoverable="true" :body-padding="false">
+          <template #right="{ hovered }">
+            <PanelRightActions :group-id="groupId" :panel="it.panel" :hovered="hovered" />
+          </template>
+
+          <PanelContent :panel="it.panel" />
+        </Panel>
+
+        <Panel v-else size="small" :hoverable="false" :body-padding="true" title="面板加载失败">
+          <div :class="bem('panel-error')">
+            <Alert type="error" show-icon message="面板加载失败" description="未找到面板数据" />
+          </div>
+        </Panel>
       </grid-item>
     </grid-layout>
 
@@ -53,12 +65,13 @@
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue';
-  import { Empty, Button, Pagination } from '@grafana-fast/component';
+  import { Alert, Button, Empty, Pagination, Panel } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import { GridLayout, GridItem } from 'vue-grid-layout-v3';
   import type { PanelLayout, Panel as PanelType, ID } from '@grafana-fast/types';
   import { useDashboardStore, useEditorStore } from '/#/stores';
-  import Panel from '/#/components/Panel/Panel.vue';
+  import PanelContent from '/#/components/Panel/PanelContent.vue';
+  import PanelRightActions from '/#/components/Panel/PanelRightActions.vue';
   import { createNamespace } from '/#/utils';
   import { useVirtualizedGridPanels } from '/#/composables/useVirtualizedGridPanels';
 
@@ -97,6 +110,19 @@
     containerRef,
   });
 
+  const panelById = computed(() => {
+    const map = new Map<ID, PanelType>();
+    for (const p of props.panels) map.set(p.id, p);
+    return map;
+  });
+
+  const renderedItems = computed(() =>
+    renderedLayout.value.map((layoutItem) => ({
+      layout: layoutItem,
+      panel: panelById.value.get(layoutItem.i as ID),
+    }))
+  );
+
   /**
    * view 模式下，GridLayout 接收的是“分页后的 layout”（y 已做 rebased），否则会：
    * - 触发巨大的空白滚动区域
@@ -123,6 +149,15 @@
 <style scoped lang="less">
   .dp-grid-layout {
     min-height: 200px;
+
+    &__panel-error {
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
 
     &__meta {
       display: flex;

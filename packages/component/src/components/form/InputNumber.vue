@@ -14,10 +14,10 @@
       @change="emitChange"
     />
     <div :class="bem('actions')">
-      <button type="button" aria-label="Increase" @click="increase" :disabled="disabled || !canIncrease">
+      <button type="button" aria-label="增加" @click="increase" :disabled="disabled || !canIncrease">
         <UpOutlined />
       </button>
-      <button type="button" aria-label="Decrease" @click="decrease" :disabled="disabled || !canDecrease">
+      <button type="button" aria-label="减少" @click="decrease" :disabled="disabled || !canDecrease">
         <DownOutlined />
       </button>
     </div>

@@ -1,5 +1,5 @@
 /**
- * BEM naming helper for the UI kit
+ * UI 组件库的 BEM 命名辅助函数
  *
  * 注意：
  * - 真实实现收敛到 @grafana-fast/utils，避免多处重复实现导致行为细节不一致

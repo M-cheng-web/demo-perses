@@ -122,7 +122,7 @@ export function createQueryScheduler(pinia?: Pinia) {
   const varToPanels = new Map<string, Set<string>>();
 
   /**
-   * Visible panels (viewport + overscan) tracking
+   * 可视面板跟踪（viewport + overscan）
    *
    * 说明：
    * - 由渲染层（GridLayout 虚拟化 hook）上报“当前可视的 panel ids”
@@ -143,7 +143,7 @@ export function createQueryScheduler(pinia?: Pinia) {
   const isPanelVisible = (panelId: string) => visiblePanels.has(panelId);
 
   /**
-   * Refresh queue (panel-level)
+   * 刷新队列（panel 级别）
    *
    * 目标：
    * - 避免一次性对所有已注册 panel 触发 runPanel（即使 QueryRunner 有并发限制，也会产生大量任务与 abort 开销）
