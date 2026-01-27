@@ -156,6 +156,11 @@ export function useVirtualizedGridPanels(options: UseVirtualizedGridPanelsOption
 
   const sortedLayout = computed(() => sortLayoutForPaging(options.layout.value));
 
+  // Paging rebase:
+  // - For paging, we "rebase" each page's y so it starts near 0 to avoid a huge blank area.
+  // - This must be stable while editing/dragging; otherwise y-origin shifts can cause jitter.
+  const pageRebaseY = ref(0);
+
   const pagedLayout = computed(() => {
     if (!hasPaging.value) return sortedLayout.value;
     return sortedLayout.value.slice(start.value, end.value);
@@ -165,10 +170,10 @@ export function useVirtualizedGridPanels(options: UseVirtualizedGridPanelsOption
     if (!hasPaging.value) return pagedLayout.value;
     const slice = pagedLayout.value;
     if (!slice.length) return slice;
-    const minY = slice.reduce((m, it) => Math.min(m, it.y), slice[0]!.y);
-    if (minY <= 0) return slice;
+    const offsetY = Math.max(0, pageRebaseY.value);
+    if (!offsetY) return slice;
     // Rebase Y so each page starts from the top (avoid huge blank scroll area).
-    return slice.map((it) => ({ ...it, y: it.y - minY }));
+    return slice.map((it) => ({ ...it, y: it.y - offsetY }));
   });
 
   const layoutWindow = computed(() => (hasPaging.value ? rebasedPagedLayout.value : options.layout.value));
@@ -251,6 +256,28 @@ export function useVirtualizedGridPanels(options: UseVirtualizedGridPanelsOption
     { deep: true }
   );
 
+  // When paging changes (page/pageSize), recompute the stable rebase offset for that page.
+  // Do NOT recompute on layout changes; keeping it stable avoids shifting the y-origin while dragging.
+  watch(
+    [page, pageSize, hasPaging],
+    () => {
+      if (!hasPaging.value) {
+        pageRebaseY.value = 0;
+        return;
+      }
+
+      const slice = sortedLayout.value.slice(start.value, end.value);
+      if (!slice.length) {
+        pageRebaseY.value = 0;
+        return;
+      }
+
+      const minY = slice.reduce((m, it) => Math.min(m, it.y), slice[0]!.y);
+      pageRebaseY.value = minY > 0 ? minY : 0;
+    },
+    { immediate: true }
+  );
+
   watch([page, pageSize], () => {
     // Page change should immediately update scheduler-visible set.
     scheduleViewportUpdate();
@@ -267,6 +294,7 @@ export function useVirtualizedGridPanels(options: UseVirtualizedGridPanelsOption
     setPage,
     setPageSize,
     reset,
+    pageRebaseY,
     containerHeightPx,
     renderedLayout,
   };

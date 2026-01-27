@@ -99,14 +99,13 @@
     { deep: true }
   );
 
-  const { hasPaging, totalCount, page, pageSize, containerHeightPx, renderedLayout } = useVirtualizedGridPanels({
+  const { hasPaging, totalCount, page, pageSize, pageRebaseY, containerHeightPx, renderedLayout } = useVirtualizedGridPanels({
     scopeId: String(props.groupId),
     layout: localLayout,
     rowHeight: 30,
     marginY: 10,
     pageSize: 20,
     overscanScreens: 0.5,
-    enabled: computed(() => !isEditMode.value),
     containerRef,
   });
 
@@ -123,22 +122,44 @@
     }))
   );
 
+  const applyLayoutUpdate = (next: PanelLayout[]) => {
+    if (!hasPaging.value) {
+      localLayout.value = next;
+      return;
+    }
+
+    const offsetY = Math.max(0, pageRebaseY.value);
+    const patchById = new Map<string, PanelLayout>();
+    for (const it of next) {
+      patchById.set(String(it.i), { ...it, y: it.y + offsetY });
+    }
+
+    localLayout.value = localLayout.value.map((it) => {
+      const patch = patchById.get(String(it.i));
+      if (!patch) return it;
+      return { ...it, ...patch };
+    });
+  };
+
   /**
    * view 模式下，GridLayout 接收的是“分页后的 layout”（y 已做 rebased），否则会：
    * - 触发巨大的空白滚动区域
    * - 触发 grid-layout-v3 的 layout-updated 回调，从而污染 store
    */
   const gridLayoutModel = computed<PanelLayout[]>({
-    get: () => (isEditMode.value ? localLayout.value : renderedLayout.value),
+    get: () => renderedLayout.value,
     set: (next) => {
       if (!isEditMode.value) return;
-      localLayout.value = next;
+      applyLayoutUpdate(next);
     },
   });
 
   const handleLayoutChange = (newLayout: PanelLayout[]) => {
     if (!isEditMode.value) return;
-    dashboardStore.updatePanelGroupLayout(props.groupId, newLayout);
+    // In paging mode, grid emits only the current page layout (rebased y).
+    // We must merge it back into the full layout before updating the store.
+    applyLayoutUpdate(newLayout);
+    dashboardStore.updatePanelGroupLayout(props.groupId, localLayout.value);
   };
 
   const handleAddPanel = () => {
