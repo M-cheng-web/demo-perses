@@ -42,6 +42,7 @@ declare module '@grafana-fast/component' {
   export const Table: any;
   export const Tabs: any;
   export const Tag: any;
+  export const Skeleton: any;
   export const Textarea: any;
   export const TimeRangePicker: any;
   export const Tooltip: any;

@@ -447,6 +447,18 @@ export function createQueryScheduler(pinia?: Pinia) {
       existing.deps = computeDeps(panelRef.value.queries ?? []);
       indexPanelDeps(panelId, existing.deps);
       ensureQueryWatch(existing);
+      /**
+       * 兼容虚拟化/窗口化的“注册时机”：
+       * - 在虚拟滚动场景下，渲染层可能先上报了 visiblePanels，再 mount PanelContent（再注册）
+       * - 如果此时不补一次 enqueue，就会出现“永远不触发首屏请求”的情况（queryResults 为空 -> chart 一直转圈）
+       *
+       * 这里的原则：
+       * - 只要 panel 当前可见，并且在当前条件代际下从未成功加载过，就触发一次 became-visible 刷新
+       * - 已加载过的 panel（lastLoadedConditionGen === conditionGeneration）不重复刷新，避免滚动导致重复请求
+       */
+      if (isPanelVisible(panelId) && existing.lastLoadedConditionGen !== conditionGeneration) {
+        enqueue(panelId, 'became-visible', 25);
+      }
       updateDebug();
 
       onBeforeUnmount(() => {
@@ -491,6 +503,10 @@ export function createQueryScheduler(pinia?: Pinia) {
     registrations.set(panelId, reg);
     indexPanelDeps(panelId, reg.deps);
     ensureQueryWatch(reg);
+    // 同上：确保“先上报可见、后注册”的情况下也能触发首屏请求
+    if (isPanelVisible(panelId) && reg.lastLoadedConditionGen !== conditionGeneration) {
+      enqueue(panelId, 'became-visible', 25);
+    }
     updateDebug();
 
     onBeforeUnmount(() => {

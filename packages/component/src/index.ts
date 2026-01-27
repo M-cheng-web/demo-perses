@@ -56,6 +56,7 @@ export { default as Drawer } from './components/feedback/Drawer.vue';
 export { default as Popconfirm } from './components/feedback/Popconfirm.vue';
 export { default as Tooltip } from './components/feedback/Tooltip.vue';
 export { default as Spin } from './components/feedback/Spin.vue';
+export { default as Skeleton } from './components/feedback/Skeleton.vue';
 
 // 数据展示组件
 export { default as Table } from './components/data/Table.vue';
@@ -107,6 +108,7 @@ import DrawerComp from './components/feedback/Drawer.vue';
 import PopconfirmComp from './components/feedback/Popconfirm.vue';
 import TooltipComp from './components/feedback/Tooltip.vue';
 import SpinComp from './components/feedback/Spin.vue';
+import SkeletonComp from './components/feedback/Skeleton.vue';
 import TableComp from './components/data/Table.vue';
 import VirtualListComp from './components/data/VirtualList.vue';
 import VirtualTableComp from './components/data/VirtualTable.vue';
@@ -151,6 +153,7 @@ const exportedComponents = {
   Popconfirm: PopconfirmComp,
   Tooltip: TooltipComp,
   Spin: SpinComp,
+  Skeleton: SkeletonComp,
   Table: TableComp,
   VirtualList: VirtualListComp,
   VirtualTable: VirtualTableComp,

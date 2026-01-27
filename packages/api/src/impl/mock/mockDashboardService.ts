@@ -7,7 +7,7 @@
  * - 未来接后端时，只需要替换 dashboard.load/save 实现，不应影响 UI 调用
  */
 import type { DashboardService } from '../../contracts';
-import type { Dashboard, DashboardListItem, ID } from '@grafana-fast/types';
+import type { Dashboard, DashboardListItem, ID, PanelLayout } from '@grafana-fast/types';
 
 function nowTs() {
   return Date.now();
@@ -17,6 +17,18 @@ function createDefaultDashboard(): Dashboard {
   const now = nowTs();
   const createLargeGroup = () => {
     const totalPanels = 1000;
+    const createRng = (seed: number) => {
+      let s = seed >>> 0;
+      return () => {
+        // LCG (deterministic, fast, good enough for mock layout variation)
+        s = (s * 1664525 + 1013904223) >>> 0;
+        return s / 0xffffffff;
+      };
+    };
+
+    const rng = createRng(0x1a2b3c4d);
+    const pick = <T>(items: T[]): T => items[Math.floor(rng() * items.length)]!;
+
     const panels = Array.from({ length: totalPanels }).map((_, idx) => {
       const n = idx + 1;
       const id = `panel-big-${n}`;
@@ -45,15 +57,46 @@ function createDefaultDashboard(): Dashboard {
       };
     });
 
-    // Layout: 4 columns per row (12 each), 48 total.
-    const w = 12;
-    const h = 6;
-    const cols = 4;
-    const layout = panels.map((p, idx) => {
-      const x = (idx % cols) * w;
-      const y = Math.floor(idx / cols) * h;
-      return { i: p.id, x, y, w, h, minW: 8, minH: 4 };
-    });
+    // Layout: random-ish size panels to simulate real-world dashboards (variable w/h).
+    // - total columns: 48
+    // - row packing: fill a row until no space, then y += maxHInRow
+    const TOTAL_COLS = 48;
+    const wCandidates = [12, 12, 12, 16, 24, 48];
+    const hCandidates = [6, 8, 8, 10, 12, 14];
+
+    const layout: PanelLayout[] = [];
+    let rowX = 0;
+    let rowY = 0;
+    let rowMaxH = 0;
+
+    for (const p of panels) {
+      let w = pick(wCandidates);
+      let h = pick(hCandidates);
+
+      // 让“全宽/大宽面板”更高一点，视觉上更像真实 dashboard
+      if (w >= 24 && rng() > 0.6) h += 2;
+      if (w >= 48 && rng() > 0.5) h += 4;
+
+      const remaining = TOTAL_COLS - rowX;
+      if (w > remaining) {
+        rowY += rowMaxH || 0;
+        rowX = 0;
+        rowMaxH = 0;
+      }
+
+      // new row after wrap: ensure w <= TOTAL_COLS
+      w = Math.min(w, TOTAL_COLS);
+
+      layout.push({ i: p.id, x: rowX, y: rowY, w, h, minW: 8, minH: 4 });
+      rowX += w;
+      rowMaxH = Math.max(rowMaxH, h);
+
+      if (rowX >= TOTAL_COLS) {
+        rowY += rowMaxH || 0;
+        rowX = 0;
+        rowMaxH = 0;
+      }
+    }
 
     return {
       id: 'group-large-1k',
