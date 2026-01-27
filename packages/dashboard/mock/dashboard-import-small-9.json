@@ -1,0 +1,351 @@
+{
+  "schemaVersion": 1,
+  "id": "import-small-9",
+  "name": "导入测试 Dashboard（9 panels）",
+  "description": "小数据量：应不启用虚拟化，直接全量渲染",
+  "panelGroups": [
+    {
+      "id": "group-import-small",
+      "title": "导入测试面板组（9 panels）",
+      "description": "用于验证：<=阈值直接全量渲染",
+      "isCollapsed": false,
+      "order": 0,
+      "panels": [
+        {
+          "id": "panel-import-small-1",
+          "name": "Import Panel #1",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-small-1",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-small-2",
+          "name": "Import Panel #2",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-small-2",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-small-3",
+          "name": "Import Panel #3",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-small-3",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-small-4",
+          "name": "Import Panel #4",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-small-4",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-small-5",
+          "name": "Import Panel #5",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-small-5",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-small-6",
+          "name": "Import Panel #6",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-small-6",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-small-7",
+          "name": "Import Panel #7",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-small-7",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-small-8",
+          "name": "Import Panel #8",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-small-8",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-small-9",
+          "name": "Import Panel #9",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-small-9",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        }
+      ],
+      "layout": [
+        {
+          "i": "panel-import-small-1",
+          "x": 0,
+          "y": 0,
+          "w": 24,
+          "h": 16,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-small-2",
+          "x": 24,
+          "y": 0,
+          "w": 16,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-small-3",
+          "x": 0,
+          "y": 16,
+          "w": 12,
+          "h": 12,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-small-4",
+          "x": 12,
+          "y": 16,
+          "w": 24,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-small-5",
+          "x": 0,
+          "y": 28,
+          "w": 24,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-small-6",
+          "x": 24,
+          "y": 28,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-small-7",
+          "x": 0,
+          "y": 42,
+          "w": 16,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-small-8",
+          "x": 16,
+          "y": 42,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-small-9",
+          "x": 0,
+          "y": 56,
+          "w": 48,
+          "h": 16,
+          "minW": 8,
+          "minH": 4
+        }
+      ]
+    }
+  ],
+  "timeRange": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "refreshInterval": 0,
+  "variables": [],
+  "createdAt": 1769520943432,
+  "updatedAt": 1769520943432
+}

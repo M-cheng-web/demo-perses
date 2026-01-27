@@ -4,8 +4,10 @@
 
 import { defineStore } from '@grafana-fast/store';
 import type { Dashboard, PanelGroup, Panel, PanelLayout, ID } from '@grafana-fast/types';
-import { createPrefixedId, deepClone } from '/#/utils';
+import { createPrefixedId, deepCloneStructured } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
+
+type BootStage = 'idle' | 'fetching' | 'parsing' | 'initializing' | 'ready' | 'error';
 
 interface DashboardState {
   /** 当前 Dashboard */
@@ -18,6 +20,44 @@ interface DashboardState {
   lastError: string | null;
   /** 全屏查看的面板 */
   viewPanelId: { groupId: ID; panelId: ID } | null;
+  /** 是否处于“加载/初始化”中（加载时应锁住交互） */
+  isBooting: boolean;
+  /** boot 阶段（用于 UI 展示更明确的状态） */
+  bootStage: BootStage;
+  /** boot 过程统计（用于提示“数据量大，需要等待”） */
+  bootStats: {
+    startedAt: number | null;
+    groupCount: number | null;
+    panelCount: number | null;
+    jsonBytes: number | null;
+    source: 'remote' | 'import' | null;
+  };
+}
+
+const BIG_DASHBOARD_PANEL_THRESHOLD = 200;
+const BIG_DASHBOARD_JSON_BYTES_THRESHOLD = 2 * 1024 * 1024; // 2MB
+
+function yieldToPaint(): Promise<void> {
+  // 用 setTimeout(0) 让浏览器有机会先渲染 loading mask，避免“先卡住再出现遮罩”
+  return new Promise((r) => window.setTimeout(r, 0));
+}
+
+function safeUtf8Bytes(text: string): number {
+  try {
+    return new TextEncoder().encode(text).length;
+  } catch {
+    // fallback: 近似值（UTF-16 code units）
+    return text.length * 2;
+  }
+}
+
+function countDashboardStats(d: Dashboard): { groupCount: number; panelCount: number } {
+  const groups = d.panelGroups ?? [];
+  let panelCount = 0;
+  for (const g of groups) {
+    panelCount += g.panels?.length ?? 0;
+  }
+  return { groupCount: groups.length, panelCount };
 }
 
 export const useDashboardStore = defineStore('dashboard', {
@@ -27,6 +67,9 @@ export const useDashboardStore = defineStore('dashboard', {
     isSaving: false,
     lastError: null,
     viewPanelId: null,
+    isBooting: false,
+    bootStage: 'idle',
+    bootStats: { startedAt: null, groupCount: null, panelCount: null, jsonBytes: null, source: null },
   }),
 
   getters: {
@@ -67,23 +110,100 @@ export const useDashboardStore = defineStore('dashboard', {
     isPanelViewed(): boolean {
       return this.viewPanelId !== null;
     },
+
+    /**
+     * 是否为“大数据 Dashboard”（用于提示用户耐心等待）
+     */
+    isLargeDashboard(): boolean {
+      const panels = this.bootStats.panelCount ?? this.currentDashboard?.panelGroups?.reduce((n, g) => n + (g.panels?.length ?? 0), 0) ?? 0;
+      const bytes = this.bootStats.jsonBytes ?? 0;
+      return panels >= BIG_DASHBOARD_PANEL_THRESHOLD || bytes >= BIG_DASHBOARD_JSON_BYTES_THRESHOLD;
+    },
   },
 
   actions: {
+    beginBoot(source: 'remote' | 'import', stage: BootStage) {
+      this.isBooting = true;
+      this.bootStage = stage;
+      this.lastError = null;
+      this.viewPanelId = null;
+      // boot 中禁止折叠/编辑：锁住交互，避免“半初始化状态”产生不一致
+      this.isEditMode = false;
+      this.bootStats = {
+        startedAt: Date.now(),
+        groupCount: null,
+        panelCount: null,
+        jsonBytes: null,
+        source,
+      };
+    },
+
+    finishBoot() {
+      this.bootStage = 'ready';
+      this.isBooting = false;
+    },
+
+    failBoot(message: string) {
+      this.lastError = message;
+      this.bootStage = 'error';
+      this.isBooting = false;
+    },
+
     /**
      * 加载 Dashboard
      */
     async loadDashboard(id: ID) {
-      this.lastError = null;
+      this.beginBoot('remote', 'fetching');
       try {
+        await yieldToPaint();
         const api = getPiniaApiClient(this.$pinia);
         const dashboard = await api.dashboard.loadDashboard(id);
+        this.bootStage = 'initializing';
+        await yieldToPaint();
+
+        const { groupCount, panelCount } = countDashboardStats(dashboard);
+        this.bootStats.groupCount = groupCount;
+        this.bootStats.panelCount = panelCount;
+
         // 按当前策略：不做历史 schema 兼容/迁移；API 返回什么就用什么（外部应保证是当前结构）。
-        this.currentDashboard = deepClone(dashboard);
+        // 大 JSON 下用 structuredClone 降低 stringify/parse 的主线程压力。
+        this.currentDashboard = deepCloneStructured(dashboard);
+        this.finishBoot();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load dashboard';
-        this.lastError = message;
+        this.failBoot(message);
         console.error('Failed to load dashboard:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * 从 JSON 导入/应用 Dashboard（用于 DashboardToolbar 的 JSON 编辑器）
+     *
+     * 注意：
+     * - rawJsonText 用于统计 bytes（提示“数据量较大，需要等待”）
+     * - dashboard 对象已由编辑器严格校验通过
+     */
+    async applyDashboardFromJson(dashboard: Dashboard, rawJsonText?: string) {
+      this.beginBoot('import', 'parsing');
+      try {
+        if (typeof rawJsonText === 'string' && rawJsonText.trim()) {
+          this.bootStats.jsonBytes = safeUtf8Bytes(rawJsonText);
+        }
+
+        await yieldToPaint();
+        this.bootStage = 'initializing';
+        await yieldToPaint();
+
+        const { groupCount, panelCount } = countDashboardStats(dashboard);
+        this.bootStats.groupCount = groupCount;
+        this.bootStats.panelCount = panelCount;
+
+        this.currentDashboard = deepCloneStructured(dashboard);
+        this.finishBoot();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to apply dashboard json';
+        this.failBoot(message);
         throw error;
       }
     },
@@ -93,6 +213,7 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     async saveDashboard() {
       if (!this.currentDashboard) return;
+      if (this.isBooting) return;
 
       this.isSaving = true;
       this.lastError = null;
@@ -113,6 +234,7 @@ export const useDashboardStore = defineStore('dashboard', {
      * 切换编辑模式
      */
     toggleEditMode() {
+      if (this.isBooting) return;
       this.isEditMode = !this.isEditMode;
     },
 
@@ -121,6 +243,7 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     addPanelGroup(group: Partial<PanelGroup>) {
       if (!this.currentDashboard) return;
+      if (this.isBooting) return;
 
       const newGroup: PanelGroup = {
         id: createPrefixedId('pg'),
@@ -140,6 +263,7 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     updatePanelGroup(id: ID, updates: Partial<PanelGroup>) {
       if (!this.currentDashboard) return;
+      if (this.isBooting) return;
 
       const index = this.currentDashboard.panelGroups.findIndex((g) => g.id === id);
       if (index !== -1) {
@@ -164,6 +288,7 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     deletePanelGroup(id: ID) {
       if (!this.currentDashboard) return;
+      if (this.isBooting) return;
 
       this.currentDashboard.panelGroups = this.currentDashboard.panelGroups.filter((g) => g.id !== id);
     },
@@ -173,6 +298,7 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     movePanelGroup(fromIndex: number, toIndex: number) {
       if (!this.currentDashboard) return;
+      if (this.isBooting) return;
 
       const groups = this.currentDashboard.panelGroups;
       if (fromIndex < 0 || fromIndex >= groups.length || toIndex < 0 || toIndex >= groups.length) {
@@ -195,6 +321,7 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     updatePanelGroupLayout(groupId: ID, layout: PanelLayout[]) {
       if (!this.currentDashboard) return;
+      if (this.isBooting) return;
 
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (group) {
@@ -207,6 +334,7 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     addPanel(groupId: ID, panel: Panel) {
       if (!this.currentDashboard) return;
+      if (this.isBooting) return;
 
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (!group) return;
@@ -232,6 +360,7 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     updatePanel(groupId: ID, panelId: ID, updates: Partial<Panel>) {
       if (!this.currentDashboard) return;
+      if (this.isBooting) return;
 
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (!group) return;

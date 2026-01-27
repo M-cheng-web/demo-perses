@@ -15,15 +15,15 @@
       <div :class="bem('actions')">
         <template v-if="isEditMode">
           <!-- 编辑模式下的操作按钮 -->
-          <Button @click="handleAddPanelGroup">
+          <Button @click="handleAddPanelGroup" :disabled="isBooting">
             <template #icon><PlusOutlined /></template>
             添加面板组
           </Button>
-          <Button @click="handleSave" type="primary" :loading="isSaving"> 保存 </Button>
-          <Button @click="handleToggleEditMode"> 取消 </Button>
+          <Button @click="handleSave" type="primary" :loading="isSaving" :disabled="isBooting"> 保存 </Button>
+          <Button @click="handleToggleEditMode" :disabled="isBooting"> 取消 </Button>
         </template>
         <template v-else>
-          <Button @click="handleToggleEditMode" type="primary"> 编辑 </Button>
+          <Button @click="handleToggleEditMode" type="primary" :disabled="isBooting"> 编辑 </Button>
         </template>
       </div>
     </div>
@@ -35,14 +35,14 @@
       </div>
       <div :class="bem('controls-right')">
         <!-- 时间范围选择器 -->
-        <TimeRangePicker v-model:value="selectedTimeRange" @change="handleTimeRangeChange" />
+        <TimeRangePicker v-model:value="selectedTimeRange" :disabled="isBooting" @change="handleTimeRangeChange" />
 
         <!-- 刷新按钮 -->
-        <Button :icon="h(ReloadOutlined)" size="small" @click="handleRefresh" />
+        <Button :icon="h(ReloadOutlined)" size="small" :disabled="isBooting" @click="handleRefresh" />
 
         <!-- 更多操作 -->
         <Dropdown n>
-          <Button :icon="h(MoreOutlined)" size="small" />
+          <Button :icon="h(MoreOutlined)" size="small" :disabled="isBooting" />
           <template #overlay>
             <Menu
               :items="[
@@ -70,7 +70,7 @@
       <template #footer>
         <Space>
           <Button @click="jsonModalVisible = false">取消</Button>
-          <Button v-if="jsonModalMode === 'edit'" type="primary" @click="handleApplyJson" :disabled="!isJsonValid"> 应用 </Button>
+          <Button v-if="jsonModalMode === 'edit'" type="primary" @click="handleApplyJson" :disabled="!isJsonValid || isBooting"> 应用 </Button>
         </Space>
       </template>
     </Modal>
@@ -108,7 +108,7 @@
   const timeRangeStore = useTimeRangeStore();
   const variablesStore = useVariablesStore();
 
-  const { currentDashboard, isEditMode, isSaving } = storeToRefs(dashboardStore);
+  const { currentDashboard, isEditMode, isSaving, isBooting } = storeToRefs(dashboardStore);
   const { options: variableOptions } = storeToRefs(variablesStore as any);
 
   const dashboardName = computed(() => currentDashboard.value?.name || '仪表盘');
@@ -135,6 +135,7 @@
   }>(null);
 
   const handleTimeRangeChange = (value: string) => {
+    if (isBooting.value) return;
     timeRangeStore.setTimeRange({
       from: value,
       to: 'now',
@@ -142,15 +143,18 @@
   };
 
   const handleRefresh = () => {
+    if (isBooting.value) return;
     timeRangeStore.refresh();
     message.success('已刷新');
   };
 
   const handleToggleEditMode = () => {
+    if (isBooting.value) return;
     dashboardStore.toggleEditMode();
   };
 
   const handleSave = async () => {
+    if (isBooting.value) return;
     try {
       await dashboardStore.saveDashboard();
       message.success('保存成功');
@@ -160,6 +164,7 @@
   };
 
   const handleAddPanelGroup = () => {
+    if (isBooting.value) return;
     dashboardStore.addPanelGroup({
       title: '新面板组',
       description: '',
@@ -198,6 +203,7 @@
   };
 
   const handleExport = () => {
+    if (isBooting.value) return;
     if (!currentDashboard.value) {
       message.error('没有可导出的 Dashboard');
       return;
@@ -215,6 +221,7 @@
   };
 
   const handleImport = () => {
+    if (isBooting.value) return;
     fileInputRef.value?.click();
   };
 
@@ -243,6 +250,7 @@
   };
 
   const handleViewJson = () => {
+    if (isBooting.value) return;
     if (!currentDashboard.value) {
       message.error('没有可查看的 Dashboard');
       return;
@@ -259,12 +267,14 @@
 
   const handleApplyJson = () => {
     try {
+      if (isBooting.value) return;
       const dashboard = dashboardJsonEditorRef.value?.getDashboard();
       if (!dashboard) {
         message.error('无法应用：Dashboard JSON 不合法');
         return;
       }
-      dashboardStore.currentDashboard = dashboard;
+      const rawText = dashboardJsonEditorRef.value?.getDraftText?.() ?? dashboardJson.value;
+      void dashboardStore.applyDashboardFromJson(dashboard, rawText);
       jsonModalVisible.value = false;
       message.success('应用成功');
     } catch (error) {

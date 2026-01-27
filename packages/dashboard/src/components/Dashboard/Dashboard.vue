@@ -32,6 +32,15 @@
 
       <!-- 全局面板组编辑对话框 -->
       <PanelGroupDialog ref="panelGroupDialogRef" />
+
+      <!-- 全局 Loading Mask：boot 阶段锁住交互（禁止滚动/折叠/点击） -->
+      <div v-if="isBooting" :class="bem('boot-mask')" @wheel.prevent @touchmove.prevent @pointerdown.prevent @keydown.prevent>
+        <div :class="bem('boot-card')">
+          <Loading :text="bootTitle" />
+          <div :class="bem('boot-detail')">{{ bootDetail }}</div>
+          <div v-if="isLargeDashboard" :class="bem('boot-hint')">检测到数据量较大，首次加载可能需要更久，请耐心等待</div>
+        </div>
+      </div>
     </div>
   </ConfigProvider>
 </template>
@@ -39,7 +48,7 @@
 <script setup lang="ts">
   import { ref, watch, onMounted, onUnmounted, computed, provide, inject } from 'vue';
   import { getActivePinia, storeToRefs, type Pinia } from '@grafana-fast/store';
-  import { Button, ConfigProvider, Empty } from '@grafana-fast/component';
+  import { Button, ConfigProvider, Empty, Loading } from '@grafana-fast/component';
   import { useDashboardStore, useTooltipStore, useVariablesStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
   import { DASHBOARD_EMPTY_TEXT } from '/#/components/Dashboard/utils';
@@ -88,7 +97,7 @@
   const dashboardStore = useDashboardStore();
   const tooltipStore = useTooltipStore();
   const variablesStore = useVariablesStore();
-  const { panelGroups, isEditMode, viewPanel } = storeToRefs(dashboardStore);
+  const { panelGroups, isEditMode, viewPanel, isBooting, bootStage, bootStats, isLargeDashboard } = storeToRefs(dashboardStore);
   const { currentDashboard } = storeToRefs(dashboardStore);
   const fullscreenModalRef = ref<InstanceType<typeof PanelFullscreenModal>>();
   const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
@@ -181,6 +190,32 @@
     },
     { immediate: true }
   );
+
+  const bootTitle = computed(() => {
+    switch (bootStage.value) {
+      case 'fetching':
+        return '正在加载仪表盘配置...';
+      case 'parsing':
+        return '正在解析仪表盘 JSON...';
+      case 'initializing':
+        return '正在初始化面板...';
+      default:
+        return '正在加载...';
+    }
+  });
+
+  const bootDetail = computed(() => {
+    const parts: string[] = [];
+    const src = bootStats.value.source === 'import' ? '导入' : '加载';
+    parts.push(`来源：${src}`);
+    if (typeof bootStats.value.groupCount === 'number') parts.push(`面板组：${bootStats.value.groupCount}`);
+    if (typeof bootStats.value.panelCount === 'number') parts.push(`面板：${bootStats.value.panelCount}`);
+    if (typeof bootStats.value.jsonBytes === 'number') {
+      const mb = (bootStats.value.jsonBytes / 1024 / 1024).toFixed(2);
+      parts.push(`JSON：${mb}MB`);
+    }
+    return parts.join(' / ');
+  });
 </script>
 
 <style scoped lang="less">
@@ -243,6 +278,44 @@
         max-width: 1480px;
         margin: 0 auto;
       }
+    }
+
+    &__boot-mask {
+      position: absolute;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: color-mix(in srgb, var(--gf-color-surface), transparent 12%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      cursor: progress;
+    }
+
+    &__boot-card {
+      width: min(560px, 100%);
+      padding: 16px 16px 14px;
+      border-radius: var(--gf-radius-md);
+      border: 1px solid var(--gf-color-border-muted);
+      background: color-mix(in srgb, var(--gf-color-surface), transparent 6%);
+      box-shadow: var(--gf-shadow-2);
+    }
+
+    &__boot-detail {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--gf-color-text-secondary);
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    &__boot-hint {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--gf-color-warning-text, var(--gf-color-text-secondary));
+      line-height: 1.45;
     }
   }
 </style>

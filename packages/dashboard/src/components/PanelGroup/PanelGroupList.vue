@@ -13,7 +13,7 @@
       :title="group.title || '未命名面板组'"
       :description="group.description"
       size="large"
-      :collapsible="true"
+      :collapsible="!isBooting"
       :collapsed="group.isCollapsed"
       :bordered="false"
       :ghost="true"
@@ -56,13 +56,14 @@
   }>();
 
   const dashboardStore = useDashboardStore();
-  const { isEditMode } = storeToRefs(dashboardStore);
+  const { isEditMode, isBooting } = storeToRefs(dashboardStore);
 
   const handleEditGroup = (group: PanelGroup) => {
     emit('edit-group', group);
   };
 
   const handleCollapsedChange = (groupId: PanelGroup['id'], collapsed: boolean) => {
+    if (isBooting.value) return;
     dashboardStore.updatePanelGroup(groupId, { isCollapsed: collapsed });
   };
 </script>

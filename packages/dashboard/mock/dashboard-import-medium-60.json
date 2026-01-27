@@ -1,0 +1,2187 @@
+{
+  "schemaVersion": 1,
+  "id": "import-medium-60",
+  "name": "导入测试 Dashboard（60 panels）",
+  "description": "中等数据量：应启用 VirtualList 分页/窗口化",
+  "panelGroups": [
+    {
+      "id": "group-import-medium",
+      "title": "导入测试面板组（60 panels）",
+      "description": "用于验证：触底加载 + 窗口化渲染",
+      "isCollapsed": false,
+      "order": 0,
+      "panels": [
+        {
+          "id": "panel-import-medium-1",
+          "name": "Import Panel #1",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-1",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-2",
+          "name": "Import Panel #2",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-2",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-3",
+          "name": "Import Panel #3",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-3",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-4",
+          "name": "Import Panel #4",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-4",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-5",
+          "name": "Import Panel #5",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-5",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-6",
+          "name": "Import Panel #6",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-6",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-7",
+          "name": "Import Panel #7",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-7",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-8",
+          "name": "Import Panel #8",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-8",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-9",
+          "name": "Import Panel #9",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-9",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-10",
+          "name": "Import Panel #10",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-10",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-11",
+          "name": "Import Panel #11",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-11",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-12",
+          "name": "Import Panel #12",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-12",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-13",
+          "name": "Import Panel #13",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-13",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-14",
+          "name": "Import Panel #14",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-14",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-15",
+          "name": "Import Panel #15",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-15",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-16",
+          "name": "Import Panel #16",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-16",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-17",
+          "name": "Import Panel #17",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-17",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-18",
+          "name": "Import Panel #18",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-18",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-19",
+          "name": "Import Panel #19",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-19",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-20",
+          "name": "Import Panel #20",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-20",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-21",
+          "name": "Import Panel #21",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-21",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-22",
+          "name": "Import Panel #22",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-22",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-23",
+          "name": "Import Panel #23",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-23",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-24",
+          "name": "Import Panel #24",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-24",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-25",
+          "name": "Import Panel #25",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-25",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-26",
+          "name": "Import Panel #26",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-26",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-27",
+          "name": "Import Panel #27",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-27",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-28",
+          "name": "Import Panel #28",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-28",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-29",
+          "name": "Import Panel #29",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-29",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-30",
+          "name": "Import Panel #30",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-30",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-31",
+          "name": "Import Panel #31",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-31",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-32",
+          "name": "Import Panel #32",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-32",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-33",
+          "name": "Import Panel #33",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-33",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-34",
+          "name": "Import Panel #34",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-34",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-35",
+          "name": "Import Panel #35",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-35",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-36",
+          "name": "Import Panel #36",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-36",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-37",
+          "name": "Import Panel #37",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-37",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-38",
+          "name": "Import Panel #38",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-38",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-39",
+          "name": "Import Panel #39",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-39",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-40",
+          "name": "Import Panel #40",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-40",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-41",
+          "name": "Import Panel #41",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-41",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-42",
+          "name": "Import Panel #42",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-42",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-43",
+          "name": "Import Panel #43",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-43",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-44",
+          "name": "Import Panel #44",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-44",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-45",
+          "name": "Import Panel #45",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-45",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-46",
+          "name": "Import Panel #46",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-46",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-47",
+          "name": "Import Panel #47",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-47",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-48",
+          "name": "Import Panel #48",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-48",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-49",
+          "name": "Import Panel #49",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-49",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-50",
+          "name": "Import Panel #50",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-50",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-51",
+          "name": "Import Panel #51",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-51",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-52",
+          "name": "Import Panel #52",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-52",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-53",
+          "name": "Import Panel #53",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-53",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-54",
+          "name": "Import Panel #54",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-54",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-55",
+          "name": "Import Panel #55",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-55",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-56",
+          "name": "Import Panel #56",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-56",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-57",
+          "name": "Import Panel #57",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-57",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-58",
+          "name": "Import Panel #58",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-58",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-59",
+          "name": "Import Panel #59",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-59",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        },
+        {
+          "id": "panel-import-medium-60",
+          "name": "Import Panel #60",
+          "type": "timeseries",
+          "queries": [
+            {
+              "id": "q-panel-import-medium-60",
+              "refId": "A",
+              "datasourceRef": {
+                "type": "prometheus",
+                "uid": "prometheus-mock"
+              },
+              "expr": "cpu_usage",
+              "legendFormat": "CPU {{cpu}}",
+              "format": "time_series",
+              "instant": false,
+              "hide": false,
+              "minStep": 15
+            }
+          ],
+          "options": {
+            "legend": {
+              "show": true,
+              "position": "bottom"
+            }
+          }
+        }
+      ],
+      "layout": [
+        {
+          "i": "panel-import-medium-1",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-2",
+          "x": 12,
+          "y": 0,
+          "w": 12,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-3",
+          "x": 24,
+          "y": 0,
+          "w": 16,
+          "h": 12,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-4",
+          "x": 0,
+          "y": 14,
+          "w": 24,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-5",
+          "x": 24,
+          "y": 14,
+          "w": 24,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-6",
+          "x": 0,
+          "y": 28,
+          "w": 12,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-7",
+          "x": 12,
+          "y": 28,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-8",
+          "x": 24,
+          "y": 28,
+          "w": 12,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-9",
+          "x": 36,
+          "y": 28,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-10",
+          "x": 0,
+          "y": 42,
+          "w": 24,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-11",
+          "x": 24,
+          "y": 42,
+          "w": 16,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-12",
+          "x": 0,
+          "y": 52,
+          "w": 48,
+          "h": 18,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-13",
+          "x": 0,
+          "y": 70,
+          "w": 12,
+          "h": 6,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-14",
+          "x": 12,
+          "y": 70,
+          "w": 24,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-15",
+          "x": 0,
+          "y": 80,
+          "w": 48,
+          "h": 18,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-16",
+          "x": 0,
+          "y": 98,
+          "w": 24,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-17",
+          "x": 24,
+          "y": 98,
+          "w": 24,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-18",
+          "x": 0,
+          "y": 112,
+          "w": 24,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-19",
+          "x": 24,
+          "y": 112,
+          "w": 24,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-20",
+          "x": 0,
+          "y": 120,
+          "w": 24,
+          "h": 12,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-21",
+          "x": 0,
+          "y": 132,
+          "w": 48,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-22",
+          "x": 0,
+          "y": 142,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-23",
+          "x": 12,
+          "y": 142,
+          "w": 24,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-24",
+          "x": 36,
+          "y": 142,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-25",
+          "x": 0,
+          "y": 152,
+          "w": 24,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-26",
+          "x": 24,
+          "y": 152,
+          "w": 24,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-27",
+          "x": 0,
+          "y": 162,
+          "w": 24,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-28",
+          "x": 24,
+          "y": 162,
+          "w": 24,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-29",
+          "x": 0,
+          "y": 176,
+          "w": 12,
+          "h": 6,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-30",
+          "x": 0,
+          "y": 182,
+          "w": 48,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-31",
+          "x": 0,
+          "y": 190,
+          "w": 24,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-32",
+          "x": 24,
+          "y": 190,
+          "w": 12,
+          "h": 6,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-33",
+          "x": 36,
+          "y": 190,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-34",
+          "x": 0,
+          "y": 204,
+          "w": 24,
+          "h": 6,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-35",
+          "x": 24,
+          "y": 204,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-36",
+          "x": 0,
+          "y": 212,
+          "w": 16,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-37",
+          "x": 16,
+          "y": 212,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-38",
+          "x": 28,
+          "y": 212,
+          "w": 16,
+          "h": 6,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-39",
+          "x": 0,
+          "y": 226,
+          "w": 16,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-40",
+          "x": 16,
+          "y": 226,
+          "w": 24,
+          "h": 12,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-41",
+          "x": 0,
+          "y": 240,
+          "w": 16,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-42",
+          "x": 16,
+          "y": 240,
+          "w": 12,
+          "h": 12,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-43",
+          "x": 28,
+          "y": 240,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-44",
+          "x": 0,
+          "y": 252,
+          "w": 24,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-45",
+          "x": 24,
+          "y": 252,
+          "w": 16,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-46",
+          "x": 0,
+          "y": 260,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-47",
+          "x": 12,
+          "y": 260,
+          "w": 12,
+          "h": 6,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-48",
+          "x": 24,
+          "y": 260,
+          "w": 24,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-49",
+          "x": 0,
+          "y": 270,
+          "w": 16,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-50",
+          "x": 16,
+          "y": 270,
+          "w": 12,
+          "h": 12,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-51",
+          "x": 28,
+          "y": 270,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-52",
+          "x": 0,
+          "y": 282,
+          "w": 24,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-53",
+          "x": 24,
+          "y": 282,
+          "w": 12,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-54",
+          "x": 36,
+          "y": 282,
+          "w": 12,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-55",
+          "x": 0,
+          "y": 296,
+          "w": 12,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-56",
+          "x": 12,
+          "y": 296,
+          "w": 24,
+          "h": 8,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-57",
+          "x": 0,
+          "y": 310,
+          "w": 24,
+          "h": 14,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-58",
+          "x": 24,
+          "y": 310,
+          "w": 16,
+          "h": 10,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-59",
+          "x": 0,
+          "y": 324,
+          "w": 48,
+          "h": 12,
+          "minW": 8,
+          "minH": 4
+        },
+        {
+          "i": "panel-import-medium-60",
+          "x": 0,
+          "y": 336,
+          "w": 24,
+          "h": 6,
+          "minW": 8,
+          "minH": 4
+        }
+      ]
+    }
+  ],
+  "timeRange": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "refreshInterval": 0,
+  "variables": [],
+  "createdAt": 1769520943433,
+  "updatedAt": 1769520943433
+}
