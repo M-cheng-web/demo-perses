@@ -14,7 +14,7 @@
       :query="queryList"
       :threshold-px="BOTTOM_THRESHOLD_PX"
       :idle-ms="200"
-      :virtualize-threshold="20"
+      :virtualize-threshold="virtualizeThreshold"
       :row-height="30"
       :margin-y="10"
       :hot-overscan-screens="0.25"
@@ -166,12 +166,17 @@
     groupId: ID;
     panels: PanelType[];
     layout: PanelLayout[];
+    /** 小组（<=阈值）直接全量渲染；大组（>阈值）启用 VirtualList 虚拟/分页规则 */
+    virtualizeThreshold?: number;
   }>();
 
   // View 模式：page-size 作为“单次最大加载条数”（实际条数由 queryList 按屏幕高度自适应裁剪）
   const PAGE_SIZE_VIEW_MAX = 200;
   const PAGE_SIZE_EDIT = 10000;
   const BOTTOM_THRESHOLD_PX = 200;
+  const DEFAULT_VIRTUALIZE_THRESHOLD = 10;
+
+  const virtualizeThreshold = computed(() => Math.max(0, Math.floor(props.virtualizeThreshold ?? DEFAULT_VIRTUALIZE_THRESHOLD)));
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();

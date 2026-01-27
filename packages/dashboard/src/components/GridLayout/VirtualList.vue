@@ -69,7 +69,7 @@
       idleMs?: number;
       /** 是否启用（默认启用） */
       enabled?: boolean;
-      /** 超过该数量才启用“停留后请求”策略（默认 20） */
+      /** 超过该数量才启用“停留后请求 / 窗口化渲染”策略（默认 10） */
       virtualizeThreshold?: number;
       /** 用于估算 grid-item 的 top/bottom（与 vue-grid-layout-v3 的 calcPosition 保持一致） */
       rowHeight?: number;
@@ -87,7 +87,7 @@
       thresholdPx: 200,
       idleMs: 200,
       enabled: true,
-      virtualizeThreshold: 20,
+      virtualizeThreshold: 10,
       rowHeight: 30,
       marginY: 10,
       hotOverscanScreens: 0.25,
