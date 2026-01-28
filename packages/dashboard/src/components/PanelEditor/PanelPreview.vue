@@ -15,7 +15,7 @@
   import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
   import { Empty } from '@grafana-fast/component';
   import type { Panel, QueryResult, QueryContext } from '@grafana-fast/types';
-  import { useTimeRangeStore, useVariablesStore } from '/#/stores';
+  import { useTimeRangeStore } from '/#/stores';
   import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
   import { QueryRunner } from '/#/query/queryRunner';
   import { getBuiltInPanelRegistry } from '/#/runtime/panels';
@@ -37,7 +37,6 @@
   );
 
   const timeRangeStore = useTimeRangeStore();
-  const variablesStore = useVariablesStore();
   const registry = getBuiltInPanelRegistry();
   const queryResults = ref<QueryResult[]>([]);
   const isLoading = ref(false);
@@ -65,14 +64,8 @@
       const context: QueryContext = { timeRange: { from: start, to: end } };
       const api = getPiniaApiClient();
       const runner = new QueryRunner(api, { maxConcurrency: 4, cacheTtlMs: 0 });
-      const variableMeta: Record<string, any> = {};
-      for (const v of variablesStore.variables ?? []) {
-        variableMeta[v.name] = { includeAll: v.includeAll, allValue: v.allValue, multi: v.multi };
-      }
 
-      const results = await runner.executeQueries(props.panel.queries, context, variablesStore.values as any, variableMeta, {
-        signal: abortController.signal,
-      });
+      const results = await runner.executeQueries(props.panel.queries, context, { signal: abortController.signal });
 
       queryResults.value = results;
     } catch (error) {
@@ -119,13 +112,6 @@
       }
     },
     { deep: true }
-  );
-
-  watch(
-    () => variablesStore.lastUpdatedAt,
-    () => {
-      if (props.autoExecute) executeQueriesInternal();
-    }
   );
 
   onMounted(() => {

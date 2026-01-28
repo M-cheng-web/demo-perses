@@ -6,4 +6,3 @@ export * from './dashboard';
 export * from './timeRange';
 export * from './editor';
 export * from './tooltip';
-export * from './variables';

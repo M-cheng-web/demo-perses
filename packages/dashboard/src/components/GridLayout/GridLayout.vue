@@ -8,9 +8,10 @@
 <template>
   <div :class="bem()">
     <VirtualList
+      ref="virtualListRef"
       :scope-id="String(props.groupId)"
       scroll-mode="runtime"
-      :page-size="effectivePageSize"
+      :page-size="PAGE_SIZE_VIEW_MAX"
       :query="queryList"
       :threshold-px="BOTTOM_THRESHOLD_PX"
       :idle-ms="200"
@@ -23,16 +24,15 @@
     >
       <template v-if="dataList.length > 0">
         <grid-layout
-          v-if="isEditMode"
-          :layout="localLayout"
+          :layout="canEditLayout ? localLayout : dataList"
           :col-num="48"
           :row-height="30"
-          :is-draggable="true"
-          :is-resizable="true"
-          :vertical-compact="true"
+          :is-draggable="canEditLayout"
+          :is-resizable="canEditLayout"
+          :vertical-compact="canEditLayout"
           :use-css-transforms="true"
           :margin="[10, 10]"
-          @update:layout="handleLayoutModelUpdate"
+          @update:layout="handleGridLayoutModelUpdate"
           @layout-updated="handleLayoutUpdated"
         >
           <grid-item
@@ -47,54 +47,6 @@
             :min-h="layoutItem.minH || 4"
             @move="handleUserInteracting"
             @resize="handleUserInteracting"
-          >
-            <Panel
-              v-if="panelById.get(layoutItem.i as ID)"
-              :title="panelById.get(layoutItem.i as ID)?.name"
-              :description="panelById.get(layoutItem.i as ID)?.description"
-              size="small"
-              :hoverable="true"
-              :body-padding="false"
-            >
-              <template v-if="isHydrated(layoutItem.i)" #right="{ hovered }">
-                <PanelRightActions :group-id="groupId" :panel="panelById.get(layoutItem.i as ID)!" :hovered="hovered" />
-              </template>
-
-              <PanelContent v-if="isHydrated(layoutItem.i)" :panel="panelById.get(layoutItem.i as ID)!" />
-              <div v-else :class="bem('panel-skeleton')">
-                <Skeleton :active="true" height="100%" />
-              </div>
-            </Panel>
-
-            <Panel v-else size="small" :hoverable="false" :body-padding="true" title="面板加载失败">
-              <div :class="bem('panel-error')">
-                <Alert type="error" show-icon message="面板加载失败" description="未找到面板数据" />
-              </div>
-            </Panel>
-          </grid-item>
-        </grid-layout>
-
-        <grid-layout
-          v-else
-          :layout="dataList"
-          :col-num="48"
-          :row-height="30"
-          :is-draggable="false"
-          :is-resizable="false"
-          :vertical-compact="false"
-          :use-css-transforms="true"
-          :margin="[10, 10]"
-        >
-          <grid-item
-            v-for="layoutItem in renderList"
-            :key="layoutItem.i"
-            :x="layoutItem.x"
-            :y="layoutItem.y"
-            :w="layoutItem.w"
-            :h="layoutItem.h"
-            :i="layoutItem.i"
-            :min-w="layoutItem.minW || 6"
-            :min-h="layoutItem.minH || 4"
           >
             <Panel
               v-if="panelById.get(layoutItem.i as ID)"
@@ -172,7 +124,6 @@
 
   // View 模式：page-size 作为“单次最大加载条数”（实际条数由 queryList 按屏幕高度自适应裁剪）
   const PAGE_SIZE_VIEW_MAX = 200;
-  const PAGE_SIZE_EDIT = 10000;
   const BOTTOM_THRESHOLD_PX = 200;
   const DEFAULT_VIRTUALIZE_THRESHOLD = 10;
 
@@ -181,6 +132,14 @@
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
   const { isEditMode } = storeToRefs(dashboardStore);
+
+  type VirtualListExposed = {
+    prefetchAll?: (options?: { maxRounds?: number }) => Promise<void>;
+  };
+
+  const virtualListRef = ref<VirtualListExposed | null>(null);
+  const isEditLayoutReady = ref(true);
+  const canEditLayout = computed(() => isEditMode.value && isEditLayoutReady.value);
 
   const localLayout = ref<PanelLayout[]>([...props.layout]);
 
@@ -219,9 +178,6 @@
   };
 
   const virtualListResetSeq = ref(0);
-  watch(isEditMode, () => {
-    virtualListResetSeq.value++;
-  });
   watch(
     () => props.layout.length,
     () => {
@@ -238,7 +194,10 @@
     { deep: false }
   );
 
-  const effectivePageSize = computed(() => (isEditMode.value ? PAGE_SIZE_EDIT : PAGE_SIZE_VIEW_MAX));
+  const handleGridLayoutModelUpdate = (nextLayout: PanelLayout[]) => {
+    if (!canEditLayout.value) return;
+    handleLayoutModelUpdate(nextLayout);
+  };
 
   const sortedLayout = computed<PanelLayout[]>(() => {
     const src = isEditMode.value ? localLayout.value : props.layout;
@@ -266,7 +225,6 @@
   const GRID_ROW_HEIGHT_PX = 30;
   const GRID_MARGIN_Y_PX = 10;
   const PREFETCH_SCREENS = 2;
-  const MIN_ITEMS_PER_PAGE = 20;
 
   const queryList = async ({ offset, limit, viewportHeight }: VirtualListQueryArgs) => {
     const all = sortedLayout.value;
@@ -288,15 +246,32 @@
     const prevBottomUnits = safeOffset > 0 ? (prefix[safeOffset - 1] ?? 0) : 0;
     const targetBottomUnits = prevBottomUnits + targetAddedUnits;
 
-    const minItems = Math.min(maxItems, MIN_ITEMS_PER_PAGE);
     let end = safeOffset;
     let nextBottomUnits = prevBottomUnits;
 
     while (end < all.length && end - safeOffset < maxItems) {
       const it: any = all[end];
+      const y = Math.max(0, it.y ?? 0);
+      // 同时满足两个条件才停止：
+      // 1) 当前已加载内容的最大 bottom 已达到目标（保证容器高度足够）
+      // 2) 下一项的 y 已经超出目标范围（避免因“某个超高 panel”导致过早停止，从而漏掉同屏可见的 panels）
+      if (nextBottomUnits >= targetBottomUnits && y > targetBottomUnits) break;
+
       nextBottomUnits = Math.max(nextBottomUnits, Math.max(0, (it.y ?? 0) + (it.h ?? 0)));
       end += 1;
-      if (end - safeOffset >= minItems && nextBottomUnits >= targetBottomUnits) break;
+    }
+
+    // 兜底：避免出现空页（极端：targetBottomUnits 很小但 offset 指向后续项）
+    if (end === safeOffset && safeOffset < all.length) end = safeOffset + 1;
+
+    // 避免切在同一行（同一 y）的中间：把最后一行补齐，防止同屏缺 panel
+    const lastY = end > safeOffset ? Math.max(0, (all[end - 1] as any)?.y ?? 0) : null;
+    if (lastY != null) {
+      while (end < all.length && end - safeOffset < maxItems) {
+        const nextY = Math.max(0, (all[end] as any)?.y ?? 0);
+        if (nextY !== lastY) break;
+        end += 1;
+      }
     }
 
     const slice = all.slice(safeOffset, end);
@@ -321,12 +296,11 @@
   const hasPendingUserLayoutChange = ref(false);
 
   const handleUserInteracting = () => {
-    if (!isEditMode.value) return;
+    if (!canEditLayout.value) return;
     hasPendingUserLayoutChange.value = true;
   };
 
   const commitLayoutToStore = (next: PanelLayout[]) => {
-    if (!isEditMode.value) return;
     if (!hasPendingUserLayoutChange.value) return;
     dashboardStore.updatePanelGroupLayout(props.groupId, next);
     hasPendingUserLayoutChange.value = false;
@@ -336,7 +310,6 @@
   const debouncedCommitLayout = debounceCancellable(commitLayoutToStore, 220);
 
   const handleLayoutUpdated = (newLayout: PanelLayout[]) => {
-    if (!isEditMode.value) return;
     if (!hasPendingUserLayoutChange.value) return;
     debouncedCommitLayout(newLayout);
   };
@@ -348,6 +321,31 @@
   onBeforeUnmount(() => {
     // 避免组件卸载后仍触发回调
     debouncedCommitLayout.flush();
+  });
+
+  let editModeSeq = 0;
+  watch(isEditMode, (next, prev) => {
+    editModeSeq += 1;
+    const seq = editModeSeq;
+
+    // 进入编辑模式：预拉全量 layout（不 reset，以避免已渲染面板闪动/重挂载）
+    if (next && !prev) {
+      isEditLayoutReady.value = false;
+      void (async () => {
+        try {
+          await virtualListRef.value?.prefetchAll?.();
+        } finally {
+          if (seq === editModeSeq && isEditMode.value) isEditLayoutReady.value = true;
+        }
+      })();
+      return;
+    }
+
+    // 退出编辑模式：仅提交 layout，保留当前渲染状态，避免回切闪动/重挂载
+    if (!next && prev) {
+      debouncedCommitLayout.flush();
+      isEditLayoutReady.value = true;
+    }
   });
 </script>
 

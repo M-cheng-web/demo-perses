@@ -4,7 +4,7 @@
  * 对外暴露内容包括：
  * - DashboardView：Dashboard 根组件（宿主应用可直接挂载）
  * - runtime：运行时注入 key、piniaAttachments 等（用于多实例隔离）
- * - stores：dashboard/timeRange/editor/tooltip/variables 等 store（供 hooks 与宿主高级用法）
+ * - stores：dashboard/timeRange/editor/tooltip 等 store（供 hooks 与宿主高级用法）
  * - types：透出 @grafana-fast/types（方便宿主应用一站式引用类型）
  *
  * 说明：
@@ -32,7 +32,6 @@ export * from '/#/stores/dashboard';
 export * from '/#/stores/timeRange';
 export * from '/#/stores/editor';
 export * from '/#/stores/tooltip';
-export * from '/#/stores/variables';
 
 /**
  * 主题相关 API

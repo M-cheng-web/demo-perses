@@ -3,7 +3,6 @@
  *
  * 这是 “调度器（QueryScheduler）” 之下的执行器：
  * - 负责把 CanonicalQuery + QueryContext 变成 QueryResult[]
- * - 负责变量插值（interpolateExpr）
  * - 负责并发控制、缓存、in-flight 去重（同一 key 的重复请求复用同一个 Promise）
  * - 负责取消（AbortSignal）
  *
@@ -13,7 +12,6 @@
  */
 import type { GrafanaFastApiClient } from '@grafana-fast/api';
 import type { CanonicalQuery, QueryContext, QueryResult } from '@grafana-fast/types';
-import { interpolateExpr } from './interpolate';
 
 export interface QueryRunnerOptions {
   /**
@@ -94,7 +92,7 @@ export class QueryRunner {
     }
   }
 
-  private buildCacheKey(query: CanonicalQuery, context: QueryContext, interpolatedExpr: string): string {
+  private buildCacheKey(query: CanonicalQuery, context: QueryContext, expr: string): string {
     const tr = context.timeRange;
     const from = typeof tr.from === 'number' ? tr.from : String(tr.from);
     const to = typeof tr.to === 'number' ? tr.to : String(tr.to);
@@ -106,7 +104,7 @@ export class QueryRunner {
       query.minStep ?? '',
       from,
       to,
-      interpolatedExpr,
+      expr,
     ].join('::');
   }
 
@@ -114,23 +112,16 @@ export class QueryRunner {
    * 执行一组查询（面板通常包含 A/B/C... 多条 query）
    *
    * 内置能力：
-   * - 变量插值：先把 expr 里的变量替换成最终表达式
    * - 缓存：同 datasource + timeRange + expr 的结果可复用（TTL 内）
    * - in-flight 去重：同 key 的并发请求复用同一 Promise
    * - 并发限制：控制同时飞行中的请求数量
    */
-  async executeQueries(
-    queries: CanonicalQuery[],
-    context: QueryContext,
-    variables: Record<string, string | string[]>,
-    variableMeta: Record<string, { includeAll?: boolean; allValue?: string; multi?: boolean }>,
-    options: { signal?: AbortSignal } = {}
-  ): Promise<QueryResult[]> {
+  async executeQueries(queries: CanonicalQuery[], context: QueryContext, options: { signal?: AbortSignal } = {}): Promise<QueryResult[]> {
     const visible = queries.filter((q) => !q.hide);
     const tasks = visible.map(async (q): Promise<QueryResult> => {
       if (options.signal?.aborted) throw this.createAbortError();
 
-      const expr = interpolateExpr(q.expr, variables, variableMeta, { multiJoin: 'regex' });
+      const expr = q.expr;
       const cacheKey = this.buildCacheKey(q, context, expr);
       const now = Date.now();
 

@@ -1,60 +1,50 @@
 <!--
-  文件说明：Dashboard 工具栏
+	  文件说明：Dashboard 工具栏
 
-  职责：
-  - 编辑模式开关/保存
-  - 时间范围选择 + 手动刷新
-  - 变量区展示与变更写回（variables store 与 dashboard JSON 同步）
-  - JSON 导入/导出（严格模式：非法 JSON 不会污染外部状态）
--->
+	  职责：
+	  - 编辑模式开关/保存
+	  - 时间范围选择 + 手动刷新
+	  - JSON 导入/导出（严格模式：非法 JSON 不会污染外部状态）
+	-->
 <template>
   <div :class="bem()">
-    <!-- 第一层：标题和编辑模式按钮 -->
+    <!-- 单行：标题 + 操作区 -->
     <div :class="[bem('header'), bem('header', { 'edit-mode': isEditMode })]">
       <h2 :class="bem('title')">{{ dashboardName }}</h2>
       <div :class="bem('actions')">
-        <template v-if="isEditMode">
-          <!-- 编辑模式下的操作按钮 -->
-          <Button @click="handleAddPanelGroup" :disabled="isBooting">
-            <template #icon><PlusOutlined /></template>
-            添加面板组
-          </Button>
-          <Button @click="handleSave" type="primary" :loading="isSaving" :disabled="isBooting"> 保存 </Button>
-          <Button @click="handleToggleEditMode" :disabled="isBooting"> 取消 </Button>
-        </template>
-        <template v-else>
-          <Button @click="handleToggleEditMode" type="primary" :disabled="isBooting"> 编辑 </Button>
-        </template>
-      </div>
-    </div>
-
-    <!-- 第二层：变量选择器和控制按钮 -->
-    <div :class="bem('controls')">
-      <div :class="bem('controls-left')">
-        <VariableSelector :variables="resolvedVariables" @change="handleVariableChange" />
-      </div>
-      <div :class="bem('controls-right')">
         <!-- 时间范围选择器 -->
         <TimeRangePicker v-model:value="selectedTimeRange" :disabled="isBooting" @change="handleTimeRangeChange" />
 
-        <!-- 刷新按钮 -->
-        <Button :icon="h(ReloadOutlined)" size="small" :disabled="isBooting" @click="handleRefresh" />
+        <template v-if="isEditMode">
+          <!-- 编辑模式下的操作按钮 -->
+          <Button size="small" @click="handleAddPanelGroup" :disabled="isBooting">
+            <template #icon><PlusOutlined /></template>
+            添加面板组
+          </Button>
+          <Button size="small" @click="handleSave" type="primary" :loading="isSaving" :disabled="isBooting"> 保存 </Button>
+          <Button size="small" @click="handleToggleEditMode" :disabled="isBooting"> 取消 </Button>
+        </template>
+        <template v-else>
+          <!-- 刷新按钮（编辑模式下不展示） -->
+          <Button :icon="h(ReloadOutlined)" size="small" :disabled="isBooting" @click="handleRefresh" />
 
-        <!-- 更多操作 -->
-        <Dropdown n>
-          <Button :icon="h(MoreOutlined)" size="small" :disabled="isBooting" />
-          <template #overlay>
-            <Menu
-              :items="[
-                { key: 'manageVariables', label: '管理变量', icon: h(SettingOutlined) },
-                { key: 'export', label: '导出 JSON', icon: h(DownloadOutlined) },
-                { key: 'import', label: '导入 JSON', icon: h(UploadOutlined) },
-                { key: 'viewJson', label: '查看 JSON', icon: h(FileTextOutlined) },
-              ]"
-              @click="handleMenuClick"
-            />
-          </template>
-        </Dropdown>
+          <!-- 更多操作（编辑模式下不展示） -->
+          <Dropdown n>
+            <Button :icon="h(MoreOutlined)" size="small" :disabled="isBooting" />
+            <template #overlay>
+              <Menu
+                :items="[
+                  { key: 'export', label: '导出 JSON', icon: h(DownloadOutlined) },
+                  { key: 'import', label: '导入 JSON', icon: h(UploadOutlined) },
+                  { key: 'viewJson', label: '查看 JSON', icon: h(FileTextOutlined) },
+                ]"
+                @click="handleMenuClick"
+              />
+            </template>
+          </Dropdown>
+
+          <Button size="small" @click="handleToggleEditMode" type="primary" :disabled="isBooting"> 编辑 </Button>
+        </template>
       </div>
     </div>
 
@@ -85,20 +75,11 @@
   import { TimeRangePicker, Dropdown, Menu, Space, Modal } from '@grafana-fast/component';
   import { Button } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
-  import {
-    ReloadOutlined,
-    MoreOutlined,
-    DownloadOutlined,
-    UploadOutlined,
-    FileTextOutlined,
-    SettingOutlined,
-    PlusOutlined,
-  } from '@ant-design/icons-vue';
-  import { useDashboardStore, useTimeRangeStore, useVariablesStore } from '/#/stores';
+  import { ReloadOutlined, MoreOutlined, DownloadOutlined, UploadOutlined, FileTextOutlined, PlusOutlined } from '@ant-design/icons-vue';
+  import { useDashboardStore, useTimeRangeStore } from '/#/stores';
   import { message } from '@grafana-fast/component';
   import { DashboardJsonEditor } from '@grafana-fast/json-editor';
   import type { Dashboard } from '@grafana-fast/types';
-  import VariableSelector from '/#/components/Common/VariableSelector.vue';
   import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
   import { createNamespace } from '/#/utils';
 
@@ -106,19 +87,10 @@
 
   const dashboardStore = useDashboardStore();
   const timeRangeStore = useTimeRangeStore();
-  const variablesStore = useVariablesStore();
 
   const { currentDashboard, isEditMode, isSaving, isBooting } = storeToRefs(dashboardStore);
-  const { options: variableOptions } = storeToRefs(variablesStore as any);
 
   const dashboardName = computed(() => currentDashboard.value?.name || '仪表盘');
-  const resolvedVariables = computed(() => {
-    const vars = currentDashboard.value?.variables ?? [];
-    return vars.map((v) => ({
-      ...v,
-      options: variableOptions.value?.[v.name] ?? v.options,
-    }));
-  });
 
   const selectedTimeRange = ref('now-1h');
   let autoRefreshTimer: number | null = null;
@@ -174,9 +146,6 @@
 
   const handleMenuClick = ({ key }: { key: string | number }) => {
     switch (String(key)) {
-      case 'manageVariables':
-        handleManageVariables();
-        break;
       case 'export':
         handleExport();
         break;
@@ -187,19 +156,6 @@
         handleViewJson();
         break;
     }
-  };
-
-  const handleVariableChange = (variables: Record<string, string | string[]>) => {
-    console.log('Variables changed:', variables);
-    variablesStore.setValues(variables);
-    // write back to Dashboard JSON for export/save
-    variablesStore.applyToDashboard(currentDashboard.value ?? null);
-    // Query refresh is handled by QueryScheduler/QueryRunner (scoped), no longer by global refresh().
-  };
-
-  const handleManageVariables = () => {
-    message.info('变量管理功能（可以通过 JSON 编辑器编辑 Dashboard 来管理变量）');
-    handleViewJson();
   };
 
   const handleExport = () => {
@@ -319,7 +275,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 14px 10px;
+      padding: 8px 14px;
       background-color: transparent;
       transition: background-color var(--gf-motion-normal) var(--gf-easing);
 
@@ -334,35 +290,17 @@
       font-weight: 650;
       letter-spacing: 0.2px;
       color: @text-color;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     &__actions {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-left: auto;
-    }
-
-    &__controls {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      padding: 0 14px 10px;
-      gap: 12px;
-    }
-
-    &__controls-left {
-      flex: 1;
-      min-width: 0;
-      padding-bottom: 8px;
-    }
-
-    &__controls-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-      padding-top: 6px;
       margin-left: auto;
     }
   }

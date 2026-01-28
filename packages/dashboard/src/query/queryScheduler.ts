@@ -3,8 +3,7 @@
  *
  * 目标：
  * - 把“查询触发”从各处 watch 里收敛到一个中心调度器
- * - 统一处理：timeRange 变化、变量变化、面板 query 变化 -> 触发刷新
- * - 支持依赖分析：变量变化时只刷新依赖该变量的 panel（避免全量刷新）
+ * - 统一处理：timeRange 变化、面板 query 变化 -> 触发刷新
  *
  * 结构：
  * - registerPanel(panelId, panelRef) 注册一个面板（返回该面板的 loading/error/results/refreh）
@@ -13,12 +12,11 @@
  * 注意：
  * - 这个调度器应是“按 dashboard 实例隔离”的（通常绑定到 pinia 实例）
  */
-import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue';
-import type { CanonicalQuery, Panel, QueryContext, QueryResult } from '@grafana-fast/types';
+import { onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue';
+import type { Panel, QueryContext, QueryResult } from '@grafana-fast/types';
 import { storeToRefs, type Pinia } from '@grafana-fast/store';
-import { useTimeRangeStore, useVariablesStore } from '/#/stores';
+import { useTimeRangeStore } from '/#/stores';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
-import { extractVariableRefs } from './interpolate';
 import { QueryRunner } from './queryRunner';
 
 export interface PanelQueryState {
@@ -35,7 +33,6 @@ export interface PanelQueryState {
 interface PanelRegistration {
   panelId: string;
   getPanel: () => Panel;
-  deps: Set<string>;
   state: PanelQueryState;
   abort: AbortController | null;
   lastEnqueuedAt: number;
@@ -49,13 +46,13 @@ interface PanelRegistration {
   stopQueryWatch?: () => void;
   /**
    * 这个 panel 最近一次“成功落地结果”的全局条件代际。
-   * - 条件代际只在 timeRange/variables 变化时递增
+   * - 条件代际只在 timeRange 变化时递增
    * - 用于保证：滚动导致的 mount/unmount 不会触发重复刷新
    */
   lastLoadedConditionGen: number;
 }
 
-type RefreshReason = 'timeRange' | 'variables' | 'panel-change' | 'became-visible' | 'manual';
+type RefreshReason = 'timeRange' | 'panel-change' | 'became-visible' | 'manual';
 
 interface RefreshTask {
   panelId: string;
@@ -94,8 +91,7 @@ export interface QuerySchedulerDebugSnapshot {
  * 行为：
  * - 追踪已注册 panel
  * - timeRange 变化 -> 全量刷新
- * - variable 变化 -> 只刷新依赖该变量的 panel
- * - 面板 queries 变化 -> 更新依赖关系并刷新该 panel
+ * - 面板 queries 变化 -> 刷新该 panel
  */
 export function createQueryScheduler(pinia?: Pinia) {
   const api = getPiniaApiClient(pinia);
@@ -103,9 +99,7 @@ export function createQueryScheduler(pinia?: Pinia) {
   const MIN_LOADING_MS = 200;
 
   const timeRangeStore = useTimeRangeStore(pinia);
-  const variablesStore = useVariablesStore(pinia);
   const { absoluteTimeRange } = storeToRefs(timeRangeStore);
-  const { variables, values, lastUpdatedAt, lastChangedNames } = storeToRefs(variablesStore as any);
 
   /**
    * 注意：不要把这些 Map 包进 Vue 响应式系统（reactive）
@@ -115,11 +109,10 @@ export function createQueryScheduler(pinia?: Pinia) {
    * - 这里的 PanelQueryState 里包含 Ref，如果被解包/代理，容易出现 `.value` 写入异常
    *
    * 结论：
-   * - registrations/varToPanels 只做内部 bookkeeping
+   * - registrations 只做内部 bookkeeping
    * - UI 响应式由每个 panel 自己的 refs（loading/error/results）来承载
    */
   const registrations = new Map<string, PanelRegistration>();
-  const varToPanels = new Map<string, Set<string>>();
 
   /**
    * 可视面板跟踪（viewport + overscan）
@@ -290,39 +283,6 @@ export function createQueryScheduler(pinia?: Pinia) {
     drain();
   };
 
-  const variableMeta = computed(() => {
-    const meta: Record<string, { includeAll?: boolean; allValue?: string; multi?: boolean }> = {};
-    for (const v of (variables.value ?? []) as any[]) {
-      meta[v.name] = { includeAll: v.includeAll, allValue: v.allValue, multi: v.multi };
-    }
-    return meta;
-  });
-
-  const computeDeps = (queries: CanonicalQuery[]): Set<string> => {
-    const deps = new Set<string>();
-    for (const q of queries) {
-      // 依赖分析基于 expr 的变量引用（$var/${var}/[[var]]）
-      extractVariableRefs(q.expr).forEach((name) => deps.add(name));
-    }
-    return deps;
-  };
-
-  const indexPanelDeps = (panelId: string, deps: Set<string>) => {
-    // 移除旧依赖
-    for (const [varName, panels] of varToPanels.entries()) {
-      if (panels.has(panelId) && !deps.has(varName)) {
-        panels.delete(panelId);
-        if (!panels.size) varToPanels.delete(varName);
-      }
-    }
-    // 添加新依赖
-    for (const varName of deps) {
-      const set = varToPanels.get(varName) ?? new Set<string>();
-      set.add(panelId);
-      varToPanels.set(varName, set);
-    }
-  };
-
   const runPanel = async (reg: PanelRegistration) => {
     const panel = reg.getPanel();
     const queries = panel.queries ?? [];
@@ -340,7 +300,7 @@ export function createQueryScheduler(pinia?: Pinia) {
 
     let aborted = false;
     try {
-      const results = await runner.executeQueries(queries, context, values.value as any, variableMeta.value, { signal: reg.abort.signal });
+      const results = await runner.executeQueries(queries, context, { signal: reg.abort.signal });
       reg.state.results.value = results;
     } catch (err) {
       if ((err as any)?.name === 'AbortError') {
@@ -406,23 +366,6 @@ export function createQueryScheduler(pinia?: Pinia) {
     enqueueVisible('timeRange', 30);
   });
 
-  // 变量变化 -> 只刷新受影响的面板（依赖分析）
-  watch(lastUpdatedAt, () => {
-    bumpConditionGeneration();
-    const changed = (lastChangedNames.value ?? []) as string[];
-    if (!changed.length) return;
-    const affected = new Set<string>();
-    for (const name of changed) {
-      const panels = varToPanels.get(name);
-      if (!panels) continue;
-      panels.forEach((p) => affected.add(p));
-    }
-    // Only refresh the intersection with visible panels.
-    for (const id of affected) {
-      if (isPanelVisible(id)) enqueue(id, 'variables', 20);
-    }
-  });
-
   const registerPanel = (panelId: string, panelRef: Ref<Panel> | ComputedRef<Panel>): PanelQueryState => {
     const existing = registrations.get(panelId);
 
@@ -431,10 +374,7 @@ export function createQueryScheduler(pinia?: Pinia) {
       reg.stopQueryWatch?.();
       reg.stopQueryWatch = watch(
         () => panelRef.value.queries,
-        (next) => {
-          const d = computeDeps(next ?? []);
-          reg.deps = d;
-          indexPanelDeps(panelId, d);
+        () => {
           enqueue(panelId, 'panel-change', 30);
         },
         { deep: true }
@@ -444,8 +384,6 @@ export function createQueryScheduler(pinia?: Pinia) {
     if (existing) {
       existing.mounts++;
       existing.getPanel = () => panelRef.value;
-      existing.deps = computeDeps(panelRef.value.queries ?? []);
-      indexPanelDeps(panelId, existing.deps);
       ensureQueryWatch(existing);
       /**
        * 兼容虚拟化/窗口化的“注册时机”：
@@ -465,10 +403,6 @@ export function createQueryScheduler(pinia?: Pinia) {
         existing.mounts = Math.max(0, existing.mounts - 1);
         existing.stopQueryWatch?.();
         existing.stopQueryWatch = undefined;
-        // Remove from dependency index while unmounted: offscreen panels shouldn't participate.
-        for (const panels of varToPanels.values()) {
-          panels.delete(panelId);
-        }
         // Avoid wasting work for a panel that is currently unmounted.
         pending.delete(panelId);
         if (!existing.inflight) existing.state.loading.value = false;
@@ -491,7 +425,6 @@ export function createQueryScheduler(pinia?: Pinia) {
     const reg: PanelRegistration = {
       panelId,
       getPanel: () => panelRef.value,
-      deps: computeDeps(panelRef.value.queries ?? []),
       state,
       abort: null,
       lastEnqueuedAt: 0,
@@ -501,7 +434,6 @@ export function createQueryScheduler(pinia?: Pinia) {
       lastLoadedConditionGen: -1,
     };
     registrations.set(panelId, reg);
-    indexPanelDeps(panelId, reg.deps);
     ensureQueryWatch(reg);
     // 同上：确保“先上报可见、后注册”的情况下也能触发首屏请求
     if (isPanelVisible(panelId) && reg.lastLoadedConditionGen !== conditionGeneration) {
@@ -513,9 +445,6 @@ export function createQueryScheduler(pinia?: Pinia) {
       reg.mounts = Math.max(0, reg.mounts - 1);
       reg.stopQueryWatch?.();
       reg.stopQueryWatch = undefined;
-      for (const panels of varToPanels.values()) {
-        panels.delete(panelId);
-      }
       pending.delete(panelId);
       if (!reg.inflight) reg.state.loading.value = false;
       updateDebug();

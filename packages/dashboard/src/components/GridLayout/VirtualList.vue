@@ -139,6 +139,24 @@
   const hasMore = ref(true);
   const isBusy = computed(() => loading.value || loadingMore.value);
 
+  const debug = (event: string, payload?: Record<string, unknown>) => {
+    if (!import.meta.env.DEV) return;
+    const prefix = `[VirtualList:${props.scopeId}]`;
+    if (payload) console.log(prefix, event, payload);
+    else console.log(prefix, event);
+  };
+
+  const getEffectiveViewportHeight = (scroller: HTMLElement | null | undefined): number => {
+    const fallback = DEFAULT_SELF_HEIGHT_PX;
+    const clientHeight = scroller?.clientHeight ?? 0;
+    const safeClientHeight = clientHeight > 0 ? clientHeight : fallback;
+    const winHeight = typeof window !== 'undefined' ? window.innerHeight : safeClientHeight;
+    // runtime scroll 容器如果没有正确约束高度，clientHeight 可能会变得非常大（等于内容高度）。
+    // clamp 到 window.innerHeight，避免“首屏一次加载太多页”的误判。
+    const safeWinHeight = winHeight > 0 ? winHeight : safeClientHeight;
+    return Math.max(1, Math.min(safeClientHeight, safeWinHeight));
+  };
+
   const autoLoad = useNearBottomAutoLoad({
     enabled: computed(() => Boolean(props.enabled)),
     idleMs: computed(() => Math.max(0, Math.floor(props.idleMs ?? 0))),
@@ -185,6 +203,14 @@
     queryGeneration++;
     const gen = queryGeneration;
 
+    debug('reset:start', {
+      gen,
+      resetKey: props.resetKey,
+      enabled: props.enabled,
+      scrollMode: props.scrollMode,
+      pageSize: props.pageSize,
+    });
+
     loading.value = true;
     loadingMore.value = false;
     hasMore.value = true;
@@ -208,10 +234,12 @@
 
     try {
       const limit = Math.max(1, props.pageSize ?? 1);
-      const viewportHeight = resolvedScrollEl.value?.clientHeight ?? DEFAULT_SELF_HEIGHT_PX;
+      const viewportHeight = getEffectiveViewportHeight(resolvedScrollEl.value);
+      debug('reset:query', { gen, offset: 0, limit, viewportHeight });
       const res = await Promise.resolve(props.query({ offset: 0, limit, viewportHeight }));
       if (gen !== queryGeneration) return;
       const { items, total } = normalizeQueryResult(res);
+      debug('reset:result', { gen, returned: items.length, total });
       applyQueryResult(items, total, items.length);
     } finally {
       if (gen === queryGeneration) loading.value = false;
@@ -220,6 +248,13 @@
     await nextTick();
     scheduleViewportUpdate();
     void applyHotVisible();
+
+    debug('reset:done', {
+      gen,
+      dataList: dataList.value.length,
+      totalCount: totalCount.value,
+      hasMore: hasMore.value,
+    });
   };
 
   async function doLoadMore(_source: LoadMoreSource) {
@@ -236,13 +271,25 @@
     loadingMorePending.value = false;
     loadingMore.value = true;
     const gen = queryGeneration;
+    const source = _source;
+    debug('loadMore:start', {
+      gen,
+      source,
+      offset,
+      pageSize: props.pageSize,
+      nearBottom: isNearBottom.value,
+      totalCount: totalCount.value,
+      hasMore: hasMore.value,
+    });
     try {
       const limit = Math.max(1, props.pageSize ?? 1);
-      const viewportHeight = resolvedScrollEl.value?.clientHeight ?? DEFAULT_SELF_HEIGHT_PX;
+      const viewportHeight = getEffectiveViewportHeight(resolvedScrollEl.value);
+      debug('loadMore:query', { gen, source, offset, limit, viewportHeight });
       const res = await Promise.resolve(props.query({ offset, limit, viewportHeight }));
       if (gen !== queryGeneration) return;
 
       const { items, total } = normalizeQueryResult(res);
+      debug('loadMore:result', { gen, source, returned: items.length, total });
       if (!items.length) {
         // 兜底：避免空页导致无限触发
         hasMore.value = false;
@@ -268,12 +315,71 @@
       void applyHotVisible();
     } finally {
       if (gen === queryGeneration) loadingMore.value = false;
+      debug('loadMore:done', {
+        gen,
+        source,
+        dataList: dataList.value.length,
+        totalCount: totalCount.value,
+        hasMore: hasMore.value,
+      });
     }
   }
 
   const loadMore = async () => {
     await autoLoad.loadMoreManual();
   };
+
+  type PrefetchAllOptions = {
+    /**
+     * 兜底：最多执行多少轮 loadMore（避免异常 total 导致死循环）
+     */
+    maxRounds?: number;
+  };
+
+  /**
+   * 拉取到完整数据（不清空已有 dataList/hydratedIds）
+   * - 典型场景：进入编辑模式时，希望一次性拿到全量 layout，避免拖拽/缩放出现“断层”
+   * - 与 reset() 的差异：prefetchAll 只追加，不会触发可视集合清空/骨架闪动
+   */
+  const prefetchAll = async (options?: PrefetchAllOptions) => {
+    if (!props.enabled) return;
+    const pageSize = Math.max(1, Math.floor(props.pageSize ?? 1));
+    const fallbackRounds = 20;
+    const remaining = Math.max(0, (totalCount.value || 0) - dataList.value.length);
+    const estimatedRounds = totalCount.value > 0 ? Math.ceil(remaining / pageSize) + 2 : fallbackRounds;
+    const maxRounds = Math.max(1, Math.floor(options?.maxRounds ?? estimatedRounds));
+
+    debug('prefetchAll:start', {
+      pageSize,
+      maxRounds,
+      dataList: dataList.value.length,
+      totalCount: totalCount.value,
+      hasMore: hasMore.value,
+    });
+
+    let rounds = 0;
+    while (hasMore.value && rounds < maxRounds) {
+      const before = dataList.value.length;
+      await loadMore();
+      const after = dataList.value.length;
+      rounds += 1;
+      // loadMore 未推进（被节流/兜底）-> 退出，避免无限循环
+      if (after <= before) break;
+    }
+
+    debug('prefetchAll:done', {
+      rounds,
+      dataList: dataList.value.length,
+      totalCount: totalCount.value,
+      hasMore: hasMore.value,
+    });
+  };
+
+  defineExpose({
+    reset,
+    loadMore,
+    prefetchAll,
+  });
 
   // ---------------------------
   // 触底加载：near-bottom + idle gating
@@ -311,7 +417,7 @@
     if (!scroller || !container) return;
 
     const scrollTop = scroller.scrollTop;
-    const height = scroller.clientHeight;
+    const height = getEffectiveViewportHeight(scroller);
 
     const scrollRect = scroller.getBoundingClientRect();
     const gridRect = container.getBoundingClientRect();
@@ -325,7 +431,24 @@
 
     const thresholdPx = Math.max(0, Math.floor(props.thresholdPx ?? 0));
     const sentinelRect = sentinel.getBoundingClientRect();
-    const nextNearBottom = sentinelRect.top - scrollRect.bottom <= thresholdPx;
+    const viewportBottom = typeof window !== 'undefined' ? Math.min(scrollRect.bottom, window.innerHeight) : scrollRect.bottom;
+    const distanceToBottomPx = sentinelRect.top - viewportBottom;
+    // 关键：避免 distance 为“大负值”时也被判定为 near-bottom，导致首屏误触发多轮加载
+    const nextNearBottom = distanceToBottomPx <= thresholdPx && distanceToBottomPx >= -thresholdPx;
+    if (nextNearBottom !== isNearBottom.value) {
+      debug('viewport:nearBottom', {
+        nextNearBottom,
+        distanceToBottomPx: Math.floor(distanceToBottomPx),
+        thresholdPx,
+        scrollTop,
+        viewportHeight: height,
+        scrollRectBottom: Math.floor(scrollRect.bottom),
+        viewportBottom: Math.floor(viewportBottom),
+        dataList: dataList.value.length,
+        totalCount: totalCount.value,
+        hasMore: hasMore.value,
+      });
+    }
     autoLoad.setNearBottom(nextNearBottom);
   };
 

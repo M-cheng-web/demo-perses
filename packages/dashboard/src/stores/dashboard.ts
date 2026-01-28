@@ -4,7 +4,7 @@
 
 import { defineStore } from '@grafana-fast/store';
 import type { Dashboard, PanelGroup, Panel, PanelLayout, ID } from '@grafana-fast/types';
-import { createPrefixedId, deepCloneStructured } from '/#/utils';
+import { createPrefixedId, deepClone, deepCloneStructured } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
 
 type BootStage = 'idle' | 'fetching' | 'parsing' | 'initializing' | 'ready' | 'error';

@@ -49,7 +49,7 @@
   import { ref, watch, onMounted, onUnmounted, computed, provide, inject } from 'vue';
   import { getActivePinia, storeToRefs, type Pinia } from '@grafana-fast/store';
   import { Button, ConfigProvider, Empty, Loading } from '@grafana-fast/component';
-  import { useDashboardStore, useTooltipStore, useVariablesStore } from '/#/stores';
+  import { useDashboardStore, useTooltipStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
   import { DASHBOARD_EMPTY_TEXT } from '/#/components/Dashboard/utils';
   import DashboardToolbar from './DashboardToolbar.vue';
@@ -96,9 +96,7 @@
 
   const dashboardStore = useDashboardStore();
   const tooltipStore = useTooltipStore();
-  const variablesStore = useVariablesStore();
   const { panelGroups, isEditMode, viewPanel, isBooting, bootStage, bootStats, isLargeDashboard } = storeToRefs(dashboardStore);
-  const { currentDashboard } = storeToRefs(dashboardStore);
   const fullscreenModalRef = ref<InstanceType<typeof PanelFullscreenModal>>();
   const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
   const rootEl = ref<HTMLElement | null>(null);
@@ -180,15 +178,6 @@
       bindPointerTracking(el ?? null);
     },
     { immediate: false }
-  );
-
-  // Sync variables store from the current dashboard (import/load)
-  watch(
-    currentDashboard,
-    (d) => {
-      variablesStore.initializeFromDashboard(d ?? null);
-    },
-    { immediate: true }
   );
 
   const bootTitle = computed(() => {
