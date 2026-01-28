@@ -59,8 +59,18 @@
       scrollMode?: 'self' | 'runtime';
       /** 固定高度（例如 560 或 '560px'），组件内部自带滚动 */
       height?: number | string;
-      /** 每次加载多少条 */
+      /**
+       * 每次 query 的最大条数（或固定条数）
+       * - `adaptivePageSize=true`：作为单次 query 的最大 limit（实际追加数量由 VirtualList 按视口/布局动态计算）
+       * - `adaptivePageSize=false`：作为“每页固定数量”
+       */
       pageSize?: number;
+      /**
+       * 是否按“下一页视口高度”自适应计算每页追加数量
+       * - 默认开启（更贴近“加载到够一屏/两屏再停”）
+       * - 关闭后使用固定 pageSize
+       */
+      adaptivePageSize?: boolean;
       /** 由外部提供的“分页查询”（可同步可异步） */
       query: (args: QueryArgs) => QueryResult | Promise<QueryResult>;
       /** 距离底部多少 px 触发 loadMore */
@@ -77,6 +87,12 @@
       marginY?: number;
       /** hot 窗口的 overscan（单位：屏幕高度） */
       hotOverscanScreens?: number;
+      /**
+       * 渲染缓存容量（按 panel 数量）
+       * - 目的：减少“滚出可视范围又滚回来”时的组件卸载/重建，从而避免 ECharts 重新 init / 重新 setOption 的“重画感”
+       * - 代价：缓存越大，DOM/内存占用越高
+       */
+      keepAliveCount?: number;
       /** 用于外部数据变更时强制 reset（例如 layout / groupId 变化） */
       resetKey?: string | number;
     }>(),
@@ -84,6 +100,7 @@
       scrollMode: 'runtime',
       height: 560,
       pageSize: 50,
+      adaptivePageSize: true,
       thresholdPx: 200,
       idleMs: 200,
       enabled: true,
@@ -91,6 +108,7 @@
       rowHeight: 30,
       marginY: 10,
       hotOverscanScreens: 0.25,
+      keepAliveCount: 50,
       resetKey: undefined,
     }
   );
@@ -139,11 +157,45 @@
   const hasMore = ref(true);
   const isBusy = computed(() => loading.value || loadingMore.value);
 
+  /**
+   * debug 输出（仅 DEV）
+   * 约定：只打印“关键路径 + 关键字段”，避免刷屏。
+   */
   const debug = (event: string, payload?: Record<string, unknown>) => {
     if (!import.meta.env.DEV) return;
-    const prefix = `[VirtualList:${props.scopeId}]`;
-    if (payload) console.log(prefix, event, payload);
-    else console.log(prefix, event);
+    const prefix = `[虚拟列表:${props.scopeId}]`;
+
+    const map: Record<string, string> = {
+      'reset:start': '重置：开始',
+      'reset:query': '重置：请求',
+      'reset:result': '重置：结果',
+      'reset:done': '重置：完成',
+      'loadMore:start': '加载更多：开始',
+      'loadMore:query': '加载更多：请求',
+      'loadMore:result': '加载更多：结果',
+      'loadMore:done': '加载更多：完成',
+      'viewport:nearBottom': '触底判定变化',
+      'render:stats': '渲染统计',
+      'adaptive:query': '自适应：请求更多以凑够一屏',
+      'prefetchAll:start': '预取全量：开始（编辑模式）',
+      'prefetchAll:done': '预取全量：完成（编辑模式）',
+    };
+
+    const title = map[event] ?? event;
+    if (!payload) {
+      console.log(prefix, title);
+      return;
+    }
+
+    // 保持输出短小：只打印一层字段（避免大对象/数组）
+    const safePayload: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(payload)) {
+      if (Array.isArray(v)) safePayload[k] = `Array(${v.length})`;
+      else if (v && typeof v === 'object') safePayload[k] = v;
+      else safePayload[k] = v;
+    }
+
+    console.log(prefix, title, safePayload);
   };
 
   const getEffectiveViewportHeight = (scroller: HTMLElement | null | undefined): number => {
@@ -186,17 +238,123 @@
   // 用于取消/屏蔽过期请求（reset 期间）
   let queryGeneration = 0;
 
-  const applyQueryResult = (items: PanelLayout[], total?: number, lastPageLength?: number) => {
+  // adaptivePageSize=true 时：query 可能会“多取少用”，剩余 items 会进入 buffer
+  let prefetchedBuffer: PanelLayout[] = [];
+  // query 返回的 total（如果存在）；用于在仅消费 buffer 时保持 totalCount 稳定
+  let totalFromQuery: number | null = null;
+  // 已加载（dataList）的最大 bottom（单位：grid row units；=max(y+h)）
+  let loadedMaxBottomUnits = 0;
+
+  // 渲染缓存（LRU）：用于减少滚动来回导致的卸载/重建
+  const pinnedIds = ref<Set<string>>(new Set());
+  let pinnedQueue: string[] = [];
+
+  const toUnits = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+  const getTopUnits = (it: PanelLayout): number => Math.max(0, toUnits((it as any).y));
+  const getBottomUnits = (it: PanelLayout): number => Math.max(0, getTopUnits(it) + Math.max(0, toUnits((it as any).h)));
+  const computeMaxBottomUnits = (items: PanelLayout[]): number => {
+    let maxBottom = 0;
+    for (const it of items) {
+      maxBottom = Math.max(maxBottom, getBottomUnits(it));
+    }
+    return maxBottom;
+  };
+
+  const applyQueryResult = (items: PanelLayout[], total?: number, lastFetchedLength?: number, bufferLength = 0) => {
     dataList.value = items;
     if (typeof total === 'number' && Number.isFinite(total)) {
       totalCount.value = Math.max(0, Math.floor(total));
       hasMore.value = dataList.value.length < totalCount.value;
       return;
     }
-    totalCount.value = dataList.value.length;
+    totalCount.value = dataList.value.length + Math.max(0, bufferLength);
     // 没有 total 时只能用“是否拿满 pageSize”来猜测
-    const pageLen = typeof lastPageLength === 'number' ? lastPageLength : items.length;
-    hasMore.value = pageLen >= Math.max(1, props.pageSize ?? 0);
+    const fetchedLen = typeof lastFetchedLength === 'number' ? lastFetchedLength : items.length;
+    hasMore.value = bufferLength > 0 || fetchedLen >= Math.max(1, props.pageSize ?? 0);
+  };
+
+  const getQueryChunkLimit = (): number => Math.max(1, Math.floor(props.pageSize ?? 1));
+
+  const ADAPTIVE_PREFETCH_SCREENS = 2;
+  const getAdaptiveTargetAddedUnits = (viewportHeightPx: number): number => {
+    const rowUnitPx = Math.max(1, (props.rowHeight ?? 0) + (props.marginY ?? 0));
+    return Math.max(1, Math.ceil((viewportHeightPx / rowUnitPx) * ADAPTIVE_PREFETCH_SCREENS));
+  };
+
+  type AdaptiveAppendResult = {
+    appended: PanelLayout[];
+    nextBuffer: PanelLayout[];
+    total?: number;
+    lastFetchedLength: number;
+    nextMaxBottomUnits: number;
+  };
+
+  /**
+   * 计算“自适应下一页”要追加的 items
+   * - 以当前已加载内容的 max(y+h) 为 base
+   * - 目标：追加到 base + N 屏高度（单位：grid units）
+   * - 停止条件：当前 maxBottom 已达标，且下一项 y 已超出目标范围
+   */
+  const computeAdaptiveAppend = async (gen: number, viewportHeightPx: number): Promise<AdaptiveAppendResult | null> => {
+    const baseMaxBottomUnits = loadedMaxBottomUnits;
+    const targetAddedUnits = getAdaptiveTargetAddedUnits(viewportHeightPx);
+    const targetBottomUnits = baseMaxBottomUnits + targetAddedUnits;
+    const maxChunk = getQueryChunkLimit();
+
+    const baseLoadedCount = dataList.value.length;
+    let buffer = prefetchedBuffer.slice();
+    let bufferCursor = 0;
+
+    const appended: PanelLayout[] = [];
+    let currentMaxBottomUnits = baseMaxBottomUnits;
+    let lastFetchedLength = 0;
+    let total: number | undefined = totalFromQuery ?? undefined;
+
+    // 兜底：避免异常 query 导致死循环
+    const maxFetchRounds = 50;
+    let fetchRounds = 0;
+
+    const remainingBuffer = () => buffer.length - bufferCursor;
+
+    while (fetchRounds < maxFetchRounds) {
+      // buffer 空 -> 继续 fetch 下一段（offset 始终基于“已加载+本次要追加”）
+      if (remainingBuffer() <= 0) {
+        const offset = baseLoadedCount + appended.length;
+        const limit = maxChunk;
+        debug('adaptive:query', { gen, offset, limit, viewportHeight: viewportHeightPx, targetBottomUnits });
+        const res = await Promise.resolve(props.query({ offset, limit, viewportHeight: viewportHeightPx }));
+        if (gen !== queryGeneration) return null;
+
+        const normalized = normalizeQueryResult(res);
+        lastFetchedLength = normalized.items.length;
+        if (typeof normalized.total === 'number' && Number.isFinite(normalized.total)) {
+          total = Math.max(0, Math.floor(normalized.total));
+        }
+        if (!normalized.items.length) break;
+
+        buffer = normalized.items;
+        bufferCursor = 0;
+        fetchRounds += 1;
+        continue;
+      }
+
+      const next = buffer[bufferCursor];
+      if (!next) break;
+      const nextY = getTopUnits(next);
+      if (currentMaxBottomUnits >= targetBottomUnits && nextY > targetBottomUnits) break;
+
+      appended.push(next);
+      currentMaxBottomUnits = Math.max(currentMaxBottomUnits, getBottomUnits(next));
+      bufferCursor += 1;
+    }
+
+    return {
+      appended,
+      nextBuffer: buffer.slice(bufferCursor),
+      total,
+      lastFetchedLength,
+      nextMaxBottomUnits: currentMaxBottomUnits,
+    };
   };
 
   const reset = async () => {
@@ -216,6 +374,11 @@
     hasMore.value = true;
     totalCount.value = 0;
     dataList.value = [];
+    prefetchedBuffer = [];
+    totalFromQuery = null;
+    loadedMaxBottomUnits = 0;
+    pinnedIds.value = new Set();
+    pinnedQueue = [];
     autoLoad.reset();
     lastScrollTopForIntent = resolvedScrollEl.value?.scrollTop ?? 0;
 
@@ -233,14 +396,32 @@
     }
 
     try {
-      const limit = Math.max(1, props.pageSize ?? 1);
       const viewportHeight = getEffectiveViewportHeight(resolvedScrollEl.value);
-      debug('reset:query', { gen, offset: 0, limit, viewportHeight });
-      const res = await Promise.resolve(props.query({ offset: 0, limit, viewportHeight }));
-      if (gen !== queryGeneration) return;
-      const { items, total } = normalizeQueryResult(res);
-      debug('reset:result', { gen, returned: items.length, total });
-      applyQueryResult(items, total, items.length);
+      const limit = getQueryChunkLimit();
+      debug('reset:query', { gen, offset: 0, limit, viewportHeight, adaptivePageSize: props.adaptivePageSize });
+
+      if (props.adaptivePageSize) {
+        const r = await computeAdaptiveAppend(gen, viewportHeight);
+        if (!r) return;
+
+        prefetchedBuffer = r.nextBuffer;
+        if (typeof r.total === 'number') totalFromQuery = r.total;
+        loadedMaxBottomUnits = r.nextMaxBottomUnits;
+
+        const total = totalFromQuery ?? undefined;
+        debug('reset:result', { gen, fetched: r.lastFetchedLength, appended: r.appended.length, buffered: prefetchedBuffer.length, total });
+        applyQueryResult(r.appended, total, r.lastFetchedLength, prefetchedBuffer.length);
+      } else {
+        const res = await Promise.resolve(props.query({ offset: 0, limit, viewportHeight }));
+        if (gen !== queryGeneration) return;
+        const { items, total } = normalizeQueryResult(res);
+
+        totalFromQuery = typeof total === 'number' && Number.isFinite(total) ? Math.max(0, Math.floor(total)) : null;
+        loadedMaxBottomUnits = computeMaxBottomUnits(items);
+
+        debug('reset:result', { gen, fetched: items.length, appended: items.length, buffered: 0, total: totalFromQuery ?? undefined });
+        applyQueryResult(items, totalFromQuery ?? undefined, items.length, 0);
+      }
     } finally {
       if (gen === queryGeneration) loading.value = false;
     }
@@ -248,6 +429,13 @@
     await nextTick();
     scheduleViewportUpdate();
     void applyHotVisible();
+
+    debug('render:stats', {
+      dataList: dataList.value.length,
+      renderList: renderList.value.length,
+      pinned: pinnedIds.value.size,
+      keepAliveCount: props.keepAliveCount,
+    });
 
     debug('reset:done', {
       gen,
@@ -275,28 +463,72 @@
     debug('loadMore:start', {
       gen,
       source,
-      offset,
       pageSize: props.pageSize,
+      adaptivePageSize: props.adaptivePageSize,
+      offset,
+      buffered: prefetchedBuffer.length,
       nearBottom: isNearBottom.value,
       totalCount: totalCount.value,
       hasMore: hasMore.value,
     });
     try {
-      const limit = Math.max(1, props.pageSize ?? 1);
       const viewportHeight = getEffectiveViewportHeight(resolvedScrollEl.value);
-      debug('loadMore:query', { gen, source, offset, limit, viewportHeight });
-      const res = await Promise.resolve(props.query({ offset, limit, viewportHeight }));
-      if (gen !== queryGeneration) return;
+      const limit = getQueryChunkLimit();
+      debug('loadMore:query', { gen, source, offset, limit, viewportHeight, adaptivePageSize: props.adaptivePageSize });
 
-      const { items, total } = normalizeQueryResult(res);
-      debug('loadMore:result', { gen, source, returned: items.length, total });
-      if (!items.length) {
-        // 兜底：避免空页导致无限触发
-        hasMore.value = false;
-        if (typeof total === 'number') totalCount.value = total;
+      if (props.adaptivePageSize) {
+        const r = await computeAdaptiveAppend(gen, viewportHeight);
+        if (!r) return;
+
+        prefetchedBuffer = r.nextBuffer;
+        if (typeof r.total === 'number') totalFromQuery = r.total;
+        loadedMaxBottomUnits = r.nextMaxBottomUnits;
+
+        const total = totalFromQuery ?? undefined;
+        debug('loadMore:result', {
+          gen,
+          source,
+          fetched: r.lastFetchedLength,
+          appended: r.appended.length,
+          buffered: prefetchedBuffer.length,
+          total,
+        });
+
+        if (!r.appended.length) {
+          // 兜底：避免空页导致无限触发
+          hasMore.value = false;
+          if (typeof total === 'number') totalCount.value = total;
+        } else {
+          const next = [...dataList.value, ...r.appended];
+          applyQueryResult(next, total, r.lastFetchedLength, prefetchedBuffer.length);
+        }
       } else {
-        const next = [...dataList.value, ...items];
-        applyQueryResult(next, typeof total === 'number' ? total : undefined, items.length);
+        // fixed page-size：不使用 buffer，避免切换模式时的重复/错位
+        prefetchedBuffer = [];
+        const res = await Promise.resolve(props.query({ offset, limit, viewportHeight }));
+        if (gen !== queryGeneration) return;
+
+        const { items, total } = normalizeQueryResult(res);
+        totalFromQuery = typeof total === 'number' && Number.isFinite(total) ? Math.max(0, Math.floor(total)) : null;
+
+        debug('loadMore:result', {
+          gen,
+          source,
+          fetched: items.length,
+          appended: items.length,
+          buffered: 0,
+          total: totalFromQuery ?? undefined,
+        });
+
+        if (!items.length) {
+          // 兜底：避免空页导致无限触发
+          hasMore.value = false;
+          if (typeof totalFromQuery === 'number') totalCount.value = totalFromQuery;
+        } else {
+          loadedMaxBottomUnits = Math.max(loadedMaxBottomUnits, computeMaxBottomUnits(items));
+          const next = [...dataList.value, ...items];
+          applyQueryResult(next, totalFromQuery ?? undefined, items.length, 0);
+        }
       }
 
       await nextTick();
@@ -343,10 +575,11 @@
    */
   const prefetchAll = async (options?: PrefetchAllOptions) => {
     if (!props.enabled) return;
-    const pageSize = Math.max(1, Math.floor(props.pageSize ?? 1));
+    const pageSize = getQueryChunkLimit();
     const fallbackRounds = 20;
-    const remaining = Math.max(0, (totalCount.value || 0) - dataList.value.length);
-    const estimatedRounds = totalCount.value > 0 ? Math.ceil(remaining / pageSize) + 2 : fallbackRounds;
+    const total = typeof totalFromQuery === 'number' ? totalFromQuery : totalCount.value;
+    const remaining = Math.max(0, (total || 0) - dataList.value.length);
+    const estimatedRounds = total > 0 ? Math.ceil(remaining / pageSize) + 2 : fallbackRounds;
     const maxRounds = Math.max(1, Math.floor(options?.maxRounds ?? estimatedRounds));
 
     debug('prefetchAll:start', {
@@ -354,23 +587,63 @@
       maxRounds,
       dataList: dataList.value.length,
       totalCount: totalCount.value,
+      buffered: prefetchedBuffer.length,
       hasMore: hasMore.value,
     });
 
     let rounds = 0;
     while (hasMore.value && rounds < maxRounds) {
       const before = dataList.value.length;
-      await loadMore();
+      const viewportHeight = getEffectiveViewportHeight(resolvedScrollEl.value);
+      const gen = queryGeneration;
+
+      // 先把已预取但未追加的 buffer 全部入库（prefetchAll 的目标就是全量）
+      if (prefetchedBuffer.length) {
+        const buffered = prefetchedBuffer;
+        prefetchedBuffer = [];
+
+        loadedMaxBottomUnits = Math.max(loadedMaxBottomUnits, computeMaxBottomUnits(buffered));
+        const next = [...dataList.value, ...buffered];
+
+        // total 未知时不要把 hasMore 错误置 false：继续尝试 query，直到返回空页
+        applyQueryResult(next, totalFromQuery ?? undefined, buffered.length, 0);
+        if (totalFromQuery == null) hasMore.value = true;
+      } else {
+        const offset = dataList.value.length;
+        const limit = pageSize;
+        const res = await Promise.resolve(props.query({ offset, limit, viewportHeight }));
+        if (gen !== queryGeneration) return;
+
+        const { items, total } = normalizeQueryResult(res);
+        if (typeof total === 'number' && Number.isFinite(total)) {
+          totalFromQuery = Math.max(0, Math.floor(total));
+        }
+
+        if (!items.length) {
+          hasMore.value = false;
+          if (typeof totalFromQuery === 'number') totalCount.value = totalFromQuery;
+        } else {
+          loadedMaxBottomUnits = Math.max(loadedMaxBottomUnits, computeMaxBottomUnits(items));
+          const next = [...dataList.value, ...items];
+          applyQueryResult(next, totalFromQuery ?? undefined, items.length, 0);
+        }
+      }
+
       const after = dataList.value.length;
       rounds += 1;
       // loadMore 未推进（被节流/兜底）-> 退出，避免无限循环
       if (after <= before) break;
     }
 
+    await nextTick();
+    scheduleViewportUpdate();
+    void applyHotVisible();
+
     debug('prefetchAll:done', {
       rounds,
       dataList: dataList.value.length,
       totalCount: totalCount.value,
+      buffered: prefetchedBuffer.length,
       hasMore: hasMore.value,
     });
   };
@@ -492,6 +765,38 @@
   const hotIds = ref<Set<string>>(new Set());
   const hydratedIds = ref<Set<string>>(new Set());
 
+  const updatePinnedIds = (hotIdList: string[]) => {
+    const maxKeep = Math.max(0, Math.floor(props.keepAliveCount ?? 0));
+    if (maxKeep <= 0) {
+      pinnedIds.value = new Set();
+      pinnedQueue = [];
+      return;
+    }
+
+    const current = new Set(pinnedIds.value);
+
+    for (const id of hotIdList) {
+      if (!current.has(id)) {
+        current.add(id);
+        pinnedQueue.push(id);
+      }
+    }
+
+    const hotSet = new Set(hotIdList);
+    while (current.size > maxKeep && pinnedQueue.length > 0) {
+      const oldest = pinnedQueue.shift();
+      if (!oldest) continue;
+      // 当前仍在 hot 的不移除（优先保证可视范围稳定）
+      if (hotSet.has(oldest)) {
+        pinnedQueue.push(oldest);
+        continue;
+      }
+      current.delete(oldest);
+    }
+
+    pinnedIds.value = current;
+  };
+
   const renderList = computed<PanelLayout[]>(() => {
     if (!virtualizeWanted.value) return dataList.value;
     if (!canMeasureViewport.value || viewport.value.height <= 0) {
@@ -499,8 +804,11 @@
     }
 
     const { top, bottom } = hotRange.value;
+    const pinned = pinnedIds.value;
     return dataList.value.filter((it) => {
       const r = estimateItemRect(it);
+      const id = normalizeId(it.i);
+      if (pinned.has(id)) return true;
       return r.bottom >= top && r.top <= bottom;
     });
   });
@@ -532,6 +840,7 @@
     updateViewport();
     const ids = computeHotIds();
     hotIds.value = new Set(ids);
+    updatePinnedIds(ids);
 
     const nextHydrated = new Set(hydratedIds.value);
     ids.forEach((id) => nextHydrated.add(id));
@@ -542,6 +851,14 @@
     scheduler.setVisiblePanels?.(props.scopeId, ids);
 
     isScrolling.value = false;
+
+    debug('render:stats', {
+      hot: ids.length,
+      pinned: pinnedIds.value.size,
+      hydrated: hydratedIds.value.size,
+      dataList: dataList.value.length,
+      renderList: renderList.value.length,
+    });
   };
 
   let idleTimer: number | null = null;
@@ -655,6 +972,13 @@
 
   watch(
     () => props.pageSize,
+    () => {
+      void reset();
+    }
+  );
+
+  watch(
+    () => props.adaptivePageSize,
     () => {
       void reset();
     }

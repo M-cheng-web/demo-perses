@@ -8,7 +8,6 @@
 <template>
   <div :class="bem()">
     <VirtualList
-      ref="virtualListRef"
       :scope-id="String(props.groupId)"
       scroll-mode="runtime"
       :page-size="PAGE_SIZE_VIEW_MAX"
@@ -20,11 +19,11 @@
       :margin-y="10"
       :hot-overscan-screens="0.25"
       :reset-key="virtualListResetSeq"
-      v-slot="{ dataList, renderList, isHydrated, loading, loadingMore, loadingMorePending, hasMore, loadMore }"
+      v-slot="{ dataList, renderList, isHydrated, isVirtualizing, loading, loadingMore, loadingMorePending, hasMore, loadMore }"
     >
       <template v-if="dataList.length > 0">
         <grid-layout
-          :layout="canEditLayout ? localLayout : dataList"
+          :layout="canEditLayout ? (isVirtualizing ? dataList : localLayout) : dataList"
           :col-num="48"
           :row-height="30"
           :is-draggable="canEditLayout"
@@ -74,7 +73,7 @@
           </grid-item>
         </grid-layout>
 
-        <div v-if="!isEditMode && (loadingMorePending || loadingMore)" :class="bem('bottom-status')">
+        <div v-if="loadingMorePending || loadingMore" :class="bem('bottom-status')">
           <Loading text="加载中..." />
         </div>
 
@@ -122,7 +121,7 @@
     virtualizeThreshold?: number;
   }>();
 
-  // View 模式：page-size 作为“单次最大加载条数”（实际条数由 queryList 按屏幕高度自适应裁剪）
+  // View 模式：page-size 作为“单次 query 的最大条数”；实际追加数量由 VirtualList（adaptivePageSize）按视口高度自适应
   const PAGE_SIZE_VIEW_MAX = 200;
   const BOTTOM_THRESHOLD_PX = 200;
   const DEFAULT_VIRTUALIZE_THRESHOLD = 10;
@@ -133,13 +132,7 @@
   const editorStore = useEditorStore();
   const { isEditMode } = storeToRefs(dashboardStore);
 
-  type VirtualListExposed = {
-    prefetchAll?: (options?: { maxRounds?: number }) => Promise<void>;
-  };
-
-  const virtualListRef = ref<VirtualListExposed | null>(null);
-  const isEditLayoutReady = ref(true);
-  const canEditLayout = computed(() => isEditMode.value && isEditLayoutReady.value);
+  const canEditLayout = computed(() => isEditMode.value);
 
   const localLayout = ref<PanelLayout[]>([...props.layout]);
 
@@ -210,71 +203,12 @@
 
   type VirtualListQueryArgs = { offset: number; limit: number; viewportHeight?: number };
 
-  const prefixMaxBottomUnits = computed(() => {
-    const all = sortedLayout.value;
-    const prefix: number[] = [];
-    let maxBottom = 0;
-    for (const it of all) {
-      const bottom = Math.max(0, (it.y ?? 0) + (it.h ?? 0));
-      maxBottom = Math.max(maxBottom, bottom);
-      prefix.push(maxBottom);
-    }
-    return prefix;
-  });
-
-  const GRID_ROW_HEIGHT_PX = 30;
-  const GRID_MARGIN_Y_PX = 10;
-  const PREFETCH_SCREENS = 2;
-
-  const queryList = async ({ offset, limit, viewportHeight }: VirtualListQueryArgs) => {
+  const queryList = async ({ offset, limit }: VirtualListQueryArgs) => {
     const all = sortedLayout.value;
     const safeOffset = Math.max(0, Math.floor(offset ?? 0));
     const maxItems = Math.max(1, Math.floor(limit ?? 1));
 
-    // 编辑模式：需要全量布局（否则 drag/resize 体验会断层）
-    if (isEditMode.value) {
-      const slice = all.slice(safeOffset, safeOffset + maxItems);
-      return { items: slice, total: all.length };
-    }
-
-    // view 模式：按“屏幕高度”决定本页需要加载多少条
-    const vpHeightPx = typeof viewportHeight === 'number' && viewportHeight > 0 ? viewportHeight : 560;
-    const rowUnitPx = GRID_ROW_HEIGHT_PX + GRID_MARGIN_Y_PX;
-    const targetAddedUnits = Math.max(1, Math.ceil((vpHeightPx / rowUnitPx) * PREFETCH_SCREENS));
-
-    const prefix = prefixMaxBottomUnits.value;
-    const prevBottomUnits = safeOffset > 0 ? (prefix[safeOffset - 1] ?? 0) : 0;
-    const targetBottomUnits = prevBottomUnits + targetAddedUnits;
-
-    let end = safeOffset;
-    let nextBottomUnits = prevBottomUnits;
-
-    while (end < all.length && end - safeOffset < maxItems) {
-      const it: any = all[end];
-      const y = Math.max(0, it.y ?? 0);
-      // 同时满足两个条件才停止：
-      // 1) 当前已加载内容的最大 bottom 已达到目标（保证容器高度足够）
-      // 2) 下一项的 y 已经超出目标范围（避免因“某个超高 panel”导致过早停止，从而漏掉同屏可见的 panels）
-      if (nextBottomUnits >= targetBottomUnits && y > targetBottomUnits) break;
-
-      nextBottomUnits = Math.max(nextBottomUnits, Math.max(0, (it.y ?? 0) + (it.h ?? 0)));
-      end += 1;
-    }
-
-    // 兜底：避免出现空页（极端：targetBottomUnits 很小但 offset 指向后续项）
-    if (end === safeOffset && safeOffset < all.length) end = safeOffset + 1;
-
-    // 避免切在同一行（同一 y）的中间：把最后一行补齐，防止同屏缺 panel
-    const lastY = end > safeOffset ? Math.max(0, (all[end - 1] as any)?.y ?? 0) : null;
-    if (lastY != null) {
-      while (end < all.length && end - safeOffset < maxItems) {
-        const nextY = Math.max(0, (all[end] as any)?.y ?? 0);
-        if (nextY !== lastY) break;
-        end += 1;
-      }
-    }
-
-    const slice = all.slice(safeOffset, end);
+    const slice = all.slice(safeOffset, safeOffset + maxItems);
     return { items: slice, total: all.length };
   };
 
@@ -300,18 +234,20 @@
     hasPendingUserLayoutChange.value = true;
   };
 
-  const commitLayoutToStore = (next: PanelLayout[]) => {
+  const commitLayoutToStore = () => {
     if (!hasPendingUserLayoutChange.value) return;
-    dashboardStore.updatePanelGroupLayout(props.groupId, next);
+    dashboardStore.updatePanelGroupLayout(props.groupId, localLayout.value);
     hasPendingUserLayoutChange.value = false;
   };
 
   // 注意：这里的延迟不是“请求延迟”，只用于减少 pinia 的高频写入压力
   const debouncedCommitLayout = debounceCancellable(commitLayoutToStore, 220);
 
-  const handleLayoutUpdated = (newLayout: PanelLayout[]) => {
+  const handleLayoutUpdated = () => {
     if (!hasPendingUserLayoutChange.value) return;
-    debouncedCommitLayout(newLayout);
+    // 重要：大组编辑时 grid-layout 可能只渲染了 dataList 子集，
+    // layout-updated 回调可能只包含子集；这里统一提交 localLayout（全量）。
+    debouncedCommitLayout();
   };
 
   const handleAddPanel = () => {
@@ -321,31 +257,6 @@
   onBeforeUnmount(() => {
     // 避免组件卸载后仍触发回调
     debouncedCommitLayout.flush();
-  });
-
-  let editModeSeq = 0;
-  watch(isEditMode, (next, prev) => {
-    editModeSeq += 1;
-    const seq = editModeSeq;
-
-    // 进入编辑模式：预拉全量 layout（不 reset，以避免已渲染面板闪动/重挂载）
-    if (next && !prev) {
-      isEditLayoutReady.value = false;
-      void (async () => {
-        try {
-          await virtualListRef.value?.prefetchAll?.();
-        } finally {
-          if (seq === editModeSeq && isEditMode.value) isEditLayoutReady.value = true;
-        }
-      })();
-      return;
-    }
-
-    // 退出编辑模式：仅提交 layout，保留当前渲染状态，避免回切闪动/重挂载
-    if (!next && prev) {
-      debouncedCommitLayout.flush();
-      isEditLayoutReady.value = true;
-    }
   });
 </script>
 
