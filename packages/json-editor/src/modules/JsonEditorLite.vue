@@ -24,13 +24,29 @@
       </Space>
 
       <Space :size="8">
-        <Button size="small" :disabled="readOnly" @click="handleFormat">格式化</Button>
-        <Button size="small" :disabled="readOnly" @click="handleMinify">压缩</Button>
+        <Button size="small" :disabled="effectiveReadOnly" @click="handleFormat">格式化</Button>
+        <Button size="small" :disabled="effectiveReadOnly" @click="handleMinify">压缩</Button>
         <Button size="small" @click="handleCopy">复制</Button>
       </Space>
     </Flex>
 
-    <JsonTextArea :model-value="draftText" :read-only="readOnly" :height="normalizedHeight" :error-line="errorLine" @update:model-value="setDraft" />
+    <JsonTextArea
+      ref="textAreaRef"
+      :model-value="draftText"
+      :read-only="effectiveReadOnly"
+      :height="normalizedHeight"
+      :error-line="errorLine"
+      @update:model-value="setDraft"
+    />
+
+    <Alert
+      v-if="isTooLargeToEdit && !readOnly"
+      type="warning"
+      show-icon
+      message="内容较大，已切换为只读"
+      description="为避免卡顿，当前仅支持查看/复制；如需修改建议在外部编辑后重新导入。"
+      style="margin-top: 10px"
+    />
 
     <Alert
       v-if="!diagnostics.ok && diagnostics.error"
@@ -106,6 +122,14 @@
        */
       validateDebounceMs?: number;
       /**
+       * 超过一定长度后强制只读（避免大文本编辑导致卡顿/卡死）
+       *
+       * 说明：
+       * - 这里只做“编辑能力”的限制，仍然支持查看/复制/校验
+       * - 设为 0 表示不限制（不推荐）
+       */
+      maxEditableChars?: number;
+      /**
        * 主题（仅支持 light/dark/inherit）
        *
        * 说明：
@@ -122,6 +146,7 @@
       validate: undefined,
       validateDebounceMs: 0,
       theme: 'inherit',
+      maxEditableChars: 1_048_576,
     }
   );
 
@@ -146,6 +171,14 @@
   });
 
   const errorLine = computed(() => (diagnostics.value.ok ? null : (diagnostics.value.error?.line ?? null)));
+  const isTooLargeToEdit = computed(() => {
+    const limit = Math.max(0, Math.floor(props.maxEditableChars ?? 0));
+    if (limit <= 0) return false;
+    return (draftText.value ?? '').length > limit;
+  });
+
+  const effectiveReadOnly = computed(() => Boolean(props.readOnly) || isTooLargeToEdit.value);
+  const textAreaRef = ref<null | { scrollToLine?: (line: number) => void }>(null);
 
   const recompute = (text: string) => {
     const d = analyzeJsonText(text ?? '');
@@ -272,6 +305,7 @@
     if (!diagnostics.value.ok) return 'JSON 错误';
     if (validating.value) return '校验中...';
     if (validatorErrors.value.length > 0) return '校验未通过';
+    if (isTooLargeToEdit.value && !props.readOnly) return '只读（内容过大）';
     return '合法 JSON';
   });
 
@@ -281,6 +315,12 @@
     if (validating.value) return 'var(--gf-color-primary)';
     if (validatorErrors.value.length > 0) return 'var(--gf-color-danger)';
     return 'var(--gf-color-success)';
+  });
+
+  watch(errorLine, (n) => {
+    if (n == null) return;
+    if (!isTooLargeToEdit.value) return;
+    textAreaRef.value?.scrollToLine?.(n);
   });
 
   // 外部 modelValue 更新时，同步到内部 draft

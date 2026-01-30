@@ -23,13 +23,29 @@
       </Space>
 
       <Space :size="8">
-        <Button size="small" :disabled="readOnly" @click="handleFormat">格式化</Button>
-        <Button size="small" :disabled="readOnly" @click="handleMinify">压缩</Button>
+        <Button size="small" :disabled="effectiveReadOnly" @click="handleFormat">格式化</Button>
+        <Button size="small" :disabled="effectiveReadOnly" @click="handleMinify">压缩</Button>
         <Button size="small" @click="handleCopy">复制</Button>
       </Space>
     </Flex>
 
-    <JsonTextArea :model-value="draftText" :read-only="readOnly" :height="normalizedHeight" :error-line="errorLine" @update:model-value="setDraft" />
+    <JsonTextArea
+      ref="textAreaRef"
+      :model-value="draftText"
+      :read-only="effectiveReadOnly"
+      :height="normalizedHeight"
+      :error-line="errorLine"
+      @update:model-value="setDraft"
+    />
+
+    <Alert
+      v-if="isTooLargeToEdit && !readOnly"
+      type="warning"
+      show-icon
+      message="内容较大，已切换为只读"
+      description="为避免卡顿，当前仅支持查看/复制；如需修改建议在外部编辑后重新导入。"
+      style="margin-top: 10px"
+    />
 
     <Alert
       v-if="!diagnostics.json.ok && diagnostics.json.error"
@@ -66,7 +82,7 @@
       </template>
     </Alert>
 
-    <Alert v-else-if="diagnostics.looksLikeDashboard" type="success" show-icon message="摘要" style="margin-top: 10px">
+    <Alert v-else-if="diagnostics.looksLikeDashboard && summaryLines.length > 0" type="success" show-icon message="摘要" style="margin-top: 10px">
       <template #description>
         <div v-for="(line, idx) in summaryLines" :key="idx" style="margin: 2px 0">
           {{ line }}
@@ -126,6 +142,14 @@
       validate?: JsonTextValidator;
       /** 外部校验防抖（毫秒） */
       validateDebounceMs?: number;
+      /**
+       * 超过一定长度后强制只读（避免大文本编辑导致卡顿/卡死）
+       *
+       * 说明：
+       * - 这里只做“编辑能力”的限制，仍然支持查看/复制/校验/应用
+       * - 设为 0 表示不限制（不推荐）
+       */
+      maxEditableChars?: number;
     }>(),
     {
       modelValue: '',
@@ -135,6 +159,7 @@
       theme: 'inherit',
       validate: undefined,
       validateDebounceMs: 0,
+      maxEditableChars: 1_048_576,
     }
   );
 
@@ -153,13 +178,45 @@
   });
 
   const draftText = ref(props.modelValue ?? '');
-  const diagnostics = ref(analyzeDashboardText(draftText.value));
+  const maxEditableCharsLimit = computed(() => Math.max(0, Math.floor(props.maxEditableChars ?? 0)));
+  const shouldSkipDiagnostics = (text: string) => {
+    // 只读 + 无外部校验器场景：文本只用于“查看”，没必要为摘要/启发式判断做一次完整 parse
+    // 这能显著缓解“大 JSON 查看时打开即卡顿”的问题。
+    if (!props.readOnly) return false;
+    if (props.validate) return false;
+    const limit = maxEditableCharsLimit.value;
+    if (!limit || limit <= 0) return false;
+    return (text ?? '').length > limit;
+  };
+
+  const computeDiagnostics = (text: string) => {
+    if (shouldSkipDiagnostics(text)) {
+      return {
+        json: { ok: true, value: undefined },
+        looksLikeDashboard: true,
+      } as ReturnType<typeof analyzeDashboardText>;
+    }
+    return analyzeDashboardText(text);
+  };
+
+  const diagnostics = ref(computeDiagnostics(draftText.value));
   const validatorErrors = ref<string[]>([]);
   const validating = ref(false);
   let validateSeq = 0;
   let validateTimer: number | null = null;
 
   const errorLine = computed(() => (diagnostics.value.json.ok ? null : (diagnostics.value.json.error?.line ?? null)));
+  const isTooLargeToEdit = computed(() => {
+    const limit = Math.max(0, Math.floor(props.maxEditableChars ?? 0));
+    if (limit <= 0) return false;
+    return (draftText.value ?? '').length > limit;
+  });
+
+  const effectiveReadOnly = computed(() => Boolean(props.readOnly) || isTooLargeToEdit.value);
+
+  const textAreaRef = ref<null | {
+    scrollToLine?: (line: number) => void;
+  }>(null);
 
   const runExternalValidate = async (text: string, parsedValue: unknown | undefined) => {
     const fn = props.validate;
@@ -224,7 +281,9 @@
     diagnostics.value = d;
 
     // 每次输入都触发外部校验钩子（包含 JSON 不合法情况）
-    scheduleExternalValidate(value, d.json.ok ? d.json.value : undefined);
+    if (props.validate) {
+      scheduleExternalValidate(value, d.json.ok ? d.json.value : undefined);
+    }
 
     // 没有外部校验器时：可以在本次输入内直接决定是否同步（更跟手）
     if (!props.validate) {
@@ -249,6 +308,7 @@
     if (!d.looksLikeDashboard) return '不是 Dashboard';
     if (validating.value) return '校验中...';
     if (validatorErrors.value.length > 0) return '校验未通过';
+    if (isTooLargeToEdit.value && !props.readOnly) return '只读（内容过大）';
     return '可应用';
   });
 
@@ -309,11 +369,24 @@
   });
 
   watch(
+    errorLine,
+    (n) => {
+      if (n == null) return;
+      if (!isTooLargeToEdit.value) return;
+      textAreaRef.value?.scrollToLine?.(n);
+    },
+    { immediate: false }
+  );
+
+  watch(
     () => props.modelValue,
     (v) => {
       draftText.value = v ?? '';
-      diagnostics.value = analyzeDashboardText(draftText.value);
-      scheduleExternalValidate(draftText.value, diagnostics.value.json.ok ? diagnostics.value.json.value : undefined);
+      const d = computeDiagnostics(draftText.value);
+      diagnostics.value = d;
+      if (props.validate) {
+        scheduleExternalValidate(draftText.value, d.json.ok ? d.json.value : undefined);
+      }
     },
     { immediate: true }
   );

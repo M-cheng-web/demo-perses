@@ -81,11 +81,14 @@
 
     <!-- JSON 查看/编辑模态框 -->
     <Modal v-model:open="jsonModalVisible" title="仪表盘 JSON" :width="800" destroyOnClose :maskClosable="false">
+      <div v-if="isGeneratingJson" :class="bem('json-loading')">正在生成 JSON（内容较大时可能需要几秒）...</div>
       <DashboardJsonEditor
+        v-else
         ref="dashboardJsonEditorRef"
         v-model="dashboardJson"
         :read-only="jsonModalMode === 'view'"
-        :validate="validateDashboardStrict"
+        :max-editable-chars="MAX_EDITABLE_DASHBOARD_JSON_CHARS"
+        :validate="jsonModalMode === 'edit' ? validateDashboardStrict : undefined"
         @validate="handleJsonValidate"
       />
       <template #footer>
@@ -102,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, h, watch } from 'vue';
+  import { ref, computed, h, nextTick, watch } from 'vue';
   import { Button, Card, Flex, Modal, Segmented, Space, TimeRangePicker, Dropdown, Menu } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import { MoreOutlined, DownloadOutlined, UploadOutlined, FileTextOutlined } from '@ant-design/icons-vue';
@@ -114,6 +117,9 @@
   import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('dashboard-toolbar');
+  const MAX_EDITABLE_DASHBOARD_JSON_CHARS = 120_000;
+  const isGeneratingJson = ref(false);
+  let generateJsonSeq = 0;
 
   const props = withDefaults(
     defineProps<{
@@ -128,7 +134,7 @@
   const dashboardStore = useDashboardStore();
   const timeRangeStore = useTimeRangeStore();
 
-  const { currentDashboard, viewMode, isSaving, isBooting } = storeToRefs(dashboardStore);
+  const { currentDashboard, viewMode, isSaving, isBooting, isLargeDashboard } = storeToRefs(dashboardStore);
 
   const dashboardName = computed(() => currentDashboard.value?.name || '仪表盘');
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
@@ -240,6 +246,9 @@
       try {
         // 统一走 JSON 编辑器：非法 JSON 只在编辑器内部报错，不会污染外部状态
         const json = String(e.target?.result ?? '');
+        // 导入文件时不需要生成：取消可能存在的“生成当前 dashboard JSON”任务
+        generateJsonSeq++;
+        isGeneratingJson.value = false;
         dashboardJson.value = json;
         jsonModalMode.value = 'edit';
         jsonModalVisible.value = true;
@@ -261,9 +270,9 @@
       return;
     }
 
-    dashboardJson.value = JSON.stringify(currentDashboard.value, null, 2);
     jsonModalMode.value = 'view';
     jsonModalVisible.value = true;
+    void generateDashboardJsonText(currentDashboard.value);
   };
 
   const handleJsonValidate = (isValid: boolean) => {
@@ -291,14 +300,48 @@
   const openJsonModal = (mode: 'view' | 'edit' = 'view') => {
     if (isBooting.value) return;
     if (!currentDashboard.value) return;
-    dashboardJson.value = JSON.stringify(currentDashboard.value, null, 2);
     jsonModalMode.value = mode;
     jsonModalVisible.value = true;
+    void generateDashboardJsonText(currentDashboard.value);
   };
 
   const closeJsonModal = () => {
     jsonModalVisible.value = false;
   };
+
+  const generateDashboardJsonText = async (dash: Dashboard) => {
+    const seq = ++generateJsonSeq;
+    isGeneratingJson.value = true;
+    // 避免“点击打开 → 先 stringify 大对象 → UI 卡死一段时间后才出现 modal”
+    await nextTick();
+
+    // 让出一帧，确保 modal/loading 文案已渲染
+    await new Promise<void>((r) => window.setTimeout(r, 0));
+    if (seq !== generateJsonSeq) return;
+    if (!jsonModalVisible.value) return;
+
+    try {
+      // 大盘 JSON 生成成本很高：用更紧凑的缩进以降低体积与 stringify 压力
+      const indent = isLargeDashboard.value ? 1 : 2;
+      const text = JSON.stringify(dash, null, indent);
+      if (seq !== generateJsonSeq) return;
+      if (!jsonModalVisible.value) return;
+      dashboardJson.value = text;
+    } finally {
+      if (seq !== generateJsonSeq) return;
+      isGeneratingJson.value = false;
+    }
+  };
+
+  watch(
+    () => jsonModalVisible.value,
+    (open) => {
+      if (open) return;
+      // cancel any in-flight generation
+      generateJsonSeq++;
+      isGeneratingJson.value = false;
+    }
+  );
 
   defineExpose({
     // Drawer / UI
@@ -369,6 +412,12 @@
       align-items: center;
       gap: 8px;
       margin-left: auto;
+    }
+
+    &__json-loading {
+      padding: 24px;
+      font-size: 13px;
+      color: color-mix(in srgb, @text-color, transparent 40%);
     }
 
     &--sidebar {

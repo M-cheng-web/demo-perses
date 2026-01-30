@@ -69,13 +69,6 @@ function countDashboardStats(d: Dashboard): { groupCount: number; panelCount: nu
   return { groupCount: groups.length, panelCount };
 }
 
-function normalizeDashboard(dashboard: Dashboard) {
-  // 面板组统一折叠：项目内不再暴露“默认折叠”字段/配置，避免状态分裂
-  for (const g of dashboard.panelGroups ?? []) {
-    g.isCollapsed = true;
-  }
-}
-
 export const useDashboardStore = defineStore('dashboard', {
   state: (): DashboardState => ({
     currentDashboard: null,
@@ -195,7 +188,6 @@ export const useDashboardStore = defineStore('dashboard', {
         // 按当前策略：不做历史 schema 兼容/迁移；API 返回什么就用什么（外部应保证是当前结构）。
         // 大 JSON 下用 structuredClone 降低 stringify/parse 的主线程压力。
         const next = deepCloneStructured(dashboard);
-        normalizeDashboard(next);
         this.currentDashboard = next;
         this.finishBoot();
       } catch (error) {
@@ -229,7 +221,6 @@ export const useDashboardStore = defineStore('dashboard', {
         this.bootStats.panelCount = panelCount;
 
         const next = deepCloneStructured(dashboard);
-        normalizeDashboard(next);
         this.currentDashboard = next;
         this.finishBoot();
       } catch (error) {

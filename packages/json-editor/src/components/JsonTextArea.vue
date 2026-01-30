@@ -18,7 +18,7 @@
   <div :class="bem()" :style="{ height: normalizedHeight }">
     <div :class="bem('gutter')">
       <div :class="bem('gutterInner')" :style="translateStyle">
-        <div v-for="n in lineCount" :key="n" :class="[bem('lineNo'), { 'is-error': n === errorLine }]">
+        <div v-for="n in visibleLineNos" :key="n" :class="[bem('lineNo'), { 'is-error': n === errorLine }]">
           {{ n }}
         </div>
       </div>
@@ -28,7 +28,7 @@
       <!-- 背景高亮层：只负责“错误行背景色”，不渲染文本（避免与 textarea 的字体/选区冲突） -->
       <div :class="bem('highlight')">
         <div :class="bem('highlightInner')" :style="translateStyle">
-          <div v-for="n in lineCount" :key="n" :class="[bem('highlightLine'), { 'is-error': n === errorLine }]"> &nbsp; </div>
+          <div v-for="n in visibleLineNos" :key="n" :class="[bem('highlightLine'), { 'is-error': n === errorLine }]"> &nbsp; </div>
         </div>
       </div>
 
@@ -52,7 +52,7 @@
    * - 这个组件只做“文本输入 + 行号 + 高亮行”，不关心 JSON 语义；
    * - JSON 合法性、错误行列、外部校验等逻辑由上层（JsonEditorLite / DashboardJsonEditor）负责。
    */
-  import { computed, ref, watch } from 'vue';
+  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { createNamespace } from '../utils/bem';
 
   defineOptions({ name: 'GfJsonTextArea' });
@@ -90,14 +90,22 @@
   const textareaRef = ref<HTMLTextAreaElement | null>(null);
   const scrollTop = ref(0);
   const scrollLeft = ref(0);
+  const textareaHeight = ref(0);
 
   const normalizedHeight = computed(() => (typeof props.height === 'number' ? `${props.height}px` : props.height));
 
-  const lineCount = computed(() => {
-    const text = props.modelValue ?? '';
-    // 空字符串也至少算 1 行
-    return Math.max(1, text.split('\n').length);
+  const FALLBACK_HEIGHT_PX = 420;
+  const fallbackHeightPx = computed(() => {
+    if (typeof props.height === 'number') return Math.max(1, Math.floor(props.height));
+    const raw = String(props.height ?? '');
+    const match = /^([0-9]+(?:\\.[0-9]+)?)px$/.exec(raw);
+    if (match) return Math.max(1, Math.floor(Number(match[1])));
+    return FALLBACK_HEIGHT_PX;
   });
+
+  const LINE_HEIGHT_PX = 18;
+  const PAD_Y_PX = 10;
+  const OVERSCAN_LINES = 20;
 
   const errorLine = computed(() => {
     const n = props.errorLine;
@@ -106,9 +114,40 @@
     return Math.max(1, Math.floor(n));
   });
 
-  const translateStyle = computed(() => ({
-    transform: `translate(${-scrollLeft.value}px, ${-scrollTop.value}px)`,
-  }));
+  const viewportHeightPx = computed(() => {
+    const h = textareaHeight.value;
+    if (h > 0) return h;
+    return fallbackHeightPx.value;
+  });
+
+  const visibleLineCapacity = computed(() => {
+    const content = Math.max(0, viewportHeightPx.value - PAD_Y_PX * 2);
+    return Math.max(1, Math.ceil(content / LINE_HEIGHT_PX));
+  });
+
+  const baseVisibleLine = computed(() => {
+    const contentScrollTop = Math.max(0, scrollTop.value - PAD_Y_PX);
+    return Math.floor(contentScrollTop / LINE_HEIGHT_PX) + 1;
+  });
+
+  const startLine = computed(() => Math.max(1, baseVisibleLine.value - OVERSCAN_LINES));
+  const endLine = computed(() => baseVisibleLine.value + visibleLineCapacity.value + OVERSCAN_LINES);
+
+  const visibleLineNos = computed(() => {
+    const start = startLine.value;
+    const end = endLine.value;
+    const size = Math.max(0, end - start + 1);
+    const out = new Array<number>(size);
+    for (let i = 0; i < size; i++) out[i] = start + i;
+    return out;
+  });
+
+  const translateStyle = computed(() => {
+    const yOffset = (startLine.value - 1) * LINE_HEIGHT_PX;
+    return {
+      transform: `translate(${-scrollLeft.value}px, ${-scrollTop.value + yOffset}px)`,
+    };
+  });
 
   const handleInput = (e: Event) => {
     const target = e.target as HTMLTextAreaElement | null;
@@ -124,15 +163,55 @@
     emit('scroll', { top: scrollTop.value, left: scrollLeft.value });
   };
 
+  let resizeObserver: ResizeObserver | null = null;
+  const updateTextareaHeight = () => {
+    const el = textareaRef.value;
+    if (!el) return;
+    textareaHeight.value = Math.max(1, Math.floor(el.clientHeight));
+  };
+
+  const scrollToTop = () => {
+    const el = textareaRef.value;
+    if (!el) return;
+    el.scrollTop = 0;
+    el.scrollLeft = 0;
+    scrollTop.value = 0;
+    scrollLeft.value = 0;
+  };
+
+  const scrollToLine = (line: number) => {
+    const el = textareaRef.value;
+    if (!el) return;
+    const n = Math.max(1, Math.floor(Number(line)));
+    const nextTop = Math.max(0, (n - 1) * LINE_HEIGHT_PX);
+    el.scrollTop = nextTop;
+    scrollTop.value = nextTop;
+  };
+
+  defineExpose({
+    scrollToTop,
+    scrollToLine,
+  });
+
+  onMounted(() => {
+    updateTextareaHeight();
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => updateTextareaHeight());
+      if (textareaRef.value) resizeObserver.observe(textareaRef.value);
+    }
+  });
+
+  onBeforeUnmount(() => {
+    resizeObserver?.disconnect();
+    resizeObserver = null;
+  });
+
   // 当外部 modelValue 被重置（例如“加载示例 JSON”）时，同步滚动位置到顶部，体验更直观。
   watch(
     () => props.modelValue,
     () => {
-      if (!textareaRef.value) return;
-      textareaRef.value.scrollTop = 0;
-      textareaRef.value.scrollLeft = 0;
-      scrollTop.value = 0;
-      scrollLeft.value = 0;
+      scrollToTop();
+      updateTextareaHeight();
     }
   );
 </script>
