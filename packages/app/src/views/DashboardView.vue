@@ -20,6 +20,14 @@
         <Button type="ghost" @click="goPerf">性能压测</Button>
         <Button type="ghost" @click="reloadDashboard">重新加载</Button>
         <Button type="ghost" @click="setQuickRange">最近 5 分钟</Button>
+        <Button type="ghost" @click="actions.openSettings">打开设置侧边栏</Button>
+        <Button type="ghost" @click="actions.toggleSettings">切换设置侧边栏</Button>
+        <Button type="ghost" @click="actions.toolbar.viewJson">Toolbar: 查看 JSON</Button>
+        <Button type="ghost" @click="actions.toolbar.exportJson">Toolbar: 导出 JSON</Button>
+        <Button type="ghost" @click="actions.toolbar.importJson">Toolbar: 导入 JSON</Button>
+        <Button type="ghost" @click="actions.toolbar.refresh">Toolbar: 刷新</Button>
+        <Button type="ghost" @click="() => actions.toolbar.setTimeRangePreset('now-5m')">Toolbar: 最近 5 分钟</Button>
+        <Button type="ghost" @click="actions.toolbar.togglePanelsView">Toolbar: 切换视图</Button>
         <Button type="ghost" @click="handleRefresh">刷新时间范围</Button>
         <Button type="ghost" @click="schedulerOpen = true">调度器监控</Button>
         <Button type="ghost" @click="mountDashboard">挂载</Button>

@@ -8,18 +8,61 @@
 -->
 <template>
   <ConfigProvider :theme="props.theme">
-    <div ref="rootEl" :class="bem()">
-      <!-- 工具栏 -->
-      <DashboardToolbar />
+    <div ref="rootEl" :class="bem()" :style="rootStyle">
+      <!-- 右侧透明设置按钮：打开侧边栏工具面板 -->
+      <div ref="settingsEl" :class="[bem('settings'), { 'is-dragging': isSettingsDragging }]" :style="settingsStyle">
+        <Tooltip title="设置">
+          <Button
+            type="text"
+            size="small"
+            :icon="h(SettingOutlined)"
+            :disabled="isBooting"
+            @click="handleSettingsClick"
+            @pointerdown="handleSettingsPointerDown"
+          />
+        </Tooltip>
+      </div>
+
+      <!-- 工具栏侧边栏（复用 DashboardToolbar 内容） -->
+      <Drawer v-model:open="settingsOpen" title="设置" :width="520" :footer="false" :mask="true" :mask-closable="true">
+        <DashboardToolbar ref="toolbarRef" variant="sidebar" />
+      </Drawer>
 
       <!-- 面板组列表 -->
-      <div ref="contentEl" :class="bem('content')">
+      <div ref="contentEl" :class="[bem('content'), { 'is-locked': isFocusLayerActive }]" :style="contentStyle">
         <Empty v-if="!panelGroups.length" :description="emptyText">
           <Button v-if="isEditMode" type="primary" @click="handleAddPanelGroup"> 创建面板组 </Button>
         </Empty>
 
-        <PanelGroupList v-else :panel-groups="panelGroups" @edit-group="handleEditGroup" />
+        <template v-else>
+          <AllPanelsView v-if="isAllPanelsView" :panel-groups="panelGroups" />
+          <PanelGroupList
+            v-else
+            :panel-groups="panelGroups"
+            :focused-group-id="focusedGroupId"
+            @edit-group="handleEditGroup"
+            @open-group="handleOpenGroup"
+          />
+        </template>
       </div>
+
+      <!-- 面板组聚焦层（打开组时不改变底层滚动位置） -->
+      <PanelGroupFocusLayer
+        v-if="!isAllPanelsView && focusedGroupId != null"
+        v-model:open="focusOpen"
+        :start-offset-y="focusStartOffsetY"
+        :paged-group="focusedPagedGroup"
+        :page-size-options="pageSizeOptions"
+        :pager-threshold="pagerThreshold"
+        :is-edit-mode="isEditMode"
+        :is-booting="isBooting"
+        :group-index="focusedGroupIndex"
+        :is-last="focusedGroupIsLast"
+        :set-current-page="setCurrentPage"
+        :set-page-size="setPageSize"
+        @after-close="handleFocusAfterClose"
+        @edit-group="handleEditGroup"
+      />
 
       <!-- 面板编辑器 -->
       <PanelEditorDrawer />
@@ -46,14 +89,17 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, onMounted, onUnmounted, computed, provide, inject } from 'vue';
+  import { ref, watch, onMounted, onUnmounted, computed, provide, inject, h, nextTick } from 'vue';
   import { getActivePinia, storeToRefs, type Pinia } from '@grafana-fast/store';
-  import { Button, ConfigProvider, Empty, Loading } from '@grafana-fast/component';
-  import { useDashboardStore, useTooltipStore } from '/#/stores';
+  import { Button, ConfigProvider, Drawer, Empty, Loading, Tooltip, message } from '@grafana-fast/component';
+  import { SettingOutlined } from '@ant-design/icons-vue';
+  import { useDashboardStore, useEditorStore, useTimeRangeStore, useTooltipStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
   import { DASHBOARD_EMPTY_TEXT } from '/#/components/Dashboard/utils';
   import DashboardToolbar from './DashboardToolbar.vue';
   import PanelGroupList from '/#/components/PanelGroup/PanelGroupList.vue';
+  import PanelGroupFocusLayer from '/#/components/PanelGroup/PanelGroupFocusLayer.vue';
+  import AllPanelsView from './AllPanelsView.vue';
   import PanelEditorDrawer from '/#/components/PanelEditor/PanelEditorDrawer.vue';
   import PanelFullscreenModal from '/#/components/Panel/PanelFullscreenModal.vue';
   import GlobalChartTooltip from '/#/components/ChartTooltip/GlobalChartTooltip.vue';
@@ -64,6 +110,7 @@
   import { createPrefixedId } from '@grafana-fast/utils';
   import { GF_API_KEY, GF_RUNTIME_KEY } from '/#/runtime/keys';
   import { setPiniaApiClient } from '/#/runtime/piniaAttachments';
+  import { usePanelGroupPagination } from '/#/composables/usePanelGroupPagination';
 
   const [_, bem] = createNamespace('dashboard');
 
@@ -95,16 +142,310 @@
   );
 
   const dashboardStore = useDashboardStore();
+  const editorStore = useEditorStore();
+  const timeRangeStore = useTimeRangeStore();
   const tooltipStore = useTooltipStore();
-  const { panelGroups, isEditMode, viewPanel, isBooting, bootStage, bootStats, isLargeDashboard } = storeToRefs(dashboardStore);
+  const { panelGroups, isEditMode, viewMode, viewPanel, isBooting, bootStage, bootStats, isLargeDashboard } = storeToRefs(dashboardStore);
   const fullscreenModalRef = ref<InstanceType<typeof PanelFullscreenModal>>();
   const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
   const rootEl = ref<HTMLElement | null>(null);
   const contentEl = ref<HTMLElement | null>(null);
+  const toolbarRef = ref<any>(null);
+  const settingsOpen = ref(false);
+  const settingsEl = ref<HTMLElement | null>(null);
 
   const emptyText = computed(() => DASHBOARD_EMPTY_TEXT);
 
   const runtimeId = computed(() => props.runtimeId ?? createPrefixedId('rt'));
+
+  const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
+
+  // ---------------------------
+  // Settings button position (per dashboard instance)
+  // ---------------------------
+  const SETTINGS_POS_KEY_PREFIX = 'gf-dashboard-settings-pos:';
+  const settingsPos = ref<{ x: number; y: number } | null>(null);
+  const isSettingsDragging = ref(false);
+  const suppressSettingsClick = ref(false);
+  let settingsDragPointerId: number | null = null;
+  let settingsDragMoved = false;
+  let settingsDragStartClientX = 0;
+  let settingsDragStartClientY = 0;
+  let settingsDragStartX = 0;
+  let settingsDragStartY = 0;
+
+  const settingsStorageKey = computed(() => `${SETTINGS_POS_KEY_PREFIX}${runtimeId.value}`);
+
+  const getSettingsButtonSize = (): { w: number; h: number } => {
+    const rect = settingsEl.value?.getBoundingClientRect();
+    const w = rect?.width ?? 34;
+    const h = rect?.height ?? 34;
+    return { w: Math.max(1, Math.floor(w)), h: Math.max(1, Math.floor(h)) };
+  };
+
+  const clampSettingsPos = (pos: { x: number; y: number }): { x: number; y: number } => {
+    const root = rootEl.value;
+    if (!root) return { x: Math.floor(pos.x), y: Math.floor(pos.y) };
+    const { w, h } = getSettingsButtonSize();
+    const maxX = Math.max(0, Math.floor(root.clientWidth - w));
+    const maxY = Math.max(0, Math.floor(root.clientHeight - h));
+    const x = Math.min(maxX, Math.max(0, Math.floor(pos.x)));
+    const y = Math.min(maxY, Math.max(0, Math.floor(pos.y)));
+    return { x, y };
+  };
+
+  const clampSettingsPosInPlace = () => {
+    if (!settingsPos.value) return;
+    settingsPos.value = clampSettingsPos(settingsPos.value);
+  };
+
+  const loadSettingsPos = () => {
+    try {
+      const raw = localStorage.getItem(settingsStorageKey.value);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { x?: unknown; y?: unknown };
+      const x = Number(parsed?.x);
+      const y = Number(parsed?.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      settingsPos.value = clampSettingsPos({ x, y });
+    } catch {
+      // ignore
+    }
+  };
+
+  const saveSettingsPos = () => {
+    try {
+      if (!settingsPos.value) return;
+      localStorage.setItem(settingsStorageKey.value, JSON.stringify(settingsPos.value));
+    } catch {
+      // ignore
+    }
+  };
+
+  const settingsStyle = computed(() => {
+    if (!settingsPos.value) return undefined;
+    return {
+      left: `${settingsPos.value.x}px`,
+      top: `${settingsPos.value.y}px`,
+      right: 'auto',
+      transform: 'none',
+    } as Record<string, string>;
+  });
+
+  // ---------------------------
+  // Pagination state (per group)
+  // ---------------------------
+  const { pagedGroups, pageSizeOptions, setCurrentPage, setPageSize } = usePanelGroupPagination(() => panelGroups.value, {
+    defaultPageSize: 20,
+    pageSizeOptions: [20, 30],
+    resetPageOnPageSizeChange: true,
+  });
+  const pagerThreshold = computed(() => Math.min(...pageSizeOptions.value, 20));
+
+  // ---------------------------
+  // Focus layer (open one group without changing background scroll)
+  // ---------------------------
+  const focusedGroupId = ref<PanelGroup['id'] | null>(null);
+  const focusStartOffsetY = ref(0);
+  const focusOpen = ref(false);
+
+  const focusedPagedGroup = computed(() => {
+    if (focusedGroupId.value == null) return null;
+    return pagedGroups.value.find((pg) => String(pg.group.id) === String(focusedGroupId.value)) ?? null;
+  });
+
+  // 如果聚焦中的组被删除/替换，清理聚焦层状态（避免残留锁滚动状态）
+  watch(focusedPagedGroup, (pg) => {
+    if (focusedGroupId.value == null) return;
+    if (pg) return;
+    focusedGroupId.value = null;
+    focusOpen.value = false;
+    focusStartOffsetY.value = 0;
+  });
+
+  const groupIndexById = computed(() => {
+    const map = new Map<string, number>();
+    panelGroups.value.forEach((g, idx) => map.set(String(g.id), idx));
+    return map;
+  });
+  const focusedGroupIndex = computed(() => {
+    if (focusedGroupId.value == null) return 0;
+    return groupIndexById.value.get(String(focusedGroupId.value)) ?? 0;
+  });
+  const focusedGroupIsLast = computed(() => focusedGroupIndex.value >= panelGroups.value.length - 1);
+
+  const isFocusLayerActive = computed(() => !isAllPanelsView.value && focusedGroupId.value != null);
+
+  // ---------------------------
+  // Host container height syncing
+  // ---------------------------
+  // 目标：Dashboard 自己感知“被挂载的容器”的可用高度，并把自己 height 锁定为该高度，
+  // 这样宿主只需要控制挂载容器的尺寸即可（无需 dashboard 内部写死固定高度）。
+  const hostHeightPx = ref<number | null>(null);
+  let hostResizeObserver: ResizeObserver | null = null;
+  let observedHostEl: HTMLElement | null = null;
+  let isWindowResizeBound = false;
+
+  const resolveHostEl = (): HTMLElement | null => rootEl.value?.parentElement ?? null;
+
+  const updateHostHeight = () => {
+    const host = resolveHostEl();
+    if (!host) {
+      hostHeightPx.value = null;
+      return;
+    }
+    const next = Math.floor(host.clientHeight);
+    hostHeightPx.value = next > 0 ? next : null;
+    clampSettingsPosInPlace();
+  };
+
+  const detachHostObserver = () => {
+    if (hostResizeObserver) {
+      hostResizeObserver.disconnect();
+    }
+    observedHostEl = null;
+    if (isWindowResizeBound) {
+      window.removeEventListener('resize', updateHostHeight);
+      isWindowResizeBound = false;
+    }
+  };
+
+  const attachHostObserver = () => {
+    const host = resolveHostEl();
+    if (!host || observedHostEl === host) {
+      updateHostHeight();
+      return;
+    }
+
+    detachHostObserver();
+    observedHostEl = host;
+
+    if (typeof ResizeObserver !== 'undefined') {
+      hostResizeObserver = hostResizeObserver ?? new ResizeObserver(() => updateHostHeight());
+      hostResizeObserver.observe(host);
+    } else {
+      // 极端兜底：老环境无 ResizeObserver
+      window.addEventListener('resize', updateHostHeight, { passive: true } as AddEventListenerOptions);
+      isWindowResizeBound = true;
+    }
+
+    updateHostHeight();
+  };
+
+  const rootStyle = computed(() => {
+    const style: Record<string, string> = {};
+    if (hostHeightPx.value && hostHeightPx.value > 0) {
+      style.height = `${hostHeightPx.value}px`;
+      style['--dp-dashboard-host-height'] = `${hostHeightPx.value}px`;
+    }
+    return style;
+  });
+
+  const contentStyle = computed(() => {
+    // 聚焦层打开时禁止外层滚动：用户只通过聚焦层的内容区滚动
+    if (!isFocusLayerActive.value) return undefined;
+    return { overflow: 'hidden' } as Record<string, string>;
+  });
+
+  const handleOpenGroup = (payload: { groupId: PanelGroup['id']; headerOffsetY: number }) => {
+    if (isBooting.value) return;
+    if (isAllPanelsView.value) return;
+    focusedGroupId.value = payload.groupId;
+    focusStartOffsetY.value = payload.headerOffsetY;
+    focusOpen.value = true;
+  };
+
+  const handleFocusAfterClose = () => {
+    focusedGroupId.value = null;
+    focusStartOffsetY.value = 0;
+  };
+
+  const openSettings = () => {
+    if (isBooting.value) return;
+    settingsOpen.value = true;
+  };
+
+  const closeSettings = () => {
+    settingsOpen.value = false;
+  };
+
+  const toggleSettings = () => {
+    if (isBooting.value) return;
+    settingsOpen.value = !settingsOpen.value;
+  };
+
+  const handleSettingsClick = () => {
+    if (suppressSettingsClick.value) {
+      suppressSettingsClick.value = false;
+      return;
+    }
+    openSettings();
+  };
+
+  const getCurrentSettingsPosFromDom = (): { x: number; y: number } => {
+    const root = rootEl.value;
+    const el = settingsEl.value;
+    if (!root || !el) return { x: 0, y: 0 };
+    const rootRect = root.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    return clampSettingsPos({ x: elRect.left - rootRect.left, y: elRect.top - rootRect.top });
+  };
+
+  const endSettingsDrag = () => {
+    window.removeEventListener('pointermove', handleSettingsPointerMove);
+    window.removeEventListener('pointerup', handleSettingsPointerUp);
+    window.removeEventListener('pointercancel', handleSettingsPointerUp);
+    isSettingsDragging.value = false;
+    settingsDragPointerId = null;
+  };
+
+  const handleSettingsPointerDown = (event: PointerEvent) => {
+    if (isBooting.value) return;
+    if (settingsDragPointerId != null) return;
+    settingsDragPointerId = event.pointerId;
+    settingsDragMoved = false;
+    suppressSettingsClick.value = false;
+
+    const initial = settingsPos.value ?? getCurrentSettingsPosFromDom();
+    settingsPos.value = initial;
+    settingsDragStartX = initial.x;
+    settingsDragStartY = initial.y;
+    settingsDragStartClientX = event.clientX;
+    settingsDragStartClientY = event.clientY;
+    isSettingsDragging.value = true;
+
+    window.addEventListener('pointermove', handleSettingsPointerMove, { passive: false } as AddEventListenerOptions);
+    window.addEventListener('pointerup', handleSettingsPointerUp, { passive: true } as AddEventListenerOptions);
+    window.addEventListener('pointercancel', handleSettingsPointerUp, { passive: true } as AddEventListenerOptions);
+
+    try {
+      (event.currentTarget as HTMLElement | null)?.setPointerCapture?.(event.pointerId);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSettingsPointerMove = (event: PointerEvent) => {
+    if (settingsDragPointerId == null) return;
+    if (event.pointerId !== settingsDragPointerId) return;
+    const dx = event.clientX - settingsDragStartClientX;
+    const dy = event.clientY - settingsDragStartClientY;
+    if (!settingsDragMoved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) settingsDragMoved = true;
+    if (!settingsDragMoved) return;
+    event.preventDefault();
+    settingsPos.value = clampSettingsPos({ x: settingsDragStartX + dx, y: settingsDragStartY + dy });
+  };
+
+  const handleSettingsPointerUp = (event: PointerEvent) => {
+    if (settingsDragPointerId == null) return;
+    if (event.pointerId !== settingsDragPointerId) return;
+
+    if (settingsDragMoved) {
+      suppressSettingsClick.value = true;
+      saveSettingsPos();
+    }
+    endSettingsDrag();
+  };
 
   // Provide runtime-scoped dependencies
   const apiClient = computed(() => props.apiClient ?? createMockApiClient());
@@ -138,6 +479,15 @@
     }
   });
 
+  // 全部面板视图为只读：进入时关闭编辑器抽屉（避免残留编辑态 UI）
+  watch(viewMode, (mode) => {
+    if (mode === 'allPanels') {
+      editorStore.closeEditor();
+      focusedGroupId.value = null;
+      focusOpen.value = false;
+    }
+  });
+
   /**
    * 全局鼠标移动监听
    * 实时更新鼠标位置到 tooltipStore
@@ -164,10 +514,17 @@
   // 生命周期钩子
   onMounted(() => {
     bindPointerTracking(rootEl.value);
+    attachHostObserver();
+    // 延后一帧：确保 root/host 尺寸已稳定（便于恢复并 clamp 拖拽位置）
+    void nextTick(() => {
+      loadSettingsPos();
+      clampSettingsPosInPlace();
+    });
   });
 
   onUnmounted(() => {
     unbindPointerTracking(rootEl.value);
+    detachHostObserver();
   });
 
   // root element changes (unlikely) -> rebind
@@ -176,6 +533,7 @@
     (el, prev) => {
       unbindPointerTracking(prev ?? null);
       bindPointerTracking(el ?? null);
+      attachHostObserver();
     },
     { immediate: false }
   );
@@ -205,67 +563,170 @@
     }
     return parts.join(' / ');
   });
+
+  const ensureToolbarMounted = async () => {
+    if (toolbarRef.value) return;
+    openSettings();
+    await nextTick();
+  };
+
+  const toolbarApi = {
+    // JSON modal（依赖 toolbar UI）
+    openJsonModal: async (mode: 'view' | 'edit' = 'view') => {
+      await ensureToolbarMounted();
+      toolbarRef.value?.openJsonModal?.(mode);
+    },
+    closeJsonModal: async () => {
+      await ensureToolbarMounted();
+      toolbarRef.value?.closeJsonModal?.();
+    },
+
+    // Core actions（无 UI 也可执行）
+    refresh: () => {
+      if (isBooting.value) return;
+      timeRangeStore.refresh();
+      message.success('已刷新');
+    },
+    save: async () => {
+      if (isBooting.value) return;
+      await dashboardStore.saveDashboard();
+    },
+    toggleEditMode: () => {
+      if (isBooting.value) return;
+      dashboardStore.toggleEditMode();
+    },
+    togglePanelsView: () => {
+      if (isBooting.value) return;
+      dashboardStore.togglePanelsView();
+    },
+    addPanelGroup: () => {
+      if (isBooting.value) return;
+      dashboardStore.addPanelGroup({ title: '新面板组', description: '' });
+    },
+
+    // JSON import/export（export 可无 UI，import/view/apply 依赖 toolbar UI）
+    exportJson: () => {
+      if (isBooting.value) return;
+      const dash = dashboardStore.currentDashboard;
+      if (!dash) {
+        message.error('没有可导出的 Dashboard');
+        return;
+      }
+      const json = JSON.stringify(dash, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dashboard-${dash.name}-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('导出成功');
+    },
+    importJson: async () => {
+      await ensureToolbarMounted();
+      toolbarRef.value?.handleImport?.();
+    },
+    viewJson: async () => {
+      await ensureToolbarMounted();
+      toolbarRef.value?.handleViewJson?.();
+    },
+    applyJson: async () => {
+      await ensureToolbarMounted();
+      toolbarRef.value?.handleApplyJson?.();
+    },
+
+    // Controlled helpers
+    setTimeRangePreset: (preset: string) => {
+      if (isBooting.value) return;
+      timeRangeStore.setTimeRange({ from: preset, to: 'now' });
+    },
+    setEditMode: (next: boolean) => {
+      if (isBooting.value) return;
+      const desired = Boolean(next);
+      if (desired === isEditMode.value) return;
+      dashboardStore.toggleEditMode();
+    },
+  };
+
+  defineExpose({
+    openSettings,
+    closeSettings,
+    toggleSettings,
+    toolbar: toolbarApi,
+  });
 </script>
 
 <style scoped lang="less">
   @import '/#/assets/styles/variables.less';
 
   .dp-dashboard {
-    // Visual tuning; host apps can override these CSS vars on the mount container.
-    --gf-dashboard-grid-size: 28px;
-    --gf-dashboard-grid-opacity: 0.32;
-
     position: relative;
     isolation: isolate;
     display: flex;
     flex-direction: column;
     width: 100%;
     height: 100%;
-    background-color: @background-light;
-    background-image:
-      linear-gradient(180deg, var(--gf-bg-haze-top, rgba(255, 255, 255, 0.22)), transparent 45%),
-      radial-gradient(1200px circle at 12% -18%, var(--gf-bg-glow-1, rgba(59, 130, 246, 0.12)), transparent 58%),
-      radial-gradient(900px circle at 90% -12%, var(--gf-bg-glow-2, rgba(34, 197, 94, 0.1)), transparent 55%),
-      radial-gradient(800px circle at 50% 115%, var(--gf-bg-glow-3, rgba(245, 158, 11, 0.08)), transparent 60%);
-    background-attachment: fixed;
-
-    &::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(to right, var(--gf-bg-grid-line, rgba(148, 163, 184, 0.18)) 1px, transparent 1px),
-        linear-gradient(to bottom, var(--gf-bg-grid-line, rgba(148, 163, 184, 0.18)) 1px, transparent 1px),
-        linear-gradient(to right, var(--gf-bg-grid-line, rgba(148, 163, 184, 0.18)) 1px, transparent 1px),
-        linear-gradient(to bottom, var(--gf-bg-grid-line, rgba(148, 163, 184, 0.18)) 1px, transparent 1px);
-      background-size:
-        var(--gf-dashboard-grid-size) var(--gf-dashboard-grid-size),
-        var(--gf-dashboard-grid-size) var(--gf-dashboard-grid-size),
-        calc(var(--gf-dashboard-grid-size) * 4) calc(var(--gf-dashboard-grid-size) * 4),
-        calc(var(--gf-dashboard-grid-size) * 4) calc(var(--gf-dashboard-grid-size) * 4);
-      background-position: 0 0;
-      opacity: var(--gf-dashboard-grid-opacity);
-      pointer-events: none;
-      z-index: 0;
-      -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0) 70%);
-      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0) 70%);
-    }
+    // 嵌入式：不提供背景/网格/留白，交给宿主控制
+    background: transparent;
 
     > * {
       position: relative;
       z-index: 1;
     }
 
+    // overlay components must not be forced into normal flow by `> * { position: relative }`
+    :deep(.dp-panel-group-focus-layer) {
+      position: absolute;
+      inset: 0;
+      z-index: 140;
+    }
+
     &__content {
       flex: 1;
       overflow: auto;
-      padding: 14px 16px 18px;
+      padding: 0;
 
-      // Keep the layout breathable on large screens
       > * {
         width: 100%;
-        max-width: 1480px;
-        margin: 0 auto;
+      }
+    }
+
+    &__settings {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      transform: none;
+      z-index: 180;
+      user-select: none;
+      touch-action: none;
+      cursor: grab;
+
+      :deep(.gf-button) {
+        opacity: 0.95;
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        border: 1px solid var(--gf-color-border-muted);
+        background: color-mix(in srgb, var(--gf-color-surface), transparent 10%);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: var(--gf-shadow-1);
+        cursor: grab;
+      }
+
+      :deep(.gf-button:hover) {
+        opacity: 1;
+        background: color-mix(in srgb, var(--gf-color-surface), transparent 0%);
+        border-color: var(--gf-color-border-strong);
+        box-shadow: var(--gf-shadow-2);
+      }
+
+      &.is-dragging {
+        cursor: grabbing;
+
+        :deep(.gf-button) {
+          cursor: grabbing;
+        }
       }
     }
 

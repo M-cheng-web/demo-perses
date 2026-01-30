@@ -9,26 +9,24 @@
   <div :class="bem()">
     <VirtualList
       :scope-id="String(props.groupId)"
-      scroll-mode="runtime"
-      :page-size="PAGE_SIZE_VIEW_MAX"
-      :query="queryList"
-      :threshold-px="BOTTOM_THRESHOLD_PX"
+      :scroll-mode="props.scrollMode"
+      :height="props.scrollHeight"
       :idle-ms="200"
-      :virtualize-threshold="virtualizeThreshold"
       :row-height="30"
       :margin-y="10"
-      :hot-overscan-screens="0.25"
-      :reset-key="virtualListResetSeq"
-      v-slot="{ dataList, renderList, isHydrated, isVirtualizing, loading, loadingMore, loadingMorePending, hasMore, loadMore }"
+      :hot-overscan-screens="0.5"
+      :keep-alive-count="keepAliveCount"
+      :items="layoutItems"
+      v-slot="{ dataList, renderList, isHydrated }"
     >
       <template v-if="dataList.length > 0">
         <grid-layout
-          :layout="canEditLayout ? (isVirtualizing ? dataList : localLayout) : dataList"
+          :layout="canEditLayout ? localLayout : dataList"
           :col-num="48"
           :row-height="30"
           :is-draggable="canEditLayout"
           :is-resizable="canEditLayout"
-          :vertical-compact="canEditLayout"
+          :vertical-compact="true"
           :use-css-transforms="true"
           :margin="[10, 10]"
           @update:layout="handleGridLayoutModelUpdate"
@@ -72,26 +70,10 @@
             </Panel>
           </grid-item>
         </grid-layout>
-
-        <div v-if="loadingMorePending || loadingMore" :class="bem('bottom-status')">
-          <Loading text="加载中..." />
-        </div>
-
-        <div v-else-if="!isEditMode && hasMore" :class="bem('bottom-status')">
-          <Button type="link" @click="loadMore">加载更多</Button>
-        </div>
-
-        <div v-else-if="!isEditMode && !hasMore" :class="bem('bottom-status')">
-          <span :class="bem('bottom-tip')">没有更多数据了</span>
-        </div>
       </template>
 
       <template v-else>
-        <div v-if="loading" :class="bem('panel-skeleton')">
-          <Skeleton :active="true" height="180px" />
-        </div>
-
-        <Empty v-else description="暂无面板">
+        <Empty description="暂无面板">
           <Button v-if="isEditMode" type="primary" @click="handleAddPanel">添加面板</Button>
         </Empty>
       </template>
@@ -101,7 +83,7 @@
 
 <script setup lang="ts">
   import { computed, onBeforeUnmount, ref, watch } from 'vue';
-  import { Alert, Button, Empty, Loading, Panel, Skeleton } from '@grafana-fast/component';
+  import { Alert, Button, Empty, Panel, Skeleton } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import { GridLayout, GridItem } from 'vue-grid-layout-v3';
   import type { PanelLayout, Panel as PanelType, ID } from '@grafana-fast/types';
@@ -113,20 +95,31 @@
 
   const [_, bem] = createNamespace('grid-layout');
 
-  const props = defineProps<{
-    groupId: ID;
-    panels: PanelType[];
-    layout: PanelLayout[];
-    /** 小组（<=阈值）直接全量渲染；大组（>阈值）启用 VirtualList 虚拟/分页规则 */
-    virtualizeThreshold?: number;
-  }>();
-
-  // View 模式：page-size 作为“单次 query 的最大条数”；实际追加数量由 VirtualList（adaptivePageSize）按视口高度自适应
-  const PAGE_SIZE_VIEW_MAX = 200;
-  const BOTTOM_THRESHOLD_PX = 200;
-  const DEFAULT_VIRTUALIZE_THRESHOLD = 10;
-
-  const virtualizeThreshold = computed(() => Math.max(0, Math.floor(props.virtualizeThreshold ?? DEFAULT_VIRTUALIZE_THRESHOLD)));
+  const props = withDefaults(
+    defineProps<{
+      groupId: ID;
+      panels: PanelType[];
+      /**
+       * 当前分页的 layout（仅包含当前页 panels）
+       * 注意：这里的 y 已做过“页内 rebased”（从 0 开始），以避免出现巨大空白。
+       */
+      layout: PanelLayout[];
+      /**
+       * layout 的页内 y 偏移（用于把编辑后的 y 写回到 group 的全量 layout）
+       * - 由上层按当前页的原始布局计算得到（通常为 minY）
+       */
+      layoutBaseY?: number;
+      /**
+       * VirtualList 的滚动容器来源
+       * - runtime：使用 Dashboard 外层滚动容器（旧行为）
+       * - self：当前页内容自身滚动（用于“单组固定高度 + 内部滚动条”）
+       */
+      scrollMode?: 'self' | 'runtime';
+      /** scrollMode=self 时的固定高度（支持 number / '100%'） */
+      scrollHeight?: number | string;
+    }>(),
+    { layoutBaseY: 0, scrollMode: 'runtime', scrollHeight: undefined }
+  );
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
@@ -134,12 +127,31 @@
 
   const canEditLayout = computed(() => isEditMode.value);
 
+  /**
+   * 缓存策略（解决“滚远了再滚回来，ECharts 重新 init/重画”的体感问题）
+   * - VirtualList 的 hydratedIds 只保证“不显示骨架”，不保证组件实例不被卸载
+   * - keepAliveCount 通过 pinnedIds 让一定数量的面板保持渲染，避免频繁卸载/重建
+   */
+  const keepAliveCount = computed(() => {
+    // 分页后单页最多 30 个，保持一个较小的缓存即可（避免 DOM/内存膨胀）
+    return 60;
+  });
+
+  const layoutItems = computed<PanelLayout[]>(() => (isEditMode.value ? localLayout.value : props.layout));
+
   const localLayout = ref<PanelLayout[]>([...props.layout]);
+  const layoutBaseYRef = ref<number>(Math.max(0, Math.floor(props.layoutBaseY ?? 0)));
 
   // 监听 props.layout 变化
   watch(
     () => props.layout,
     (newLayout) => {
+      // 若正在编辑且存在未提交的交互变更：在切换分页/外部替换 layout 前先落盘，避免 baseY 变化导致写回错误
+      if (isEditMode.value && hasPendingUserLayoutChange.value) {
+        debouncedCommitLayout.flush();
+      }
+
+      layoutBaseYRef.value = Math.max(0, Math.floor(props.layoutBaseY ?? 0));
       // 编辑模式下：避免直接替换 array 引用导致 VirtualList 中的 dataList 引用失效
       // 使用 in-place 同步保持对象引用稳定（grid-item props 才能实时更新）
       if (isEditMode.value) {
@@ -170,46 +182,9 @@
     localLayout.value = nextRefs;
   };
 
-  const virtualListResetSeq = ref(0);
-  watch(
-    () => props.layout.length,
-    () => {
-      virtualListResetSeq.value++;
-    }
-  );
-  watch(
-    () => props.layout,
-    () => {
-      // 编辑模式下拖拽/缩放会频繁写回 store（array reference 变化），避免造成 VirtualList reset/闪动
-      if (isEditMode.value) return;
-      virtualListResetSeq.value++;
-    },
-    { deep: false }
-  );
-
   const handleGridLayoutModelUpdate = (nextLayout: PanelLayout[]) => {
     if (!canEditLayout.value) return;
     handleLayoutModelUpdate(nextLayout);
-  };
-
-  const sortedLayout = computed<PanelLayout[]>(() => {
-    const src = isEditMode.value ? localLayout.value : props.layout;
-    return [...src].sort((a, b) => {
-      if (a.y !== b.y) return a.y - b.y;
-      if (a.x !== b.x) return a.x - b.x;
-      return String(a.i).localeCompare(String(b.i));
-    });
-  });
-
-  type VirtualListQueryArgs = { offset: number; limit: number; viewportHeight?: number };
-
-  const queryList = async ({ offset, limit }: VirtualListQueryArgs) => {
-    const all = sortedLayout.value;
-    const safeOffset = Math.max(0, Math.floor(offset ?? 0));
-    const maxItems = Math.max(1, Math.floor(limit ?? 1));
-
-    const slice = all.slice(safeOffset, safeOffset + maxItems);
-    return { items: slice, total: all.length };
   };
 
   const panelById = computed(() => {
@@ -220,7 +195,7 @@
 
   /**
    * 性能优化：
-   * - vue-grid-layout-v3 在 dragmove/resizemove 过程中会频繁 emit layout-updated（包含全量 layout）
+   * - grid layout 在 dragmove/resizemove 过程中可能会频繁 emit layout-updated（包含全量 layout）
    * - 如果每次都写回 pinia，会导致大组（1000 条）编辑时明显卡顿
    *
    * 这里的策略：
@@ -236,7 +211,13 @@
 
   const commitLayoutToStore = () => {
     if (!hasPendingUserLayoutChange.value) return;
-    dashboardStore.updatePanelGroupLayout(props.groupId, localLayout.value);
+    // 分页模式：只允许编辑当前页，把当前页 layout 回写到 group 的全量 layout（按 i merge）。
+    const baseY = Math.max(0, Math.floor(layoutBaseYRef.value ?? 0));
+    const patched: PanelLayout[] = localLayout.value.map((it) => ({
+      ...it,
+      y: Math.max(0, Number(it.y ?? 0) + baseY),
+    }));
+    dashboardStore.patchPanelGroupLayoutItems(props.groupId, patched);
     hasPendingUserLayoutChange.value = false;
   };
 
@@ -263,17 +244,7 @@
 <style scoped lang="less">
   .dp-grid-layout {
     min-height: 200px;
-
-    &__bottom-status {
-      display: flex;
-      justify-content: center;
-      padding: 10px 0;
-    }
-
-    &__bottom-tip {
-      font-size: 12px;
-      color: var(--gf-color-text-secondary);
-    }
+    height: 100%;
 
     &__panel-error {
       height: 100%;

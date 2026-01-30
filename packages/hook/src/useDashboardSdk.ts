@@ -170,6 +170,32 @@ export interface DashboardSdkActions {
   toggleTheme: () => DashboardTheme;
   /** 获取当前实际主题（light/dark） */
   getTheme: () => DashboardTheme;
+
+  /** 打开 Dashboard 右侧“设置/工具栏”侧边栏 */
+  openSettings: () => void;
+  /** 关闭 Dashboard 右侧“设置/工具栏”侧边栏 */
+  closeSettings: () => void;
+  /** 切换 Dashboard 右侧“设置/工具栏”侧边栏 */
+  toggleSettings: () => void;
+  /**
+   * 通过 DashboardToolbar 暴露的 UI API（用于宿主侧“外部控制”）
+   * - 注意：这些操作依赖 Dashboard 组件实例已挂载
+   */
+  toolbar: {
+    openJsonModal: (mode?: 'view' | 'edit') => void;
+    closeJsonModal: () => void;
+    refresh: () => void;
+    save: () => void;
+    toggleEditMode: () => void;
+    togglePanelsView: () => void;
+    addPanelGroup: () => void;
+    exportJson: () => void;
+    importJson: () => void;
+    viewJson: () => void;
+    applyJson: () => void;
+    setTimeRangePreset: (preset: string) => void;
+    setEditMode: (next: boolean) => void;
+  };
 }
 
 export interface UseDashboardSdkResult {
@@ -257,12 +283,14 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const themePreference = ref<DashboardThemePreference>('system');
   const theme = ref<DashboardTheme>('light');
   const runtimeId = `sdk-${resolvedApiClient.kind}-${createPrefixedId('rt')}`;
+  const dashboardViewRef = ref<any>(null);
 
   const DashboardSdkRoot = defineComponent({
     name: 'DashboardSdkRoot',
     setup() {
       return () =>
         h(DashboardView, {
+          ref: dashboardViewRef,
           theme: theme.value,
           apiClient: resolvedApiClient,
           runtimeId,
@@ -455,6 +483,25 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       themePreference.value = next;
       theme.value = setDashboardThemePreference(next);
       return theme.value;
+    },
+
+    openSettings: () => dashboardViewRef.value?.openSettings?.(),
+    closeSettings: () => dashboardViewRef.value?.closeSettings?.(),
+    toggleSettings: () => dashboardViewRef.value?.toggleSettings?.(),
+    toolbar: {
+      openJsonModal: (mode: 'view' | 'edit' = 'view') => dashboardViewRef.value?.toolbar?.openJsonModal?.(mode),
+      closeJsonModal: () => dashboardViewRef.value?.toolbar?.closeJsonModal?.(),
+      refresh: () => dashboardViewRef.value?.toolbar?.refresh?.(),
+      save: () => dashboardViewRef.value?.toolbar?.save?.(),
+      toggleEditMode: () => dashboardViewRef.value?.toolbar?.toggleEditMode?.(),
+      togglePanelsView: () => dashboardViewRef.value?.toolbar?.togglePanelsView?.(),
+      addPanelGroup: () => dashboardViewRef.value?.toolbar?.addPanelGroup?.(),
+      exportJson: () => dashboardViewRef.value?.toolbar?.exportJson?.(),
+      importJson: () => dashboardViewRef.value?.toolbar?.importJson?.(),
+      viewJson: () => dashboardViewRef.value?.toolbar?.viewJson?.(),
+      applyJson: () => dashboardViewRef.value?.toolbar?.applyJson?.(),
+      setTimeRangePreset: (preset: string) => dashboardViewRef.value?.toolbar?.setTimeRangePreset?.(preset),
+      setEditMode: (next: boolean) => dashboardViewRef.value?.toolbar?.setEditMode?.(next),
     },
   };
 

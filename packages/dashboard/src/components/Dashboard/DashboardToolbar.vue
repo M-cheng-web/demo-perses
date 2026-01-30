@@ -7,46 +7,109 @@
 	  - JSON 导入/导出（严格模式：非法 JSON 不会污染外部状态）
 	-->
 <template>
-  <div :class="bem()">
-    <!-- 单行：标题 + 操作区 -->
-    <div :class="[bem('header'), bem('header', { 'edit-mode': isEditMode })]">
-      <h2 :class="bem('title')">{{ dashboardName }}</h2>
-      <div :class="bem('actions')">
-        <!-- 时间范围选择器 -->
-        <TimeRangePicker v-model:value="selectedTimeRange" :disabled="isBooting" @change="handleTimeRangeChange" />
+  <div :class="[bem(), bem({ sidebar: variant === 'sidebar' })]">
+    <template v-if="variant === 'sidebar'">
+      <div :class="bem('sidebar')">
+        <div :class="bem('sidebar-title')">
+          <div :class="bem('sidebar-name')">{{ dashboardName }}</div>
+          <div :class="bem('sidebar-subtitle')">
+            <span>{{ isAllPanelsView ? '全部面板（只读）' : '分组视图' }}</span>
+            <span v-if="!isAllPanelsView"> · {{ isEditMode ? '编辑模式' : '浏览模式' }}</span>
+          </div>
+        </div>
 
-        <template v-if="isEditMode">
-          <!-- 编辑模式下的操作按钮 -->
-          <Button size="small" @click="handleAddPanelGroup" :disabled="isBooting">
-            <template #icon><PlusOutlined /></template>
-            添加面板组
-          </Button>
-          <Button size="small" @click="handleSave" type="primary" :loading="isSaving" :disabled="isBooting"> 保存 </Button>
-          <Button size="small" @click="handleToggleEditMode" :disabled="isBooting"> 取消 </Button>
-        </template>
-        <template v-else>
-          <!-- 刷新按钮（编辑模式下不展示） -->
-          <Button :icon="h(ReloadOutlined)" size="small" :disabled="isBooting" @click="handleRefresh" />
+        <Card size="small" title="视图" :class="bem('card')">
+          <Segmented v-model:value="viewModeModel" block size="small" :options="viewModeOptions" :disabled="isBooting" />
+          <div v-if="isAllPanelsView" :class="bem('hint')">提示：全部面板视图为只读，不支持拖拽/编辑。</div>
+        </Card>
 
-          <!-- 更多操作（编辑模式下不展示） -->
-          <Dropdown n>
-            <Button :icon="h(MoreOutlined)" size="small" :disabled="isBooting" />
-            <template #overlay>
-              <Menu
-                :items="[
-                  { key: 'export', label: '导出 JSON', icon: h(DownloadOutlined) },
-                  { key: 'import', label: '导入 JSON', icon: h(UploadOutlined) },
-                  { key: 'viewJson', label: '查看 JSON', icon: h(FileTextOutlined) },
-                ]"
-                @click="handleMenuClick"
-              />
-            </template>
-          </Dropdown>
+        <Card size="small" title="时间范围" :class="bem('card')">
+          <div :class="bem('field')">
+            <div :class="bem('label')">范围</div>
+            <TimeRangePicker v-model:value="selectedTimeRange" :disabled="isBooting" @change="handleTimeRangeChange" />
+          </div>
+          <Flex gap="8" wrap>
+            <Button size="small" type="ghost" :icon="h(ReloadOutlined)" :disabled="isBooting" @click="handleRefresh">刷新</Button>
+            <Button size="small" type="ghost" :disabled="isBooting" @click="setTimeRangePreset('now-5m')">5m</Button>
+            <Button size="small" type="ghost" :disabled="isBooting" @click="setTimeRangePreset('now-1h')">1h</Button>
+            <Button size="small" type="ghost" :disabled="isBooting" @click="setTimeRangePreset('now-6h')">6h</Button>
+          </Flex>
+        </Card>
 
-          <Button size="small" @click="handleToggleEditMode" type="primary" :disabled="isBooting"> 编辑 </Button>
-        </template>
+        <Card size="small" title="编辑" :class="bem('card')">
+          <div :class="bem('row')">
+            <div :class="bem('label')">编辑模式</div>
+            <Switch :checked="isEditMode" :disabled="isBooting || isAllPanelsView" @change="setEditMode" />
+          </div>
+          <div v-if="isAllPanelsView" :class="bem('hint')">提示：在“全部面板”视图下禁止进入编辑模式。</div>
+
+          <Flex gap="8" wrap>
+            <Button size="small" :disabled="isBooting || !isEditMode" @click="handleAddPanelGroup">
+              <template #icon><PlusOutlined /></template>
+              添加面板组
+            </Button>
+            <Button size="small" type="primary" :loading="isSaving" :disabled="isBooting || !isEditMode" @click="handleSave">保存</Button>
+            <Button size="small" type="ghost" :disabled="isBooting || !isEditMode" @click="handleToggleEditMode">取消</Button>
+          </Flex>
+        </Card>
+
+        <Card size="small" title="JSON" :class="bem('card')">
+          <Flex gap="8" wrap>
+            <Button size="small" type="ghost" :icon="h(FileTextOutlined)" :disabled="isBooting" @click="handleViewJson">查看</Button>
+            <Button size="small" type="ghost" :icon="h(UploadOutlined)" :disabled="isBooting" @click="handleImport">导入</Button>
+            <Button size="small" type="ghost" :icon="h(DownloadOutlined)" :disabled="isBooting" @click="handleExport">导出</Button>
+          </Flex>
+          <div :class="bem('hint')">导入会先进行严格校验；非法 JSON 不会污染当前状态。</div>
+        </Card>
       </div>
-    </div>
+    </template>
+
+    <template v-else>
+      <!-- 单行：标题 + 操作区（旧头部形态） -->
+      <div :class="[bem('header'), bem('header', { 'edit-mode': isEditMode })]">
+        <h2 :class="bem('title')">{{ dashboardName }}</h2>
+        <div :class="bem('actions')">
+          <!-- 视图切换：分组 <-> 全部面板（只读） -->
+          <Button size="small" @click="handleTogglePanelsView" :disabled="isBooting">
+            {{ isAllPanelsView ? '分组视图' : '全部面板' }}
+          </Button>
+
+          <!-- 时间范围选择器 -->
+          <TimeRangePicker v-model:value="selectedTimeRange" :disabled="isBooting" @change="handleTimeRangeChange" />
+
+          <template v-if="isEditMode">
+            <!-- 编辑模式下的操作按钮 -->
+            <Button size="small" @click="handleAddPanelGroup" :disabled="isBooting">
+              <template #icon><PlusOutlined /></template>
+              添加面板组
+            </Button>
+            <Button size="small" @click="handleSave" type="primary" :loading="isSaving" :disabled="isBooting"> 保存 </Button>
+            <Button size="small" @click="handleToggleEditMode" :disabled="isBooting"> 取消 </Button>
+          </template>
+          <template v-else>
+            <!-- 刷新按钮（编辑模式下不展示） -->
+            <Button :icon="h(ReloadOutlined)" size="small" :disabled="isBooting" @click="handleRefresh" />
+
+            <!-- 更多操作（编辑模式下不展示） -->
+            <Dropdown>
+              <Button :icon="h(MoreOutlined)" size="small" :disabled="isBooting" />
+              <template #overlay>
+                <Menu
+                  :items="[
+                    { key: 'export', label: '导出 JSON', icon: h(DownloadOutlined) },
+                    { key: 'import', label: '导入 JSON', icon: h(UploadOutlined) },
+                    { key: 'viewJson', label: '查看 JSON', icon: h(FileTextOutlined) },
+                  ]"
+                  @click="handleMenuClick"
+                />
+              </template>
+            </Dropdown>
+
+            <Button v-if="!isAllPanelsView" size="small" @click="handleToggleEditMode" type="primary" :disabled="isBooting"> 编辑 </Button>
+          </template>
+        </div>
+      </div>
+    </template>
 
     <!-- JSON 查看/编辑模态框 -->
     <Modal v-model:open="jsonModalVisible" title="仪表盘 JSON" :width="800" destroyOnClose :maskClosable="false">
@@ -71,9 +134,8 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, h, onUnmounted } from 'vue';
-  import { TimeRangePicker, Dropdown, Menu, Space, Modal } from '@grafana-fast/component';
-  import { Button } from '@grafana-fast/component';
+  import { ref, computed, h } from 'vue';
+  import { Button, Card, Flex, Modal, Segmented, Space, Switch, TimeRangePicker, Dropdown, Menu } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import { ReloadOutlined, MoreOutlined, DownloadOutlined, UploadOutlined, FileTextOutlined, PlusOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useTimeRangeStore } from '/#/stores';
@@ -85,15 +147,25 @@
 
   const [_, bem] = createNamespace('dashboard-toolbar');
 
+  const props = withDefaults(
+    defineProps<{
+      /** 展示形态：header=原头部样式；sidebar=侧边栏样式 */
+      variant?: 'header' | 'sidebar';
+    }>(),
+    { variant: 'header' }
+  );
+
+  const variant = computed(() => props.variant ?? 'header');
+
   const dashboardStore = useDashboardStore();
   const timeRangeStore = useTimeRangeStore();
 
-  const { currentDashboard, isEditMode, isSaving, isBooting } = storeToRefs(dashboardStore);
+  const { currentDashboard, isEditMode, viewMode, isSaving, isBooting } = storeToRefs(dashboardStore);
 
   const dashboardName = computed(() => currentDashboard.value?.name || '仪表盘');
+  const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
 
   const selectedTimeRange = ref('now-1h');
-  let autoRefreshTimer: number | null = null;
 
   // JSON 相关
   const jsonModalVisible = ref(false);
@@ -114,15 +186,48 @@
     });
   };
 
+  const viewModeOptions = computed(() => [
+    { label: '分组视图', value: 'grouped', disabled: false },
+    { label: '全部面板', value: 'allPanels', disabled: false },
+  ]);
+
+  const viewModeModel = computed({
+    get: () => (isAllPanelsView.value ? 'allPanels' : 'grouped'),
+    set: (value: string | number) => {
+      if (isBooting.value) return;
+      dashboardStore.setViewMode(String(value) === 'allPanels' ? 'allPanels' : 'grouped');
+    },
+  });
+
   const handleRefresh = () => {
     if (isBooting.value) return;
     timeRangeStore.refresh();
     message.success('已刷新');
   };
 
+  const setTimeRangePreset = (preset: string) => {
+    if (isBooting.value) return;
+    selectedTimeRange.value = preset;
+    handleTimeRangeChange(preset);
+  };
+
+  const setEditMode = (next: boolean) => {
+    if (isBooting.value) return;
+    if (isAllPanelsView.value) return;
+    const desired = Boolean(next);
+    if (desired === isEditMode.value) return;
+    dashboardStore.toggleEditMode();
+  };
+
   const handleToggleEditMode = () => {
     if (isBooting.value) return;
+    if (isAllPanelsView.value) return;
     dashboardStore.toggleEditMode();
+  };
+
+  const handleTogglePanelsView = () => {
+    if (isBooting.value) return;
+    dashboardStore.togglePanelsView();
   };
 
   const handleSave = async () => {
@@ -239,11 +344,35 @@
     }
   };
 
-  // 组件卸载时清除定时器
-  onUnmounted(() => {
-    if (autoRefreshTimer !== null) {
-      clearInterval(autoRefreshTimer);
-    }
+  const openJsonModal = (mode: 'view' | 'edit' = 'view') => {
+    if (isBooting.value) return;
+    if (!currentDashboard.value) return;
+    dashboardJson.value = JSON.stringify(currentDashboard.value, null, 2);
+    jsonModalMode.value = mode;
+    jsonModalVisible.value = true;
+  };
+
+  const closeJsonModal = () => {
+    jsonModalVisible.value = false;
+  };
+
+  defineExpose({
+    // Drawer / UI
+    openJsonModal,
+    closeJsonModal,
+    // Actions (mirror toolbar capabilities)
+    handleRefresh,
+    handleSave,
+    handleToggleEditMode,
+    handleTogglePanelsView,
+    handleAddPanelGroup,
+    handleExport,
+    handleImport,
+    handleViewJson,
+    handleApplyJson,
+    // Controlled helpers
+    setTimeRangePreset,
+    setEditMode,
   });
 </script>
 
@@ -302,6 +431,83 @@
       align-items: center;
       gap: 8px;
       margin-left: auto;
+    }
+
+    &--sidebar {
+      position: static;
+      top: auto;
+      border-bottom: none;
+      box-shadow: none;
+      background-color: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      padding: 4px 0;
+
+      &::after {
+        display: none;
+      }
+
+      .dp-dashboard-toolbar__sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .dp-dashboard-toolbar__sidebar-title {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 6px 2px;
+      }
+
+      .dp-dashboard-toolbar__sidebar-name {
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        color: @text-color;
+        line-height: 1.25;
+      }
+
+      .dp-dashboard-toolbar__sidebar-subtitle {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        color: color-mix(in srgb, @text-color, transparent 35%);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .dp-dashboard-toolbar__card {
+        width: 100%;
+      }
+
+      .dp-dashboard-toolbar__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .dp-dashboard-toolbar__field {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .dp-dashboard-toolbar__label {
+        flex: 0 0 auto;
+        width: 42px;
+        font-size: 12px;
+        color: color-mix(in srgb, @text-color, transparent 30%);
+      }
+
+      .dp-dashboard-toolbar__hint {
+        margin-top: 8px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: color-mix(in srgb, @text-color, transparent 40%);
+      }
     }
   }
 </style>

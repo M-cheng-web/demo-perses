@@ -8,12 +8,15 @@ import { createPrefixedId, deepClone, deepCloneStructured } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
 
 type BootStage = 'idle' | 'fetching' | 'parsing' | 'initializing' | 'ready' | 'error';
+type DashboardViewMode = 'grouped' | 'allPanels';
 
 interface DashboardState {
   /** 当前 Dashboard */
   currentDashboard: Dashboard | null;
   /** 是否处于编辑模式 */
   isEditMode: boolean;
+  /** 视图模式：分组视图 / 全部面板视图（只读） */
+  viewMode: DashboardViewMode;
   /** 是否正在保存 */
   isSaving: boolean;
   /** 最近一次 load/save 的错误（用于 UI 展示与宿主接管） */
@@ -64,6 +67,7 @@ export const useDashboardStore = defineStore('dashboard', {
   state: (): DashboardState => ({
     currentDashboard: null,
     isEditMode: false,
+    viewMode: 'grouped',
     isSaving: false,
     lastError: null,
     viewPanelId: null,
@@ -129,6 +133,7 @@ export const useDashboardStore = defineStore('dashboard', {
       this.viewPanelId = null;
       // boot 中禁止折叠/编辑：锁住交互，避免“半初始化状态”产生不一致
       this.isEditMode = false;
+      this.viewMode = 'grouped';
       this.bootStats = {
         startedAt: Date.now(),
         groupCount: null,
@@ -167,7 +172,8 @@ export const useDashboardStore = defineStore('dashboard', {
 
         // 按当前策略：不做历史 schema 兼容/迁移；API 返回什么就用什么（外部应保证是当前结构）。
         // 大 JSON 下用 structuredClone 降低 stringify/parse 的主线程压力。
-        this.currentDashboard = deepCloneStructured(dashboard);
+        const next = deepCloneStructured(dashboard);
+        this.currentDashboard = next;
         this.finishBoot();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load dashboard';
@@ -199,7 +205,8 @@ export const useDashboardStore = defineStore('dashboard', {
         this.bootStats.groupCount = groupCount;
         this.bootStats.panelCount = panelCount;
 
-        this.currentDashboard = deepCloneStructured(dashboard);
+        const next = deepCloneStructured(dashboard);
+        this.currentDashboard = next;
         this.finishBoot();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to apply dashboard json';
@@ -235,7 +242,28 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     toggleEditMode() {
       if (this.isBooting) return;
+      // “全部面板”视图为只读，不允许进入编辑模式
+      if (this.viewMode === 'allPanels') return;
       this.isEditMode = !this.isEditMode;
+    },
+
+    /**
+     * 切换视图模式（分组视图 <-> 全部面板视图）
+     *
+     * 说明：
+     * - 全部面板视图只读：进入时自动退出编辑模式
+     */
+    setViewMode(mode: DashboardViewMode) {
+      if (this.isBooting) return;
+      const next: DashboardViewMode = mode === 'allPanels' ? 'allPanels' : 'grouped';
+      this.viewMode = next;
+      if (next === 'allPanels') {
+        this.isEditMode = false;
+      }
+    },
+
+    togglePanelsView() {
+      this.setViewMode(this.viewMode === 'allPanels' ? 'grouped' : 'allPanels');
     },
 
     /**
@@ -326,6 +354,30 @@ export const useDashboardStore = defineStore('dashboard', {
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (group) {
         group.layout = layout;
+      }
+    },
+
+    /**
+     * 分页编辑模式：只更新当前页的 layout items（按 i 合并回全量 layout）
+     *
+     * 注意：
+     * - 不会删除/新增 layout 项，仅更新已存在的项
+     * - 仅作用于当前 group
+     */
+    patchPanelGroupLayoutItems(groupId: ID, patch: PanelLayout[]) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+
+      const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
+      if (!group || !Array.isArray(group.layout) || group.layout.length === 0) return;
+
+      const byId = new Map<string, PanelLayout>();
+      for (const it of group.layout) byId.set(String(it.i), it);
+
+      for (const next of patch) {
+        const existing = byId.get(String(next.i));
+        if (!existing) continue;
+        Object.assign(existing, next);
       }
     },
 

@@ -7,38 +7,124 @@
  * - 未来接后端时，只需要替换 dashboard.load/save 实现，不应影响 UI 调用
  */
 import type { DashboardService } from '../../contracts';
-import type { Dashboard, DashboardListItem, ID, PanelLayout } from '@grafana-fast/types';
+import type { CorePanelType, Dashboard, DashboardListItem, ID, Panel, PanelGroup, PanelLayout } from '@grafana-fast/types';
 
 function nowTs() {
   return Date.now();
 }
 
-function createDefaultDashboard(): Dashboard {
-  const now = nowTs();
-  const createLargeGroup = () => {
-    const totalPanels = 1000;
-    const createRng = (seed: number) => {
-      let s = seed >>> 0;
-      return () => {
-        // LCG (deterministic, fast, good enough for mock layout variation)
-        s = (s * 1664525 + 1013904223) >>> 0;
-        return s / 0xffffffff;
-      };
-    };
+function createRng(seed: number) {
+  let s = seed >>> 0;
+  return () => {
+    // LCG (deterministic, fast, good enough for mock variation)
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 0xffffffff;
+  };
+}
 
-    const rng = createRng(0x1a2b3c4d);
-    const pick = <T>(items: T[]): T => items[Math.floor(rng() * items.length)]!;
+function pick<T>(rng: () => number, items: T[]): T {
+  return items[Math.floor(rng() * items.length)]!;
+}
 
-    const panels = Array.from({ length: totalPanels }).map((_, idx) => {
-      const n = idx + 1;
-      const id = `panel-big-${n}`;
+function buildPanelOptions(type: CorePanelType, rng: () => number): Panel['options'] {
+  switch (type) {
+    case 'timeseries':
       return {
-        id,
-        name: `Large Panel #${n}`,
+        legend: { show: true, position: 'bottom' },
+        format: { unit: 'percent', decimals: 2 },
+        specific: { mode: rng() > 0.6 ? 'area' : 'line', stackMode: 'none', fillOpacity: rng() > 0.6 ? 0.22 : 0.08 },
+      };
+    case 'stat':
+      return {
+        format: { unit: 'percent', decimals: 2 },
+        specific: { displayMode: 'value-and-name', orientation: 'vertical', textAlign: 'center', showTrend: true },
+      };
+    case 'bar':
+      return {
+        legend: { show: true, position: 'bottom' },
+        format: { unit: 'percent', decimals: 2 },
+        specific: { orientation: rng() > 0.75 ? 'horizontal' : 'vertical', barMode: rng() > 0.7 ? 'stack' : 'group' },
+      };
+    case 'pie':
+      return {
+        legend: { show: true, position: 'bottom' },
+        format: { unit: 'percent', decimals: 2 },
+        specific: { pieType: rng() > 0.65 ? 'doughnut' : 'pie', innerRadius: rng() > 0.65 ? 60 : 0, showPercentage: true },
+      };
+    case 'table':
+      return {
+        format: { unit: 'short', decimals: 2 },
+        specific: { showPagination: false, pageSize: 10, sortable: true },
+      };
+    case 'gauge':
+      return {
+        format: { unit: 'percent', decimals: 2 },
+        specific: { calculation: 'last', min: 0, max: 100, splitNumber: 5, pointer: { show: true, length: '65%', width: 4 } },
+      };
+    case 'heatmap':
+      return {
+        format: { unit: 'percent', decimals: 2 },
+        specific: { colorScheme: 'blue', showValue: false, cellPadding: 1 },
+      };
+    default:
+      return {};
+  }
+}
+
+function buildGroupLayout(panels: Panel[], rng: () => number): PanelLayout[] {
+  const TOTAL_COLS = 48;
+  const wCandidates = [12, 12, 16, 24, 24, 48];
+  const hCandidates = [6, 8, 8, 10, 12];
+
+  const layout: PanelLayout[] = [];
+  let rowX = 0;
+  let rowY = 0;
+  let rowMaxH = 0;
+
+  for (const p of panels) {
+    let w = pick(rng, wCandidates);
+    let h = pick(rng, hCandidates);
+
+    if (w >= 24 && rng() > 0.6) h += 2;
+    if (w >= 48 && rng() > 0.5) h += 4;
+
+    const remaining = TOTAL_COLS - rowX;
+    if (w > remaining) {
+      rowY += rowMaxH || 0;
+      rowX = 0;
+      rowMaxH = 0;
+    }
+
+    w = Math.min(w, TOTAL_COLS);
+    layout.push({ i: p.id, x: rowX, y: rowY, w, h, minW: 8, minH: 4 });
+    rowX += w;
+    rowMaxH = Math.max(rowMaxH, h);
+
+    if (rowX >= TOTAL_COLS) {
+      rowY += rowMaxH || 0;
+      rowX = 0;
+      rowMaxH = 0;
+    }
+  }
+
+  return layout;
+}
+
+function createFixedCpuGroup(): PanelGroup {
+  return {
+    id: 'group-1',
+    title: 'CPU 监控',
+    description: 'CPU 相关指标监控',
+    isCollapsed: false,
+    order: 0,
+    panels: [
+      {
+        id: 'panel-1',
+        name: 'CPU 使用率',
         type: 'timeseries',
         queries: [
           {
-            id: `q-big-${n}`,
+            id: 'q-1',
             refId: 'A',
             datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
             expr: 'cpu_usage',
@@ -54,195 +140,250 @@ function createDefaultDashboard(): Dashboard {
           format: { unit: 'percent', decimals: 2 },
           specific: { mode: 'line', stackMode: 'none' },
         },
-      };
-    });
+      },
+      {
+        id: 'panel-2',
+        name: 'CPU 平均使用率',
+        type: 'stat',
+        queries: [
+          {
+            id: 'q-2',
+            refId: 'A',
+            datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
+            expr: 'avg(cpu_usage)',
+            format: 'time_series',
+            instant: false,
+            hide: false,
+            minStep: 15,
+          },
+        ],
+        options: {
+          format: { unit: 'percent', decimals: 2 },
+          specific: { displayMode: 'value-and-name', orientation: 'vertical', textAlign: 'center', showTrend: true },
+        },
+      },
+      {
+        id: 'panel-3',
+        name: 'CPU 最大使用率',
+        type: 'stat',
+        queries: [
+          {
+            id: 'q-3',
+            refId: 'A',
+            datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
+            expr: 'max(cpu_usage)',
+            format: 'time_series',
+            instant: false,
+            hide: false,
+            minStep: 15,
+          },
+        ],
+        options: {
+          format: { unit: 'percent', decimals: 2 },
+          specific: { displayMode: 'value-and-name', orientation: 'vertical', textAlign: 'center', showTrend: true },
+        },
+      },
+      {
+        id: 'panel-4',
+        name: 'CPU 使用率（副本）',
+        type: 'timeseries',
+        queries: [
+          {
+            id: 'q-4',
+            refId: 'A',
+            datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
+            expr: 'cpu_usage',
+            legendFormat: 'CPU {{cpu}}',
+            format: 'time_series',
+            instant: false,
+            hide: false,
+            minStep: 15,
+          },
+        ],
+        options: {
+          legend: { show: true, position: 'bottom' },
+          format: { unit: 'percent', decimals: 2 },
+          specific: { mode: 'area', stackMode: 'none', fillOpacity: 0.25 },
+        },
+      },
+      {
+        id: 'panel-5',
+        name: 'CPU 核心对比',
+        type: 'bar',
+        queries: [
+          {
+            id: 'q-5',
+            refId: 'A',
+            datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
+            expr: 'cpu_usage',
+            format: 'time_series',
+            instant: false,
+            hide: false,
+            minStep: 15,
+          },
+        ],
+        options: {
+          legend: { show: true, position: 'bottom' },
+          format: { unit: 'percent', decimals: 2 },
+          specific: { orientation: 'vertical' },
+        },
+      },
+    ],
+    layout: [
+      { i: 'panel-1', x: 0, y: 0, w: 28, h: 8, minW: 12, minH: 6 },
+      { i: 'panel-2', x: 28, y: 0, w: 10, h: 5, minW: 6, minH: 4 },
+      { i: 'panel-3', x: 38, y: 0, w: 10, h: 5, minW: 6, minH: 4 },
+      { i: 'panel-4', x: 0, y: 8, w: 28, h: 8, minW: 12, minH: 6 },
+      { i: 'panel-5', x: 28, y: 8, w: 20, h: 11, minW: 8, minH: 6 },
+    ],
+  };
+}
 
-    // Layout: random-ish size panels to simulate real-world dashboards (variable w/h).
-    // - total columns: 48
-    // - row packing: fill a row until no space, then y += maxHInRow
-    const TOTAL_COLS = 48;
-    const wCandidates = [12, 12, 12, 16, 24, 48];
-    const hCandidates = [6, 8, 8, 10, 12, 14];
+function createLargeGroup(): PanelGroup {
+  const totalPanels = 1000;
+  const rng = createRng(0x1a2b3c4d);
+  const pickLocal = <T>(items: T[]): T => items[Math.floor(rng() * items.length)]!;
 
-    const layout: PanelLayout[] = [];
-    let rowX = 0;
-    let rowY = 0;
-    let rowMaxH = 0;
+  const panels: Panel[] = Array.from({ length: totalPanels }).map((_, idx) => {
+    const n = idx + 1;
+    const id = `panel-big-${n}`;
+    return {
+      id,
+      name: `Large Panel #${n}`,
+      type: 'timeseries',
+      queries: [
+        {
+          id: `q-big-${n}`,
+          refId: 'A',
+          datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
+          expr: 'cpu_usage',
+          legendFormat: 'CPU {{cpu}}',
+          format: 'time_series',
+          instant: false,
+          hide: false,
+          minStep: 15,
+        },
+      ],
+      options: {
+        legend: { show: true, position: 'bottom' },
+        format: { unit: 'percent', decimals: 2 },
+        specific: { mode: 'line', stackMode: 'none' },
+      },
+    };
+  });
 
-    for (const p of panels) {
-      let w = pick(wCandidates);
-      let h = pick(hCandidates);
+  const TOTAL_COLS = 48;
+  const wCandidates = [12, 12, 12, 16, 24, 48];
+  const hCandidates = [6, 8, 8, 10, 12, 14];
 
-      // 让“全宽/大宽面板”更高一点，视觉上更像真实 dashboard
-      if (w >= 24 && rng() > 0.6) h += 2;
-      if (w >= 48 && rng() > 0.5) h += 4;
+  const layout: PanelLayout[] = [];
+  let rowX = 0;
+  let rowY = 0;
+  let rowMaxH = 0;
 
-      const remaining = TOTAL_COLS - rowX;
-      if (w > remaining) {
-        rowY += rowMaxH || 0;
-        rowX = 0;
-        rowMaxH = 0;
-      }
+  for (const p of panels) {
+    let w = pickLocal(wCandidates);
+    let h = pickLocal(hCandidates);
 
-      // new row after wrap: ensure w <= TOTAL_COLS
-      w = Math.min(w, TOTAL_COLS);
+    if (w >= 24 && rng() > 0.6) h += 2;
+    if (w >= 48 && rng() > 0.5) h += 4;
 
-      layout.push({ i: p.id, x: rowX, y: rowY, w, h, minW: 8, minH: 4 });
-      rowX += w;
-      rowMaxH = Math.max(rowMaxH, h);
-
-      if (rowX >= TOTAL_COLS) {
-        rowY += rowMaxH || 0;
-        rowX = 0;
-        rowMaxH = 0;
-      }
+    const remaining = TOTAL_COLS - rowX;
+    if (w > remaining) {
+      rowY += rowMaxH || 0;
+      rowX = 0;
+      rowMaxH = 0;
     }
 
-    return {
-      id: 'group-large-1k',
-      title: '大规模面板组（1k panels / 虚拟化 & 可视刷新验证）',
-      description: '用于验证：只渲染/只刷新 viewport + 上下 0.5 屏；滚动时渐进刷新；避免请求风暴。',
-      isCollapsed: true,
-      order: 99,
-      panels,
-      layout,
-    };
+    w = Math.min(w, TOTAL_COLS);
+    layout.push({ i: p.id, x: rowX, y: rowY, w, h, minW: 8, minH: 4 });
+    rowX += w;
+    rowMaxH = Math.max(rowMaxH, h);
+
+    if (rowX >= TOTAL_COLS) {
+      rowY += rowMaxH || 0;
+      rowX = 0;
+      rowMaxH = 0;
+    }
+  }
+
+  return {
+    id: 'group-large-1k',
+    title: '大规模面板组（1k panels / 虚拟化 & 可视刷新验证）',
+    description: '用于验证：只渲染/只刷新 viewport + 上下 0.5 屏；滚动时渐进刷新；避免请求风暴。',
+    isCollapsed: true,
+    order: 99,
+    panels,
+    layout,
   };
+}
+
+function createDefaultDashboard(): Dashboard {
+  const now = nowTs();
+  const groupCount = 30;
+  const panelsPerGroup = 30;
+  const fixedGroups: PanelGroup[] = [createFixedCpuGroup(), createLargeGroup()];
+
+  const panelTypes: CorePanelType[] = ['timeseries', 'stat', 'bar', 'pie', 'table', 'gauge', 'heatmap'];
+  // mock 数据池目前对这些 expr 有稳定的返回（见 defaultDataPool.ts）
+  const exprCandidates = ['cpu_usage', 'avg(cpu_usage)', 'max(cpu_usage)', 'memory_usage', 'up'];
+
+  const remainingGroups = Math.max(0, groupCount - fixedGroups.length);
+  const groups: PanelGroup[] = [
+    ...fixedGroups,
+    ...Array.from({ length: remainingGroups }).map((_, gi) => {
+      // 前两个保留固定组，后续从 3 开始编号，避免与 group-1 冲突
+      const groupIndex = gi + 3;
+      const rng = createRng(0x9e3779b9 ^ (groupIndex * 2654435761));
+
+      const panels: Panel[] = Array.from({ length: panelsPerGroup }).map((__, pi) => {
+        const panelIndex = pi + 1;
+        const type = panelTypes[(groupIndex + pi) % panelTypes.length]!;
+        const expr = exprCandidates[(groupIndex * 7 + panelIndex * 3) % exprCandidates.length]!;
+        const id = `g${groupIndex}-p${panelIndex}`;
+        const format = type === 'table' ? 'table' : type === 'heatmap' ? 'heatmap' : 'time_series';
+
+        return {
+          id,
+          name: `G${String(groupIndex).padStart(2, '0')} · ${type.toUpperCase()} · #${panelIndex}`,
+          type,
+          queries: [
+            {
+              id: `q-${id}`,
+              refId: 'A',
+              datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
+              expr,
+              legendFormat: 'series {{instance}}',
+              format,
+              instant: false,
+              hide: false,
+              minStep: 15,
+            },
+          ],
+          options: buildPanelOptions(type, rng),
+        };
+      });
+
+      const layout = buildGroupLayout(panels, rng);
+
+      return {
+        id: `group-${groupIndex}`,
+        title: `面板组 ${String(groupIndex).padStart(2, '0')}`,
+        description: `Mock group #${groupIndex}（约 ${panelsPerGroup} panels，混合类型）`,
+        isCollapsed: true,
+        order: gi + fixedGroups.length,
+        panels,
+        layout,
+      };
+    }),
+  ];
 
   return {
     schemaVersion: 1,
     id: 'default',
-    name: '系统监控 Dashboard',
-    description: 'Mock dashboard (built-in)',
-    panelGroups: [
-      {
-        id: 'group-1',
-        title: 'CPU 监控',
-        description: 'CPU 相关指标监控',
-        isCollapsed: false,
-        order: 0,
-        panels: [
-          {
-            id: 'panel-1',
-            name: 'CPU 使用率',
-            type: 'timeseries',
-            queries: [
-              {
-                id: 'q-1',
-                refId: 'A',
-                datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-                expr: 'cpu_usage',
-                legendFormat: 'CPU {{cpu}}',
-                format: 'time_series',
-                instant: false,
-                hide: false,
-                minStep: 15,
-              },
-            ],
-            options: {
-              legend: { show: true, position: 'bottom' },
-              format: { unit: 'percent', decimals: 2 },
-              specific: { mode: 'line', stackMode: 'none' },
-            },
-          },
-          {
-            id: 'panel-2',
-            name: 'CPU 平均使用率',
-            type: 'stat',
-            queries: [
-              {
-                id: 'q-2',
-                refId: 'A',
-                datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-                expr: 'avg(cpu_usage)',
-                format: 'time_series',
-                instant: false,
-                hide: false,
-                minStep: 15,
-              },
-            ],
-            options: {
-              format: { unit: 'percent', decimals: 2 },
-              specific: { displayMode: 'value-and-name', orientation: 'vertical', textAlign: 'center', showTrend: true },
-            },
-          },
-          {
-            id: 'panel-3',
-            name: 'CPU 最大使用率',
-            type: 'stat',
-            queries: [
-              {
-                id: 'q-3',
-                refId: 'A',
-                datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-                expr: 'max(cpu_usage)',
-                format: 'time_series',
-                instant: false,
-                hide: false,
-                minStep: 15,
-              },
-            ],
-            options: {
-              format: { unit: 'percent', decimals: 2 },
-              specific: { displayMode: 'value-and-name', orientation: 'vertical', textAlign: 'center', showTrend: true },
-            },
-          },
-          {
-            id: 'panel-4',
-            name: 'CPU 使用率（副本）',
-            type: 'timeseries',
-            queries: [
-              {
-                id: 'q-4',
-                refId: 'A',
-                datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-                expr: 'cpu_usage',
-                legendFormat: 'CPU {{cpu}}',
-                format: 'time_series',
-                instant: false,
-                hide: false,
-                minStep: 15,
-              },
-            ],
-            options: {
-              legend: { show: true, position: 'bottom' },
-              format: { unit: 'percent', decimals: 2 },
-              specific: { mode: 'area', stackMode: 'none', fillOpacity: 0.25 },
-            },
-          },
-          {
-            id: 'panel-5',
-            name: 'CPU 核心对比',
-            type: 'bar',
-            queries: [
-              {
-                id: 'q-5',
-                refId: 'A',
-                datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-                expr: 'cpu_usage',
-                format: 'time_series',
-                instant: false,
-                hide: false,
-                minStep: 15,
-              },
-            ],
-            options: {
-              legend: { show: true, position: 'bottom' },
-              format: { unit: 'percent', decimals: 2 },
-              specific: { orientation: 'vertical' },
-            },
-          },
-        ],
-        layout: [
-          { i: 'panel-1', x: 0, y: 0, w: 28, h: 8, minW: 12, minH: 6 },
-          { i: 'panel-2', x: 28, y: 0, w: 10, h: 5, minW: 6, minH: 4 },
-          { i: 'panel-3', x: 38, y: 0, w: 10, h: 5, minW: 6, minH: 4 },
-          { i: 'panel-4', x: 0, y: 8, w: 28, h: 8, minW: 12, minH: 6 },
-          { i: 'panel-5', x: 28, y: 8, w: 20, h: 11, minW: 8, minH: 6 },
-        ],
-      },
-      createLargeGroup(),
-    ],
+    name: 'Mock Dashboard（30 组 / 每组约 30 panels）',
+    description: 'Mock dashboard (built-in) for focus-layer/pagination/virtualization testing',
+    panelGroups: groups,
     timeRange: { from: 'now-1h', to: 'now' },
     refreshInterval: 0,
     variables: [
