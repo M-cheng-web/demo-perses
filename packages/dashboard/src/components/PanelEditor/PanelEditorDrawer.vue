@@ -1,6 +1,6 @@
 <!-- 面板编辑器 -->
 <template>
-  <Drawer v-model:open="isOpen" title="面板编辑器" :width="900" :keyboard="false" :maskClosable="false" :class="bem('drawer')" @close="handleClose">
+  <Drawer v-model:open="isOpen" title="面板编辑器" :width="900" :maskClosable="false" :class="bem('drawer')" @close="handleClose">
     <div :class="bem()">
       <Form :model="formData" layout="vertical">
         <!-- 基础信息 -->

@@ -1,4 +1,4 @@
-<!-- 组件说明：抽屉侧边栏，支持左右方向、遮罩关闭与 ESC 关闭 -->
+<!-- 组件说明：抽屉侧边栏，支持左右方向与遮罩关闭 -->
 <template>
   <Teleport to="body">
     <div v-if="isRendered" :class="bem()" v-bind="$attrs">
@@ -48,8 +48,6 @@
       footer?: boolean;
       /** 出现方向 */
       placement?: 'right' | 'left';
-      /** 是否支持 ESC 关闭 */
-      keyboard?: boolean;
     }>(),
     {
       open: false,
@@ -59,7 +57,6 @@
       maskClosable: true,
       footer: true,
       placement: 'right',
-      keyboard: true,
     }
   );
 
@@ -137,18 +134,10 @@
 
   const showFooter = computed(() => props.footer !== false);
 
-  const handleEsc = (event: KeyboardEvent) => {
-    if (!props.keyboard) return;
-    if (event.key === 'Escape' && props.open) {
-      handleClose();
-    }
-  };
-
   watch(
     () => props.open,
     async (val) => {
       if (val) {
-        window.addEventListener('keydown', handleEsc);
         lockBodyScroll();
         if (isFirstSync) {
           isRendered.value = true;
@@ -158,7 +147,6 @@
           await openWithAnimation();
         }
       } else {
-        window.removeEventListener('keydown', handleEsc);
         unlockBodyScroll();
         if (isFirstSync) {
           isRendered.value = false;
@@ -174,7 +162,6 @@
   );
 
   onBeforeUnmount(() => {
-    window.removeEventListener('keydown', handleEsc);
     if (props.open) unlockBodyScroll();
     clearTimers();
   });

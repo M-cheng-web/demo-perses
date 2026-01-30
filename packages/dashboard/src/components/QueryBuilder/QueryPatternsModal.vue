@@ -19,7 +19,6 @@
     v-model:open="isOpen"
     title="查询模板"
     width="700px"
-    :keyboard="false"
     :maskClosable="false"
     :footer="null"
     :class="bem()"

@@ -129,6 +129,22 @@
   const windowingEnabled = computed(() => Boolean(props.enabled));
 
   const normalizeId = (id: PanelId): string => String(id);
+  /**
+   * 多实例隔离：对 QueryScheduler 的 panelId/scopeId 做实例前缀。
+   *
+   * 背景：
+   * - QueryScheduler 绑定在 pinia 上（默认按 pinia 隔离）。
+   * - 但宿主应用可能选择 shared pinia，或者在调试/热重载时出现同页多实例并存。
+   * - 这时如果直接使用 groupId/panelId（如 "group-1"/"panel-1"），会出现 scope/panel 冲突：
+   *   - 可视集合串台（A dashboard 滚动影响 B dashboard 的可视刷新）
+   *   - 同名 panel 的注册/刷新互相覆盖
+   *
+   * 方案：
+   * - 统一用 `${runtime.id}:...` 作为 scheduler 的唯一键
+   * - 组件内部渲染仍使用原始 id（不改变 layout/panels 的业务 id）
+   */
+  const schedulerScopeId = computed(() => `${runtime.id}:${props.scopeId}`);
+  const toSchedulerPanelId = (id: string) => `${runtime.id}:${id}`;
 
   // 渲染缓存（LRU）：用于减少滚动来回导致的卸载/重建
   const pinnedIds = ref<Set<string>>(new Set());
@@ -288,7 +304,7 @@
 
     await nextTick();
     if (startedGen !== visibilityGeneration) return;
-    scheduler.setVisiblePanels?.(props.scopeId, ids);
+    scheduler.setVisiblePanels?.(schedulerScopeId.value, ids.map(toSchedulerPanelId));
 
     isScrolling.value = false;
   };
@@ -312,7 +328,7 @@
 
     visibilityGeneration++;
 
-    if (!isScrolling.value) scheduler.setVisiblePanels?.(props.scopeId, []);
+    if (!isScrolling.value) scheduler.setVisiblePanels?.(schedulerScopeId.value, []);
     isScrolling.value = true;
     scheduleApplyHotVisible();
   };
@@ -356,7 +372,7 @@
       window.clearTimeout(idleTimer);
       idleTimer = null;
     }
-    scheduler.setVisiblePanels?.(props.scopeId, []);
+    scheduler.setVisiblePanels?.(schedulerScopeId.value, []);
   });
 
   watch(
@@ -368,7 +384,7 @@
       pinnedQueue = [];
       isScrolling.value = false;
       visibilityGeneration++;
-      scheduler.setVisiblePanels?.(props.scopeId, []);
+      scheduler.setVisiblePanels?.(schedulerScopeId.value, []);
       scheduleViewportUpdate();
       void applyHotVisible();
     }

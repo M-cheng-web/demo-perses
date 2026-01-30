@@ -1,4 +1,4 @@
-<!-- 组件说明：模态对话框，支持自定义页眉/页脚、ESC 关闭等 -->
+<!-- 组件说明：模态对话框，支持自定义页眉/页脚、遮罩关闭等 -->
 <template>
   <Teleport to="body">
     <transition name="fade">
@@ -45,8 +45,6 @@
       maskClosable?: boolean;
       /** 是否显示默认页脚（传 null 隐藏） */
       footer?: boolean | null;
-      /** 是否监听 ESC 关闭 */
-      keyboard?: boolean;
       /** Body 区域样式 */
       bodyStyle?: Record<string, any>;
       /** 是否居中（预留） */
@@ -59,7 +57,6 @@
       destroyOnClose: false,
       maskClosable: true,
       footer: true,
-      keyboard: true,
       bodyStyle: undefined,
       centered: true,
     }
@@ -80,21 +77,12 @@
 
   const showFooter = computed(() => props.footer !== false && props.footer !== null);
 
-  const handleEsc = (event: KeyboardEvent) => {
-    if (!props.keyboard) return;
-    if (event.key === 'Escape' && props.open) {
-      handleCancel();
-    }
-  };
-
   watch(
     () => props.open,
     (val) => {
       if (val) {
-        window.addEventListener('keydown', handleEsc);
         lockBodyScroll();
       } else {
-        window.removeEventListener('keydown', handleEsc);
         unlockBodyScroll();
       }
     },
@@ -102,7 +90,6 @@
   );
 
   onBeforeUnmount(() => {
-    window.removeEventListener('keydown', handleEsc);
     if (props.open) unlockBodyScroll();
   });
 

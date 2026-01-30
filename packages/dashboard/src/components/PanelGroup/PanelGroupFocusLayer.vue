@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
   import { Pagination, Panel } from '@grafana-fast/component';
   import type { PanelGroup } from '@grafana-fast/types';
   import type { PagedPanelGroup } from '/#/composables/usePanelGroupPagination';
@@ -253,12 +253,6 @@
     showContent.value = true;
   };
 
-  const handleGlobalKeydown = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape') return;
-    if (!isActive.value) return;
-    requestClose();
-  };
-
   watch(
     () => props.open,
     (open) => {
@@ -280,13 +274,8 @@
     }
   );
 
-  onMounted(() => {
-    window.addEventListener('keydown', handleGlobalKeydown, { passive: true } as AddEventListenerOptions);
-  });
-
   onBeforeUnmount(() => {
     clearFallbackTimers();
-    window.removeEventListener('keydown', handleGlobalKeydown);
   });
 </script>
 
@@ -353,7 +342,7 @@
       display: flex;
       justify-content: flex-end;
       padding: 0;
-      background: color-mix(in srgb, var(--gf-color-surface), transparent 16%);
+      background: var(--gf-color-surface-muted);
       border-top: 1px solid var(--gf-color-border-muted);
     }
 

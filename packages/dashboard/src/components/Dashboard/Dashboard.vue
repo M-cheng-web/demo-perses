@@ -107,7 +107,6 @@
   import type { PanelGroup } from '@grafana-fast/types';
   import type { GrafanaFastApiClient } from '@grafana-fast/api';
   import { createMockApiClient } from '@grafana-fast/api';
-  import { createPrefixedId } from '@grafana-fast/utils';
   import { GF_API_KEY, GF_RUNTIME_KEY } from '/#/runtime/keys';
   import { setPiniaApiClient } from '/#/runtime/piniaAttachments';
   import { usePanelGroupPagination } from '/#/composables/usePanelGroupPagination';
@@ -129,15 +128,17 @@
        */
       apiClient?: GrafanaFastApiClient;
       /**
-       * 可选：runtime id（用于多实例隔离）
-       * 未提供时会自动生成随机 id
+       * Dashboard 实例唯一 id（用于多实例隔离）
+       *
+       * 建议：
+       * - 宿主应用应为每个 Dashboard 实例传入稳定且唯一的 id
+       * - 用于本地持久化（例如设置按钮位置）、调度器 scope、日志/调试定位等
        */
-      runtimeId?: string;
+      instanceId: string;
     }>(),
     {
       theme: 'inherit',
       apiClient: undefined,
-      runtimeId: undefined,
     }
   );
 
@@ -156,7 +157,7 @@
 
   const emptyText = computed(() => DASHBOARD_EMPTY_TEXT);
 
-  const runtimeId = computed(() => props.runtimeId ?? createPrefixedId('rt'));
+  const instanceId = computed(() => props.instanceId);
 
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
 
@@ -174,7 +175,7 @@
   let settingsDragStartX = 0;
   let settingsDragStartY = 0;
 
-  const settingsStorageKey = computed(() => `${SETTINGS_POS_KEY_PREFIX}${runtimeId.value}`);
+  const settingsStorageKey = computed(() => `${SETTINGS_POS_KEY_PREFIX}${instanceId.value}`);
 
   const getSettingsButtonSize = (): { w: number; h: number } => {
     const rect = settingsEl.value?.getBoundingClientRect();
@@ -235,12 +236,36 @@
   // ---------------------------
   // Pagination state (per group)
   // ---------------------------
-  const { pagedGroups, pageSizeOptions, setCurrentPage, setPageSize } = usePanelGroupPagination(() => panelGroups.value, {
+  const {
+    pagedGroups,
+    pageSizeOptions,
+    setCurrentPage: baseSetCurrentPage,
+    setPageSize: baseSetPageSize,
+  } = usePanelGroupPagination(() => panelGroups.value, {
     defaultPageSize: 20,
     pageSizeOptions: [20, 30],
     resetPageOnPageSizeChange: true,
   });
   const pagerThreshold = computed(() => Math.min(...pageSizeOptions.value, 20));
+
+  /**
+   * 编辑态 + 分页/切组：统一收口一些“边界行为”，避免出现
+   * - 编辑器抽屉停留在“已不可见的面板”
+   * - 切页后仍对上一页面板做编辑/保存，导致误解
+   *
+   * 规则：
+   * - 切换分页（current/pageSize）会关闭 PanelEditorDrawer
+   * - 切换聚焦组（打开另一个组）也会关闭 PanelEditorDrawer
+   */
+  const setCurrentPage = (groupId: PanelGroup['id'], page: number) => {
+    if (isEditMode.value) editorStore.closeEditor();
+    baseSetCurrentPage(groupId, page);
+  };
+
+  const setPageSize = (groupId: PanelGroup['id'], pageSize: number) => {
+    if (isEditMode.value) editorStore.closeEditor();
+    baseSetPageSize(groupId, pageSize);
+  };
 
   // ---------------------------
   // Focus layer (open one group without changing background scroll)
@@ -350,6 +375,7 @@
   const handleOpenGroup = (payload: { groupId: PanelGroup['id']; headerOffsetY: number }) => {
     if (isBooting.value) return;
     if (isAllPanelsView.value) return;
+    if (isEditMode.value) editorStore.closeEditor();
     focusedGroupId.value = payload.groupId;
     focusStartOffsetY.value = payload.headerOffsetY;
     focusOpen.value = true;
@@ -450,7 +476,7 @@
   // Provide runtime-scoped dependencies
   const apiClient = computed(() => props.apiClient ?? createMockApiClient());
   provide(GF_API_KEY, apiClient.value);
-  provide(GF_RUNTIME_KEY, { id: runtimeId.value, rootEl, scrollEl: contentEl });
+  provide(GF_RUNTIME_KEY, { id: instanceId.value, rootEl, scrollEl: contentEl });
 
   // NOTE: inject() must be called during setup (not inside onMounted).
   const injectedPinia = inject<Pinia | undefined>('pinia', undefined);
@@ -738,9 +764,8 @@
       align-items: center;
       justify-content: center;
       padding: 16px;
-      background: color-mix(in srgb, var(--gf-color-surface), transparent 12%);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      // 嵌入式场景：遮罩层尽量使用不透明 surface，避免“底层内容透出/叠印”
+      background: var(--gf-color-surface);
       cursor: progress;
     }
 
@@ -749,7 +774,7 @@
       padding: 16px 16px 14px;
       border-radius: var(--gf-radius-md);
       border: 1px solid var(--gf-color-border-muted);
-      background: color-mix(in srgb, var(--gf-color-surface), transparent 6%);
+      background: var(--gf-color-surface-muted);
       box-shadow: var(--gf-shadow-2);
     }
 

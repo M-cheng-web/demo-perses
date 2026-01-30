@@ -55,6 +55,16 @@ export const DEFAULT_DASHBOARD_ENDPOINTS: Record<DashboardApi, string> = DEFAULT
 export interface DashboardSdkOptions {
   /** 指定加载的 dashboard id，默认加载 default */
   dashboardId?: string;
+  /**
+   * Dashboard 实例唯一 id（用于多实例隔离）
+   *
+   * 建议：
+   * - 宿主应用应为每个 Dashboard 实例传入稳定且唯一的 id
+   * - 用于本地持久化（例如设置按钮位置）、调度器 scope、日志/调试定位等
+   *
+   * 未提供时会生成一个“当前 SDK 生命周期内稳定”的随机 id（刷新页面后会变化）。
+   */
+  instanceId?: string;
   /** 可选 pinia 实例，默认取当前 active pinia 或自动创建 */
   pinia?: Pinia;
   /** 是否自动加载 dashboard 数据，默认为 true */
@@ -282,7 +292,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const dashboardApp = ref<App<Element> | null>(null);
   const themePreference = ref<DashboardThemePreference>('system');
   const theme = ref<DashboardTheme>('light');
-  const runtimeId = `sdk-${resolvedApiClient.kind}-${createPrefixedId('rt')}`;
+  const instanceId = options.instanceId ?? `sdk-${resolvedApiClient.kind}-${createPrefixedId('dash')}`;
   const dashboardViewRef = ref<any>(null);
 
   const DashboardSdkRoot = defineComponent({
@@ -293,7 +303,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
           ref: dashboardViewRef,
           theme: theme.value,
           apiClient: resolvedApiClient,
-          runtimeId,
+          instanceId,
         });
     },
   });

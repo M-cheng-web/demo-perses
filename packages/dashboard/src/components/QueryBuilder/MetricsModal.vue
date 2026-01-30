@@ -19,7 +19,6 @@
     v-model:open="isOpen"
     title="指标浏览器"
     width="800px"
-    :keyboard="false"
     :maskClosable="false"
     :footer="null"
     :class="bem()"

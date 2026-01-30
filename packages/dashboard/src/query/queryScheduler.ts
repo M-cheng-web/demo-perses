@@ -485,6 +485,29 @@ export function createQueryScheduler(pinia?: Pinia) {
       visiblePanels.clear();
       for (const id of next) visiblePanels.add(id);
 
+      /**
+       * 关键优化：当 panel 不再可视，并且该 panel 的组件实例已卸载（mounts===0）时，
+       * 主动 abort 该 panel 的 in-flight 请求。
+       *
+       * 为什么需要：
+       * - “可视优先刷新”本身已经避免了大量 pending 任务，但 in-flight 请求仍可能继续占用网络/CPU
+       * - 在“分页切换 / 切换聚焦组”时，上一页/上一组的 panel 会整体卸载：
+       *   - 如果不 abort，旧请求返回后仍会写入 state.results（浪费且可能造成调试困惑）
+       * - 在纯滚动场景下，频繁 abort 会引入抖动与重复请求，因此这里加了 mounts===0 的限制：
+       *   - 仍挂载（例如 keepAlive/pinned）的 panel，不会因为临时不可视就被打断
+       *   - 只有真正被卸载的 panel 才会取消请求，符合“用户已离开该页面/该组”的直觉
+       */
+      for (const id of prevVisible) {
+        if (visiblePanels.has(id)) continue;
+        const reg = registrations.get(id);
+        if (!reg) continue;
+        if (!reg.inflight) continue;
+        if (reg.mounts > 0) continue;
+        reg.abort?.abort();
+        // 组件已卸载：避免留下一个“永远 loading=true” 的旧状态（下次出现会重新 enqueue）
+        reg.state.loading.value = false;
+      }
+
       // Visible-only policy: drop pending tasks for panels that are no longer visible.
       for (const id of Array.from(pending.keys())) {
         if (visiblePanels.has(id)) continue;

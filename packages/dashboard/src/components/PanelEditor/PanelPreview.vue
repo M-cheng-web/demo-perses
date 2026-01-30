@@ -31,7 +31,7 @@
       showHeader?: boolean;
     }>(),
     {
-      autoExecute: true, // 默认自动执行，保持向后兼容
+      autoExecute: true, // 默认自动执行
       showHeader: true,
     }
   );

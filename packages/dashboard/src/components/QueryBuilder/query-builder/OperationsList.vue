@@ -14,7 +14,7 @@
   @props
     modelValue: QueryBuilderOperation[], currentQuery: PromVisualQuery
   @emits
-    update:modelValue, queryUpdate
+    update:modelValue, query-update
 -->
 <template>
   <div :class="bem()">
@@ -195,13 +195,8 @@
     (e: 'update:modelValue', value: QueryBuilderOperation[]): void;
     /**
      * 当需要更新整份 query 对象时触发（例如 binaryQueries 发生变化）
-     *
-     * 注意：
-     * - 模板中优先使用 kebab-case：`@query-update`
-     * - 同时保留 camelCase：用于兼容旧用法
      */
     (e: 'query-update', query: any): void;
-    (e: 'queryUpdate', query: any): void;
   }
 
   const props = defineProps<Props>();
@@ -290,9 +285,7 @@
     // 参考 Grafana OperationList.tsx 第 69 行
     if (updatedQuery.binaryQueries !== props.currentQuery?.binaryQueries) {
       emit('update:modelValue', operations.value);
-      // 发射整个查询对象的更新（兼容两种事件名）
       emit('query-update', updatedQuery);
-      emit('queryUpdate', updatedQuery);
     } else {
       handleOperationChange();
     }

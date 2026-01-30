@@ -40,6 +40,7 @@
   import { createNamespace } from '/#/utils';
   import { getBuiltInPanelRegistry } from '/#/runtime/panels';
   import { getPiniaQueryScheduler } from '/#/runtime/piniaAttachments';
+  import { useDashboardRuntime } from '/#/runtime/useInjected';
   import UnsupportedPanel from '/#/components/Panel/UnsupportedPanel.vue';
   import { applyTransformations } from '/#/transformations';
 
@@ -52,8 +53,11 @@
   const registry = getBuiltInPanelRegistry();
 
   const scheduler = getPiniaQueryScheduler();
+  const runtime = useDashboardRuntime();
   const panelRef = computed<Panel>(() => props.panel);
-  const { loading, error, results: queryResults } = scheduler.registerPanel(props.panel.id, panelRef);
+  // QueryScheduler 内部使用的 panelId 需要做实例隔离（同页多 dashboard + shared pinia 时避免串台）
+  const schedulerPanelId = `${runtime.id}:${String(props.panel.id)}`;
+  const { loading, error, results: queryResults } = scheduler.registerPanel(schedulerPanelId, panelRef);
   const displayResults = computed(() => applyTransformations(queryResults.value, props.panel.transformations));
 
   const hasVisibleQueries = computed(() => (props.panel.queries ?? []).some((q) => !q.hide));
