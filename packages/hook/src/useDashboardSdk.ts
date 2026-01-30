@@ -107,8 +107,6 @@ export interface DashboardSdkState {
   dashboard: Dashboard | null;
   /** 面板组集合 */
   panelGroups: PanelGroup[];
-  /** 是否处于编辑模式 */
-  isEditMode: boolean;
   /** 当前全屏查看的面板 */
   viewPanel: Panel | null;
   /** 当前时间范围 */
@@ -140,8 +138,6 @@ export interface DashboardSdkActions {
   saveDashboard: () => Promise<unknown>;
   /** 直接替换当前 dashboard（导入/回放/压测） */
   setDashboard: (dashboard: Dashboard) => void;
-  /** 切换编辑模式（影响拖拽/操作按钮/编辑器等） */
-  toggleEditMode: () => void;
   /** 新增面板组 */
   addPanelGroup: (group: Partial<PanelGroup>) => unknown;
   /** 更新面板组（标题/描述/折叠等） */
@@ -196,7 +192,6 @@ export interface DashboardSdkActions {
     closeJsonModal: () => void;
     refresh: () => void;
     save: () => void;
-    toggleEditMode: () => void;
     togglePanelsView: () => void;
     addPanelGroup: () => void;
     exportJson: () => void;
@@ -204,7 +199,6 @@ export interface DashboardSdkActions {
     viewJson: () => void;
     applyJson: () => void;
     setTimeRangePreset: (preset: string) => void;
-    setEditMode: (next: boolean) => void;
   };
 }
 
@@ -425,7 +419,6 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const state = computed<DashboardSdkState>(() => ({
     dashboard: dashboardStore.currentDashboard,
     panelGroups: dashboardStore.panelGroups,
-    isEditMode: dashboardStore.isEditMode,
     viewPanel: dashboardStore.viewPanel,
     timeRange: timeRangeStore.timeRange,
     tooltip: tooltipStore.currentTooltipData,
@@ -455,8 +448,6 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       // 按当前策略：不做历史 schema 迁移；宿主传入的 dashboard 必须符合当前结构
       dashboardStore.currentDashboard = dashboard;
     },
-    // 编辑模式切换
-    toggleEditMode: () => dashboardStore.toggleEditMode(),
     // 面板组管理
     addPanelGroup: (group: Partial<PanelGroup>) => dashboardStore.addPanelGroup(group),
     updatePanelGroup: (id: ID, updates: Partial<PanelGroup>) => dashboardStore.updatePanelGroup(id, updates),
@@ -503,7 +494,6 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       closeJsonModal: () => dashboardViewRef.value?.toolbar?.closeJsonModal?.(),
       refresh: () => dashboardViewRef.value?.toolbar?.refresh?.(),
       save: () => dashboardViewRef.value?.toolbar?.save?.(),
-      toggleEditMode: () => dashboardViewRef.value?.toolbar?.toggleEditMode?.(),
       togglePanelsView: () => dashboardViewRef.value?.toolbar?.togglePanelsView?.(),
       addPanelGroup: () => dashboardViewRef.value?.toolbar?.addPanelGroup?.(),
       exportJson: () => dashboardViewRef.value?.toolbar?.exportJson?.(),
@@ -511,7 +501,6 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       viewJson: () => dashboardViewRef.value?.toolbar?.viewJson?.(),
       applyJson: () => dashboardViewRef.value?.toolbar?.applyJson?.(),
       setTimeRangePreset: (preset: string) => dashboardViewRef.value?.toolbar?.setTimeRangePreset?.(preset),
-      setEditMode: (next: boolean) => dashboardViewRef.value?.toolbar?.setEditMode?.(next),
     },
   };
 

@@ -7,7 +7,7 @@
 -->
 <template>
   <div :class="[bem(), { 'is-visible': isVisible }]">
-    <template v-if="!isEditMode">
+    <template v-if="!isEditing">
       <Tooltip title="全屏查看">
         <Button type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen" />
       </Tooltip>
@@ -52,9 +52,16 @@
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
-  const { isEditMode } = storeToRefs(dashboardStore);
+  const { editingGroupId, viewMode, isBooting } = storeToRefs(dashboardStore);
 
-  const isVisible = computed(() => isEditMode.value || props.hovered);
+  const isEditing = computed(() => {
+    if (isBooting.value) return false;
+    if (viewMode.value === 'allPanels') return false;
+    if (editingGroupId.value == null) return false;
+    return String(editingGroupId.value) === String(props.groupId);
+  });
+
+  const isVisible = computed(() => isEditing.value || props.hovered);
 
   const handleEdit = () => {
     editorStore.openEditEditor(props.groupId, props.panel);

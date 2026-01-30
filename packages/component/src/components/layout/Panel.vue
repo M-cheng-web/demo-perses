@@ -29,13 +29,6 @@
       @click="handleHeaderClick"
       @keydown="handleHeaderKeydown"
     >
-      <div :class="bem('title-area')">
-        <div v-if="title" :class="bem('title')">{{ title }}</div>
-        <Tooltip v-if="description" :title="description">
-          <span :class="bem('info')" aria-label="描述" @click.stop>i</span>
-        </Tooltip>
-      </div>
-
       <div
         v-if="collapsible"
         :class="[bem('collapse'), { 'is-expanded': !collapsed }]"
@@ -50,6 +43,13 @@
             d="M7.2 4.9a1 1 0 0 1 1.4 0l5.2 5.1a1 1 0 0 1 0 1.4l-5.2 5.1a1 1 0 1 1-1.4-1.4l4.5-4.4-4.5-4.4a1 1 0 0 1 0-1.4Z"
           />
         </svg>
+      </div>
+
+      <div :class="bem('title-area')">
+        <div v-if="title" :class="bem('title')" @click.stop="handleTitleClick">{{ title }}</div>
+        <Tooltip v-if="description" :title="description">
+          <span :class="bem('info')" aria-label="描述" @click.stop>i</span>
+        </Tooltip>
       </div>
 
       <div v-if="$slots.right" :class="bem('right')" @click.stop>
@@ -109,6 +109,7 @@
   const emit = defineEmits<{
     (e: 'update:collapsed', value: boolean): void;
     (e: 'toggle', value: boolean): void;
+    (e: 'title-click'): void;
   }>();
 
   const [_, bem] = createNamespace('panel');
@@ -135,6 +136,10 @@
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     toggleCollapse();
+  };
+
+  const handleTitleClick = () => {
+    emit('title-click');
   };
 </script>
 

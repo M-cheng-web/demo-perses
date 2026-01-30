@@ -13,8 +13,14 @@ type DashboardViewMode = 'grouped' | 'allPanels';
 interface DashboardState {
   /** 当前 Dashboard */
   currentDashboard: Dashboard | null;
-  /** 是否处于编辑模式 */
-  isEditMode: boolean;
+  /**
+   * 当前处于“可编辑”状态的面板组（仅允许一个）
+   *
+   * 设计说明：
+   * - 本项目已移除“全局编辑模式”的概念（避免虚拟滚动 + 拖拽缩放交互过于复杂）
+   * - 只有当前打开的面板组允许编辑其子面板（拖拽/缩放/复制/删除等）
+   */
+  editingGroupId: ID | null;
   /** 视图模式：分组视图 / 全部面板视图（只读） */
   viewMode: DashboardViewMode;
   /** 是否正在保存 */
@@ -63,10 +69,17 @@ function countDashboardStats(d: Dashboard): { groupCount: number; panelCount: nu
   return { groupCount: groups.length, panelCount };
 }
 
+function normalizeDashboard(dashboard: Dashboard) {
+  // 面板组统一折叠：项目内不再暴露“默认折叠”字段/配置，避免状态分裂
+  for (const g of dashboard.panelGroups ?? []) {
+    g.isCollapsed = true;
+  }
+}
+
 export const useDashboardStore = defineStore('dashboard', {
   state: (): DashboardState => ({
     currentDashboard: null,
-    isEditMode: false,
+    editingGroupId: null,
     viewMode: 'grouped',
     isSaving: false,
     lastError: null,
@@ -123,6 +136,15 @@ export const useDashboardStore = defineStore('dashboard', {
       const bytes = this.bootStats.jsonBytes ?? 0;
       return panels >= BIG_DASHBOARD_PANEL_THRESHOLD || bytes >= BIG_DASHBOARD_JSON_BYTES_THRESHOLD;
     },
+
+    /**
+     * 当前面板组是否处于可编辑状态（仅打开态的组才会被设置为 editingGroupId）
+     */
+    isGroupEditing: (state) => (groupId: ID): boolean => {
+      if (state.isBooting) return false;
+      if (state.viewMode === 'allPanels') return false;
+      return state.editingGroupId != null && String(state.editingGroupId) === String(groupId);
+    },
   },
 
   actions: {
@@ -131,8 +153,8 @@ export const useDashboardStore = defineStore('dashboard', {
       this.bootStage = stage;
       this.lastError = null;
       this.viewPanelId = null;
-      // boot 中禁止折叠/编辑：锁住交互，避免“半初始化状态”产生不一致
-      this.isEditMode = false;
+      // boot 中禁止编辑：锁住交互，避免“半初始化状态”产生不一致
+      this.editingGroupId = null;
       this.viewMode = 'grouped';
       this.bootStats = {
         startedAt: Date.now(),
@@ -173,6 +195,7 @@ export const useDashboardStore = defineStore('dashboard', {
         // 按当前策略：不做历史 schema 兼容/迁移；API 返回什么就用什么（外部应保证是当前结构）。
         // 大 JSON 下用 structuredClone 降低 stringify/parse 的主线程压力。
         const next = deepCloneStructured(dashboard);
+        normalizeDashboard(next);
         this.currentDashboard = next;
         this.finishBoot();
       } catch (error) {
@@ -206,6 +229,7 @@ export const useDashboardStore = defineStore('dashboard', {
         this.bootStats.panelCount = panelCount;
 
         const next = deepCloneStructured(dashboard);
+        normalizeDashboard(next);
         this.currentDashboard = next;
         this.finishBoot();
       } catch (error) {
@@ -238,13 +262,35 @@ export const useDashboardStore = defineStore('dashboard', {
     },
 
     /**
-     * 切换编辑模式
+     * 设置当前可编辑的面板组
+     *
+     * 约束：
+     * - “全部面板”视图只读：强制清空
+     * - boot 阶段禁止编辑：强制清空
      */
-    toggleEditMode() {
+    setEditingGroup(groupId: ID | null) {
       if (this.isBooting) return;
-      // “全部面板”视图为只读，不允许进入编辑模式
+      if (this.viewMode === 'allPanels') {
+        this.editingGroupId = null;
+        return;
+      }
+      this.editingGroupId = groupId;
+    },
+
+    /**
+     * 切换某个面板组的编辑状态
+     * - 若当前已在编辑该组：退出编辑
+     * - 否则：进入编辑（并退出其他组的编辑）
+     */
+    toggleGroupEditing(groupId: ID) {
+      if (this.isBooting) return;
       if (this.viewMode === 'allPanels') return;
-      this.isEditMode = !this.isEditMode;
+      const key = String(groupId);
+      if (this.editingGroupId != null && String(this.editingGroupId) === key) {
+        this.editingGroupId = null;
+        return;
+      }
+      this.editingGroupId = groupId;
     },
 
     /**
@@ -258,7 +304,7 @@ export const useDashboardStore = defineStore('dashboard', {
       const next: DashboardViewMode = mode === 'allPanels' ? 'allPanels' : 'grouped';
       this.viewMode = next;
       if (next === 'allPanels') {
-        this.isEditMode = false;
+        this.editingGroupId = null;
       }
     },
 
@@ -277,7 +323,7 @@ export const useDashboardStore = defineStore('dashboard', {
         id: createPrefixedId('pg'),
         title: group.title || '新面板组',
         description: group.description,
-        isCollapsed: false,
+        isCollapsed: true,
         order: this.currentDashboard.panelGroups.length,
         panels: [],
         layout: [],
@@ -302,7 +348,8 @@ export const useDashboardStore = defineStore('dashboard', {
             ...updates,
             id: currentGroup.id, // 确保id不被覆盖
             title: updates.title ?? currentGroup.title,
-            isCollapsed: updates.isCollapsed ?? currentGroup.isCollapsed,
+            // 面板组统一折叠：不再暴露/维护“折叠状态”字段
+            isCollapsed: true,
             order: updates.order ?? currentGroup.order,
             panels: updates.panels ?? currentGroup.panels,
             layout: updates.layout ?? currentGroup.layout,
@@ -342,6 +389,48 @@ export const useDashboardStore = defineStore('dashboard', {
           group.order = index;
         });
       }
+    },
+
+    /**
+     * 批量重排面板组（用于拖拽排序）
+     *
+     * 说明：
+     * - nextOrder 传入的是“面板组 id 的顺序数组”
+     * - 会同时更新 currentDashboard.panelGroups 的数组顺序 + 每个 group.order
+     * - 若 nextOrder 缺失/包含未知 id：会忽略未知项，并把缺失的组按原顺序追加到末尾（保证稳定）
+     */
+    reorderPanelGroups(nextOrder: ID[]) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+
+      const groups = this.currentDashboard.panelGroups ?? [];
+      if (!Array.isArray(groups) || groups.length === 0) return;
+
+      const byId = new Map<string, PanelGroup>();
+      for (const g of groups) byId.set(String(g.id), g);
+
+      const used = new Set<string>();
+      const next: PanelGroup[] = [];
+      for (const rawId of nextOrder) {
+        const key = String(rawId);
+        const g = byId.get(key);
+        if (!g) continue;
+        if (used.has(key)) continue;
+        used.add(key);
+        next.push(g);
+      }
+      // append missing groups (keep previous relative order)
+      for (const g of groups) {
+        const key = String(g.id);
+        if (used.has(key)) continue;
+        used.add(key);
+        next.push(g);
+      }
+
+      next.forEach((g, index) => {
+        g.order = index;
+      });
+      this.currentDashboard.panelGroups = next;
     },
 
     /**

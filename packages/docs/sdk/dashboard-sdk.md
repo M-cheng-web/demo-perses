@@ -23,10 +23,8 @@ const { state, actions, containerSize, api } = useDashboardSdk(root, {
     <div ref="root" style="min-height: 480px;"></div>
     <aside v-if="state.dashboard">
       <p>面板组数量：{{ state.panelGroups.length }}</p>
-      <p>当前模式：{{ state.isEditMode ? '编辑' : '浏览' }}</p>
       <p>容器尺寸：{{ containerSize.width }} × {{ containerSize.height }}</p>
       <p>加载接口：{{ api.endpoints.LoadDashboard }}</p>
-      <button @click="actions.toggleEditMode">切换模式</button>
     </aside>
   </div>
 </template>

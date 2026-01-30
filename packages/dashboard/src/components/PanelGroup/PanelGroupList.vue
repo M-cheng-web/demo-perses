@@ -4,53 +4,84 @@
   用途：
   - 循环渲染 dashboard 的 panelGroups
   - list view 始终只展示标题（不在列表内展开渲染 panels）
-  - 点击标题触发 `open-group`，由上层渲染聚焦层（FocusLayer）
-  - 编辑模式下展示右侧操作区（添加面板/编辑/排序/删除）
+  - 通过 vue-grid-layout-v3 支持“随时拖拽排序”（不依赖全局编辑模式）
+  - 点击整行（header）打开聚焦层（FocusLayer），不改变底层滚动位置
+  - 右侧提供：添加面板组 / 编辑面板组 / 删除面板组
+  - 打开态的高频操作放到 FocusLayer header
 -->
 <template>
   <div :class="bem()">
-    <div
-      v-for="(group, index) in panelGroups"
-      :key="group.id"
-      :ref="groupRootRef(group.id)"
-      :class="[bem('group'), { 'is-focus-source': focusedGroupKey != null && String(group.id) === focusedGroupKey }]"
+    <grid-layout
+      v-model:layout="layoutModel"
+      :col-num="1"
+      :row-height="GROUP_ROW_HEIGHT"
+      :is-draggable="!isBooting"
+      :is-resizable="false"
+      :vertical-compact="true"
+      :use-css-transforms="true"
+      :margin="[0, 0]"
+      @layout-updated="handleLayoutUpdated"
     >
-      <Panel
-        :title="group.title || '未命名面板组'"
-        :description="group.description"
-        size="large"
-        :collapsible="!isBooting"
-        :collapsed="true"
-        :bordered="false"
-        :ghost="true"
-        :hoverable="false"
-        :body-padding="false"
-        @update:collapsed="(collapsed: boolean) => handleCollapsedChange(group.id, collapsed)"
+      <grid-item
+        v-for="{ group, layoutItem } in renderGroups"
+        :key="layoutItem.i"
+        :x="layoutItem.x"
+        :y="layoutItem.y"
+        :w="layoutItem.w"
+        :h="layoutItem.h"
+        :i="layoutItem.i"
+        :drag-ignore-from="dragIgnoreFrom"
+        @move="handleGroupMove"
+        @moved="handleGroupMoved"
       >
-        <template #right>
-          <PanelGroupRightActions
-            v-if="isEditMode"
-            :group="group"
-            :index="storeIndexById.get(String(group.id)) ?? index"
-            :is-last="(storeIndexById.get(String(group.id)) ?? index) === panelGroups.length - 1"
-            @edit="() => handleEditGroup(group)"
-          />
-        </template>
-      </Panel>
-    </div>
+        <div
+          :ref="groupRootRef(group.id)"
+          :class="[bem('group'), { 'is-focus-source': focusedGroupKey != null && String(group.id) === focusedGroupKey }]"
+        >
+          <Panel
+            :title="group.title || '未命名面板组'"
+            :description="group.description"
+            size="large"
+            :collapsible="!isBooting"
+            :collapsed="true"
+            :bordered="false"
+            :ghost="true"
+            :hoverable="false"
+            :body-padding="false"
+            @update:collapsed="(collapsed: boolean) => handleCollapsedChange(group.id, collapsed)"
+            @title-click="() => handleTitleClick(group.id)"
+          >
+            <template #right>
+              <Tooltip title="添加面板组">
+                <Button type="text" size="small" :icon="h(PlusOutlined)" @click="handleCreateGroup" />
+              </Tooltip>
+              <Tooltip title="编辑面板组">
+                <Button type="text" size="small" :icon="h(EditOutlined)" @click="() => handleEditGroup(group)" />
+              </Tooltip>
+              <Popconfirm title="确定要删除这个面板组吗？" ok-text="确定" cancel-text="取消" @confirm="() => handleDeleteGroup(group.id)">
+                <Tooltip title="删除面板组">
+                  <Button type="text" size="small" danger :icon="h(DeleteOutlined)" />
+                </Tooltip>
+              </Popconfirm>
+            </template>
+          </Panel>
+        </div>
+      </grid-item>
+    </grid-layout>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, h, ref, watch } from 'vue';
   import type { ComponentPublicInstance } from 'vue';
   import type { PanelGroup } from '@grafana-fast/types';
   import { storeToRefs } from '@grafana-fast/store';
-  import { Panel } from '@grafana-fast/component';
+  import { Button, Panel, Popconfirm, Tooltip } from '@grafana-fast/component';
+  import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons-vue';
+  import { GridLayout, GridItem } from 'vue-grid-layout-v3';
   import { createNamespace } from '/#/utils';
   import { useDashboardStore } from '/#/stores';
   import { useDashboardRuntime } from '/#/runtime/useInjected';
-  import PanelGroupRightActions from './PanelGroupRightActions.vue';
 
   const [_, bem] = createNamespace('panel-group-list');
 
@@ -62,15 +93,43 @@
 
   const emit = defineEmits<{
     (e: 'edit-group', group: PanelGroup): void;
+    (e: 'create-group'): void;
     (e: 'open-group', payload: { groupId: PanelGroup['id']; headerOffsetY: number }): void;
   }>();
 
   const dashboardStore = useDashboardStore();
-  const { isEditMode, isBooting } = storeToRefs(dashboardStore);
+  const { isBooting } = storeToRefs(dashboardStore);
   const runtime = useDashboardRuntime();
 
   const groupRootElById = new Map<string, HTMLElement>();
   const focusedGroupKey = computed(() => (props.focusedGroupId == null ? null : String(props.focusedGroupId)));
+
+  type GroupLayoutItem = { x: number; y: number; w: number; h: number; i: string };
+
+  const GROUP_ROW_HEIGHT = 44;
+  const dragIgnoreFrom = '.gf-panel__title, .gf-panel__info, button, a, input, textarea';
+
+  const layoutModel = ref<GroupLayoutItem[]>([]);
+  const layoutKey = computed(() => (props.panelGroups ?? []).map((g) => String(g.id)).join('|'));
+
+  const groupById = computed(() => {
+    const map = new Map<string, PanelGroup>();
+    for (const g of props.panelGroups ?? []) map.set(String(g.id), g);
+    return map;
+  });
+
+  const renderGroups = computed(() => {
+    return layoutModel.value
+      .map((layoutItem) => ({ layoutItem, group: groupById.value.get(layoutItem.i) }))
+      .filter((it): it is { layoutItem: GroupLayoutItem; group: PanelGroup } => Boolean(it.group));
+  });
+
+  const syncLayoutFromGroups = () => {
+    const groups = Array.isArray(props.panelGroups) ? props.panelGroups : [];
+    layoutModel.value = groups.map((g, idx) => ({ x: 0, y: idx, w: 1, h: 1, i: String(g.id) }));
+  };
+
+  watch(layoutKey, syncLayoutFromGroups, { immediate: true });
 
   const groupRootRef = (groupId: PanelGroup['id']) => (el: Element | ComponentPublicInstance | null) => {
     const key = String(groupId);
@@ -95,22 +154,58 @@
     return Math.max(0, Math.min(max, Math.floor(raw)));
   };
 
-  const storeIndexById = computed(() => {
-    const map = new Map<string, number>();
-    const groups = Array.isArray(props.panelGroups) ? props.panelGroups : [];
-    groups.forEach((g, idx) => map.set(String(g.id), idx));
-    return map;
-  });
+  const lastDragEndAt = ref(0);
+  const DRAG_CLICK_SUPPRESS_MS = 180;
+
+  const openGroup = (groupId: PanelGroup['id']) => {
+    if (isBooting.value) return;
+    // 拖拽排序结束后会产生 click：短时间内忽略“打开组”，避免误触
+    if (Date.now() - lastDragEndAt.value < DRAG_CLICK_SUPPRESS_MS) return;
+    emit('open-group', { groupId, headerOffsetY: getHeaderOffsetY(groupId) });
+  };
+
+  const handleTitleClick = (groupId: PanelGroup['id']) => {
+    openGroup(groupId);
+  };
 
   const handleEditGroup = (group: PanelGroup) => {
+    if (isBooting.value) return;
     emit('edit-group', group);
+  };
+
+  const handleCreateGroup = () => {
+    if (isBooting.value) return;
+    emit('create-group');
   };
 
   const handleCollapsedChange = (groupId: PanelGroup['id'], collapsed: boolean) => {
     if (isBooting.value) return;
     // list view 中始终折叠：点击 header 触发 “展开请求” 时打开 focus layer
     if (collapsed) return;
-    emit('open-group', { groupId, headerOffsetY: getHeaderOffsetY(groupId) });
+    openGroup(groupId);
+  };
+
+  const handleDeleteGroup = (groupId: PanelGroup['id']) => {
+    if (isBooting.value) return;
+    dashboardStore.deletePanelGroup(groupId);
+  };
+
+  const handleLayoutUpdated = () => {
+    // 由 moved 事件做最终落盘，这里保留空实现用于未来扩展（例如 debug）
+  };
+
+  const handleGroupMove = () => {
+    // no-op: used to mark "dragging" if needed
+  };
+
+  const handleGroupMoved = () => {
+    // drag end: commit order to store
+    lastDragEndAt.value = Date.now();
+    const nextOrder = [...layoutModel.value]
+      .slice()
+      .sort((a, b) => a.y - b.y || a.x - b.x)
+      .map((it) => it.i);
+    dashboardStore.reorderPanelGroups(nextOrder);
   };
 </script>
 
@@ -130,6 +225,25 @@
     :deep(.dp-panel-group-list__group .gf-panel.is-ghost > .gf-panel__header) {
       background: transparent;
       border-bottom: 1px solid var(--gf-color-border-muted);
+    }
+
+    :deep(.dp-panel-group-list__group .gf-panel__right) {
+      gap: 4px;
+    }
+
+    :deep(.dp-panel-group-list__group .gf-panel__right .gf-button) {
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      border-radius: var(--gf-radius-sm);
+    }
+
+    :deep(.dp-panel-group-list__group .gf-panel__right .gf-button:hover) {
+      background-color: var(--gf-color-fill);
     }
   }
 </style>

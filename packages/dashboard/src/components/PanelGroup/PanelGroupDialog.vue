@@ -2,7 +2,7 @@
   组件说明：面板组创建/编辑弹窗（PanelGroupDialog）
 
   用途：
-  - 新建/编辑面板组的基础信息：标题、描述、默认折叠
+  - 新建/编辑面板组的基础信息：标题、描述
   - 通过 `defineExpose` 暴露 `openCreate/openEdit`，供外部按钮触发打开
 -->
 <template>
@@ -15,16 +15,12 @@
       <FormItem label="描述">
         <Textarea v-model:value="formData.description" placeholder="请输入面板组描述" :rows="3" :auto-size="{ minRows: 3, maxRows: 6 }" />
       </FormItem>
-
-      <FormItem label="默认折叠">
-        <Switch v-model:checked="formData.isCollapsed" />
-      </FormItem>
     </Form>
   </Modal>
 </template>
 
 <script setup lang="ts">
-  import { Modal, Form, FormItem, Input, Textarea, Switch } from '@grafana-fast/component';
+  import { Modal, Form, FormItem, Input, Textarea } from '@grafana-fast/component';
   import { ref } from 'vue';
   import { message } from '@grafana-fast/component';
   import { useDashboardStore } from '/#/stores';
@@ -39,10 +35,9 @@
   const isEditMode = ref(false);
   const editingGroupId = ref<string>();
 
-  const formData = ref<Partial<PanelGroup>>({
+  const formData = ref<Pick<PanelGroup, 'title' | 'description'>>({
     title: '',
     description: '',
-    isCollapsed: false,
   });
 
   // 打开创建对话框
@@ -51,7 +46,6 @@
     formData.value = {
       title: '',
       description: '',
-      isCollapsed: false,
     };
     isOpen.value = true;
   };
@@ -63,7 +57,6 @@
     formData.value = {
       title: group.title,
       description: group.description,
-      isCollapsed: group.isCollapsed,
     };
     isOpen.value = true;
   };
@@ -83,7 +76,6 @@
       dashboardStore.addPanelGroup({
         title: formData.value.title,
         description: formData.value.description || '',
-        isCollapsed: formData.value.isCollapsed || false,
       });
       message.success('面板组已创建');
     }

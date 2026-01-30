@@ -10,17 +10,15 @@
   <ConfigProvider :theme="props.theme">
     <div ref="rootEl" :class="bem()" :style="rootStyle">
       <!-- 右侧透明设置按钮：打开侧边栏工具面板 -->
-      <div ref="settingsEl" :class="[bem('settings'), { 'is-dragging': isSettingsDragging }]" :style="settingsStyle">
-        <Tooltip title="设置">
-          <Button
-            type="text"
-            size="small"
-            :icon="h(SettingOutlined)"
-            :disabled="isBooting"
-            @click="handleSettingsClick"
-            @pointerdown="handleSettingsPointerDown"
-          />
-        </Tooltip>
+      <div ref="settingsEl" :class="[bem('settings'), { 'is-dragging': isSettingsDragging, 'is-peek': isSettingsPeek }]" :style="settingsStyle">
+        <Button
+          type="text"
+          size="middle"
+          :icon="h(SettingOutlined)"
+          :disabled="isBooting"
+          @click="handleSettingsClick"
+          @pointerdown="handleSettingsPointerDown"
+        />
       </div>
 
       <!-- 工具栏侧边栏（复用 DashboardToolbar 内容） -->
@@ -31,7 +29,7 @@
       <!-- 面板组列表 -->
       <div ref="contentEl" :class="[bem('content'), { 'is-locked': isFocusLayerActive }]" :style="contentStyle">
         <Empty v-if="!panelGroups.length" :description="emptyText">
-          <Button v-if="isEditMode" type="primary" @click="handleAddPanelGroup"> 创建面板组 </Button>
+          <Button type="primary" :disabled="isBooting" @click="handleAddPanelGroup"> 创建面板组 </Button>
         </Empty>
 
         <template v-else>
@@ -40,6 +38,7 @@
             v-else
             :panel-groups="panelGroups"
             :focused-group-id="focusedGroupId"
+            @create-group="handleCreateGroup"
             @edit-group="handleEditGroup"
             @open-group="handleOpenGroup"
           />
@@ -54,10 +53,7 @@
         :paged-group="focusedPagedGroup"
         :page-size-options="pageSizeOptions"
         :pager-threshold="pagerThreshold"
-        :is-edit-mode="isEditMode"
         :is-booting="isBooting"
-        :group-index="focusedGroupIndex"
-        :is-last="focusedGroupIsLast"
         :set-current-page="setCurrentPage"
         :set-page-size="setPageSize"
         @after-close="handleFocusAfterClose"
@@ -91,7 +87,7 @@
 <script setup lang="ts">
   import { ref, watch, onMounted, onUnmounted, computed, provide, inject, h, nextTick } from 'vue';
   import { getActivePinia, storeToRefs, type Pinia } from '@grafana-fast/store';
-  import { Button, ConfigProvider, Drawer, Empty, Loading, Tooltip, message } from '@grafana-fast/component';
+  import { Button, ConfigProvider, Drawer, Empty, Loading, message } from '@grafana-fast/component';
   import { SettingOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useEditorStore, useTimeRangeStore, useTooltipStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
@@ -146,7 +142,7 @@
   const editorStore = useEditorStore();
   const timeRangeStore = useTimeRangeStore();
   const tooltipStore = useTooltipStore();
-  const { panelGroups, isEditMode, viewMode, viewPanel, isBooting, bootStage, bootStats, isLargeDashboard } = storeToRefs(dashboardStore);
+  const { panelGroups, editingGroupId, viewMode, viewPanel, isBooting, bootStage, bootStats, isLargeDashboard } = storeToRefs(dashboardStore);
   const fullscreenModalRef = ref<InstanceType<typeof PanelFullscreenModal>>();
   const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
   const rootEl = ref<HTMLElement | null>(null);
@@ -160,6 +156,7 @@
   const instanceId = computed(() => props.instanceId);
 
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
+  const isEditingActive = computed(() => editingGroupId.value != null);
 
   // ---------------------------
   // Settings button position (per dashboard instance)
@@ -176,6 +173,12 @@
   let settingsDragStartY = 0;
 
   const settingsStorageKey = computed(() => `${SETTINGS_POS_KEY_PREFIX}${instanceId.value}`);
+
+  // “半隐藏”交互：
+  // - 默认位置（未被拖动/未持久化）半隐藏在右侧
+  // - 用户拖动后，如果贴到右侧边缘，也自动半隐藏（减少遮挡内容）
+  const SETTINGS_PEEK_EDGE_PX = 10;
+  const SETTINGS_SNAP_EDGE_PX = 10;
 
   const getSettingsButtonSize = (): { w: number; h: number } => {
     const rect = settingsEl.value?.getBoundingClientRect();
@@ -198,6 +201,37 @@
   const clampSettingsPosInPlace = () => {
     if (!settingsPos.value) return;
     settingsPos.value = clampSettingsPos(settingsPos.value);
+  };
+
+  const isSettingsNearRightEdge = (pos: { x: number; y: number }): boolean => {
+    const root = rootEl.value;
+    if (!root) return false;
+    const { w } = getSettingsButtonSize();
+    const maxX = Math.max(0, Math.floor(root.clientWidth - w));
+    // maxX=0 表示容器太窄/按钮太宽：此时不做 peek（避免按钮完全不可见）
+    if (maxX <= 0) return false;
+    const x = Math.floor(Number(pos.x ?? 0));
+    return x >= maxX - SETTINGS_PEEK_EDGE_PX;
+  };
+
+  const isSettingsPeek = computed(() => {
+    if (isSettingsDragging.value) return false;
+    // 未被拖动/未持久化：默认半隐藏在右侧
+    if (!settingsPos.value) return true;
+    // 已拖动：贴到右侧也半隐藏
+    return isSettingsNearRightEdge(settingsPos.value);
+  });
+
+  const snapSettingsPos = (pos: { x: number; y: number }): { x: number; y: number } => {
+    const root = rootEl.value;
+    if (!root) return clampSettingsPos(pos);
+    const clamped = clampSettingsPos(pos);
+    const { w } = getSettingsButtonSize();
+    const maxX = Math.max(0, Math.floor(root.clientWidth - w));
+    if (maxX > 0 && clamped.x >= maxX - SETTINGS_SNAP_EDGE_PX) {
+      return { x: maxX, y: clamped.y };
+    }
+    return clamped;
   };
 
   const loadSettingsPos = () => {
@@ -229,7 +263,6 @@
       left: `${settingsPos.value.x}px`,
       top: `${settingsPos.value.y}px`,
       right: 'auto',
-      transform: 'none',
     } as Record<string, string>;
   });
 
@@ -258,12 +291,12 @@
    * - 切换聚焦组（打开另一个组）也会关闭 PanelEditorDrawer
    */
   const setCurrentPage = (groupId: PanelGroup['id'], page: number) => {
-    if (isEditMode.value) editorStore.closeEditor();
+    if (isEditingActive.value) editorStore.closeEditor();
     baseSetCurrentPage(groupId, page);
   };
 
   const setPageSize = (groupId: PanelGroup['id'], pageSize: number) => {
-    if (isEditMode.value) editorStore.closeEditor();
+    if (isEditingActive.value) editorStore.closeEditor();
     baseSetPageSize(groupId, pageSize);
   };
 
@@ -287,17 +320,6 @@
     focusOpen.value = false;
     focusStartOffsetY.value = 0;
   });
-
-  const groupIndexById = computed(() => {
-    const map = new Map<string, number>();
-    panelGroups.value.forEach((g, idx) => map.set(String(g.id), idx));
-    return map;
-  });
-  const focusedGroupIndex = computed(() => {
-    if (focusedGroupId.value == null) return 0;
-    return groupIndexById.value.get(String(focusedGroupId.value)) ?? 0;
-  });
-  const focusedGroupIsLast = computed(() => focusedGroupIndex.value >= panelGroups.value.length - 1);
 
   const isFocusLayerActive = computed(() => !isAllPanelsView.value && focusedGroupId.value != null);
 
@@ -375,13 +397,42 @@
   const handleOpenGroup = (payload: { groupId: PanelGroup['id']; headerOffsetY: number }) => {
     if (isBooting.value) return;
     if (isAllPanelsView.value) return;
-    if (isEditMode.value) editorStore.closeEditor();
+    if (isEditingActive.value) editorStore.closeEditor();
+    dashboardStore.setEditingGroup(null);
     focusedGroupId.value = payload.groupId;
     focusStartOffsetY.value = payload.headerOffsetY;
     focusOpen.value = true;
   };
 
+  // ---------------------------
+  // Default open behavior: single group
+  // ---------------------------
+  // 需求：当仅有一个面板组时，默认打开该面板组。
+  // 注意：这里只做“默认打开一次”，不强制锁定。用户手动关闭后不自动再次打开。
+  const autoOpenedSingleGroup = ref(false);
+  watch(isBooting, (booting) => {
+    if (booting) autoOpenedSingleGroup.value = false;
+  });
+
+  watch(
+    [isBooting, viewMode, () => panelGroups.value.length],
+    ([booting, mode, groupCount]) => {
+      if (booting) return;
+      if (autoOpenedSingleGroup.value) return;
+      if (mode !== 'grouped') return;
+      if (groupCount !== 1) return;
+      if (focusedGroupId.value != null) return;
+      const only = panelGroups.value[0];
+      if (!only) return;
+      handleOpenGroup({ groupId: only.id, headerOffsetY: 0 });
+      autoOpenedSingleGroup.value = true;
+    },
+    { immediate: true }
+  );
+
   const handleFocusAfterClose = () => {
+    if (isEditingActive.value) editorStore.closeEditor();
+    dashboardStore.setEditingGroup(null);
     focusedGroupId.value = null;
     focusStartOffsetY.value = 0;
   };
@@ -468,6 +519,7 @@
 
     if (settingsDragMoved) {
       suppressSettingsClick.value = true;
+      if (settingsPos.value) settingsPos.value = snapSettingsPos(settingsPos.value);
       saveSettingsPos();
     }
     endSettingsDrag();
@@ -491,7 +543,12 @@
   });
 
   const handleAddPanelGroup = () => {
-    dashboardStore.addPanelGroup({ title: '新面板组' });
+    if (isBooting.value) return;
+    panelGroupDialogRef.value?.openCreate?.();
+  };
+
+  const handleCreateGroup = () => {
+    handleAddPanelGroup();
   };
 
   const handleEditGroup = (group: PanelGroup) => {
@@ -509,6 +566,7 @@
   watch(viewMode, (mode) => {
     if (mode === 'allPanels') {
       editorStore.closeEditor();
+      dashboardStore.setEditingGroup(null);
       focusedGroupId.value = null;
       focusOpen.value = false;
     }
@@ -617,10 +675,6 @@
       if (isBooting.value) return;
       await dashboardStore.saveDashboard();
     },
-    toggleEditMode: () => {
-      if (isBooting.value) return;
-      dashboardStore.toggleEditMode();
-    },
     togglePanelsView: () => {
       if (isBooting.value) return;
       dashboardStore.togglePanelsView();
@@ -665,12 +719,6 @@
     setTimeRangePreset: (preset: string) => {
       if (isBooting.value) return;
       timeRangeStore.setTimeRange({ from: preset, to: 'now' });
-    },
-    setEditMode: (next: boolean) => {
-      if (isBooting.value) return;
-      const desired = Boolean(next);
-      if (desired === isEditMode.value) return;
-      dashboardStore.toggleEditMode();
     },
   };
 
@@ -719,29 +767,41 @@
 
     &__settings {
       position: absolute;
-      right: 12px;
+      right: 0;
       top: 12px;
       transform: none;
       z-index: 180;
       user-select: none;
       touch-action: none;
       cursor: grab;
+      transition:
+        transform var(--gf-motion-normal) var(--gf-easing),
+        opacity var(--gf-motion-fast) var(--gf-easing);
+
+      &.is-peek {
+        transform: translateX(50%);
+        opacity: 0.95;
+      }
+
+      &.is-peek:hover {
+        transform: translateX(0%);
+        opacity: 1;
+      }
 
       :deep(.gf-button) {
-        opacity: 0.95;
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        border: 1px solid var(--gf-color-border-muted);
-        background: color-mix(in srgb, var(--gf-color-surface), transparent 10%);
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        border: 1px solid var(--gf-color-border-strong);
+        background: color-mix(in srgb, var(--gf-color-surface), transparent 6%);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        box-shadow: var(--gf-shadow-1);
+        box-shadow: var(--gf-shadow-2);
         cursor: grab;
+        font-size: 18px;
       }
 
       :deep(.gf-button:hover) {
-        opacity: 1;
         background: color-mix(in srgb, var(--gf-color-surface), transparent 0%);
         border-color: var(--gf-color-border-strong);
         box-shadow: var(--gf-shadow-2);

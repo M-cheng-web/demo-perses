@@ -74,7 +74,7 @@
 
       <template v-else>
         <Empty description="暂无面板">
-          <Button v-if="isEditMode" type="primary" @click="handleAddPanel">添加面板</Button>
+          <Button v-if="canEditLayout" type="primary" @click="handleAddPanel">添加面板</Button>
         </Empty>
       </template>
     </VirtualList>
@@ -123,9 +123,14 @@
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
-  const { isEditMode } = storeToRefs(dashboardStore);
+  const { editingGroupId, viewMode, isBooting } = storeToRefs(dashboardStore);
 
-  const canEditLayout = computed(() => isEditMode.value);
+  const canEditLayout = computed(() => {
+    if (isBooting.value) return false;
+    if (viewMode.value === 'allPanels') return false;
+    if (editingGroupId.value == null) return false;
+    return String(editingGroupId.value) === String(props.groupId);
+  });
 
   /**
    * 缓存策略（解决“滚远了再滚回来，ECharts 重新 init/重画”的体感问题）
@@ -137,7 +142,7 @@
     return 60;
   });
 
-  const layoutItems = computed<PanelLayout[]>(() => (isEditMode.value ? localLayout.value : props.layout));
+  const layoutItems = computed<PanelLayout[]>(() => (canEditLayout.value ? localLayout.value : props.layout));
 
   const localLayout = ref<PanelLayout[]>([...props.layout]);
   const layoutBaseYRef = ref<number>(Math.max(0, Math.floor(props.layoutBaseY ?? 0)));
@@ -147,14 +152,14 @@
     () => props.layout,
     (newLayout) => {
       // 若正在编辑且存在未提交的交互变更：在切换分页/外部替换 layout 前先落盘，避免 baseY 变化导致写回错误
-      if (isEditMode.value && hasPendingUserLayoutChange.value) {
+      if (canEditLayout.value && hasPendingUserLayoutChange.value) {
         debouncedCommitLayout.flush();
       }
 
       layoutBaseYRef.value = Math.max(0, Math.floor(props.layoutBaseY ?? 0));
       // 编辑模式下：避免直接替换 array 引用导致 VirtualList 中的 dataList 引用失效
       // 使用 in-place 同步保持对象引用稳定（grid-item props 才能实时更新）
-      if (isEditMode.value) {
+      if (canEditLayout.value) {
         handleLayoutModelUpdate(newLayout);
         return;
       }
@@ -162,6 +167,12 @@
     },
     { deep: true }
   );
+
+  // 退出编辑态时：把 pending layout 变更强制落盘，避免“最后一次拖拽没保存到 store”
+  watch(canEditLayout, (enabled) => {
+    if (enabled) return;
+    if (hasPendingUserLayoutChange.value) debouncedCommitLayout.flush();
+  });
 
   const handleLayoutModelUpdate = (nextLayout: PanelLayout[]) => {
     const currentById = new Map<string, PanelLayout>();

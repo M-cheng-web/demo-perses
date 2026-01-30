@@ -30,15 +30,20 @@
         :hoverable="false"
         :body-padding="false"
         @update:collapsed="handlePanelHeaderToggle"
+        @title-click="handleTitleClick"
       >
         <template #right>
-          <PanelGroupRightActions
-            v-if="isEditMode && group && !isBooting"
-            :group="group"
-            :index="groupIndex"
-            :is-last="isLast"
-            @edit="(g) => emit('edit-group', g)"
-          />
+          <div v-if="group && !isBooting" :class="bem('actions')">
+            <Button type="text" size="small" :icon="h(ReloadOutlined)" :disabled="isBooting" @click="handleRefresh">刷新</Button>
+            <Button
+              size="small"
+              :type="isGroupEditing ? 'ghost' : 'primary'"
+              :disabled="isBooting"
+              @click="handleToggleEditing"
+            >
+              {{ isGroupEditing ? '退出编辑' : '编辑' }}
+            </Button>
+          </div>
         </template>
 
         <div v-if="showContent && pagedGroup" :class="bem('body')">
@@ -73,13 +78,14 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-  import { Pagination, Panel } from '@grafana-fast/component';
+  import { computed, h, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+  import { Button, Pagination, Panel, message } from '@grafana-fast/component';
+  import { ReloadOutlined } from '@ant-design/icons-vue';
   import type { PanelGroup } from '@grafana-fast/types';
   import type { PagedPanelGroup } from '/#/composables/usePanelGroupPagination';
   import { createNamespace } from '/#/utils';
   import GridLayout from '/#/components/GridLayout/GridLayout.vue';
-  import PanelGroupRightActions from './PanelGroupRightActions.vue';
+  import { useDashboardStore, useEditorStore, useTimeRangeStore } from '/#/stores';
 
   const [_, bem] = createNamespace('panel-group-focus-layer');
 
@@ -93,12 +99,8 @@
     /** Pagination options */
     pageSizeOptions: number[];
     pagerThreshold: number;
-    /** 编辑/boot 状态 */
-    isEditMode: boolean;
+    /** boot 状态 */
     isBooting: boolean;
-    /** 面板组排序信息（用于 right actions） */
-    groupIndex: number;
-    isLast: boolean;
     /** 分页控制（由外部 composable 持有 state） */
     setCurrentPage: (groupId: PanelGroup['id'], page: number) => void;
     setPageSize: (groupId: PanelGroup['id'], pageSize: number) => void;
@@ -115,6 +117,16 @@
   const group = computed(() => props.pagedGroup?.group ?? null);
   const title = computed(() => group.value?.title || '未命名面板组');
   const description = computed(() => group.value?.description || '');
+
+  const dashboardStore = useDashboardStore();
+  const editorStore = useEditorStore();
+  const timeRangeStore = useTimeRangeStore();
+
+  const isGroupEditing = computed(() => {
+    const g = group.value;
+    if (!g) return false;
+    return dashboardStore.isGroupEditing(g.id);
+  });
 
   const isActive = ref(false);
   const isOpen = ref(false);
@@ -158,6 +170,11 @@
     requestClose();
   };
 
+  const handleTitleClick = () => {
+    if (!group.value) return;
+    emit('edit-group', group.value);
+  };
+
   const handleUpdateCurrentPage = (page: number) => {
     const g = props.pagedGroup?.group;
     if (!g) return;
@@ -172,6 +189,21 @@
 
   const requestClose = () => {
     emit('update:open', false);
+  };
+
+  const handleRefresh = () => {
+    if (props.isBooting) return;
+    timeRangeStore.refresh();
+    message.success('已刷新');
+  };
+
+  const handleToggleEditing = () => {
+    if (props.isBooting) return;
+    const g = group.value;
+    if (!g) return;
+    // 退出编辑时：关闭面板编辑器，避免停留在“不可编辑”状态下的编辑 UI
+    if (isGroupEditing.value) editorStore.closeEditor();
+    dashboardStore.toggleGroupEditing(g.id);
   };
 
   const openSequence = async () => {
@@ -335,6 +367,13 @@
       flex: 1;
       min-height: 0;
       overflow: hidden;
+    }
+
+    &__actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     &__pagination {

@@ -10,7 +10,6 @@
     <div v-if="state.dashboard" class="dp-dashboard-view__meta">
       <div class="dp-dashboard-view__status">
         <span>面板组: {{ state.panelGroups.length }}</span>
-        <span>模式: {{ state.isEditMode ? '编辑' : '浏览' }}</span>
       </div>
       <div class="dp-dashboard-view__actions">
         <Segmented v-model:value="themeModel" :options="themeOptions" />
@@ -33,9 +32,6 @@
         <Button type="ghost" @click="mountDashboard">挂载</Button>
         <Button type="ghost" @click="unmountDashboard">卸载</Button>
         <Button type="ghost" @click="debugOpen = true">调试信息</Button>
-        <Button type="primary" @click="actions.toggleEditMode">
-          {{ state.isEditMode ? '退出编辑' : '进入编辑' }}
-        </Button>
       </div>
     </div>
 

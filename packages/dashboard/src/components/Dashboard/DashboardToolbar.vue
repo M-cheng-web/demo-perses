@@ -2,8 +2,9 @@
 	  文件说明：Dashboard 工具栏
 
 	  职责：
-	  - 编辑模式开关/保存
-	  - 时间范围选择 + 手动刷新
+	  - 视图切换（分组/全部面板）
+	  - 时间范围选择（变更会触发可视面板刷新）
+	  - 保存
 	  - JSON 导入/导出（严格模式：非法 JSON 不会污染外部状态）
 	-->
 <template>
@@ -14,7 +15,6 @@
           <div :class="bem('sidebar-name')">{{ dashboardName }}</div>
           <div :class="bem('sidebar-subtitle')">
             <span>{{ isAllPanelsView ? '全部面板（只读）' : '分组视图' }}</span>
-            <span v-if="!isAllPanelsView"> · {{ isEditMode ? '编辑模式' : '浏览模式' }}</span>
           </div>
         </div>
 
@@ -28,28 +28,11 @@
             <div :class="bem('label')">范围</div>
             <TimeRangePicker v-model:value="selectedTimeRange" :disabled="isBooting" @change="handleTimeRangeChange" />
           </div>
-          <Flex gap="8" wrap>
-            <Button size="small" type="ghost" :icon="h(ReloadOutlined)" :disabled="isBooting" @click="handleRefresh">刷新</Button>
-            <Button size="small" type="ghost" :disabled="isBooting" @click="setTimeRangePreset('now-5m')">5m</Button>
-            <Button size="small" type="ghost" :disabled="isBooting" @click="setTimeRangePreset('now-1h')">1h</Button>
-            <Button size="small" type="ghost" :disabled="isBooting" @click="setTimeRangePreset('now-6h')">6h</Button>
-          </Flex>
         </Card>
 
-        <Card size="small" title="编辑" :class="bem('card')">
-          <div :class="bem('row')">
-            <div :class="bem('label')">编辑模式</div>
-            <Switch :checked="isEditMode" :disabled="isBooting || isAllPanelsView" @change="setEditMode" />
-          </div>
-          <div v-if="isAllPanelsView" :class="bem('hint')">提示：在“全部面板”视图下禁止进入编辑模式。</div>
-
+        <Card size="small" title="仪表盘" :class="bem('card')">
           <Flex gap="8" wrap>
-            <Button size="small" :disabled="isBooting || !isEditMode" @click="handleAddPanelGroup">
-              <template #icon><PlusOutlined /></template>
-              添加面板组
-            </Button>
-            <Button size="small" type="primary" :loading="isSaving" :disabled="isBooting || !isEditMode" @click="handleSave">保存</Button>
-            <Button size="small" type="ghost" :disabled="isBooting || !isEditMode" @click="handleToggleEditMode">取消</Button>
+            <Button size="small" type="primary" :loading="isSaving" :disabled="isBooting" @click="handleSave">保存</Button>
           </Flex>
         </Card>
 
@@ -66,7 +49,7 @@
 
     <template v-else>
       <!-- 单行：标题 + 操作区（旧头部形态） -->
-      <div :class="[bem('header'), bem('header', { 'edit-mode': isEditMode })]">
+      <div :class="bem('header')">
         <h2 :class="bem('title')">{{ dashboardName }}</h2>
         <div :class="bem('actions')">
           <!-- 视图切换：分组 <-> 全部面板（只读） -->
@@ -77,36 +60,21 @@
           <!-- 时间范围选择器 -->
           <TimeRangePicker v-model:value="selectedTimeRange" :disabled="isBooting" @change="handleTimeRangeChange" />
 
-          <template v-if="isEditMode">
-            <!-- 编辑模式下的操作按钮 -->
-            <Button size="small" @click="handleAddPanelGroup" :disabled="isBooting">
-              <template #icon><PlusOutlined /></template>
-              添加面板组
-            </Button>
-            <Button size="small" @click="handleSave" type="primary" :loading="isSaving" :disabled="isBooting"> 保存 </Button>
-            <Button size="small" @click="handleToggleEditMode" :disabled="isBooting"> 取消 </Button>
-          </template>
-          <template v-else>
-            <!-- 刷新按钮（编辑模式下不展示） -->
-            <Button :icon="h(ReloadOutlined)" size="small" :disabled="isBooting" @click="handleRefresh" />
+          <Button size="small" @click="handleSave" type="primary" :loading="isSaving" :disabled="isBooting"> 保存 </Button>
 
-            <!-- 更多操作（编辑模式下不展示） -->
-            <Dropdown>
-              <Button :icon="h(MoreOutlined)" size="small" :disabled="isBooting" />
-              <template #overlay>
-                <Menu
-                  :items="[
-                    { key: 'export', label: '导出 JSON', icon: h(DownloadOutlined) },
-                    { key: 'import', label: '导入 JSON', icon: h(UploadOutlined) },
-                    { key: 'viewJson', label: '查看 JSON', icon: h(FileTextOutlined) },
-                  ]"
-                  @click="handleMenuClick"
-                />
-              </template>
-            </Dropdown>
-
-            <Button v-if="!isAllPanelsView" size="small" @click="handleToggleEditMode" type="primary" :disabled="isBooting"> 编辑 </Button>
-          </template>
+          <Dropdown>
+            <Button :icon="h(MoreOutlined)" size="small" :disabled="isBooting" />
+            <template #overlay>
+              <Menu
+                :items="[
+                  { key: 'export', label: '导出 JSON', icon: h(DownloadOutlined) },
+                  { key: 'import', label: '导入 JSON', icon: h(UploadOutlined) },
+                  { key: 'viewJson', label: '查看 JSON', icon: h(FileTextOutlined) },
+                ]"
+                @click="handleMenuClick"
+              />
+            </template>
+          </Dropdown>
         </div>
       </div>
     </template>
@@ -134,10 +102,10 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, h } from 'vue';
-  import { Button, Card, Flex, Modal, Segmented, Space, Switch, TimeRangePicker, Dropdown, Menu } from '@grafana-fast/component';
+  import { ref, computed, h, watch } from 'vue';
+  import { Button, Card, Flex, Modal, Segmented, Space, TimeRangePicker, Dropdown, Menu } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
-  import { ReloadOutlined, MoreOutlined, DownloadOutlined, UploadOutlined, FileTextOutlined, PlusOutlined } from '@ant-design/icons-vue';
+  import { MoreOutlined, DownloadOutlined, UploadOutlined, FileTextOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useTimeRangeStore } from '/#/stores';
   import { message } from '@grafana-fast/component';
   import { DashboardJsonEditor } from '@grafana-fast/json-editor';
@@ -160,12 +128,23 @@
   const dashboardStore = useDashboardStore();
   const timeRangeStore = useTimeRangeStore();
 
-  const { currentDashboard, isEditMode, viewMode, isSaving, isBooting } = storeToRefs(dashboardStore);
+  const { currentDashboard, viewMode, isSaving, isBooting } = storeToRefs(dashboardStore);
 
   const dashboardName = computed(() => currentDashboard.value?.name || '仪表盘');
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
 
   const selectedTimeRange = ref('now-1h');
+  const { timeRange } = storeToRefs(timeRangeStore);
+
+  // 外部可能通过 SDK/暴露 API 修改 timeRange：这里让 UI 始终反映 store 的真实值
+  watch(
+    () => String(timeRange.value.from ?? ''),
+    (from) => {
+      if (!from) return;
+      selectedTimeRange.value = from;
+    },
+    { immediate: true }
+  );
 
   // JSON 相关
   const jsonModalVisible = ref(false);
@@ -199,32 +178,6 @@
     },
   });
 
-  const handleRefresh = () => {
-    if (isBooting.value) return;
-    timeRangeStore.refresh();
-    message.success('已刷新');
-  };
-
-  const setTimeRangePreset = (preset: string) => {
-    if (isBooting.value) return;
-    selectedTimeRange.value = preset;
-    handleTimeRangeChange(preset);
-  };
-
-  const setEditMode = (next: boolean) => {
-    if (isBooting.value) return;
-    if (isAllPanelsView.value) return;
-    const desired = Boolean(next);
-    if (desired === isEditMode.value) return;
-    dashboardStore.toggleEditMode();
-  };
-
-  const handleToggleEditMode = () => {
-    if (isBooting.value) return;
-    if (isAllPanelsView.value) return;
-    dashboardStore.toggleEditMode();
-  };
-
   const handleTogglePanelsView = () => {
     if (isBooting.value) return;
     dashboardStore.togglePanelsView();
@@ -238,15 +191,6 @@
     } catch (error) {
       console.error('保存失败', error);
     }
-  };
-
-  const handleAddPanelGroup = () => {
-    if (isBooting.value) return;
-    dashboardStore.addPanelGroup({
-      title: '新面板组',
-      description: '',
-    });
-    message.success('已添加面板组');
   };
 
   const handleMenuClick = ({ key }: { key: string | number }) => {
@@ -318,7 +262,7 @@
     }
 
     dashboardJson.value = JSON.stringify(currentDashboard.value, null, 2);
-    jsonModalMode.value = isEditMode.value ? 'edit' : 'view';
+    jsonModalMode.value = 'view';
     jsonModalVisible.value = true;
   };
 
@@ -361,18 +305,12 @@
     openJsonModal,
     closeJsonModal,
     // Actions (mirror toolbar capabilities)
-    handleRefresh,
     handleSave,
-    handleToggleEditMode,
     handleTogglePanelsView,
-    handleAddPanelGroup,
     handleExport,
     handleImport,
     handleViewJson,
     handleApplyJson,
-    // Controlled helpers
-    setTimeRangePreset,
-    setEditMode,
   });
 </script>
 
