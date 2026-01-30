@@ -227,7 +227,7 @@
             length: pointer.length || '60%',
             width: pointer.width || 8,
             itemStyle: {
-              color: 'auto',
+              color: 'inherit',
             },
           },
           axisTick: {
@@ -259,7 +259,7 @@
             formatter: (value: number) => {
               return formatValue(value, formatOptions.value || {});
             },
-            color: 'auto',
+            color: 'inherit',
             fontSize: 28,
             fontWeight: 'bold',
             offsetCenter: [0, '70%'],
