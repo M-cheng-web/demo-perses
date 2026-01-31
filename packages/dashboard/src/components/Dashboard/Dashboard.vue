@@ -22,8 +22,18 @@
       </div>
 
       <!-- 工具栏侧边栏（复用 DashboardToolbar 内容） -->
-      <Drawer v-model:open="settingsOpen" title="设置" :width="520" :footer="false" :mask="true" :mask-closable="true">
-        <DashboardToolbar ref="toolbarRef" variant="sidebar" />
+      <Drawer
+        v-model:open="settingsOpen"
+        title="全局设置"
+        :subtitle="settingsSubtitle"
+        :width="520"
+        :confirmable="true"
+        :mask="true"
+        :mask-closable="false"
+        @confirm="handleSettingsConfirm"
+        @cancel="handleSettingsCancel"
+      >
+        <DashboardToolbar ref="toolbarRef" variant="sidebar" @create-group="handleCreateGroup" />
       </Drawer>
 
       <!-- 面板组列表 -->
@@ -38,7 +48,6 @@
             v-else
             :panel-groups="panelGroups"
             :focused-group-id="focusedGroupId"
-            @create-group="handleCreateGroup"
             @edit-group="handleEditGroup"
             @open-group="handleOpenGroup"
           />
@@ -51,6 +60,7 @@
         v-model:open="focusOpen"
         :start-offset-y="focusStartOffsetY"
         :paged-group="focusedPagedGroup"
+        :motion-ms="panelGroupFocusMotionMs"
         :page-size-options="pageSizeOptions"
         :pager-threshold="pagerThreshold"
         :is-booting="isBooting"
@@ -131,10 +141,20 @@
        * - 用于本地持久化（例如设置按钮位置）、调度器 scope、日志/调试定位等
        */
       instanceId: string;
+      /**
+       * 面板组聚焦层 header 动画时长（ms）
+       *
+       * 说明：
+       * - 控制“标题浮起/回落”的 transition duration
+       * - 也用于决定何时开始渲染面板列表内容（保证连续感）
+       * @default 200
+       */
+      panelGroupFocusMotionMs?: number;
     }>(),
     {
       theme: 'inherit',
       apiClient: undefined,
+      panelGroupFocusMotionMs: 200,
     }
   );
 
@@ -142,7 +162,8 @@
   const editorStore = useEditorStore();
   const timeRangeStore = useTimeRangeStore();
   const tooltipStore = useTooltipStore();
-  const { panelGroups, editingGroupId, viewMode, viewPanel, isBooting, bootStage, bootStats, isLargeDashboard } = storeToRefs(dashboardStore);
+  const { currentDashboard, panelGroups, editingGroupId, viewMode, viewPanel, isBooting, bootStage, bootStats, isLargeDashboard, isSaving, isSyncing, lastError } =
+    storeToRefs(dashboardStore);
   const fullscreenModalRef = ref<InstanceType<typeof PanelFullscreenModal>>();
   const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
   const rootEl = ref<HTMLElement | null>(null);
@@ -152,11 +173,17 @@
   const settingsEl = ref<HTMLElement | null>(null);
 
   const emptyText = computed(() => DASHBOARD_EMPTY_TEXT);
+  const settingsSubtitle = computed(() => currentDashboard.value?.name || '');
 
   const instanceId = computed(() => props.instanceId);
 
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
   const isEditingActive = computed(() => editingGroupId.value != null);
+  const panelGroupFocusMotionMs = computed(() => {
+    const raw = Number(props.panelGroupFocusMotionMs);
+    if (!Number.isFinite(raw)) return 200;
+    return Math.max(0, Math.floor(raw));
+  });
 
   // ---------------------------
   // Settings button position (per dashboard instance)
@@ -270,7 +297,7 @@
   // Pagination state (per group)
   // ---------------------------
   const {
-    pagedGroups,
+    getPagedGroupById,
     pageSizeOptions,
     setCurrentPage: baseSetCurrentPage,
     setPageSize: baseSetPageSize,
@@ -309,7 +336,7 @@
 
   const focusedPagedGroup = computed(() => {
     if (focusedGroupId.value == null) return null;
-    return pagedGroups.value.find((pg) => String(pg.group.id) === String(focusedGroupId.value)) ?? null;
+    return getPagedGroupById(focusedGroupId.value);
   });
 
   // 如果聚焦中的组被删除/替换，清理聚焦层状态（避免残留锁滚动状态）
@@ -451,6 +478,23 @@
     settingsOpen.value = !settingsOpen.value;
   };
 
+  const handleSettingsCancel = () => {
+    toolbarRef.value?.resetSidebarDraft?.();
+  };
+
+  const handleSettingsConfirm = () => {
+    toolbarRef.value?.applySidebarDraft?.();
+  };
+
+  watch(
+    () => settingsOpen.value,
+    async (open) => {
+      if (!open) return;
+      await nextTick();
+      toolbarRef.value?.resetSidebarDraft?.();
+    }
+  );
+
   const handleSettingsClick = () => {
     if (suppressSettingsClick.value) {
       suppressSettingsClick.value = false;
@@ -570,6 +614,43 @@
       focusedGroupId.value = null;
       focusOpen.value = false;
     }
+  });
+
+  // ---------------------------
+  // Optimistic sync feedback
+  // ---------------------------
+  // 自动同步失败时 store 会回滚到 syncedDashboard，这在 UI 上会表现为“刚改完又变回去了”。
+  // 这里提供 toast 提示，避免误解为 bug/丢数据。
+  const lastErrorToastAt = ref(0);
+  const lastErrorToastMessage = ref<string | null>(null);
+  const ERROR_TOAST_COOLDOWN_MS = 2_500;
+
+  watch(lastError, (err) => {
+    if (!err) return;
+    const now = Date.now();
+    const isCooldown = now - lastErrorToastAt.value < ERROR_TOAST_COOLDOWN_MS;
+    if (isCooldown && lastErrorToastMessage.value === err) return;
+    lastErrorToastAt.value = now;
+    lastErrorToastMessage.value = err;
+
+    if (bootStage.value === 'error') {
+      message.error(`仪表盘加载失败：${err}`);
+      return;
+    }
+
+    // 手动保存失败：明确告诉用户（上层可能也会捕获 error，但不一定 toast）
+    if (isSaving.value) {
+      message.error(`保存失败：${err}`);
+      return;
+    }
+
+    // 自动同步失败：提示已回滚到上一次成功版本
+    if (isSyncing.value) {
+      message.error(`同步失败，已回滚到上次保存版本：${err}`);
+      return;
+    }
+
+    message.error(err);
   });
 
   /**

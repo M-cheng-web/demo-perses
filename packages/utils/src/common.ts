@@ -55,7 +55,20 @@ export function deepClone<T>(obj: T): T {
  */
 export function deepCloneStructured<T>(value: T): T {
   const sc = (globalThis as any).structuredClone as undefined | ((v: any) => any);
-  if (typeof sc === 'function') return sc(value) as T;
+  if (typeof sc === 'function') {
+    try {
+      return sc(value) as T;
+    } catch (error) {
+      // structuredClone 对 Proxy/函数/部分宿主对象会抛 DataCloneError。
+      // 这里回退到 JSON clone，保证不因“不可克隆字段”直接中断主流程。
+      try {
+        return deepClone(value);
+      } catch {
+        // 若 JSON clone 也失败（例如循环引用/BigInt），则保留原始错误上下文
+        throw error;
+      }
+    }
+  }
   return deepClone(value);
 }
 

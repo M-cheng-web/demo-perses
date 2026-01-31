@@ -118,64 +118,71 @@ export function usePanelGroupPagination(panelGroups: () => PanelGroup[], options
   });
   watch(groupSummaryKey, clampGroupPages, { immediate: true });
 
-  const pagedGroups = computed<PagedPanelGroup[]>(() => {
-    const groups = panelGroups();
-    return groups.map((group) => {
-      const total = group.panels?.length ?? 0;
-      const pageSize = Math.max(1, getPageSize(group.id));
-      const pageCount = Math.max(1, Math.ceil(total / pageSize));
-      const currentPage = Math.min(getCurrentPage(group.id), pageCount);
+  const buildPagedGroup = (group: PanelGroup): PagedPanelGroup => {
+    const total = group.panels?.length ?? 0;
+    const pageSize = Math.max(1, getPageSize(group.id));
+    const pageCount = Math.max(1, Math.ceil(total / pageSize));
+    const currentPage = Math.min(getCurrentPage(group.id), pageCount);
 
-      const start = (currentPage - 1) * pageSize;
-      const end = start + pageSize;
-      const pagePanels = (group.panels ?? []).slice(start, end);
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pagePanels = (group.panels ?? []).slice(start, end);
 
-      const layoutById = new Map<string, PanelLayout>();
-      (group.layout ?? []).forEach((it) => layoutById.set(String(it.i), it));
+    // NOTE:
+    // - 这里不要在每次 reactive 变更时为所有 group 都建一次 layoutById（会导致打开某个组时卡顿）。
+    // - 调用方应只在“需要渲染/分页”的场景调用 buildPagedGroup（例如聚焦层当前打开的组）。
+    const layoutById = new Map<string, PanelLayout>();
+    (group.layout ?? []).forEach((it) => layoutById.set(String(it.i), it));
 
-      // Build the page layout strictly by panels array order (per requirement).
-      const rawLayout: PanelLayout[] = pagePanels.map((p, idx) => {
-        const existing = layoutById.get(String(p.id));
-        if (existing) return existing;
+    // Build the page layout strictly by panels array order (per requirement).
+    const rawLayout: PanelLayout[] = pagePanels.map((p, idx) => {
+      const existing = layoutById.get(String(p.id));
+      if (existing) return existing;
 
-        // Fallback: missing layout entry (should be rare). Place it at the end to avoid overlap.
-        return {
-          i: p.id,
-          x: 0,
-          y: idx * 8,
-          w: 24,
-          h: 8,
-          minW: 6,
-          minH: 4,
-        };
-      });
-
-      // Rebase Y so each page starts near the top (avoid huge blank space from original y).
-      let minY = Number.POSITIVE_INFINITY;
-      for (const it of rawLayout) minY = Math.min(minY, Number(it.y ?? 0));
-      const layoutBaseY = Number.isFinite(minY) ? Math.max(0, minY) : 0;
-
-      const pageLayout: PanelLayout[] = rawLayout.map((it) => ({
-        ...it,
-        y: Math.max(0, Number(it.y ?? 0) - layoutBaseY),
-      }));
-
+      // Fallback: missing layout entry (should be rare). Place it at the end to avoid overlap.
       return {
-        group,
-        total,
-        pageSize,
-        pageCount,
-        currentPage,
-        pagePanels,
-        pageLayout,
-        layoutBaseY,
-        pageKey: `${normalizeGroupId(group.id)}:${currentPage}:${pageSize}`,
+        i: p.id,
+        x: 0,
+        y: idx * 8,
+        w: 24,
+        h: 8,
+        minW: 6,
+        minH: 4,
       };
     });
-  });
+
+    // Rebase Y so each page starts near the top (avoid huge blank space from original y).
+    let minY = Number.POSITIVE_INFINITY;
+    for (const it of rawLayout) minY = Math.min(minY, Number(it.y ?? 0));
+    const layoutBaseY = Number.isFinite(minY) ? Math.max(0, minY) : 0;
+
+    const pageLayout: PanelLayout[] = rawLayout.map((it) => ({
+      ...it,
+      y: Math.max(0, Number(it.y ?? 0) - layoutBaseY),
+    }));
+
+    return {
+      group,
+      total,
+      pageSize,
+      pageCount,
+      currentPage,
+      pagePanels,
+      pageLayout,
+      layoutBaseY,
+      pageKey: `${normalizeGroupId(group.id)}:${currentPage}:${pageSize}`,
+    };
+  };
+
+  const getPagedGroupById = (groupId: PanelGroup['id']): PagedPanelGroup | null => {
+    const groups = panelGroups();
+    const g = groups.find((it) => normalizeGroupId(it.id) === normalizeGroupId(groupId));
+    return g ? buildPagedGroup(g) : null;
+  };
 
   return {
-    pagedGroups,
+    buildPagedGroup,
+    getPagedGroupById,
     pageSizeOptions,
     getCurrentPage,
     setCurrentPage,
@@ -183,4 +190,3 @@ export function usePanelGroupPagination(panelGroups: () => PanelGroup[], options
     setPageSize,
   };
 }
-

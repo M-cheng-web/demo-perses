@@ -11,38 +11,27 @@
   <div :class="[bem(), bem({ sidebar: variant === 'sidebar' })]">
     <template v-if="variant === 'sidebar'">
       <div :class="bem('sidebar')">
-        <div :class="bem('sidebar-title')">
-          <div :class="bem('sidebar-name')">{{ dashboardName }}</div>
-          <div :class="bem('sidebar-subtitle')">
-            <span>{{ isAllPanelsView ? '全部面板（只读）' : '分组视图' }}</span>
-          </div>
-        </div>
-
-        <Card size="small" title="视图" :class="bem('card')">
-          <Segmented v-model:value="viewModeModel" block size="small" :options="viewModeOptions" :disabled="isBooting" />
-          <div v-if="isAllPanelsView" :class="bem('hint')">提示：全部面板视图为只读，不支持拖拽/编辑。</div>
-        </Card>
-
-        <Card size="small" title="时间范围" :class="bem('card')">
-          <div :class="bem('field')">
-            <div :class="bem('label')">范围</div>
-            <TimeRangePicker v-model:value="selectedTimeRange" :disabled="isBooting" @change="handleTimeRangeChange" />
-          </div>
-        </Card>
-
-        <Card size="small" title="仪表盘" :class="bem('card')">
+        <Card size="small" title="操作" :class="bem('card')">
           <Flex gap="8" wrap>
-            <Button size="small" type="primary" :loading="isSaving" :disabled="isBooting" @click="handleSave">保存</Button>
+            <Button size="small" type="ghost" :disabled="isBooting" @click="handleCreateGroup">创建面板组</Button>
           </Flex>
-        </Card>
-
-        <Card size="small" title="JSON" :class="bem('card')">
+          <div :class="bem('divider')"></div>
           <Flex gap="8" wrap>
             <Button size="small" type="ghost" :icon="h(FileTextOutlined)" :disabled="isBooting" @click="handleViewJson">查看</Button>
             <Button size="small" type="ghost" :icon="h(UploadOutlined)" :disabled="isBooting" @click="handleImport">导入</Button>
             <Button size="small" type="ghost" :icon="h(DownloadOutlined)" :disabled="isBooting" @click="handleExport">导出</Button>
           </Flex>
           <div :class="bem('hint')">导入会先进行严格校验；非法 JSON 不会污染当前状态。</div>
+        </Card>
+
+        <Card size="small" title="视图与时间" :class="bem('card')">
+          <div :class="bem('hint')">更改将在点击底部“确定”后生效。</div>
+          <Segmented v-model:value="draftViewMode" block size="small" :options="viewModeOptions" :disabled="isBooting" />
+          <div v-if="isAllPanelsViewDraft" :class="bem('hint')">提示：全部面板视图为只读，不支持拖拽/编辑。</div>
+          <div :class="bem('field')">
+            <div :class="bem('label')">范围</div>
+            <TimeRangePicker v-model:value="draftTimeRange" :disabled="isBooting" />
+          </div>
         </Card>
       </div>
     </template>
@@ -129,6 +118,10 @@
     { variant: 'header' }
   );
 
+  const emit = defineEmits<{
+    (e: 'create-group'): void;
+  }>();
+
   const variant = computed(() => props.variant ?? 'header');
 
   const dashboardStore = useDashboardStore();
@@ -151,6 +144,25 @@
     },
     { immediate: true }
   );
+
+  // ---------------------------
+  // Sidebar draft (view & time)
+  // ---------------------------
+  const draftViewMode = ref<'grouped' | 'allPanels'>('grouped');
+  const draftTimeRange = ref('now-1h');
+
+  const isAllPanelsViewDraft = computed(() => draftViewMode.value === 'allPanels');
+
+  const resetSidebarDraft = () => {
+    draftViewMode.value = isAllPanelsView.value ? 'allPanels' : 'grouped';
+    draftTimeRange.value = selectedTimeRange.value || 'now-1h';
+  };
+
+  const applySidebarDraft = () => {
+    if (isBooting.value) return;
+    dashboardStore.setViewMode(draftViewMode.value === 'allPanels' ? 'allPanels' : 'grouped');
+    timeRangeStore.setTimeRange({ from: draftTimeRange.value, to: 'now' });
+  };
 
   // JSON 相关
   const jsonModalVisible = ref(false);
@@ -176,14 +188,6 @@
     { label: '全部面板', value: 'allPanels', disabled: false },
   ]);
 
-  const viewModeModel = computed({
-    get: () => (isAllPanelsView.value ? 'allPanels' : 'grouped'),
-    set: (value: string | number) => {
-      if (isBooting.value) return;
-      dashboardStore.setViewMode(String(value) === 'allPanels' ? 'allPanels' : 'grouped');
-    },
-  });
-
   const handleTogglePanelsView = () => {
     if (isBooting.value) return;
     dashboardStore.togglePanelsView();
@@ -197,6 +201,11 @@
     } catch (error) {
       console.error('保存失败', error);
     }
+  };
+
+  const handleCreateGroup = () => {
+    if (isBooting.value) return;
+    emit('create-group');
   };
 
   const handleMenuClick = ({ key }: { key: string | number }) => {
@@ -347,6 +356,9 @@
     // Drawer / UI
     openJsonModal,
     closeJsonModal,
+    // Sidebar draft controls
+    resetSidebarDraft,
+    applySidebarDraft,
     // Actions (mirror toolbar capabilities)
     handleSave,
     handleTogglePanelsView,
@@ -418,6 +430,14 @@
       padding: 24px;
       font-size: 13px;
       color: color-mix(in srgb, @text-color, transparent 40%);
+    }
+
+    &__divider {
+      width: 100%;
+      height: 1px;
+      background: var(--gf-color-border-muted);
+      margin: 2px 0;
+      align-self: stretch;
     }
 
     &--sidebar {

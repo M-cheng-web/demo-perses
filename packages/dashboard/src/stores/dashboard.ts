@@ -3,6 +3,7 @@
  */
 
 import { defineStore } from '@grafana-fast/store';
+import { toRaw } from 'vue';
 import type { Dashboard, PanelGroup, Panel, PanelLayout, ID } from '@grafana-fast/types';
 import { createPrefixedId, deepClone, deepCloneStructured } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
@@ -13,6 +14,14 @@ type DashboardViewMode = 'grouped' | 'allPanels';
 interface DashboardState {
   /** 当前 Dashboard */
   currentDashboard: Dashboard | null;
+  /**
+   * 最近一次“已被远端确认成功保存”的 Dashboard（用于乐观更新失败回滚）
+   *
+   * 语义：
+   * - currentDashboard：页面当前正在渲染/编辑的“乐观态”
+   * - syncedDashboard：最后一次与远端一致的“已确认态”
+   */
+  syncedDashboard: Dashboard | null;
   /**
    * 当前处于“可编辑”状态的面板组（仅允许一个）
    *
@@ -25,6 +34,8 @@ interface DashboardState {
   viewMode: DashboardViewMode;
   /** 是否正在保存 */
   isSaving: boolean;
+  /** 是否正在同步（乐观更新：后台自动保存） */
+  isSyncing: boolean;
   /** 最近一次 load/save 的错误（用于 UI 展示与宿主接管） */
   lastError: string | null;
   /** 全屏查看的面板 */
@@ -41,10 +52,20 @@ interface DashboardState {
     jsonBytes: number | null;
     source: 'remote' | 'import' | null;
   };
+
+  /** 是否存在“尚未同步到远端”的变更（仅用于 UI/调试提示） */
+  hasUnsyncedChanges: boolean;
+
+  // ---- Internal sync state (per store instance) ----
+  _syncTimerId: number | null;
+  _syncQueued: boolean;
+  _syncSeq: number;
+  _syncInFlightSeq: number | null;
 }
 
 const BIG_DASHBOARD_PANEL_THRESHOLD = 200;
 const BIG_DASHBOARD_JSON_BYTES_THRESHOLD = 2 * 1024 * 1024; // 2MB
+const AUTO_SYNC_DEBOUNCE_MS = 200;
 
 function yieldToPaint(): Promise<void> {
   // 用 setTimeout(0) 让浏览器有机会先渲染 loading mask，避免“先卡住再出现遮罩”
@@ -72,14 +93,21 @@ function countDashboardStats(d: Dashboard): { groupCount: number; panelCount: nu
 export const useDashboardStore = defineStore('dashboard', {
   state: (): DashboardState => ({
     currentDashboard: null,
+    syncedDashboard: null,
     editingGroupId: null,
     viewMode: 'grouped',
     isSaving: false,
+    isSyncing: false,
     lastError: null,
     viewPanelId: null,
     isBooting: false,
     bootStage: 'idle',
     bootStats: { startedAt: null, groupCount: null, panelCount: null, jsonBytes: null, source: null },
+    hasUnsyncedChanges: false,
+    _syncTimerId: null,
+    _syncQueued: false,
+    _syncSeq: 0,
+    _syncInFlightSeq: null,
   }),
 
   getters: {
@@ -141,7 +169,134 @@ export const useDashboardStore = defineStore('dashboard', {
   },
 
   actions: {
+    cancelPendingSync() {
+      if (this._syncTimerId != null) {
+        window.clearTimeout(this._syncTimerId);
+        this._syncTimerId = null;
+      }
+      this._syncQueued = false;
+      // invalidate any in-flight completion callbacks
+      this._syncSeq++;
+      this._syncInFlightSeq = null;
+      this.isSyncing = false;
+    },
+
+    markSyncedFromCurrent() {
+      if (!this.currentDashboard) {
+        this.syncedDashboard = null;
+        this.hasUnsyncedChanges = false;
+        return;
+      }
+      // Pinia/Vue state 读取到的是 reactive Proxy；structuredClone 无法克隆 Proxy。
+      // 这里先 toRaw 再 clone，避免 DataCloneError。
+      this.syncedDashboard = deepCloneStructured(toRaw(this.currentDashboard));
+      this.hasUnsyncedChanges = false;
+    },
+
+    resetToSynced() {
+      if (!this.syncedDashboard) return;
+      // 同上：先 toRaw 再 clone，避免 structuredClone 克隆 Proxy 报错
+      this.currentDashboard = deepCloneStructured(toRaw(this.syncedDashboard));
+      // 回滚后，清理可能指向“已失效对象”的 UI 状态，避免残留交互异常
+      this.editingGroupId = null;
+      this.viewPanelId = null;
+      this.hasUnsyncedChanges = false;
+    },
+
+    requestAutoSync() {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+
+      this.hasUnsyncedChanges = true;
+
+      if (this._syncTimerId != null) {
+        window.clearTimeout(this._syncTimerId);
+        this._syncTimerId = null;
+      }
+      this._syncTimerId = window.setTimeout(() => {
+        this._syncTimerId = null;
+        void this.syncDashboard({ mode: 'auto' });
+      }, AUTO_SYNC_DEBOUNCE_MS);
+    },
+
+    async waitForSyncIdle(timeoutMs = 8_000) {
+      const startedAt = Date.now();
+      while (this.isSyncing) {
+        if (Date.now() - startedAt > timeoutMs) {
+          throw new Error('Sync timeout');
+        }
+        await new Promise<void>((r) => window.setTimeout(r, 50));
+      }
+    },
+
+    async syncDashboard(options?: { mode?: 'auto' | 'manual' }) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+
+      const mode = options?.mode ?? 'auto';
+
+      // manual save: wait for background sync to finish, then persist the latest state
+      if (mode === 'manual' && this.isSyncing) {
+        await this.waitForSyncIdle();
+      }
+
+      // auto sync: if already syncing, mark queued and return
+      if (mode === 'auto' && this.isSyncing) {
+        this._syncQueued = true;
+        return;
+      }
+
+      if (this.isSyncing) {
+        // should be rare: re-entrancy/edge cases
+        this._syncQueued = true;
+        return;
+      }
+
+      const token = ++this._syncSeq;
+      this._syncInFlightSeq = token;
+      this.isSyncing = true;
+      if (mode === 'manual') this.isSaving = true;
+      this.lastError = null;
+
+      // Snapshot the payload so we persist a stable JSON even if UI keeps changing.
+      const payload = deepCloneStructured(toRaw(this.currentDashboard));
+      try {
+        const api = getPiniaApiClient(this.$pinia);
+        await api.dashboard.saveDashboard(payload);
+
+        // Ignore stale completion (e.g., load/import happened during the request)
+        if (this._syncInFlightSeq !== token) return;
+
+        this.syncedDashboard = deepCloneStructured(payload);
+        this.hasUnsyncedChanges = false;
+      } catch (error) {
+        if (this._syncInFlightSeq !== token) return;
+        const message = error instanceof Error ? error.message : 'Failed to save dashboard';
+        this.lastError = message;
+
+        // 乐观更新失败：回滚到“已确认态”，保证本地与远端一致
+        if (this.syncedDashboard) {
+          this.resetToSynced();
+        }
+
+        if (mode === 'manual') throw error;
+      } finally {
+        if (this._syncInFlightSeq !== token) return;
+        this._syncInFlightSeq = null;
+        this.isSyncing = false;
+        if (mode === 'manual') this.isSaving = false;
+
+        if (this._syncQueued) {
+          this._syncQueued = false;
+          // keep syncing the latest state (do not throw)
+          void this.syncDashboard({ mode: 'auto' });
+        }
+      }
+    },
+
     beginBoot(source: 'remote' | 'import', stage: BootStage) {
+      // boot 过程中不应继续自动同步（避免“老请求回写/回滚”干扰初始化）
+      this.cancelPendingSync();
       this.isBooting = true;
       this.bootStage = stage;
       this.lastError = null;
@@ -149,6 +304,7 @@ export const useDashboardStore = defineStore('dashboard', {
       // boot 中禁止编辑：锁住交互，避免“半初始化状态”产生不一致
       this.editingGroupId = null;
       this.viewMode = 'grouped';
+      this.hasUnsyncedChanges = false;
       this.bootStats = {
         startedAt: Date.now(),
         groupCount: null,
@@ -189,6 +345,7 @@ export const useDashboardStore = defineStore('dashboard', {
         // 大 JSON 下用 structuredClone 降低 stringify/parse 的主线程压力。
         const next = deepCloneStructured(dashboard);
         this.currentDashboard = next;
+        this.markSyncedFromCurrent();
         this.finishBoot();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load dashboard';
@@ -222,6 +379,18 @@ export const useDashboardStore = defineStore('dashboard', {
 
         const next = deepCloneStructured(dashboard);
         this.currentDashboard = next;
+        // Import/apply 属于“用户主动修改”：但此时还未被远端确认，不能直接覆盖 syncedDashboard，
+        // 否则后续保存失败将无法回滚到远端快照。
+        //
+        // 约定：
+        // - 若已存在 syncedDashboard（通常来自 loadDashboard）：保持不变，等待 save/sync 成功后再更新
+        // - 若不存在 syncedDashboard：退化为“以当前为已确认态”，避免后续回滚无源
+        if (!this.syncedDashboard) {
+          this.syncedDashboard = deepCloneStructured(next);
+          this.hasUnsyncedChanges = false;
+        } else {
+          this.hasUnsyncedChanges = true;
+        }
         this.finishBoot();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to apply dashboard json';
@@ -237,18 +406,18 @@ export const useDashboardStore = defineStore('dashboard', {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
 
-      this.isSaving = true;
-      this.lastError = null;
       try {
-        const api = getPiniaApiClient(this.$pinia);
-        await api.dashboard.saveDashboard(this.currentDashboard);
+        // manual save: flush pending debounce and persist immediately
+        if (this._syncTimerId != null) {
+          window.clearTimeout(this._syncTimerId);
+          this._syncTimerId = null;
+        }
+        await this.syncDashboard({ mode: 'manual' });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to save dashboard';
         this.lastError = message;
         console.error('Failed to save dashboard:', error);
         throw error;
-      } finally {
-        this.isSaving = false;
       }
     },
 
@@ -321,6 +490,7 @@ export const useDashboardStore = defineStore('dashboard', {
       };
 
       this.currentDashboard.panelGroups.push(newGroup);
+      this.requestAutoSync();
     },
 
     /**
@@ -347,6 +517,7 @@ export const useDashboardStore = defineStore('dashboard', {
           };
         }
       }
+      this.requestAutoSync();
     },
 
     /**
@@ -357,6 +528,7 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isBooting) return;
 
       this.currentDashboard.panelGroups = this.currentDashboard.panelGroups.filter((g) => g.id !== id);
+      this.requestAutoSync();
     },
 
     /**
@@ -380,6 +552,7 @@ export const useDashboardStore = defineStore('dashboard', {
           group.order = index;
         });
       }
+      this.requestAutoSync();
     },
 
     /**
@@ -422,6 +595,7 @@ export const useDashboardStore = defineStore('dashboard', {
         g.order = index;
       });
       this.currentDashboard.panelGroups = next;
+      this.requestAutoSync();
     },
 
     /**
@@ -435,6 +609,7 @@ export const useDashboardStore = defineStore('dashboard', {
       if (group) {
         group.layout = layout;
       }
+      this.requestAutoSync();
     },
 
     /**
@@ -459,6 +634,7 @@ export const useDashboardStore = defineStore('dashboard', {
         if (!existing) continue;
         Object.assign(existing, next);
       }
+      this.requestAutoSync();
     },
 
     /**
@@ -485,6 +661,7 @@ export const useDashboardStore = defineStore('dashboard', {
         minW: 6,
         minH: 4,
       });
+      this.requestAutoSync();
     },
 
     /**
@@ -512,6 +689,7 @@ export const useDashboardStore = defineStore('dashboard', {
           };
         }
       }
+      this.requestAutoSync();
     },
 
     /**
@@ -519,6 +697,7 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     deletePanel(groupId: ID, panelId: ID) {
       if (!this.currentDashboard) return;
+      if (this.isBooting) return;
 
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (!group) return;
@@ -528,6 +707,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
       // 删除布局
       group.layout = group.layout.filter((l) => l.i !== panelId);
+      this.requestAutoSync();
     },
 
     /**
@@ -535,6 +715,7 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     duplicatePanel(groupId: ID, panelId: ID) {
       if (!this.currentDashboard) return;
+      if (this.isBooting) return;
 
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (!group) return;

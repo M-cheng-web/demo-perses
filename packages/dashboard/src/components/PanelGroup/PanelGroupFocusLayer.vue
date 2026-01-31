@@ -20,6 +20,7 @@
 
     <div :class="bem('surface')">
       <Panel
+        :class="bem('group-panel')"
         :title="title"
         :description="description"
         size="large"
@@ -46,8 +47,9 @@
           </div>
         </template>
 
-        <div v-if="showContent && pagedGroup" :class="bem('body')">
+        <div :class="bem('body')">
           <GridLayout
+            v-if="showContent && pagedGroup"
             :key="pagedGroup.pageKey"
             :group-id="pagedGroup.group.id"
             :panels="pagedGroup.pagePanels"
@@ -101,6 +103,14 @@
     pagerThreshold: number;
     /** boot 状态 */
     isBooting: boolean;
+    /**
+     * 聚焦层 header 动画持续时间（ms）
+     *
+     * 约定：
+     * - header 上移动/下落的动画时长应与该值一致
+     * - 面板列表内容会在 opening 动画结束后再渲染（保持连续感）
+     */
+    motionMs?: number;
     /** 分页控制（由外部 composable 持有 state） */
     setCurrentPage: (groupId: PanelGroup['id'], page: number) => void;
     setPageSize: (groupId: PanelGroup['id'], pageSize: number) => void;
@@ -137,6 +147,7 @@
   let closeFallbackTimer: number | null = null;
 
   const NEAR_TOP_EPS_PX = 2;
+  const DEFAULT_MOTION_MS = 200;
 
   const clampStartY = (value: number): number => {
     const n = Number(value);
@@ -162,8 +173,15 @@
     return y;
   });
 
+  const motionMs = computed(() => {
+    const raw = Number(props.motionMs);
+    if (!Number.isFinite(raw)) return DEFAULT_MOTION_MS;
+    return Math.max(0, Math.floor(raw));
+  });
+
   const rootStyle = computed(() => ({
     '--dp-focus-start-y': `${startOffsetY.value}px`,
+    '--dp-focus-motion': `${motionMs.value}ms`,
   }));
 
   const handlePanelHeaderToggle = () => {
@@ -207,7 +225,6 @@
   };
 
   const openSequence = async () => {
-    if (!props.pagedGroup) return;
     const seq = ++motionSeq;
     clearFallbackTimers();
     isClosing.value = false;
@@ -222,19 +239,27 @@
 
     isOpen.value = false;
     await nextTick();
-    // 下一帧再切换到 open，触发 CSS transition（避免 mount 即到达终态导致无动画）
+    // 关键：需要确保“初始状态（未 open）”先 paint 一次，再切换到 open，
+    // 否则浏览器会直接以终态渲染，导致没有过渡效果。
     requestAnimationFrame(() => {
       if (seq !== motionSeq) return;
       if (!props.open) return;
-      isOpen.value = true;
-    });
+      // 下一帧再切换到 open，确保上一帧已 paint 起始 transform
+      requestAnimationFrame(() => {
+        if (seq !== motionSeq) return;
+        if (!props.open) return;
+        if (isClosing.value) return;
+        isOpen.value = true;
 
-    // 兜底：如果 transform 没有触发 transitionend（例如 startOffsetY=0 / reduced motion），仍需展示内容
-    openFallbackTimer = window.setTimeout(() => {
-      if (seq !== motionSeq) return;
-      if (!props.open) return;
-      showContent.value = true;
-    }, 260);
+        // 使用固定时长控制内容渲染：保持“标题浮起 -> 动画结束 -> 展开内容”的连续感
+        openFallbackTimer = window.setTimeout(() => {
+          if (seq !== motionSeq) return;
+          if (!props.open) return;
+          if (isClosing.value) return;
+          showContent.value = true;
+        }, motionMs.value);
+      });
+    });
   };
 
   const closeSequence = () => {
@@ -242,6 +267,7 @@
     const seq = ++motionSeq;
     clearFallbackTimers();
     isClosing.value = true;
+    // 关闭时内容直接消失：只保留 header 下落动画（更符合直觉）
     showContent.value = false;
     if (startOffsetY.value <= 0) {
       isActive.value = false;
@@ -259,7 +285,7 @@
       isActive.value = false;
       isClosing.value = false;
       emit('after-close');
-    }, 280);
+    }, motionMs.value + 20);
   };
 
   const handleHeaderTransitionEnd = (event: TransitionEvent) => {
@@ -268,6 +294,8 @@
     const target = event.target as HTMLElement | null;
     if (!target) return;
     if (!target.classList.contains('gf-panel__header')) return;
+    // 只处理“聚焦层主 Panel”的 header（避免子面板 header 干扰时序）
+    if (!target.closest('.dp-panel-group-focus-layer__group-panel')) return;
 
     if (isClosing.value) {
       clearFallbackTimers();
@@ -282,6 +310,8 @@
       window.clearTimeout(openFallbackTimer);
       openFallbackTimer = null;
     }
+    // opening end: 内容由 timer 控制；这里仅作为兜底（例如某些浏览器 timer 被 clamp）
+    if (showContent.value) return;
     showContent.value = true;
   };
 
@@ -350,10 +380,10 @@
       border-bottom: 1px solid var(--gf-color-border-muted);
     }
 
-    // 只移动 header（营造“标题浮起”的连续感），内容在动画完成后再展示
-    :deep(.gf-panel__header) {
+    // 只移动“聚焦层主 Panel”的 header（营造“标题浮起”的连续感）
+    :deep(.dp-panel-group-focus-layer__group-panel > .gf-panel__header) {
       transform: translateY(var(--dp-focus-start-y, 0px));
-      transition: transform var(--gf-motion-normal) var(--gf-easing);
+      transition: transform var(--dp-focus-motion, var(--gf-motion-normal)) var(--gf-easing);
     }
 
     // 让 body 成为 column，以便 pagination 固定在底部
@@ -386,7 +416,7 @@
     }
 
     &.is-open {
-      :deep(.gf-panel__header) {
+      :deep(.dp-panel-group-focus-layer__group-panel > .gf-panel__header) {
         transform: translateY(0px);
       }
     }

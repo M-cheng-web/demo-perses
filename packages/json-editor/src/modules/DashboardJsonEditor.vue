@@ -38,14 +38,7 @@
       @update:model-value="setDraft"
     />
 
-    <Alert
-      v-if="isTooLargeToEdit && !readOnly"
-      type="warning"
-      show-icon
-      message="内容较大，已切换为只读"
-      description="为避免卡顿，当前仅支持查看/复制；如需修改建议在外部编辑后重新导入。"
-      style="margin-top: 10px"
-    />
+    <Alert v-if="isTooLargeToEdit" type="warning" show-icon message="内容较大，编辑能力已禁用" :description="tooLargeHint" style="margin-top: 10px" />
 
     <Alert
       v-if="!diagnostics.json.ok && diagnostics.json.error"
@@ -214,6 +207,15 @@
 
   const effectiveReadOnly = computed(() => Boolean(props.readOnly) || isTooLargeToEdit.value);
 
+  const tooLargeHint = computed(() => {
+    const limit = maxEditableCharsLimit.value;
+    const len = (draftText.value ?? '').length;
+    if (!limit || limit <= 0) {
+      return `当前内容长度约 ${len} 字符。为避免卡顿，仅支持查看/复制；如需修改建议在外部编辑后重新导入。`;
+    }
+    return `当前内容约 ${len} 字符，超过可编辑上限 ${limit}（maxEditableChars）。为避免卡顿，仅支持查看/复制；如需修改建议在外部编辑后重新导入。`;
+  });
+
   const textAreaRef = ref<null | {
     scrollToLine?: (line: number) => void;
   }>(null);
@@ -308,11 +310,20 @@
     if (!d.looksLikeDashboard) return '不是 Dashboard';
     if (validating.value) return '校验中...';
     if (validatorErrors.value.length > 0) return '校验未通过';
-    if (isTooLargeToEdit.value && !props.readOnly) return '只读（内容过大）';
+    if (isTooLargeToEdit.value) return '只读（内容过大）';
+    if (props.readOnly) return '只读';
     return '可应用';
   });
 
-  const tagVariant = computed(() => (canSyncToOuter.value ? 'color' : 'neutral'));
+  const tagVariant = computed(() => {
+    const d = diagnostics.value;
+    if (!d.json.ok) return 'color';
+    if (!d.looksLikeDashboard) return 'color';
+    if (validating.value) return 'color';
+    if (validatorErrors.value.length > 0) return 'color';
+    if (effectiveReadOnly.value) return 'neutral';
+    return canSyncToOuter.value ? 'color' : 'neutral';
+  });
   const tagColor = computed(() => {
     const d = diagnostics.value;
     if (!d.json.ok) return 'var(--gf-color-danger)';

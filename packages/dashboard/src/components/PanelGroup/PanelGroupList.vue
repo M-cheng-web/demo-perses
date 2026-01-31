@@ -6,7 +6,7 @@
   - list view 始终只展示标题（不在列表内展开渲染 panels）
   - 通过 vue-grid-layout-v3 支持“随时拖拽排序”（不依赖全局编辑模式）
   - 点击整行（header）打开聚焦层（FocusLayer），不改变底层滚动位置
-  - 右侧提供：添加面板组 / 编辑面板组 / 删除面板组
+  - 右侧提供：编辑面板组 / 删除面板组（创建面板组移动到全局设置）
   - 打开态的高频操作放到 FocusLayer header
 -->
 <template>
@@ -52,15 +52,12 @@
             @title-click="() => handleTitleClick(group.id)"
           >
             <template #right>
-              <Tooltip title="添加面板组">
-                <Button type="text" size="small" :icon="h(PlusOutlined)" @click="handleCreateGroup" />
-              </Tooltip>
               <Tooltip title="编辑面板组">
                 <Button type="text" size="small" :icon="h(EditOutlined)" @click="() => handleEditGroup(group)" />
               </Tooltip>
               <Popconfirm title="确定要删除这个面板组吗？" ok-text="确定" cancel-text="取消" @confirm="() => handleDeleteGroup(group.id)">
                 <Tooltip title="删除面板组">
-                  <Button type="text" size="small" danger :icon="h(DeleteOutlined)" />
+                  <Button type="text" size="small" :icon="h(DeleteOutlined)" :class="bem('delete-btn')" />
                 </Tooltip>
               </Popconfirm>
             </template>
@@ -77,7 +74,7 @@
   import type { PanelGroup } from '@grafana-fast/types';
   import { storeToRefs } from '@grafana-fast/store';
   import { Button, Panel, Popconfirm, Tooltip } from '@grafana-fast/component';
-  import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons-vue';
+  import { DeleteOutlined, EditOutlined } from '@ant-design/icons-vue';
   import { GridLayout, GridItem } from 'vue-grid-layout-v3';
   import { createNamespace } from '/#/utils';
   import { useDashboardStore } from '/#/stores';
@@ -93,7 +90,6 @@
 
   const emit = defineEmits<{
     (e: 'edit-group', group: PanelGroup): void;
-    (e: 'create-group'): void;
     (e: 'open-group', payload: { groupId: PanelGroup['id']; headerOffsetY: number }): void;
   }>();
 
@@ -173,11 +169,6 @@
     emit('edit-group', group);
   };
 
-  const handleCreateGroup = () => {
-    if (isBooting.value) return;
-    emit('create-group');
-  };
-
   const handleCollapsedChange = (groupId: PanelGroup['id'], collapsed: boolean) => {
     if (isBooting.value) return;
     // list view 中始终折叠：点击 header 触发 “展开请求” 时打开 focus layer
@@ -244,6 +235,20 @@
 
     :deep(.dp-panel-group-list__group .gf-panel__right .gf-button:hover) {
       background-color: var(--gf-color-fill);
+    }
+
+    &__delete-btn {
+      // 删除按钮：只要红色图标，不要背景（hover/active 也保持透明）
+      --gf-btn-color: var(--gf-color-danger);
+      --gf-btn-bg: transparent;
+      --gf-btn-bg-hover: transparent;
+      --gf-btn-bg-active: transparent;
+      --gf-btn-shadow-hover: none;
+    }
+
+    // 删除按钮 hover: 保持透明（覆盖统一 hover 填充）
+    :deep(.dp-panel-group-list__group .gf-panel__right .dp-panel-group-list__delete-btn.gf-button:hover) {
+      background-color: transparent;
     }
   }
 </style>
