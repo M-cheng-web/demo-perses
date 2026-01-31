@@ -12,6 +12,9 @@
       <div v-if="fatalError" :class="bem('error')">
         <Alert type="error" show-icon :message="fatalError" />
       </div>
+      <div v-else-if="panelRuntimeError" :class="bem('error')">
+        <Alert type="error" show-icon message="该面板渲染失败" :description="panelRuntimeError" />
+      </div>
       <div v-else-if="!hasVisibleQueries" :class="bem('empty')">
         <Empty description="未配置查询" />
       </div>
@@ -34,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, onErrorCaptured, ref, watch } from 'vue';
   import { Alert, Loading, Empty } from '@grafana-fast/component';
   import type { Panel } from '@grafana-fast/types';
   import { createNamespace } from '/#/utils';
@@ -63,6 +66,23 @@
   const hasVisibleQueries = computed(() => (props.panel.queries ?? []).some((q) => !q.hide));
 
   const fatalError = computed(() => error.value);
+  const panelRuntimeError = ref<string | null>(null);
+
+  // 当 panel 变化时（切换类型/重建），清理上一次渲染错误，允许重试。
+  watch(
+    () => `${String(props.panel.id)}::${String(props.panel.type)}`,
+    () => {
+      panelRuntimeError.value = null;
+    }
+  );
+
+  // 捕获子组件（面板插件）渲染错误，避免整页白屏。
+  onErrorCaptured((err) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    panelRuntimeError.value = `panelId=${String(props.panel.id)}, type=${String(props.panel.type)}：${msg}`;
+    // 阻止错误继续向上抛，避免影响整个 dashboard。
+    return false;
+  });
 
   const queryErrorText = computed(() => {
     const errors = displayResults.value

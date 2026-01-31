@@ -6,9 +6,15 @@
  */
 
 import { onUnmounted, type Ref } from 'vue';
-import type { EChartsType } from 'echarts/core';
+import type { ComputedRef } from 'vue';
+import type { ResizeOpts } from 'echarts/core';
 import { subscribeWindowResize } from '/#/runtime/windowEvents';
 import { debounceCancellable } from '@grafana-fast/utils';
+
+export interface ResizableChartInstance {
+  isDisposed: () => boolean;
+  resize: (opts?: ResizeOpts) => void;
+}
 
 /**
  * 使 ECharts 图表自动响应容器大小变化
@@ -16,7 +22,7 @@ import { debounceCancellable } from '@grafana-fast/utils';
  * @param chartRef - 图表容器元素的 ref
  */
 export function useChartResize(
-  chartInstance: Ref<EChartsType | null | { isDisposed: () => boolean; resize: (opts?: any) => void }>,
+  chartInstance: Ref<ResizableChartInstance | null> | ComputedRef<ResizableChartInstance | null>,
   chartRef: Ref<HTMLElement | undefined>
 ) {
   let resizeObserver: ResizeObserver | null = null;

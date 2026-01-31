@@ -21,6 +21,8 @@
     width="800px"
     :maskClosable="false"
     :footer="null"
+    :lock-scroll="lockScrollEnabled"
+    :lock-scroll-el="lockScrollEl"
     :class="bem()"
     @cancel="handleClose"
   >
@@ -86,7 +88,7 @@
   import { ref, computed, watch, onMounted } from 'vue';
   import { SearchOutlined, FilterOutlined } from '@ant-design/icons-vue';
   import { message } from '@grafana-fast/component';
-  import { useApiClient } from '/#/runtime/useInjected';
+  import { useApiClient, useDashboardRuntime } from '/#/runtime/useInjected';
   import { createNamespace } from '/#/utils';
   import type { TableProps, TableColumnType } from '@grafana-fast/component';
 
@@ -118,6 +120,9 @@
   const currentPage = ref(1);
   const pageSize = ref(20);
   const api = useApiClient();
+  const runtime = useDashboardRuntime();
+  const lockScrollEl = computed(() => runtime.scrollEl?.value ?? runtime.rootEl?.value ?? null);
+  const lockScrollEnabled = computed(() => lockScrollEl.value != null);
 
   // 表格列定义
   const columns: TableColumnType[] = [
@@ -281,11 +286,11 @@
   };
 
   // 处理表格变化（分页、排序、过滤）
-  const handleTableChange: TableProps['onChange'] = (pagination: any) => {
-    if (pagination) {
-      currentPage.value = pagination.current || 1;
-      pageSize.value = pagination.pageSize || 20;
-    }
+  const handleTableChange: TableProps['onChange'] = (pagination: unknown) => {
+    const p = pagination as { current?: unknown; pageSize?: unknown } | undefined;
+    if (!p) return;
+    currentPage.value = typeof p.current === 'number' && Number.isFinite(p.current) ? p.current : 1;
+    pageSize.value = typeof p.pageSize === 'number' && Number.isFinite(p.pageSize) ? p.pageSize : 20;
   };
 
   // 处理选择指标

@@ -15,6 +15,14 @@ interface DashboardState {
   /** 当前 Dashboard */
   currentDashboard: Dashboard | null;
   /**
+   * 全局只读模式（宿主能力开关）
+   *
+   * 语义：
+   * - true：禁止任何会修改 Dashboard JSON 的操作（UI 会禁用入口，store 层也会兜底 guard）
+   * - false：允许编辑（仍受 boot/viewMode/editingGroupId 等约束）
+   */
+  isReadOnly: boolean;
+  /**
    * 最近一次“已被远端确认成功保存”的 Dashboard（用于乐观更新失败回滚）
    *
    * 语义：
@@ -93,6 +101,7 @@ function countDashboardStats(d: Dashboard): { groupCount: number; panelCount: nu
 export const useDashboardStore = defineStore('dashboard', {
   state: (): DashboardState => ({
     currentDashboard: null,
+    isReadOnly: false,
     syncedDashboard: null,
     editingGroupId: null,
     viewMode: 'grouped',
@@ -163,12 +172,23 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     isGroupEditing: (state) => (groupId: ID): boolean => {
       if (state.isBooting) return false;
+      if (state.isReadOnly) return false;
       if (state.viewMode === 'allPanels') return false;
       return state.editingGroupId != null && String(state.editingGroupId) === String(groupId);
     },
   },
 
   actions: {
+    setReadOnly(readOnly: boolean) {
+      const next = !!readOnly;
+      this.isReadOnly = next;
+      if (next) {
+        // 进入只读：退出编辑态 + 停止后台自动同步（避免残留副作用）
+        this.editingGroupId = null;
+        this.cancelPendingSync();
+      }
+    },
+
     cancelPendingSync() {
       if (this._syncTimerId != null) {
         window.clearTimeout(this._syncTimerId);
@@ -206,6 +226,7 @@ export const useDashboardStore = defineStore('dashboard', {
     requestAutoSync() {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       this.hasUnsyncedChanges = true;
 
@@ -232,6 +253,11 @@ export const useDashboardStore = defineStore('dashboard', {
     async syncDashboard(options?: { mode?: 'auto' | 'manual' }) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) {
+        // auto sync: silent no-op; manual save: explicit error
+        if (options?.mode === 'manual') throw new Error('Dashboard is read-only');
+        return;
+      }
 
       const mode = options?.mode ?? 'auto';
 
@@ -363,6 +389,7 @@ export const useDashboardStore = defineStore('dashboard', {
      * - dashboard 对象已由编辑器严格校验通过
      */
     async applyDashboardFromJson(dashboard: Dashboard, rawJsonText?: string) {
+      if (this.isReadOnly) throw new Error('Dashboard is read-only');
       this.beginBoot('import', 'parsing');
       try {
         if (typeof rawJsonText === 'string' && rawJsonText.trim()) {
@@ -405,6 +432,7 @@ export const useDashboardStore = defineStore('dashboard', {
     async saveDashboard() {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) throw new Error('Dashboard is read-only');
 
       try {
         // manual save: flush pending debounce and persist immediately
@@ -430,6 +458,10 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     setEditingGroup(groupId: ID | null) {
       if (this.isBooting) return;
+      if (this.isReadOnly) {
+        this.editingGroupId = null;
+        return;
+      }
       if (this.viewMode === 'allPanels') {
         this.editingGroupId = null;
         return;
@@ -444,6 +476,7 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     toggleGroupEditing(groupId: ID) {
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
       if (this.viewMode === 'allPanels') return;
       const key = String(groupId);
       if (this.editingGroupId != null && String(this.editingGroupId) === key) {
@@ -478,6 +511,7 @@ export const useDashboardStore = defineStore('dashboard', {
     addPanelGroup(group: Partial<PanelGroup>) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       const newGroup: PanelGroup = {
         id: createPrefixedId('pg'),
@@ -499,6 +533,7 @@ export const useDashboardStore = defineStore('dashboard', {
     updatePanelGroup(id: ID, updates: Partial<PanelGroup>) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       const index = this.currentDashboard.panelGroups.findIndex((g) => g.id === id);
       if (index !== -1) {
@@ -526,6 +561,7 @@ export const useDashboardStore = defineStore('dashboard', {
     deletePanelGroup(id: ID) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       this.currentDashboard.panelGroups = this.currentDashboard.panelGroups.filter((g) => g.id !== id);
       this.requestAutoSync();
@@ -537,6 +573,7 @@ export const useDashboardStore = defineStore('dashboard', {
     movePanelGroup(fromIndex: number, toIndex: number) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       const groups = this.currentDashboard.panelGroups;
       if (fromIndex < 0 || fromIndex >= groups.length || toIndex < 0 || toIndex >= groups.length) {
@@ -566,6 +603,7 @@ export const useDashboardStore = defineStore('dashboard', {
     reorderPanelGroups(nextOrder: ID[]) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       const groups = this.currentDashboard.panelGroups ?? [];
       if (!Array.isArray(groups) || groups.length === 0) return;
@@ -604,6 +642,7 @@ export const useDashboardStore = defineStore('dashboard', {
     updatePanelGroupLayout(groupId: ID, layout: PanelLayout[]) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (group) {
@@ -622,6 +661,7 @@ export const useDashboardStore = defineStore('dashboard', {
     patchPanelGroupLayoutItems(groupId: ID, patch: PanelLayout[]) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (!group || !Array.isArray(group.layout) || group.layout.length === 0) return;
@@ -643,6 +683,7 @@ export const useDashboardStore = defineStore('dashboard', {
     addPanel(groupId: ID, panel: Panel) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (!group) return;
@@ -670,6 +711,7 @@ export const useDashboardStore = defineStore('dashboard', {
     updatePanel(groupId: ID, panelId: ID, updates: Partial<Panel>) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (!group) return;
@@ -698,6 +740,7 @@ export const useDashboardStore = defineStore('dashboard', {
     deletePanel(groupId: ID, panelId: ID) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (!group) return;
@@ -716,6 +759,7 @@ export const useDashboardStore = defineStore('dashboard', {
     duplicatePanel(groupId: ID, panelId: ID) {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
+      if (this.isReadOnly) return;
 
       const group = this.currentDashboard.panelGroups.find((g) => g.id === groupId);
       if (!group) return;

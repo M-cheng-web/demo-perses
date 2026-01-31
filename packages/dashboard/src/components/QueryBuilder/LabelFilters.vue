@@ -135,9 +135,9 @@
 
   const addFilter = () => {
     filters.value.push({
-      label: undefined as any,
+      label: '',
       op: '=',
-      value: undefined as any,
+      value: '',
     });
     handleFilterChange();
   };
@@ -154,7 +154,7 @@
     if (!filter) return;
 
     // 清空值
-    filter.value = undefined as any;
+    filter.value = '';
 
     if (filter.label) {
       await loadLabelValues(index, filter.label);

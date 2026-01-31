@@ -1,4 +1,6 @@
 declare module '@grafana-fast/component' {
+  import type { ComputedRef, InjectionKey } from 'vue';
+
   const defaultExport: any;
   export default defaultExport;
 
@@ -56,4 +58,14 @@ declare module '@grafana-fast/component' {
 
   export type TableProps = any;
   export type TableColumnType = any;
+
+  export type GfTheme = 'blue' | 'light' | 'dark' | 'inherit';
+  export type GfColorScheme = 'light' | 'dark' | undefined;
+  export interface GfThemeContext {
+    theme: ComputedRef<GfTheme>;
+    colorScheme: ComputedRef<GfColorScheme>;
+    themeClass: ComputedRef<string | undefined>;
+  }
+
+  export const GF_THEME_CONTEXT_KEY: InjectionKey<GfThemeContext>;
 }

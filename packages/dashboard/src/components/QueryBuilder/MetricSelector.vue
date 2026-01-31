@@ -22,7 +22,7 @@
         placeholder="选择指标"
         :class="bem('select')"
         :options="metricOptions"
-        @change="(value: any) => handleChange(value as string)"
+        @change="handleSelectChange"
         :filter-option="filterOption"
       />
       <Button :class="bem('btn')" @click="openMetricsModal">
@@ -74,8 +74,14 @@
     emit('update:modelValue', value);
   };
 
-  const filterOption = (input: string, option: any) => {
-    return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0;
+  const handleSelectChange = (value: unknown) => {
+    const next = typeof value === 'string' ? value : String(value ?? '');
+    handleChange(next);
+  };
+
+  const filterOption = (input: string, option: unknown) => {
+    const label = String((option as { label?: unknown } | null)?.label ?? '');
+    return label.toLowerCase().includes(input.toLowerCase());
   };
 
   const loadMetrics = async (search?: string) => {

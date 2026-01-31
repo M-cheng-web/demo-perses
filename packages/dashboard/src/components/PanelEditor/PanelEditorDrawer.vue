@@ -1,6 +1,15 @@
 <!-- 面板编辑器 -->
 <template>
-  <Drawer v-model:open="isOpen" title="面板编辑器" :width="900" :maskClosable="false" :class="bem('drawer')" @close="handleClose">
+  <Drawer
+    v-model:open="isOpen"
+    title="面板编辑器"
+    :width="900"
+    :maskClosable="false"
+    :lock-scroll="lockScrollEnabled"
+    :lock-scroll-el="lockScrollEl"
+    :class="bem('drawer')"
+    @close="handleClose"
+  >
     <div :class="bem()">
       <Form :model="formData" layout="vertical">
         <!-- 基础信息 -->
@@ -95,7 +104,7 @@
     <template #footer>
       <Flex :gap="12" justify="end">
         <Button @click="handleClose">取消</Button>
-        <Button type="primary" @click="handleSave">保存</Button>
+        <Button type="primary" :disabled="isReadOnly" @click="handleSave">保存</Button>
       </Flex>
     </template>
   </Drawer>
@@ -107,6 +116,7 @@
   import { Drawer, Form, FormItem, Select, Input, Textarea, Row, Col, Flex, message } from '@grafana-fast/component';
   import { Button, Tabs, TabPane, Empty } from '@grafana-fast/component';
   import { useDashboardStore, useEditorStore } from '/#/stores';
+  import { useDashboardRuntime } from '/#/runtime/useInjected';
   import { createPrefixedId, debounceCancellable, deepClone, createNamespace } from '/#/utils';
   import { PanelType } from '/#/enums/panelType';
   import { getBuiltInPanelRegistry } from '/#/runtime/panels';
@@ -137,7 +147,11 @@
   const panelRegistry = getBuiltInPanelRegistry();
 
   const { isDrawerOpen, editingPanel, editingMode, targetGroupId, originalPanelId } = storeToRefs(editorStore);
-  const { currentDashboard } = storeToRefs(dashboardStore);
+  const { currentDashboard, isReadOnly } = storeToRefs(dashboardStore);
+
+  const runtime = useDashboardRuntime();
+  const lockScrollEl = computed(() => runtime.scrollEl?.value ?? runtime.rootEl?.value ?? null);
+  const lockScrollEnabled = computed(() => lockScrollEl.value != null);
 
   const isOpen = ref(false);
   const activeTab = ref('query'); // 默认选中数据查询
@@ -342,8 +356,22 @@
     activeTab.value = 'query';
   };
 
+  // 进入只读时强制关闭编辑器，避免出现“编辑 UI 仍然存在但无法落盘”的困惑
+  watch(
+    () => isReadOnly.value,
+    (ro) => {
+      if (!ro) return;
+      if (isDrawerOpen.value) handleClose();
+    },
+    { immediate: true }
+  );
+
   // 保存
   const handleSave = () => {
+    if (isReadOnly.value) {
+      message.warning('当前为只读模式，无法保存面板');
+      return;
+    }
     // 验证
     if (!formData.name) {
       message.error('请输入面板名称');

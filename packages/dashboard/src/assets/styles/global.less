@@ -1,15 +1,18 @@
 @import "./variables.less";
 @import "./mixins.less";
 
-* {
+.dp-dashboard,
+.dp-dashboard * {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
-html,
-body,
-#app {
+.dp-dashboard * {
+  margin: 0;
+  padding: 0;
+  .custom-scrollbar();
+}
+
+.dp-dashboard {
   width: 100%;
   height: 100%;
   font-family: @font-family;
@@ -21,13 +24,8 @@ body,
   -moz-osx-font-smoothing: grayscale;
 }
 
-// 滚动条样式
-* {
-  .custom-scrollbar();
-}
-
 // 链接样式
-a {
+.dp-dashboard a {
   color: @primary-color;
   text-decoration: none;
   transition: color 0.3s;
@@ -38,11 +36,11 @@ a {
 }
 
 // 按钮基础样式重置
-button {
+.dp-dashboard button {
   font-family: inherit;
 }
 
-button:not([class^='gf-']):not([class*=' gf-']) {
+.dp-dashboard button:not([class^='gf-']):not([class*=' gf-']) {
   outline: none;
   border: none;
   background: none;
@@ -50,35 +48,35 @@ button:not([class^='gf-']):not([class*=' gf-']) {
 }
 
 // 输入框基础样式
-input,
-textarea {
+.dp-dashboard input,
+.dp-dashboard textarea {
   font-family: inherit;
   font-size: inherit;
   outline: none;
 }
 
 // 过渡动画
-.fade-enter-active,
-.fade-leave-active {
+.dp-dashboard .fade-enter-active,
+.dp-dashboard .fade-leave-active {
   transition: opacity 0.3s;
 }
 
-.fade-enter-from,
-.fade-leave-to {
+.dp-dashboard .fade-enter-from,
+.dp-dashboard .fade-leave-to {
   opacity: 0;
 }
 
-.slide-enter-active,
-.slide-leave-active {
+.dp-dashboard .slide-enter-active,
+.dp-dashboard .slide-leave-active {
   transition: transform 0.3s, opacity 0.3s;
 }
 
-.slide-enter-from {
+.dp-dashboard .slide-enter-from {
   transform: translateX(100%);
   opacity: 0;
 }
 
-.slide-leave-to {
+.dp-dashboard .slide-leave-to {
   transform: translateX(-100%);
   opacity: 0;
 }

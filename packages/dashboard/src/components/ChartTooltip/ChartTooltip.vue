@@ -8,7 +8,13 @@
 -->
 <template>
   <Teleport to="body">
-    <div v-if="isVisible" ref="tooltipRef" :class="[bem(), bem({ pinned: isPinned })]" :style="tooltipStyle">
+    <div
+      v-if="isVisible"
+      ref="tooltipRef"
+      :class="[bem(), bem({ pinned: isPinned }), themeClass]"
+      :data-gf-theme="colorScheme"
+      :style="tooltipStyle"
+    >
       <!-- Tooltip 头部 -->
       <div :class="bem('header')">
         <span :class="bem('time')">{{ formattedTime }}</span>
@@ -37,16 +43,21 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted } from 'vue';
-  import { Button } from '@grafana-fast/component';
+  import { ref, computed, inject, onBeforeUnmount, watch } from 'vue';
+  import { Button, GF_THEME_CONTEXT_KEY } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import { PushpinFilled } from '@ant-design/icons-vue';
   import type { ECharts } from 'echarts';
   import { formatValue, formatTime, createNamespace } from '/#/utils';
-  import type { TimeSeriesData } from '@grafana-fast/types';
+  import type { FormatOptions, TimeSeriesData } from '@grafana-fast/types';
   import { useTooltipStore } from '/#/stores';
+  import { useDashboardRuntime } from '/#/runtime/useInjected';
+  import { subscribeEvent } from '/#/runtime/windowEvents';
 
   const [_, bem] = createNamespace('chart-tooltip');
+  const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
+  const themeClass = computed(() => themeContext?.themeClass.value);
+  const colorScheme = computed(() => themeContext?.colorScheme.value);
 
   interface NearbySeriesItem {
     id: string;
@@ -62,7 +73,7 @@
     chartInstance: ECharts | null;
     chartContainerRef: HTMLElement | undefined;
     data: TimeSeriesData[];
-    formatOptions?: any;
+    formatOptions?: FormatOptions;
     enablePinning?: boolean;
     maxVisibleSeries?: number;
     /** 用于判断系列是否被选中显示的函数 */
@@ -82,6 +93,7 @@
 
   // Tooltip Store
   const tooltipStore = useTooltipStore();
+  const runtime = useDashboardRuntime();
   const { pinnedChartId } = storeToRefs(tooltipStore);
 
   // State
@@ -335,14 +347,23 @@
     emit('unpin');
   };
 
-  // Lifecycle
-  onMounted(() => {
-    // 移除全局 mousemove 监听
-    window.addEventListener('scroll', handleScroll, true); // 使用捕获阶段监听所有滚动
-  });
+  // Lifecycle: 监听 dashboard 自身的滚动容器（避免污染宿主 window 事件）
+  let unsubscribeScroll: null | (() => void) = null;
 
-  onUnmounted(() => {
-    window.removeEventListener('scroll', handleScroll, true);
+  watch(
+    () => runtime.scrollEl?.value ?? null,
+    (el) => {
+      unsubscribeScroll?.();
+      unsubscribeScroll = null;
+      if (!el) return;
+      unsubscribeScroll = subscribeEvent(el, 'scroll', handleScroll, { capture: true, passive: true });
+    },
+    { immediate: true }
+  );
+
+  onBeforeUnmount(() => {
+    unsubscribeScroll?.();
+    unsubscribeScroll = null;
 
     // 清理待处理的动画帧
     if (rafId !== null) {

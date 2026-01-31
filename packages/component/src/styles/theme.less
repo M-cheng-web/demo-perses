@@ -1,86 +1,35 @@
 @import './tokens.less';
 
-html,
-body {
-  height: 100%;
-}
+/**
+ * Theme base (embed-safe)
+ *
+ * IMPORTANT:
+ * - This file must be safe to import in embedded/widget scenarios.
+ * - Do NOT style `html`/`body`/`:root` here (avoid polluting host apps).
+ * - Only style namespaced classes or `[data-gf-theme]` containers.
+ */
 
-:root {
+:where(.gf-theme-blue, .gf-theme-dark, [data-gf-theme]) {
   font-family: var(--gf-font-family);
   font-size: var(--gf-font-size-md);
   line-height: var(--gf-line-height);
   color: var(--gf-text);
+}
+
+:where(.gf-theme-blue, [data-gf-theme='light']) {
+  color-scheme: light;
   background-color: var(--gf-color-bg);
-  color-scheme: light;
+  color: var(--gf-text);
 }
 
-.gf-theme-blue,
-[data-gf-theme='light'] {
-  color-scheme: light;
-}
-
-.gf-theme-dark,
-[data-gf-theme='dark'] {
+:where(.gf-theme-dark, [data-gf-theme='dark']) {
   color-scheme: dark;
   background-color: var(--gf-color-bg);
   color: var(--gf-text);
 }
 
-* {
+:where(.gf-theme-blue, .gf-theme-dark, [data-gf-theme]) * {
   box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  background-color: var(--gf-color-bg);
-  background-image: radial-gradient(1200px circle at 12% -18%, var(--gf-bg-glow-1), transparent 58%),
-    radial-gradient(900px circle at 90% -12%, var(--gf-bg-glow-2), transparent 55%),
-    radial-gradient(800px circle at 50% 115%, var(--gf-bg-glow-3), transparent 60%),
-    linear-gradient(180deg, var(--gf-bg-haze-top), rgba(255, 255, 255, 0));
-  background-attachment: fixed;
-  color: var(--gf-text);
-  font-size: var(--gf-font-size-md);
-  font-feature-settings: 'cv02', 'cv03', 'cv04';
-  position: relative;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: linear-gradient(to right, var(--gf-bg-grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--gf-bg-grid-line) 1px, transparent 1px);
-  background-size: var(--gf-bg-grid-size);
-  background-position: 0 0;
-  opacity: 0.42;
-  pointer-events: none;
-  z-index: 0;
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0) 70%);
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0) 70%);
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: radial-gradient(1300px circle at 10% -15%, var(--gf-bg-glow-1), transparent 66%),
-    radial-gradient(760px circle at 86% -8%, var(--gf-bg-glow-2), transparent 62%),
-    radial-gradient(1100px circle at 50% 118%, var(--gf-bg-glow-3), transparent 74%);
-  opacity: 0.52;
-  pointer-events: none;
-  z-index: 0;
-}
-
-body > * {
-  position: relative;
-  z-index: 1;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  body::after {
-    animation: gf-ambient-breathe 9s var(--gf-easing) infinite;
-  }
 }
 
 @keyframes gf-ambient-breathe {
@@ -95,13 +44,70 @@ body > * {
   }
 }
 
-a {
+:where(.gf-theme-blue, .gf-theme-dark, [data-gf-theme], .gf-app) a {
   color: var(--gf-primary-strong);
   text-decoration: none;
   transition: color var(--gf-motion-normal) var(--gf-easing);
 
   &:hover {
     color: var(--gf-color-primary-hover);
+  }
+}
+
+/**
+ * Optional "app shell" styling
+ *
+ * Use this class when you DO want a full-page-ish background (demo site),
+ * without forcing styles onto the host application's `body`.
+ */
+.gf-app {
+  min-height: 100vh;
+  background-color: var(--gf-color-bg);
+  background-image: radial-gradient(1200px circle at 12% -18%, var(--gf-bg-glow-1), transparent 58%),
+    radial-gradient(900px circle at 90% -12%, var(--gf-bg-glow-2), transparent 55%),
+    radial-gradient(800px circle at 50% 115%, var(--gf-bg-glow-3), transparent 60%),
+    linear-gradient(180deg, var(--gf-bg-haze-top), rgba(255, 255, 255, 0));
+  background-attachment: fixed;
+  color: var(--gf-text);
+  font-feature-settings: 'cv02', 'cv03', 'cv04';
+  position: relative;
+}
+
+.gf-app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(to right, var(--gf-bg-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--gf-bg-grid-line) 1px, transparent 1px);
+  background-size: var(--gf-bg-grid-size);
+  background-position: 0 0;
+  opacity: 0.42;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0) 70%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0) 70%);
+}
+
+.gf-app::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(1300px circle at 10% -15%, var(--gf-bg-glow-1), transparent 66%),
+    radial-gradient(760px circle at 86% -8%, var(--gf-bg-glow-2), transparent 62%),
+    radial-gradient(1100px circle at 50% 118%, var(--gf-bg-glow-3), transparent 74%);
+  opacity: 0.52;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gf-app > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gf-app::after {
+    animation: gf-ambient-breathe 9s var(--gf-easing) infinite;
   }
 }
 

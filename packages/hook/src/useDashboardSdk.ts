@@ -13,7 +13,6 @@ import { createPinia, getActivePinia, setActivePinia } from '@grafana-fast/store
 import type { Pinia } from '@grafana-fast/store';
 import type { Dashboard, Panel, PanelGroup, PanelLayout, ID, TimeRange } from '@grafana-fast/types';
 import {
-  initDashboardTheme,
   getStoredThemePreference,
   setDashboardThemePreference,
   type DashboardTheme,
@@ -100,6 +99,38 @@ export interface DashboardSdkOptions {
   onBeforeUnmount?: () => void;
   /** 异常回调 */
   onError?: (error: unknown) => void;
+
+  /**
+   * 主题偏好（light/dark/system）
+   *
+   * 说明：
+   * - 默认：'system'
+   * - 该偏好只影响当前 dashboard 实例的渲染（通过 DashboardView 的 `theme` prop）
+   * - 默认不会修改宿主的 `documentElement.dataset`（避免嵌入式场景污染宿主全局）
+   */
+  themePreference?: DashboardThemePreference;
+  /**
+   * 是否持久化主题偏好到 localStorage
+   * 默认：false（嵌入式场景下不建议默认写宿主存储）
+   */
+  persistThemePreference?: boolean;
+  /**
+   * 是否把主题应用到全局 document（documentElement.dataset）
+   *
+   * 说明：
+   * - 只有当你明确要“全站接管主题”时才建议开启
+   * - 默认：false
+   */
+  applyThemeToDocument?: boolean;
+
+  /**
+   * 全局只读模式（能力开关）
+   *
+   * 语义：
+   * - true：禁用所有会修改 Dashboard JSON 的操作（创建/删除/拖拽/导入/应用/保存/编辑面板等）
+   * - false：允许编辑（仍受 viewMode / 当前打开组等规则约束）
+   */
+  readOnly?: boolean;
 }
 
 export interface DashboardSdkState {
@@ -117,6 +148,8 @@ export interface DashboardSdkState {
   mousePosition: MousePosition | null;
   /** 当前主题（light/dark） */
   theme: DashboardTheme;
+  /** 全局只读状态（与 DashboardView/store 一致） */
+  readOnly: boolean;
 }
 
 export interface DashboardSdkApiConfig {
@@ -176,6 +209,9 @@ export interface DashboardSdkActions {
   toggleTheme: () => DashboardTheme;
   /** 获取当前实际主题（light/dark） */
   getTheme: () => DashboardTheme;
+
+  /** 设置全局只读模式（能力开关） */
+  setReadOnly: (readOnly: boolean) => void;
 
   /** 打开 Dashboard 右侧“设置/工具栏”侧边栏 */
   openSettings: () => void;
@@ -286,8 +322,14 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const dashboardApp = ref<App<Element> | null>(null);
   const themePreference = ref<DashboardThemePreference>('system');
   const theme = ref<DashboardTheme>('light');
+  const themePersist = options.persistThemePreference === true;
+  const themeApplyToDocument = options.applyThemeToDocument === true;
+  const readOnly = ref(options.readOnly === true);
   const instanceId = options.instanceId ?? `sdk-${resolvedApiClient.kind}-${createPrefixedId('dash')}`;
   const dashboardViewRef = ref<any>(null);
+
+  // Ensure initial state is applied before first render.
+  dashboardStore.setReadOnly(readOnly.value);
 
   const DashboardSdkRoot = defineComponent({
     name: 'DashboardSdkRoot',
@@ -296,6 +338,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
         h(DashboardView, {
           ref: dashboardViewRef,
           theme: theme.value,
+          readOnly: readOnly.value,
           apiClient: resolvedApiClient,
           instanceId,
         });
@@ -381,8 +424,10 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
 
     try {
       // 尽可能早初始化主题：保证第一次渲染前 token/变量已就绪
-      themePreference.value = getStoredThemePreference() ?? 'system';
-      theme.value = initDashboardTheme({ defaultPreference: themePreference.value });
+      const storedPreference = themePersist ? getStoredThemePreference() : null;
+      themePreference.value = options.themePreference ?? storedPreference ?? 'system';
+      // 默认不修改宿主 document；如需全站主题接管，可通过 applyThemeToDocument 开启
+      theme.value = setDashboardThemePreference(themePreference.value, { persist: themePersist, apply: themeApplyToDocument });
 
       mountDashboard();
       if (options.autoLoad !== false && !dashboardStore.currentDashboard) {
@@ -424,6 +469,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     tooltip: tooltipStore.currentTooltipData,
     mousePosition: tooltipStore.currentPosition,
     theme: theme.value,
+    readOnly: dashboardStore.isReadOnly,
   }));
 
   const actions: DashboardSdkActions = {
@@ -471,19 +517,24 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     getTheme: () => theme.value,
     setTheme: (next: DashboardTheme) => {
       themePreference.value = next;
-      theme.value = setDashboardThemePreference(next);
+      theme.value = setDashboardThemePreference(next, { persist: themePersist, apply: themeApplyToDocument });
       return theme.value;
     },
     setThemePreference: (preference: DashboardThemePreference) => {
       themePreference.value = preference;
-      theme.value = setDashboardThemePreference(preference);
+      theme.value = setDashboardThemePreference(preference, { persist: themePersist, apply: themeApplyToDocument });
       return theme.value;
     },
     toggleTheme: () => {
       const next = theme.value === 'dark' ? 'light' : 'dark';
       themePreference.value = next;
-      theme.value = setDashboardThemePreference(next);
+      theme.value = setDashboardThemePreference(next, { persist: themePersist, apply: themeApplyToDocument });
       return theme.value;
+    },
+
+    setReadOnly: (ro: boolean) => {
+      readOnly.value = !!ro;
+      dashboardStore.setReadOnly(readOnly.value);
     },
 
     openSettings: () => dashboardViewRef.value?.openSettings?.(),

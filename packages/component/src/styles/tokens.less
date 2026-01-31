@@ -4,7 +4,6 @@
 // - Semantic tokens:   --gf-color-*, --gf-font-*, --gf-space-*, --gf-radius-*, --gf-shadow-*, --gf-z-*
 // - Legacy aliases:    --gf-primary, --gf-surface... (kept for backward compatibility)
 
-:root,
 .gf-theme-blue,
 [data-gf-theme='light'] {
   /* Typography */
@@ -175,8 +174,7 @@
 }
 
 .gf-theme-dark,
-[data-gf-theme='dark'],
-:root[data-gf-theme='dark'] {
+[data-gf-theme='dark'] {
   /* Typography */
   --gf-font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --gf-font-size-xs: 11px;

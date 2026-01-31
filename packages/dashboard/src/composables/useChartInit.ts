@@ -13,9 +13,9 @@ export function useChartInit<T = ECharts>(options: {
   /** 依赖项列表，只有当所有依赖都有效时才会初始化 */
   dependencies: {
     /** 依赖项的值 */
-    value: Ref<any>;
+    value: Ref<unknown>;
     /** 判断依赖项是否有效的函数 */
-    isValid: (val: any) => boolean;
+    isValid: (val: unknown) => boolean;
   }[];
   /** ECharts 实例创建后的配置回调（可选） */
   onChartCreated?: (chartInstance: T) => void;

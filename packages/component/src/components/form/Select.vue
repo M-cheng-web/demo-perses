@@ -84,7 +84,7 @@
 
     <Teleport to="body">
       <transition name="fade">
-        <div v-if="open" :class="bem('dropdown')" :style="dropdownStyle" ref="dropdownRef">
+        <div v-if="open" :class="[bem('dropdown'), themeClass]" :data-gf-theme="colorScheme" :style="dropdownStyle" ref="dropdownRef">
           <div v-if="showSearch && !isMultiple" :class="bem('dropdown-search')" @click.stop>
             <input
               ref="searchInputRef"
@@ -120,6 +120,7 @@
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { CheckOutlined, CloseOutlined, DownOutlined } from '@ant-design/icons-vue';
   import { createNamespace, debounceCancellable } from '../../utils';
+  import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import Tag from '../base/Tag.vue';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
@@ -211,6 +212,9 @@
   }>();
 
   const [_, bem] = createNamespace('select');
+  const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
+  const themeClass = computed(() => themeContext?.themeClass.value);
+  const colorScheme = computed(() => themeContext?.colorScheme.value);
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
 
   const rootRef = ref<HTMLElement>();

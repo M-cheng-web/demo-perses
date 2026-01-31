@@ -179,15 +179,15 @@
   import { PlusOutlined, CloseOutlined, InfoCircleOutlined, HolderOutlined, ArrowRightOutlined } from '@ant-design/icons-vue';
   import LabelParamEditor from './LabelParamEditor.vue';
   import { promQueryModeller } from '@grafana-fast/utils';
-  import type { QueryBuilderOperation } from '@grafana-fast/utils';
+  import type { PromVisualQuery, QueryBuilderOperation, QueryBuilderOperationParamDef, QueryBuilderOperationParamValue } from '@grafana-fast/utils';
   import { createNamespace, debounceCancellable } from '/#/utils';
 
   const [_, bem] = createNamespace('operations-list');
 
   interface Props {
     modelValue: QueryBuilderOperation[];
-    currentQuery?: any;
-    datasource?: any;
+    currentQuery: PromVisualQuery;
+    datasource?: unknown;
     highlightedIndex?: number | null;
   }
 
@@ -196,14 +196,14 @@
     /**
      * 当需要更新整份 query 对象时触发（例如 binaryQueries 发生变化）
      */
-    (e: 'query-update', query: any): void;
+    (e: 'query-update', query: PromVisualQuery): void;
   }
 
   const props = defineProps<Props>();
   const emit = defineEmits<Emits>();
 
   const operations = ref<QueryBuilderOperation[]>([...props.modelValue]);
-  const selectedNewOperation = ref<any[]>([]);
+  const selectedNewOperation = ref<Array<string | number>>([]);
   const flashingOperations = ref<Set<number>>(new Set());
   const draggedIndex = ref<number | null>(null);
 
@@ -258,14 +258,15 @@
   );
 
   // 添加操作
-  const handleAddOperation = (value: any[]) => {
+  const handleAddOperation = (value: Array<string | number>) => {
     if (!value || value.length < 2) return;
 
-    const operationId = value[1];
+    const operationId = String(value[1] ?? '').trim();
+    if (!operationId) return;
     const opDef = promQueryModeller.getOperationDef(operationId);
     if (!opDef) return;
 
-    const newQuery = {
+    const newQuery: PromVisualQuery = {
       ...props.currentQuery,
       operations: operations.value,
     };
@@ -283,7 +284,7 @@
 
     // 对于二元查询等特殊操作，需要通知父组件整个查询对象已更新
     // 参考 Grafana OperationList.tsx 第 69 行
-    if (updatedQuery.binaryQueries !== props.currentQuery?.binaryQueries) {
+    if (updatedQuery.binaryQueries !== props.currentQuery.binaryQueries) {
       emit('update:modelValue', operations.value);
       emit('query-update', updatedQuery);
     } else {
@@ -303,17 +304,18 @@
   // 如需更换，请删除该操作并重新添加。
 
   // 参数变化处理
-  const handleParamChange = (opIndex: number, paramIndex: number, value: any) => {
+  const handleParamChange = (opIndex: number, paramIndex: number, value: QueryBuilderOperationParamValue | undefined) => {
     const operation = operations.value[opIndex];
     if (!operation) return;
 
-    operation.params[paramIndex] = value;
+    const nextValue: QueryBuilderOperationParamValue = value ?? '';
+    operation.params[paramIndex] = nextValue;
 
     const opDef = promQueryModeller.getOperationDef(operation.id);
     const paramDef = opDef?.params?.[Math.min((opDef?.params?.length ?? 1) - 1, paramIndex)];
 
     if (paramDef?.editor === 'LabelParamEditor' && paramDef.restParam) {
-      const normalized = String(value ?? '').trim();
+      const normalized = String(nextValue ?? '').trim();
       if (!normalized) {
         operation.params.splice(paramIndex, 1);
       }
@@ -418,7 +420,7 @@
   };
 
   // 获取可见的参数（完全匹配 Grafana 逻辑）
-  const getVisibleParams = (operation: QueryBuilderOperation): any[] => {
+  const getVisibleParams = (operation: QueryBuilderOperation): QueryBuilderOperationParamDef[] => {
     const opDef = promQueryModeller.getOperationDef(operation.id);
     if (!opDef || !opDef.params || opDef.params.length === 0) return [];
 
@@ -431,28 +433,36 @@
 
     // Grafana 逻辑：直接遍历 operation.params，对每个参数值返回对应的参数定义
     // 如果是 restParam，多个参数值使用同一个参数定义（通过 Math.min 实现）
-    const params: any[] = [];
+    const params: QueryBuilderOperationParamDef[] = [];
     for (let i = 0; i < operation.params.length; i++) {
       const paramDef = opDef.params[Math.min(opDef.params.length - 1, i)];
-      params.push(paramDef);
+      if (paramDef) params.push(paramDef);
     }
 
     return params;
   };
 
   // 格式化参数选项
-  const formatParamOptions = (options: any[]): any[] => {
+  const formatParamOptions = (options: QueryBuilderOperationParamDef['options']): Array<{ label: string; value: string | number }> => {
     if (!options || options.length === 0) return [];
 
-    return options.map((opt) => {
-      if (typeof opt === 'object' && opt !== null) {
-        return opt; // 已经是 { label, value } 格式
-      }
-      return {
-        label: String(opt),
-        value: opt,
-      };
-    });
+    return options
+      .map((opt) => {
+        if (typeof opt === 'object' && opt !== null) {
+          const maybe = opt as { label?: unknown; value?: unknown };
+          const value = maybe.value;
+          if (typeof value === 'string' || typeof value === 'number') {
+            const label = String(maybe.label ?? value);
+            return { label, value };
+          }
+          return null;
+        }
+        if (typeof opt === 'string' || typeof opt === 'number') {
+          return { label: String(opt), value: opt };
+        }
+        return null;
+      })
+      .filter((x): x is { label: string; value: string | number } => x != null);
   };
 
   // 判断是否应该闪烁

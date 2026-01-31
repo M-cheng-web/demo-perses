@@ -41,7 +41,7 @@
 
   interface Props {
     query: PromVisualQuery;
-    datasource?: any;
+    datasource?: unknown;
     showExplain?: boolean;
   }
 

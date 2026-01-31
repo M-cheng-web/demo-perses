@@ -4,16 +4,23 @@
  */
 
 import { defineStore } from '@grafana-fast/store';
-import type { TimeSeriesData } from '@grafana-fast/types';
+import type { FormatOptions, TimeSeriesData } from '@grafana-fast/types';
+import type { ECharts } from 'echarts';
 
 /**
  * 图表注册信息
  */
 export interface ChartRegistration {
   chartId: string;
-  chartInstance: any; // 使用 any 以兼容不同版本的 ECharts 类型
+  /**
+   * ECharts 实例（可能为空：图表尚未 ready 或已被销毁）
+   *
+   * 说明：
+   * - 这里仅存储实例引用，避免在 store 内做任何 echarts 业务操作
+   */
+  chartInstance: ECharts | null;
   data: TimeSeriesData[];
-  formatOptions?: any;
+  formatOptions?: FormatOptions;
   isSeriesVisible?: (seriesId: string) => boolean;
   containerElement?: HTMLElement;
 }
@@ -37,7 +44,7 @@ export interface TooltipSeriesItem {
   color: string;
   value: number | string;
   formattedValue: string;
-  [key: string]: any; // 支持自定义字段
+  [key: string]: unknown; // 支持自定义字段（避免 any 扩散）
 }
 
 /**
@@ -49,7 +56,7 @@ export interface TooltipData {
   /** 系列数据列表 */
   series: TooltipSeriesItem[];
   /** 原始数据（可选，用于自定义渲染） */
-  raw?: any;
+  raw?: unknown;
 }
 
 interface TooltipState {

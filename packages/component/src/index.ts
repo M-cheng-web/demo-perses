@@ -68,6 +68,7 @@ export { default as List } from './components/data/List.vue';
 export { message } from './message';
 export * from './types';
 export * from './composables/usePagination';
+export * from './context/theme';
 export { gfAntdTokensCssVar } from './theme/antdTokens';
 export { default as gfAntdTokensCssVarJson } from './theme/antdTokens.cssvar.json';
 

@@ -1,7 +1,7 @@
 <!-- 组件说明：抽屉侧边栏，支持左右方向与遮罩关闭 -->
 <template>
   <Teleport to="body">
-    <div v-if="isRendered" :class="bem()" v-bind="$attrs">
+    <div v-if="isRendered" :class="[bem(), themeClass]" :data-gf-theme="colorScheme" v-bind="$attrs">
       <div v-if="props.mask" :class="[bem('mask'), { 'is-visible': isMaskVisible }]" @click="handleMaskClick"></div>
       <div :class="[bem('panel'), bem('panel', props.placement), { 'is-visible': isPanelVisible }]" :style="panelStyle">
         <div :class="bem('header', { center: props.titleAlign === 'center' })">
@@ -33,9 +33,10 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-  import { createNamespace, createTimeout, lockBodyScroll, unlockBodyScroll, type TimeoutHandle } from '../../utils';
+  import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+  import { createNamespace, createTimeout, lockScroll, unlockScroll, type TimeoutHandle } from '../../utils';
   import Button from '../base/Button.vue';
+  import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
 
   defineOptions({ name: 'GfDrawer', inheritAttrs: false });
 
@@ -61,6 +62,14 @@
       maskClosable?: boolean;
       /** 是否显示底部区域 */
       footer?: boolean;
+      /** 打开时是否锁定滚动（默认 true） */
+      lockScroll?: boolean;
+      /**
+       * 自定义滚动锁目标（用于嵌入式场景）
+       * - 不传：锁 body
+       * - 传入元素：锁定该元素的滚动（overflow: hidden）
+       */
+      lockScrollEl?: HTMLElement | null;
       /** 是否显示默认“取消/确定”按钮 */
       confirmable?: boolean;
       /** 确认按钮文案 */
@@ -87,6 +96,8 @@
       mask: true,
       maskClosable: true,
       footer: true,
+      lockScroll: true,
+      lockScrollEl: null,
       confirmable: false,
       okText: '确定',
       cancelText: '取消',
@@ -106,6 +117,9 @@
   }>();
 
   const [_, bem] = createNamespace('drawer');
+  const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
+  const themeClass = computed(() => themeContext?.themeClass.value);
+  const colorScheme = computed(() => themeContext?.colorScheme.value);
 
   const isRendered = ref(false);
   const isMaskVisible = ref(false);
@@ -113,6 +127,8 @@
   const timeouts: TimeoutHandle[] = [];
   let rafId: number | null = null;
   let isFirstSync = true;
+  const lockedScrollEl = ref<HTMLElement | null>(null);
+  const isScrollLocked = ref(false);
 
   const clearTimers = () => {
     if (rafId != null) {
@@ -178,7 +194,12 @@
     () => props.open,
     async (val) => {
       if (val) {
-        lockBodyScroll();
+        if (props.lockScroll !== false) {
+          const el = props.lockScrollEl ?? null;
+          lockedScrollEl.value = el;
+          lockScroll(el);
+          isScrollLocked.value = true;
+        }
         if (isFirstSync) {
           isRendered.value = true;
           isMaskVisible.value = !!props.mask;
@@ -187,7 +208,13 @@
           await openWithAnimation();
         }
       } else {
-        unlockBodyScroll();
+        if (props.lockScroll !== false) {
+          if (isScrollLocked.value) {
+            unlockScroll(lockedScrollEl.value ?? null);
+            lockedScrollEl.value = null;
+            isScrollLocked.value = false;
+          }
+        }
         if (isFirstSync) {
           isRendered.value = false;
           isMaskVisible.value = false;
@@ -201,8 +228,42 @@
     { immediate: true }
   );
 
+  watch(
+    () => props.lockScrollEl,
+    (nextEl) => {
+      if (!props.open) return;
+      if (props.lockScroll === false) return;
+      // switch lock target while staying open
+      if (isScrollLocked.value) unlockScroll(lockedScrollEl.value ?? null);
+      const el = nextEl ?? null;
+      lockedScrollEl.value = el;
+      lockScroll(el);
+      isScrollLocked.value = true;
+    }
+  );
+
+  watch(
+    () => props.lockScroll,
+    (enabled) => {
+      if (!props.open) return;
+      if (enabled === false) {
+        if (isScrollLocked.value) {
+          unlockScroll(lockedScrollEl.value ?? null);
+          lockedScrollEl.value = null;
+          isScrollLocked.value = false;
+        }
+        return;
+      }
+      if (isScrollLocked.value) return;
+      const el = props.lockScrollEl ?? null;
+      lockedScrollEl.value = el;
+      lockScroll(el);
+      isScrollLocked.value = true;
+    }
+  );
+
   onBeforeUnmount(() => {
-    if (props.open) unlockBodyScroll();
+    if (props.open && props.lockScroll !== false && isScrollLocked.value) unlockScroll(lockedScrollEl.value ?? null);
     clearTimers();
   });
 

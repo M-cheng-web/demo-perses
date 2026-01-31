@@ -123,10 +123,11 @@
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
-  const { editingGroupId, viewMode, isBooting } = storeToRefs(dashboardStore);
+  const { editingGroupId, viewMode, isBooting, isReadOnly } = storeToRefs(dashboardStore);
 
   const canEditLayout = computed(() => {
     if (isBooting.value) return false;
+    if (isReadOnly.value) return false;
     if (viewMode.value === 'allPanels') return false;
     if (editingGroupId.value == null) return false;
     return String(editingGroupId.value) === String(props.groupId);
@@ -243,6 +244,7 @@
   };
 
   const handleAddPanel = () => {
+    if (!canEditLayout.value) return;
     editorStore.openCreateEditor(props.groupId);
   };
 

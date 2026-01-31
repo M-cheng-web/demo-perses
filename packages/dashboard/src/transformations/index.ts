@@ -16,7 +16,7 @@
  */
 import type { PanelTransformation, QueryResult, TimeSeriesData } from '@grafana-fast/types';
 
-export type TransformationApply = (results: QueryResult[], options?: Record<string, any>) => QueryResult[];
+export type TransformationApply = (results: QueryResult[], options?: Record<string, unknown>) => QueryResult[];
 
 export interface TransformationDefinition {
   /** transformation 唯一 id（写入 panel.transformations[].id） */
@@ -32,7 +32,7 @@ function cloneResults(results: QueryResult[]): QueryResult[] {
   }));
 }
 
-function renameLegend(results: QueryResult[], options: Record<string, any> = {}): QueryResult[] {
+function renameLegend(results: QueryResult[], options: Record<string, unknown> = {}): QueryResult[] {
   const { pattern, replacement } = options;
   if (!pattern) return results;
   const re = new RegExp(String(pattern), 'g');
@@ -47,8 +47,11 @@ function renameLegend(results: QueryResult[], options: Record<string, any> = {})
   return next;
 }
 
-function filterSeriesByLabel(results: QueryResult[], options: Record<string, any> = {}): QueryResult[] {
-  const { label, op = '=', value } = options;
+function filterSeriesByLabel(results: QueryResult[], options: Record<string, unknown> = {}): QueryResult[] {
+  const label = typeof (options as { label?: unknown }).label === 'string' ? ((options as { label?: unknown }).label as string) : '';
+  const op = typeof (options as { op?: unknown }).op === 'string' ? ((options as { op?: unknown }).op as string) : '=';
+  const value = (options as { value?: unknown }).value;
+
   if (!label) return results;
   const next = cloneResults(results);
 
@@ -70,7 +73,7 @@ function filterSeriesByLabel(results: QueryResult[], options: Record<string, any
   return next;
 }
 
-function reduceSeries(results: QueryResult[], options: Record<string, any> = {}): QueryResult[] {
+function reduceSeries(results: QueryResult[], options: Record<string, unknown> = {}): QueryResult[] {
   const { reducer = 'last' } = options;
   const next = cloneResults(results);
 

@@ -37,6 +37,7 @@
           <div v-if="group && !isBooting" :class="bem('actions')">
             <Button type="text" size="small" :icon="h(ReloadOutlined)" :disabled="isBooting" @click="handleRefresh">刷新</Button>
             <Button
+              v-if="canEditGroup"
               size="small"
               :type="isGroupEditing ? 'ghost' : 'primary'"
               :disabled="isBooting"
@@ -82,6 +83,7 @@
 <script setup lang="ts">
   import { computed, h, nextTick, onBeforeUnmount, ref, watch } from 'vue';
   import { Button, Pagination, Panel, message } from '@grafana-fast/component';
+  import { storeToRefs } from '@grafana-fast/store';
   import { ReloadOutlined } from '@ant-design/icons-vue';
   import type { PanelGroup } from '@grafana-fast/types';
   import type { PagedPanelGroup } from '/#/composables/usePanelGroupPagination';
@@ -131,12 +133,15 @@
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
   const timeRangeStore = useTimeRangeStore();
+  const { isReadOnly } = storeToRefs(dashboardStore);
 
   const isGroupEditing = computed(() => {
     const g = group.value;
     if (!g) return false;
     return dashboardStore.isGroupEditing(g.id);
   });
+
+  const canEditGroup = computed(() => !props.isBooting && !isReadOnly.value);
 
   const isActive = ref(false);
   const isOpen = ref(false);
@@ -190,6 +195,7 @@
 
   const handleTitleClick = () => {
     if (!group.value) return;
+    if (!canEditGroup.value) return;
     emit('edit-group', group.value);
   };
 
@@ -217,6 +223,7 @@
 
   const handleToggleEditing = () => {
     if (props.isBooting) return;
+    if (!canEditGroup.value) return;
     const g = group.value;
     if (!g) return;
     // 退出编辑时：关闭面板编辑器，避免停留在“不可编辑”状态下的编辑 UI

@@ -38,7 +38,7 @@ export const useEditorStore = defineStore('editor', {
       this.editingPanel = {
         id: '', // 将在保存时生成
         name: '',
-        type: 'timeseries' as any,
+        type: 'timeseries',
         queries: [],
         options: {},
         ...defaultPanel,

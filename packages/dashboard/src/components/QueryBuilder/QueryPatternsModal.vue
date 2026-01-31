@@ -21,6 +21,8 @@
     width="700px"
     :maskClosable="false"
     :footer="null"
+    :lock-scroll="lockScrollEnabled"
+    :lock-scroll-el="lockScrollEl"
     :class="bem()"
     @cancel="handleClose"
   >
@@ -76,10 +78,11 @@
 
 <script setup lang="ts">
   import { Button, Card, Divider, Modal, Tag } from '@grafana-fast/component';
-  import { ref, watch } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import { message } from '@grafana-fast/component';
   import { promQueryModeller } from '@grafana-fast/utils';
-  import type { PromQueryPattern, PromVisualQuery } from '@grafana-fast/utils';
+  import type { PromQueryPattern, PromVisualQuery, QueryBuilderOperationParamValue } from '@grafana-fast/utils';
+  import { useDashboardRuntime } from '/#/runtime/useInjected';
   import { createNamespace } from '/#/utils';
   import { Alert } from '@grafana-fast/component';
 
@@ -96,6 +99,10 @@
 
   const props = defineProps<Props>();
   const emit = defineEmits<Emits>();
+
+  const runtime = useDashboardRuntime();
+  const lockScrollEl = computed(() => runtime.scrollEl?.value ?? runtime.rootEl?.value ?? null);
+  const lockScrollEnabled = computed(() => lockScrollEl.value != null);
 
   const isOpen = ref(props.open);
 
@@ -168,7 +175,7 @@
   }
 
   // 格式化参数
-  function formatParams(params: any[]): string {
+  function formatParams(params: QueryBuilderOperationParamValue[]): string {
     return params.map((p) => (typeof p === 'string' && p ? `"${p}"` : p)).join(', ');
   }
 

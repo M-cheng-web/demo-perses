@@ -13,12 +13,12 @@
       <div :class="bem('sidebar')">
         <Card size="small" title="操作" :class="bem('card')">
           <Flex gap="8" wrap>
-            <Button size="small" type="ghost" :disabled="isBooting" @click="handleCreateGroup">创建面板组</Button>
+            <Button size="small" type="ghost" :disabled="isBooting || isReadOnly" @click="handleCreateGroup">创建面板组</Button>
           </Flex>
           <div :class="bem('divider')"></div>
           <Flex gap="8" wrap>
             <Button size="small" type="ghost" :icon="h(FileTextOutlined)" :disabled="isBooting" @click="handleViewJson">查看</Button>
-            <Button size="small" type="ghost" :icon="h(UploadOutlined)" :disabled="isBooting" @click="handleImport">导入</Button>
+            <Button size="small" type="ghost" :icon="h(UploadOutlined)" :disabled="isBooting || isReadOnly" @click="handleImport">导入</Button>
             <Button size="small" type="ghost" :icon="h(DownloadOutlined)" :disabled="isBooting" @click="handleExport">导出</Button>
           </Flex>
           <div :class="bem('hint')">导入会先进行严格校验；非法 JSON 不会污染当前状态。</div>
@@ -49,7 +49,7 @@
           <!-- 时间范围选择器 -->
           <TimeRangePicker v-model:value="selectedTimeRange" :disabled="isBooting" @change="handleTimeRangeChange" />
 
-          <Button size="small" @click="handleSave" type="primary" :loading="isSaving" :disabled="isBooting"> 保存 </Button>
+          <Button size="small" @click="handleSave" type="primary" :loading="isSaving" :disabled="isBooting || isReadOnly"> 保存 </Button>
 
           <Dropdown>
             <Button :icon="h(MoreOutlined)" size="small" :disabled="isBooting" />
@@ -57,7 +57,7 @@
               <Menu
                 :items="[
                   { key: 'export', label: '导出 JSON', icon: h(DownloadOutlined) },
-                  { key: 'import', label: '导入 JSON', icon: h(UploadOutlined) },
+                  { key: 'import', label: '导入 JSON', icon: h(UploadOutlined), disabled: isReadOnly },
                   { key: 'viewJson', label: '查看 JSON', icon: h(FileTextOutlined) },
                 ]"
                 @click="handleMenuClick"
@@ -69,7 +69,15 @@
     </template>
 
     <!-- JSON 查看/编辑模态框 -->
-    <Modal v-model:open="jsonModalVisible" title="仪表盘 JSON" :width="800" destroyOnClose :maskClosable="false">
+    <Modal
+      v-model:open="jsonModalVisible"
+      title="仪表盘 JSON"
+      :width="800"
+      destroyOnClose
+      :maskClosable="false"
+      :lock-scroll="lockScrollEnabled"
+      :lock-scroll-el="lockScrollEl"
+    >
       <div v-if="isGeneratingJson" :class="bem('json-loading')">正在生成 JSON（内容较大时可能需要几秒）...</div>
       <DashboardJsonEditor
         v-else
@@ -77,13 +85,16 @@
         v-model="dashboardJson"
         :read-only="jsonModalMode === 'view'"
         :max-editable-chars="MAX_EDITABLE_DASHBOARD_JSON_CHARS"
+        :supported-panel-types="supportedPanelTypes"
         :validate="jsonModalMode === 'edit' ? validateDashboardStrict : undefined"
         @validate="handleJsonValidate"
       />
       <template #footer>
         <Space>
           <Button @click="jsonModalVisible = false">取消</Button>
-          <Button v-if="jsonModalMode === 'edit'" type="primary" @click="handleApplyJson" :disabled="!isJsonValid || isBooting"> 应用 </Button>
+          <Button v-if="jsonModalMode === 'edit'" type="primary" @click="handleApplyJson" :disabled="isReadOnly || !isJsonValid || isBooting">
+            应用
+          </Button>
         </Space>
       </template>
     </Modal>
@@ -99,11 +110,13 @@
   import { storeToRefs } from '@grafana-fast/store';
   import { MoreOutlined, DownloadOutlined, UploadOutlined, FileTextOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useTimeRangeStore } from '/#/stores';
+  import { useDashboardRuntime } from '/#/runtime/useInjected';
   import { message } from '@grafana-fast/component';
   import { DashboardJsonEditor } from '@grafana-fast/json-editor';
   import type { Dashboard } from '@grafana-fast/types';
   import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
   import { createNamespace } from '/#/utils';
+  import { getBuiltInPanelRegistry } from '/#/runtime/panels';
 
   const [_, bem] = createNamespace('dashboard-toolbar');
   const MAX_EDITABLE_DASHBOARD_JSON_CHARS = 120_000;
@@ -126,8 +139,15 @@
 
   const dashboardStore = useDashboardStore();
   const timeRangeStore = useTimeRangeStore();
+  const runtime = useDashboardRuntime();
+  const lockScrollEl = computed(() => runtime.scrollEl?.value ?? runtime.rootEl?.value ?? null);
+  const lockScrollEnabled = computed(() => lockScrollEl.value != null);
+  const supportedPanelTypes = getBuiltInPanelRegistry()
+    .list()
+    .map((p) => p.type)
+    .filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
 
-  const { currentDashboard, viewMode, isSaving, isBooting, isLargeDashboard } = storeToRefs(dashboardStore);
+  const { currentDashboard, viewMode, isSaving, isBooting, isLargeDashboard, isReadOnly } = storeToRefs(dashboardStore);
 
   const dashboardName = computed(() => currentDashboard.value?.name || '仪表盘');
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
@@ -195,6 +215,10 @@
 
   const handleSave = async () => {
     if (isBooting.value) return;
+    if (isReadOnly.value) {
+      message.warning('当前为只读模式，无法保存');
+      return;
+    }
     try {
       await dashboardStore.saveDashboard();
       message.success('保存成功');
@@ -205,6 +229,7 @@
 
   const handleCreateGroup = () => {
     if (isBooting.value) return;
+    if (isReadOnly.value) return;
     emit('create-group');
   };
 
@@ -242,10 +267,20 @@
 
   const handleImport = () => {
     if (isBooting.value) return;
+    if (isReadOnly.value) {
+      message.warning('当前为只读模式，无法导入/应用 JSON');
+      return;
+    }
     fileInputRef.value?.click();
   };
 
   const handleFileChange = (event: Event) => {
+    if (isReadOnly.value) {
+      const target = event.target as HTMLInputElement;
+      target.value = '';
+      message.warning('当前为只读模式，无法导入/应用 JSON');
+      return;
+    }
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (!file) return;
@@ -291,6 +326,10 @@
   const handleApplyJson = () => {
     try {
       if (isBooting.value) return;
+      if (isReadOnly.value) {
+        message.warning('当前为只读模式，无法应用 JSON');
+        return;
+      }
       const dashboard = dashboardJsonEditorRef.value?.getDashboard();
       if (!dashboard) {
         message.error('无法应用：Dashboard JSON 不合法');
@@ -309,7 +348,7 @@
   const openJsonModal = (mode: 'view' | 'edit' = 'view') => {
     if (isBooting.value) return;
     if (!currentDashboard.value) return;
-    jsonModalMode.value = mode;
+    jsonModalMode.value = isReadOnly.value && mode === 'edit' ? 'view' : mode;
     jsonModalVisible.value = true;
     void generateDashboardJsonText(currentDashboard.value);
   };

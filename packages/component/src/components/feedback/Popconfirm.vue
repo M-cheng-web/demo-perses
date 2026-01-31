@@ -6,7 +6,7 @@
     </span>
     <Teleport to="body">
       <transition name="fade">
-        <div v-if="open" :class="bem('content')" :style="popupStyle" ref="popupRef">
+        <div v-if="open" :class="[bem('content'), themeClass]" :data-gf-theme="colorScheme" :style="popupStyle" ref="popupRef">
           <div :class="bem('message')">
             <slot name="title">{{ title }}</slot>
           </div>
@@ -21,9 +21,10 @@
 </template>
 
 <script setup lang="ts">
-  import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+  import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
   import { createNamespace } from '../../utils';
   import Button from '../base/Button.vue';
+  import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
 
   defineOptions({ name: 'GfPopconfirm' });
 
@@ -43,6 +44,9 @@
   }>();
 
   const [_, bem] = createNamespace('popconfirm');
+  const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
+  const themeClass = computed(() => themeContext?.themeClass.value);
+  const colorScheme = computed(() => themeContext?.colorScheme.value);
   const triggerRef = ref<HTMLElement>();
   const popupRef = ref<HTMLElement>();
   const open = ref(false);

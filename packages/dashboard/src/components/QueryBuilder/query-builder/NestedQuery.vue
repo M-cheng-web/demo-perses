@@ -96,7 +96,7 @@
   interface Props {
     nestedQuery: PromVisualQueryBinary;
     index: number;
-    datasource?: any;
+    datasource?: unknown;
     showExplain?: boolean;
   }
 

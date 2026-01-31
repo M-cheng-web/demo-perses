@@ -26,12 +26,118 @@ export interface DashboardTextDiagnostics {
   dashboard?: Dashboard;
   /** 精简摘要（仅 json.ok && looksLikeDashboard 时存在） */
   summary?: DashboardSummary;
+  /**
+   * 面板类型统计（仅 json.ok && looksLikeDashboard 时存在）
+   * - key: panel.type
+   * - value: 该类型面板数量
+   */
+  panelTypeCounts?: Record<string, number>;
+  /**
+   * 结构风险提示（仅 json.ok && looksLikeDashboard 时存在）
+   * - 不影响“是否合法”判断，只用于帮助用户快速定位潜在风险
+   */
+  issues?: string[];
 }
 
 function looksLikeDashboard(value: any): value is Dashboard {
   if (!value || typeof value !== 'object') return false;
   if (!('panelGroups' in value)) return false;
   return Array.isArray((value as any).panelGroups);
+}
+
+function safeStr(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  return '';
+}
+
+function collectPanelTypeCounts(dashboard: Dashboard): Record<string, number> {
+  const counts: Record<string, number> = {};
+  const groups = dashboard.panelGroups ?? [];
+  for (const g of groups as any[]) {
+    const panels = Array.isArray(g?.panels) ? g.panels : [];
+    for (const p of panels as any[]) {
+      const type = safeStr(p?.type).trim();
+      if (!type) continue;
+      counts[type] = (counts[type] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+function diagnoseStructure(dashboard: Dashboard): string[] {
+  const issues: string[] = [];
+  const groups = Array.isArray(dashboard.panelGroups) ? dashboard.panelGroups : [];
+
+  // Duplicate group ids
+  const groupIdSeen = new Set<string>();
+  const dupGroupIds = new Set<string>();
+  for (const g of groups as any[]) {
+    const id = safeStr(g?.id).trim();
+    if (!id) continue;
+    if (groupIdSeen.has(id)) dupGroupIds.add(id);
+    groupIdSeen.add(id);
+  }
+  if (dupGroupIds.size > 0) {
+    issues.push(`存在重复的面板组 id：${Array.from(dupGroupIds).slice(0, 10).join(', ')}${dupGroupIds.size > 10 ? ' ...' : ''}`);
+  }
+
+  // Duplicate panel ids (global)
+  const panelIdSeen = new Set<string>();
+  const dupPanelIds = new Set<string>();
+  for (const g of groups as any[]) {
+    const panels = Array.isArray(g?.panels) ? g.panels : [];
+    for (const p of panels as any[]) {
+      const id = safeStr(p?.id).trim();
+      if (!id) continue;
+      if (panelIdSeen.has(id)) dupPanelIds.add(id);
+      panelIdSeen.add(id);
+    }
+  }
+  if (dupPanelIds.size > 0) {
+    issues.push(`存在重复的 panel id：${Array.from(dupPanelIds).slice(0, 10).join(', ')}${dupPanelIds.size > 10 ? ' ...' : ''}`);
+  }
+
+  // Layout consistency (per group)
+  for (const g of groups as any[]) {
+    const groupId = safeStr(g?.id).trim() || 'unknown';
+    const groupTitle = safeStr(g?.title).trim();
+    const label = groupTitle ? `${groupTitle}（${groupId}）` : groupId;
+
+    const panels = Array.isArray(g?.panels) ? g.panels : [];
+    const layout = Array.isArray(g?.layout) ? g.layout : null;
+    if (!layout) {
+      // layout 允许为空，但如果 panels 不为空，很可能会导致渲染异常
+      if (panels.length > 0) issues.push(`面板组 ${label} 缺少 layout（可能导致面板不显示或布局异常）`);
+      continue;
+    }
+
+    const panelIds = new Set<string>();
+    for (const p of panels as any[]) {
+      const id = safeStr(p?.id).trim();
+      if (id) panelIds.add(id);
+    }
+
+    const layoutIds = new Set<string>();
+    for (const it of layout as any[]) {
+      const id = safeStr(it?.i).trim();
+      if (id) layoutIds.add(id);
+    }
+
+    let missing = 0;
+    panelIds.forEach((id) => {
+      if (!layoutIds.has(id)) missing++;
+    });
+    let orphan = 0;
+    layoutIds.forEach((id) => {
+      if (!panelIds.has(id)) orphan++;
+    });
+
+    if (missing > 0) issues.push(`面板组 ${label} 有 ${missing} 个面板缺少 layout 项`);
+    if (orphan > 0) issues.push(`面板组 ${label} 有 ${orphan} 条 layout 引用不存在的面板（可能是历史残留）`);
+  }
+
+  return issues;
 }
 
 /**
@@ -56,6 +162,8 @@ export function analyzeDashboardText(text: string): DashboardTextDiagnostics {
   const panelGroupCount = dashboard.panelGroups?.length ?? 0;
   const panelCount = (dashboard.panelGroups ?? []).reduce((acc, g) => acc + (g.panels?.length ?? 0), 0);
   const variableCount = (dashboard as any).variables?.length ?? 0;
+  const panelTypeCounts = collectPanelTypeCounts(dashboard);
+  const issues = diagnoseStructure(dashboard);
 
   return {
     json,
@@ -70,5 +178,7 @@ export function analyzeDashboardText(text: string): DashboardTextDiagnostics {
       panelCount,
       variableCount,
     },
+    panelTypeCounts,
+    issues,
   };
 }

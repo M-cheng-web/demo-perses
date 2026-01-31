@@ -15,7 +15,7 @@
       v-model:layout="layoutModel"
       :col-num="1"
       :row-height="GROUP_ROW_HEIGHT"
-      :is-draggable="!isBooting"
+      :is-draggable="canManageGroups"
       :is-resizable="false"
       :vertical-compact="true"
       :use-css-transforms="true"
@@ -51,7 +51,7 @@
             @update:collapsed="(collapsed: boolean) => handleCollapsedChange(group.id, collapsed)"
             @title-click="() => handleTitleClick(group.id)"
           >
-            <template #right>
+            <template v-if="canManageGroups" #right>
               <Tooltip title="编辑面板组">
                 <Button type="text" size="small" :icon="h(EditOutlined)" @click="() => handleEditGroup(group)" />
               </Tooltip>
@@ -94,8 +94,9 @@
   }>();
 
   const dashboardStore = useDashboardStore();
-  const { isBooting } = storeToRefs(dashboardStore);
+  const { isBooting, isReadOnly } = storeToRefs(dashboardStore);
   const runtime = useDashboardRuntime();
+  const canManageGroups = computed(() => !isBooting.value && !isReadOnly.value);
 
   const groupRootElById = new Map<string, HTMLElement>();
   const focusedGroupKey = computed(() => (props.focusedGroupId == null ? null : String(props.focusedGroupId)));
@@ -165,7 +166,7 @@
   };
 
   const handleEditGroup = (group: PanelGroup) => {
-    if (isBooting.value) return;
+    if (!canManageGroups.value) return;
     emit('edit-group', group);
   };
 
@@ -177,7 +178,7 @@
   };
 
   const handleDeleteGroup = (groupId: PanelGroup['id']) => {
-    if (isBooting.value) return;
+    if (!canManageGroups.value) return;
     dashboardStore.deletePanelGroup(groupId);
   };
 
@@ -190,6 +191,7 @@
   };
 
   const handleGroupMoved = () => {
+    if (!canManageGroups.value) return;
     // drag end: commit order to store
     lastDragEndAt.value = Date.now();
     const nextOrder = [...layoutModel.value]

@@ -6,7 +6,7 @@
     </div>
     <Teleport to="body">
       <transition name="fade">
-        <div v-if="open" :class="bem('overlay')" :style="overlayStyle" ref="overlayRef" @click="close">
+        <div v-if="open" :class="[bem('overlay'), themeClass]" :data-gf-theme="colorScheme" :style="overlayStyle" ref="overlayRef" @click="close">
           <slot name="overlay"></slot>
         </div>
       </transition>
@@ -15,12 +15,16 @@
 </template>
 
 <script setup lang="ts">
-  import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { createNamespace } from '../../utils';
+  import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
 
   defineOptions({ name: 'GfDropdown' });
 
   const [_, bem] = createNamespace('dropdown');
+  const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
+  const themeClass = computed(() => themeContext?.themeClass.value);
+  const colorScheme = computed(() => themeContext?.colorScheme.value);
   const triggerRef = ref<HTMLElement>();
   const overlayRef = ref<HTMLElement>();
   const open = ref(false);

@@ -18,7 +18,7 @@ import type {
   TooltipData as StoreTooltipData,
   TooltipSeriesItem as StoreTooltipSeriesItem,
 } from '/#/stores/tooltip';
-import type { TimeSeriesData, QueryResult } from '@grafana-fast/types';
+import type { FormatOptions, TimeSeriesData, QueryResult } from '@grafana-fast/types';
 
 /**
  * 重新导出 Store 中定义的类型，供业务代码使用
@@ -33,7 +33,7 @@ export type TooltipSeriesItem = StoreTooltipSeriesItem;
  * Tooltip 数据提供者接口
  * 用于支持不同类型图表的数据格式
  */
-export interface TooltipDataProvider<T = any> {
+export interface TooltipDataProvider<T = unknown> {
   /**
    * 获取图表数据
    */
@@ -42,7 +42,7 @@ export interface TooltipDataProvider<T = any> {
   /**
    * 获取格式化选项
    */
-  getFormatOptions?: () => any;
+  getFormatOptions?: () => FormatOptions | undefined;
 
   /**
    * 判断指定系列是否可见
@@ -59,7 +59,7 @@ export interface TooltipDataProvider<T = any> {
 /**
  * Tooltip 注册配置
  */
-export interface TooltipRegistrationOptions<T = any> {
+export interface TooltipRegistrationOptions<T = unknown> {
   /**
    * 图表唯一标识
    */
@@ -228,13 +228,15 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
   /**
    * 绑定 ECharts ZRender 事件（如果是 ECharts 实例）
    */
-  const bindEChartsEvents = (instance: any, _container: HTMLElement) => {
-    // 检查是否是 ECharts 实例（是否有 getZr 方法）
-    if (!instance || typeof instance.getZr !== 'function') {
-      return;
-    }
+  type TooltipListeners = {
+    mousemove: (params: unknown) => void;
+    globalout: (params: unknown) => void;
+    click: (params: unknown) => void;
+  };
+  type EChartsWithTooltipListeners = ECharts & { __tooltipListeners__?: TooltipListeners };
 
-    const zr = instance.getZr();
+  const bindEChartsEvents = (instance: ECharts, _container: HTMLElement) => {
+    const zr = instance.getZr?.();
     if (!zr) return;
 
     const chartId = getChartId();
@@ -242,8 +244,9 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
     // 鼠标移动事件：
     // - 设置活跃图表
     // - 同步鼠标位置（用于 Teleport 场景：Modal/Drawer 内图表无法触发 Dashboard root 的 mousemove）
-    const mousemoveListener = (params: any) => {
-      const { offsetX, offsetY, event } = params ?? {};
+    const mousemoveListener = (params: unknown) => {
+      const p = (params ?? {}) as { offsetX?: unknown; offsetY?: unknown; event?: { pageX?: unknown; pageY?: unknown } };
+      const { offsetX, offsetY, event } = p;
       const position: MousePosition = {
         x: typeof offsetX === 'number' ? offsetX : 0,
         y: typeof offsetY === 'number' ? offsetY : 0,
@@ -254,19 +257,21 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
     };
 
     // 鼠标离开事件
-    const mouseoutListener = (params: any) => {
-      if (params.type !== 'globalout' && params.target) return;
+    const mouseoutListener = (params: unknown) => {
+      const p = (params ?? {}) as { type?: unknown; target?: unknown };
+      if (p.type !== 'globalout' && p.target) return;
       tooltipStore.handleMouseLeave(chartId);
     };
 
     // 点击事件（固定/取消固定）
-    const clickListener = (params: any) => {
-      const { offsetX, offsetY, event } = params;
+    const clickListener = (params: unknown) => {
+      const p = (params ?? {}) as { offsetX?: unknown; offsetY?: unknown; event?: { pageX?: unknown; pageY?: unknown } };
+      const { offsetX, offsetY, event } = p;
       const position: MousePosition = {
-        x: offsetX,
-        y: offsetY,
-        pageX: event.pageX,
-        pageY: event.pageY,
+        x: typeof offsetX === 'number' ? offsetX : 0,
+        y: typeof offsetY === 'number' ? offsetY : 0,
+        pageX: typeof event?.pageX === 'number' ? event.pageX : 0,
+        pageY: typeof event?.pageY === 'number' ? event.pageY : 0,
       };
 
       tooltipStore.togglePin(chartId, position);
@@ -279,9 +284,8 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
     zr.on('click', clickListener);
 
     // 保存事件监听器引用，用于后续清理
-    (instance as any).__tooltipListeners__ = {
+    (instance as EChartsWithTooltipListeners).__tooltipListeners__ = {
       mousemove: mousemoveListener,
-      // mouseout: mouseoutListener,
       globalout: mouseoutListener,
       click: clickListener,
     };
@@ -292,18 +296,16 @@ export function useChartTooltip<T = TimeSeriesData[]>(options: TooltipRegistrati
    */
   const unbindEChartsEvents = () => {
     const instance = getChartInstance();
-    if (!instance || typeof instance.getZr !== 'function') {
-      return;
-    }
+    if (!instance) return;
 
-    const zr = instance.getZr();
-    const listeners = (instance as any).__tooltipListeners__;
+    const zr = instance.getZr?.();
+    const listeners = (instance as EChartsWithTooltipListeners).__tooltipListeners__;
 
     if (zr && listeners) {
       zr.off('mousemove', listeners.mousemove);
-      zr.off('mouseout', listeners.mouseout);
+      zr.off('globalout', listeners.globalout);
       zr.off('click', listeners.click);
-      delete (instance as any).__tooltipListeners__;
+      delete (instance as EChartsWithTooltipListeners).__tooltipListeners__;
     }
   };
 
@@ -464,7 +466,7 @@ export const TooltipDataProviders = {
    */
   timeSeries: (
     getData: () => TimeSeriesData[],
-    getFormatOptions?: () => any,
+    getFormatOptions?: () => FormatOptions | undefined,
     isSeriesVisible?: (seriesId: string) => boolean
   ): TooltipDataProvider<TimeSeriesData[]> => ({
     getData,
@@ -478,7 +480,7 @@ export const TooltipDataProviders = {
    */
   bar: (
     getQueryResults: () => QueryResult[],
-    getFormatOptions?: () => any,
+    getFormatOptions?: () => FormatOptions | undefined,
     isSeriesVisible?: (seriesId: string) => boolean
   ): TooltipDataProvider<QueryResult[]> => ({
     getData: getQueryResults,
@@ -496,7 +498,7 @@ export const TooltipDataProviders = {
    */
   pie: (
     getQueryResults: () => QueryResult[],
-    getFormatOptions?: () => any,
+    getFormatOptions?: () => FormatOptions | undefined,
     isSeriesVisible?: (seriesId: string) => boolean
   ): TooltipDataProvider<QueryResult[]> => ({
     getData: getQueryResults,
@@ -514,7 +516,7 @@ export const TooltipDataProviders = {
   custom: <T>(
     getData: () => T,
     transformData: (data: T) => TimeSeriesData[],
-    getFormatOptions?: () => any,
+    getFormatOptions?: () => FormatOptions | undefined,
     isSeriesVisible?: (seriesId: string) => boolean
   ): TooltipDataProvider<T> => ({
     getData,

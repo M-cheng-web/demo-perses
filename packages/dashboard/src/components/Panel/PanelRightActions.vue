@@ -52,10 +52,11 @@
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
-  const { editingGroupId, viewMode, isBooting } = storeToRefs(dashboardStore);
+  const { editingGroupId, viewMode, isBooting, isReadOnly } = storeToRefs(dashboardStore);
 
   const isEditing = computed(() => {
     if (isBooting.value) return false;
+    if (isReadOnly.value) return false;
     if (viewMode.value === 'allPanels') return false;
     if (editingGroupId.value == null) return false;
     return String(editingGroupId.value) === String(props.groupId);
@@ -64,10 +65,12 @@
   const isVisible = computed(() => isEditing.value || props.hovered);
 
   const handleEdit = () => {
+    if (isReadOnly.value) return;
     editorStore.openEditEditor(props.groupId, props.panel);
   };
 
   const handleDuplicate = () => {
+    if (isReadOnly.value) return;
     dashboardStore.duplicatePanel(props.groupId, props.panel.id);
     message.success('面板已复制');
   };
@@ -77,6 +80,7 @@
   };
 
   const handleDelete = () => {
+    if (isReadOnly.value) return;
     dashboardStore.deletePanel(props.groupId, props.panel.id);
     message.success('面板已删除');
   };

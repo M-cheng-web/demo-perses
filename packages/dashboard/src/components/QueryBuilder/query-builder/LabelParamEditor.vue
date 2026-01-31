@@ -34,12 +34,13 @@
   import { ref, watch } from 'vue';
   import { useApiClient } from '/#/runtime/useInjected';
   import { promQueryModeller } from '@grafana-fast/utils';
+  import type { PromVisualQuery } from '@grafana-fast/utils';
 
   interface Props {
     modelValue: string | undefined;
     index: number;
-    query?: any;
-    datasource?: any;
+    query?: PromVisualQuery;
+    datasource?: unknown;
   }
 
   interface Emits {

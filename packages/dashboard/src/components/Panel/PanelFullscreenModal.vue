@@ -5,6 +5,8 @@
     :title="panelTitle"
     :width="'90%'"
     :footer="null"
+    :lock-scroll="lockScrollEnabled"
+    :lock-scroll-el="lockScrollEl"
     :body-style="{ padding: 0, height: '80vh' }"
     :class="bem()"
     centered
@@ -20,6 +22,7 @@
   import { ref, computed } from 'vue';
   import type { Panel } from '@grafana-fast/types';
   import { useDashboardStore } from '/#/stores';
+  import { useDashboardRuntime } from '/#/runtime/useInjected';
   import { createNamespace } from '/#/utils';
   import PanelContent from './PanelContent.vue';
   import { Modal } from '@grafana-fast/component';
@@ -27,6 +30,9 @@
   const [_, bem] = createNamespace('panel-fullscreen-modal');
 
   const dashboardStore = useDashboardStore();
+  const runtime = useDashboardRuntime();
+  const lockScrollEl = computed(() => runtime.scrollEl?.value ?? runtime.rootEl?.value ?? null);
+  const lockScrollEnabled = computed(() => lockScrollEl.value != null);
 
   const isOpen = ref(false);
   const currentPanel = ref<Panel>();

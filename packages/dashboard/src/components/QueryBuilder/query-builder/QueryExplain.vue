@@ -128,7 +128,7 @@
   import { DatabaseOutlined } from '@ant-design/icons-vue';
   import { computed, ref } from 'vue';
   import { promQueryModeller } from '@grafana-fast/utils';
-  import type { PromVisualQuery } from '@grafana-fast/utils';
+  import type { PromVisualQuery, QueryBuilderOperationParamValue } from '@grafana-fast/utils';
   import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('query-explain');
@@ -146,7 +146,7 @@
     category: string;
     categoryLabel: string;
     operationIndex: number;
-    params?: Array<{ name: string; value: any }>;
+    params?: Array<{ name: string; value: QueryBuilderOperationParamValue }>;
   }
 
   const props = defineProps<Props>();
@@ -222,7 +222,7 @@
       }
 
       // 提取参数信息（正确处理 Rest 参数，如多个 Label）
-      const params: Array<{ name: string; value: any }> = [];
+      const params: Array<{ name: string; value: QueryBuilderOperationParamValue }> = [];
       if (operation.params && opDef.params) {
         let paramIndex = 0;
 
@@ -234,7 +234,7 @@
 
           // 如果是 Rest 参数（如 sum by 的多个 label），收集所有剩余参数
           if (paramDef.restParam) {
-            const restValues: any[] = [];
+            const restValues: QueryBuilderOperationParamValue[] = [];
             while (paramIndex < operation.params.length) {
               const value = operation.params[paramIndex];
               if (value !== undefined && value !== '') {

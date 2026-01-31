@@ -62,12 +62,15 @@
     dependencies: [
       {
         value: computed(() => props.queryResults),
-        isValid: (results: QueryResult[]) => results && results.length > 0 && results.some((r) => r.data && r.data.length > 0),
+        isValid: (val: unknown) => {
+          const results = Array.isArray(val) ? (val as QueryResult[]) : [];
+          return results.length > 0 && results.some((r) => Array.isArray(r.data) && r.data.length > 0);
+        },
       },
       {
         value: computed(() => props.panel.options),
         // Options can be an empty object; charts should still render with defaults.
-        isValid: (options: any) => options != null,
+        isValid: (val: unknown) => val != null,
       },
     ],
     onChartCreated: (instance) => {

@@ -30,6 +30,8 @@
         :confirmable="true"
         :mask="true"
         :mask-closable="false"
+        :lock-scroll="contentEl != null"
+        :lock-scroll-el="contentEl"
         @confirm="handleSettingsConfirm"
         @cancel="handleSettingsCancel"
       >
@@ -39,7 +41,7 @@
       <!-- 面板组列表 -->
       <div ref="contentEl" :class="[bem('content'), { 'is-locked': isFocusLayerActive }]" :style="contentStyle">
         <Empty v-if="!panelGroups.length" :description="emptyText">
-          <Button type="primary" :disabled="isBooting" @click="handleAddPanelGroup"> 创建面板组 </Button>
+          <Button type="primary" :disabled="isBooting || isReadOnly" @click="handleAddPanelGroup"> 创建面板组 </Button>
         </Empty>
 
         <template v-else>
@@ -114,6 +116,7 @@
   import type { GrafanaFastApiClient } from '@grafana-fast/api';
   import { createMockApiClient } from '@grafana-fast/api';
   import { GF_API_KEY, GF_RUNTIME_KEY } from '/#/runtime/keys';
+  import { subscribeWindowResize } from '/#/runtime/windowEvents';
   import { setPiniaApiClient } from '/#/runtime/piniaAttachments';
   import { usePanelGroupPagination } from '/#/composables/usePanelGroupPagination';
 
@@ -150,11 +153,20 @@
        * @default 200
        */
       panelGroupFocusMotionMs?: number;
+      /**
+       * 全局只读模式（宿主能力开关）
+       *
+       * 语义：
+       * - true：禁用所有会修改 Dashboard JSON 的操作（创建/删除/拖拽/导入/应用/保存/编辑面板等）
+       * - false：允许编辑（仍受 viewMode / 当前打开组等规则约束）
+       */
+      readOnly?: boolean;
     }>(),
     {
       theme: 'inherit',
       apiClient: undefined,
       panelGroupFocusMotionMs: 200,
+      readOnly: false,
     }
   );
 
@@ -162,8 +174,21 @@
   const editorStore = useEditorStore();
   const timeRangeStore = useTimeRangeStore();
   const tooltipStore = useTooltipStore();
-  const { currentDashboard, panelGroups, editingGroupId, viewMode, viewPanel, isBooting, bootStage, bootStats, isLargeDashboard, isSaving, isSyncing, lastError } =
-    storeToRefs(dashboardStore);
+  const {
+    currentDashboard,
+    panelGroups,
+    editingGroupId,
+    viewMode,
+    viewPanel,
+    isBooting,
+    isReadOnly,
+    bootStage,
+    bootStats,
+    isLargeDashboard,
+    isSaving,
+    isSyncing,
+    lastError,
+  } = storeToRefs(dashboardStore);
   const fullscreenModalRef = ref<InstanceType<typeof PanelFullscreenModal>>();
   const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
   const rootEl = ref<HTMLElement | null>(null);
@@ -179,6 +204,7 @@
 
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
   const isEditingActive = computed(() => editingGroupId.value != null);
+  const canEditDashboard = computed(() => !isBooting.value && !isReadOnly.value);
   const panelGroupFocusMotionMs = computed(() => {
     const raw = Number(props.panelGroupFocusMotionMs);
     if (!Number.isFinite(raw)) return 200;
@@ -358,7 +384,7 @@
   const hostHeightPx = ref<number | null>(null);
   let hostResizeObserver: ResizeObserver | null = null;
   let observedHostEl: HTMLElement | null = null;
-  let isWindowResizeBound = false;
+  let unsubscribeWindowResize: null | (() => void) = null;
 
   const resolveHostEl = (): HTMLElement | null => rootEl.value?.parentElement ?? null;
 
@@ -378,10 +404,8 @@
       hostResizeObserver.disconnect();
     }
     observedHostEl = null;
-    if (isWindowResizeBound) {
-      window.removeEventListener('resize', updateHostHeight);
-      isWindowResizeBound = false;
-    }
+    unsubscribeWindowResize?.();
+    unsubscribeWindowResize = null;
   };
 
   const attachHostObserver = () => {
@@ -399,8 +423,7 @@
       hostResizeObserver.observe(host);
     } else {
       // 极端兜底：老环境无 ResizeObserver
-      window.addEventListener('resize', updateHostHeight, { passive: true } as AddEventListenerOptions);
-      isWindowResizeBound = true;
+      unsubscribeWindowResize = subscribeWindowResize(updateHostHeight);
     }
 
     updateHostHeight();
@@ -587,7 +610,7 @@
   });
 
   const handleAddPanelGroup = () => {
-    if (isBooting.value) return;
+    if (!canEditDashboard.value) return;
     panelGroupDialogRef.value?.openCreate?.();
   };
 
@@ -596,6 +619,7 @@
   };
 
   const handleEditGroup = (group: PanelGroup) => {
+    if (!canEditDashboard.value) return;
     panelGroupDialogRef.value?.openEdit(group);
   };
 
@@ -615,6 +639,20 @@
       focusOpen.value = false;
     }
   });
+
+  // 宿主只读能力开关：在 store 层统一收敛（actions 也会兜底 guard）
+  watch(
+    () => !!props.readOnly,
+    (ro) => {
+      dashboardStore.setReadOnly(ro);
+      if (ro) {
+        // 进入只读：退出编辑 UI（避免出现“编辑抽屉打开但无法保存/应用”的困惑）
+        editorStore.closeEditor();
+        dashboardStore.setEditingGroup(null);
+      }
+    },
+    { immediate: true }
+  );
 
   // ---------------------------
   // Optimistic sync feedback

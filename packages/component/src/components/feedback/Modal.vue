@@ -2,7 +2,7 @@
 <template>
   <Teleport to="body">
     <transition name="fade">
-      <div v-if="open" :class="bem()" v-bind="$attrs">
+      <div v-if="open" :class="[bem(), themeClass]" :data-gf-theme="colorScheme" v-bind="$attrs">
         <div :class="bem('mask')" @click="handleMaskClick"></div>
         <div :class="bem('panel')" :style="panelStyle">
           <div :class="bem('header')">
@@ -25,9 +25,10 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onBeforeUnmount, watch } from 'vue';
-  import { createNamespace, lockBodyScroll, unlockBodyScroll } from '../../utils';
+  import { computed, inject, onBeforeUnmount, watch } from 'vue';
+  import { createNamespace, lockScroll, unlockScroll } from '../../utils';
   import Button from '../base/Button.vue';
+  import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
 
   defineOptions({ name: 'GfModal', inheritAttrs: false });
 
@@ -45,6 +46,14 @@
       maskClosable?: boolean;
       /** 是否显示默认页脚（传 null 隐藏） */
       footer?: boolean | null;
+      /** 打开时是否锁定滚动（默认 true） */
+      lockScroll?: boolean;
+      /**
+       * 自定义滚动锁目标（用于嵌入式场景）
+       * - 不传：锁 body
+       * - 传入元素：锁定该元素的滚动（overflow: hidden）
+       */
+      lockScrollEl?: HTMLElement | null;
       /** Body 区域样式 */
       bodyStyle?: Record<string, any>;
       /** 是否居中（预留） */
@@ -57,6 +66,8 @@
       destroyOnClose: false,
       maskClosable: true,
       footer: true,
+      lockScroll: true,
+      lockScrollEl: null,
       bodyStyle: undefined,
       centered: true,
     }
@@ -69,6 +80,11 @@
   }>();
 
   const [_, bem] = createNamespace('modal');
+  const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
+  const themeClass = computed(() => themeContext?.themeClass.value);
+  const colorScheme = computed(() => themeContext?.colorScheme.value);
+  let lockedScrollEl: HTMLElement | null = null;
+  let isScrollLocked = false;
 
   const panelStyle = computed(() => {
     const w = typeof props.width === 'number' ? `${props.width}px` : props.width;
@@ -81,16 +97,56 @@
     () => props.open,
     (val) => {
       if (val) {
-        lockBodyScroll();
+        if (props.lockScroll !== false) {
+          const el = props.lockScrollEl ?? null;
+          lockedScrollEl = el;
+          lockScroll(el);
+          isScrollLocked = true;
+        }
       } else {
-        unlockBodyScroll();
+        if (props.lockScroll !== false && isScrollLocked) {
+          unlockScroll(lockedScrollEl ?? null);
+          lockedScrollEl = null;
+          isScrollLocked = false;
+        }
       }
     },
     { immediate: true }
   );
 
+  watch(
+    () => props.lockScrollEl,
+    (nextEl) => {
+      if (!props.open) return;
+      if (props.lockScroll === false) return;
+      if (isScrollLocked) unlockScroll(lockedScrollEl ?? null);
+      const el = nextEl ?? null;
+      lockedScrollEl = el;
+      lockScroll(el);
+      isScrollLocked = true;
+    }
+  );
+
+  watch(
+    () => props.lockScroll,
+    (enabled) => {
+      if (!props.open) return;
+      if (enabled === false) {
+        if (isScrollLocked) unlockScroll(lockedScrollEl ?? null);
+        lockedScrollEl = null;
+        isScrollLocked = false;
+        return;
+      }
+      if (isScrollLocked) return;
+      const el = props.lockScrollEl ?? null;
+      lockedScrollEl = el;
+      lockScroll(el);
+      isScrollLocked = true;
+    }
+  );
+
   onBeforeUnmount(() => {
-    if (props.open) unlockBodyScroll();
+    if (props.open && props.lockScroll !== false && isScrollLocked) unlockScroll(lockedScrollEl ?? null);
   });
 
   const handleMaskClick = () => {

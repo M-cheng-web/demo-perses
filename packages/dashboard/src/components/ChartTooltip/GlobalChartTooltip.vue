@@ -8,7 +8,13 @@
 -->
 <template>
   <Teleport to="body">
-    <div v-if="isVisible" ref="tooltipRef" :class="[bem(), bem({ pinned: isPinned })]" :style="tooltipStyle">
+    <div
+      v-if="isVisible"
+      ref="tooltipRef"
+      :class="[bem(), bem({ pinned: isPinned }), themeClass]"
+      :data-gf-theme="colorScheme"
+      :style="tooltipStyle"
+    >
       <!-- Tooltip 头部 -->
       <div :class="bem('header')">
         <span :class="bem('time')">{{ formattedTime }}</span>
@@ -37,16 +43,22 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted } from 'vue';
-  import { Button } from '@grafana-fast/component';
+  import { ref, computed, inject, onBeforeUnmount, watch } from 'vue';
+  import { Button, GF_THEME_CONTEXT_KEY } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import { PushpinFilled } from '@ant-design/icons-vue';
   import { useTooltipStore } from '/#/stores';
+  import { useDashboardRuntime } from '/#/runtime/useInjected';
+  import { subscribeEvent } from '/#/runtime/windowEvents';
   import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('chart-tooltip');
+  const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
+  const themeClass = computed(() => themeContext?.themeClass.value);
+  const colorScheme = computed(() => themeContext?.colorScheme.value);
 
   const tooltipStore = useTooltipStore();
+  const runtime = useDashboardRuntime();
   const { pinnedChartId, activeChartId, currentPosition, currentTooltipData } = storeToRefs(tooltipStore);
 
   // State
@@ -127,15 +139,23 @@
     showAllSeries.value = false;
   };
 
-  // Lifecycle
-  onMounted(() => {
-    // 只监听滚动事件（用于取消固定）
-    window.addEventListener('scroll', handleScroll, true);
-  });
+  // Lifecycle: 监听 dashboard 自身的滚动容器（避免污染宿主 window 事件）
+  let unsubscribeScroll: null | (() => void) = null;
 
-  onUnmounted(() => {
-    // 清理事件
-    window.removeEventListener('scroll', handleScroll, true);
+  watch(
+    () => runtime.scrollEl?.value ?? null,
+    (el) => {
+      unsubscribeScroll?.();
+      unsubscribeScroll = null;
+      if (!el) return;
+      unsubscribeScroll = subscribeEvent(el, 'scroll', handleScroll, { capture: true, passive: true });
+    },
+    { immediate: true }
+  );
+
+  onBeforeUnmount(() => {
+    unsubscribeScroll?.();
+    unsubscribeScroll = null;
   });
 </script>
 

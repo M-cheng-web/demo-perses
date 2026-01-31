@@ -3,6 +3,7 @@
  */
 
 import { ref, onMounted, onUnmounted, type Ref } from 'vue';
+import { subscribeWindowEvent, type Unsubscribe } from '/#/runtime/windowEvents';
 
 export interface MousePosition {
   x: number;
@@ -14,6 +15,7 @@ export interface MousePosition {
 
 export function useMousePosition(): Ref<MousePosition | null> {
   const position = ref<MousePosition | null>(null);
+  let unsubscribe: Unsubscribe | null = null;
 
   const handleMouseMove = (event: MouseEvent) => {
     position.value = {
@@ -26,11 +28,13 @@ export function useMousePosition(): Ref<MousePosition | null> {
   };
 
   onMounted(() => {
-    window.addEventListener('mousemove', handleMouseMove);
+    unsubscribe?.();
+    unsubscribe = subscribeWindowEvent('mousemove', handleMouseMove, { passive: true });
   });
 
   onUnmounted(() => {
-    window.removeEventListener('mousemove', handleMouseMove);
+    unsubscribe?.();
+    unsubscribe = null;
   });
 
   return position;

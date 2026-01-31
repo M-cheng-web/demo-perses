@@ -7,6 +7,16 @@ export interface SetDashboardThemeOptions {
    * 默认：true
    */
   persist?: boolean;
+  /**
+   * 是否将主题应用到全局 document（documentElement.dataset）
+   *
+   * 说明：
+   * - 对“嵌入式 widget”场景，默认不建议修改宿主全局 document
+   * - 当你明确在做“全站接管主题”的应用形态时，可以开启
+   *
+   * 默认：true（保持向后兼容）
+   */
+  apply?: boolean;
 }
 
 export interface InitDashboardThemeOptions extends SetDashboardThemeOptions {
@@ -62,9 +72,9 @@ export function applyDashboardTheme(theme: DashboardTheme) {
 }
 
 export function setDashboardThemePreference(preference: DashboardThemePreference, options: SetDashboardThemeOptions = {}): DashboardTheme {
-  const { persist = true } = options;
+  const { persist = true, apply = true } = options;
   const theme = resolveTheme(preference);
-  applyDashboardTheme(theme);
+  if (apply) applyDashboardTheme(theme);
 
   if (hasDom() && persist) {
     try {
@@ -78,7 +88,7 @@ export function setDashboardThemePreference(preference: DashboardThemePreference
 }
 
 export function initDashboardTheme(options: InitDashboardThemeOptions = {}): DashboardTheme {
-  const { defaultPreference = 'system', persist = true } = options;
+  const { defaultPreference = 'system', persist = true, apply = true } = options;
   const stored = getStoredThemePreference();
-  return setDashboardThemePreference(stored ?? defaultPreference, { persist });
+  return setDashboardThemePreference(stored ?? defaultPreference, { persist, apply });
 }

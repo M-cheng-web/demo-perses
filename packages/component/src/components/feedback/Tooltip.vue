@@ -4,7 +4,7 @@
     <slot></slot>
     <Teleport to="body">
       <transition name="fade">
-        <div v-if="visible" :class="bem('popup')" :style="popupStyle" ref="popupRef">
+        <div v-if="visible" :class="[bem('popup'), themeClass]" :data-gf-theme="colorScheme" :style="popupStyle" ref="popupRef">
           <slot name="title">
             {{ title }}
           </slot>
@@ -15,8 +15,9 @@
 </template>
 
 <script setup lang="ts">
-  import { nextTick, ref } from 'vue';
+  import { computed, inject, nextTick, ref } from 'vue';
   import { createNamespace } from '../../utils';
+  import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
 
   defineOptions({ name: 'GfTooltip' });
 
@@ -36,6 +37,9 @@
   );
 
   const [_, bem] = createNamespace('tooltip');
+  const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
+  const themeClass = computed(() => themeContext?.themeClass.value);
+  const colorScheme = computed(() => themeContext?.colorScheme.value);
   const triggerRef = ref<HTMLElement>();
   const popupRef = ref<HTMLElement>();
   const visible = ref(false);

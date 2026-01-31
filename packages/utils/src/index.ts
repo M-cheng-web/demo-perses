@@ -61,13 +61,15 @@ export const http = {
 // DOM
 // ----------------------------
 import { isBrowser, readCssVar } from './dom/cssVar';
-import { lockBodyScroll, unlockBodyScroll } from './dom/scrollLock';
+import { lockBodyScroll, lockScroll, unlockBodyScroll, unlockScroll } from './dom/scrollLock';
 
 export const dom = {
   isBrowser,
   readCssVar,
   lockBodyScroll,
   unlockBodyScroll,
+  lockScroll,
+  unlockScroll,
 } as const;
 
 // ----------------------------

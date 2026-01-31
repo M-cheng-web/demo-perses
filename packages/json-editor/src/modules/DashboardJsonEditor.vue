@@ -9,7 +9,8 @@
   5) 行号 + 错误行高亮：帮助用户定位语法错误
 
   说明：
-  - 本组件不做 schemaVersion migration、不做“缺插件”检查（按你最新要求）
+  - 本组件不做 schemaVersion migration（不修改/不迁移 JSON），但会输出更完整的“诊断报告”
+  - “缺插件”检查需要宿主传入 supportedPanelTypes（否则只能展示“面板类型统计”）
   - 外部只会拿到“最后一次通过校验的 JSON 文本”；草稿状态完全留在组件内部
 -->
 <template>
@@ -63,7 +64,7 @@
       type="error"
       show-icon
       message="Dashboard schemaVersion 不匹配"
-      :description="diagnostics.schemaVersionError || 'schemaVersion 不匹配。该内容不会同步到外部。'"
+      :description="schemaVersionDescription"
       style="margin-top: 10px"
     />
 
@@ -75,10 +76,13 @@
       </template>
     </Alert>
 
-    <Alert v-else-if="diagnostics.looksLikeDashboard && summaryLines.length > 0" type="success" show-icon message="摘要" style="margin-top: 10px">
+    <Alert v-if="reportSections.length > 0" type="info" show-icon message="诊断报告" style="margin-top: 10px">
       <template #description>
-        <div v-for="(line, idx) in summaryLines" :key="idx" style="margin: 2px 0">
-          {{ line }}
+        <div v-for="section in reportSections" :key="section.title" style="margin: 6px 0 10px">
+          <div style="font-weight: 650; margin-bottom: 4px">{{ section.title }}</div>
+          <div v-for="(line, idx) in section.lines" :key="idx" style="margin: 2px 0">
+            {{ line }}
+          </div>
         </div>
       </template>
     </Alert>
@@ -143,6 +147,14 @@
        * - 设为 0 表示不限制（不推荐）
        */
       maxEditableChars?: number;
+      /**
+       * 可选：宿主已注册/支持的面板类型列表（用于“缺插件”诊断）
+       *
+       * 说明：
+       * - json-editor 不依赖 dashboard 的 panel registry；由宿主传入即可
+       * - 未传入时仍会展示“面板类型统计”，但不会判断是否缺插件
+       */
+      supportedPanelTypes?: string[];
     }>(),
     {
       modelValue: '',
@@ -153,6 +165,7 @@
       validate: undefined,
       validateDebounceMs: 0,
       maxEditableChars: 1_048_576,
+      supportedPanelTypes: undefined,
     }
   );
 
@@ -302,6 +315,63 @@
     const d = diagnostics.value;
     if (!d.looksLikeDashboard || !d.summary) return [];
     return [`面板组：${d.summary.panelGroupCount}`, `面板：${d.summary.panelCount}`, `变量：${d.summary.variableCount}`];
+  });
+
+  const panelTypeLines = computed(() => {
+    const d = diagnostics.value;
+    const counts = d.panelTypeCounts;
+    if (!d.looksLikeDashboard || !counts) return [];
+    const entries = Object.entries(counts)
+      .filter(([type, count]) => typeof type === 'string' && type.trim() && Number(count) > 0)
+      .sort((a, b) => Number(b[1]) - Number(a[1]) || String(a[0]).localeCompare(String(b[0])));
+    return entries.map(([type, count]) => `${type}：${count}`);
+  });
+
+  const missingPluginLines = computed(() => {
+    const d = diagnostics.value;
+    const counts = d.panelTypeCounts;
+    const supported = (props.supportedPanelTypes ?? []).map((s) => String(s).trim()).filter(Boolean);
+    if (!d.looksLikeDashboard || !counts || supported.length === 0) return [];
+
+    const supportedSet = new Set(supported);
+    const missing = Object.entries(counts)
+      .filter(([type, count]) => typeof type === 'string' && type.trim() && Number(count) > 0 && !supportedSet.has(type))
+      .sort((a, b) => Number(b[1]) - Number(a[1]) || String(a[0]).localeCompare(String(b[0])));
+    if (missing.length === 0) return [];
+
+    const head = missing.map(([type, count]) => `缺少插件：${type}（${count}）`);
+    const supportHint =
+      supported.length > 0
+        ? `运行时已注册面板类型：${supported.length} 种（示例：${supported.slice(0, 8).join(', ')}${supported.length > 8 ? ' ...' : ''}）`
+        : '';
+    return supportHint ? [...head, supportHint] : head;
+  });
+
+  const schemaVersionDescription = computed(() => {
+    const d = diagnostics.value;
+    const base = d.schemaVersionError || 'schemaVersion 不匹配。该内容不会同步到外部。';
+    return `${base} 当前版本不提供自动迁移/降级，请在外部完成迁移后重新导入。`;
+  });
+
+  const reportSections = computed(() => {
+    const d = diagnostics.value;
+    if (!d.json.ok) return [];
+    if (!d.looksLikeDashboard) return [];
+
+    const sections: Array<{ title: string; lines: string[] }> = [];
+
+    if (summaryLines.value.length > 0) sections.push({ title: '摘要', lines: summaryLines.value });
+    if (panelTypeLines.value.length > 0) sections.push({ title: '面板类型统计', lines: panelTypeLines.value });
+    if (missingPluginLines.value.length > 0) sections.push({ title: '缺插件', lines: missingPluginLines.value });
+
+    const riskLines: string[] = [];
+    if (d.schemaVersionOk === false) riskLines.push('schemaVersion 不匹配：当前版本不提供自动迁移/降级（需要外部迁移后再导入）');
+    if (Array.isArray(d.issues) && d.issues.length > 0) riskLines.push(...d.issues);
+    if (isTooLargeToEdit.value) riskLines.push('内容过大：已自动切换为只读模式（仍支持查看/复制/校验/应用）');
+
+    if (riskLines.length > 0) sections.push({ title: '风险提示', lines: riskLines });
+
+    return sections;
   });
 
   const tagText = computed(() => {

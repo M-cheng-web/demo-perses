@@ -20,7 +20,7 @@
 
     <Teleport to="body">
       <transition name="fade">
-        <div v-if="open" :class="bem('dropdown')" :style="dropdownStyle" ref="dropdownRef">
+        <div v-if="open" :class="[bem('dropdown'), themeClass]" :data-gf-theme="colorScheme" :style="dropdownStyle" ref="dropdownRef">
           <div :class="bem('menus')">
             <div v-for="(menu, depth) in menus" :key="depth" :class="bem('menu')">
               <div
@@ -54,6 +54,7 @@
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { RightOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
+  import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfCascader' });
@@ -92,6 +93,9 @@
   }>();
 
   const [_, bem] = createNamespace('cascader');
+  const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
+  const themeClass = computed(() => themeContext?.themeClass.value);
+  const colorScheme = computed(() => themeContext?.colorScheme.value);
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
   const rootRef = ref<HTMLElement>();
   const triggerRef = ref<HTMLElement>();
