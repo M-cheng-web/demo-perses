@@ -8,13 +8,7 @@
 -->
 <template>
   <Teleport to="body">
-    <div
-      v-if="isVisible"
-      ref="tooltipRef"
-      :class="[bem(), bem({ pinned: isPinned }), themeClass]"
-      :data-gf-theme="colorScheme"
-      :style="tooltipStyle"
-    >
+    <div v-if="isVisible" ref="tooltipRef" :class="[bem(), bem({ pinned: isPinned }), themeClass]" :data-gf-theme="colorScheme" :style="tooltipStyle">
       <!-- Tooltip 头部 -->
       <div :class="bem('header')">
         <span :class="bem('time')">{{ formattedTime }}</span>
