@@ -23,11 +23,11 @@
   --gf-space-6: 24px;
   --gf-space-8: 32px;
 
-  /* Radius (ops/industrial: smaller, sharper) */
-  --gf-radius-xs: 2px;
-  --gf-radius-sm: 3px;
-  --gf-radius-md: 4px;
-  --gf-radius-lg: 4px;
+  /* Radius (financial: moderate, steady) */
+  --gf-radius-xs: 4px;
+  --gf-radius-sm: 6px;
+  --gf-radius-md: 8px;
+  --gf-radius-lg: 10px;
 
   /* Control heights (AntD-compatible semantics) */
   --gf-control-height-sm: 26px;
@@ -39,20 +39,20 @@
   --gf-motion-fast: 140ms;
   --gf-motion-normal: 200ms;
 
-  /* Palette (low-saturation, ops-friendly) */
-  /* Industrial blue: slightly desaturated, avoids neon */
-  --gf-palette-blue-400: #4a86dd;
-  --gf-palette-blue-500: #356fcf;
-  --gf-palette-blue-600: #2d63c0;
-  --gf-palette-blue-700: #2553a6;
-  --gf-palette-blue-soft: rgba(53, 111, 207, 0.1);
+  /* Palette (financial blue, calmer saturation) */
+  --gf-palette-blue-400: #4f83d1;
+  --gf-palette-blue-500: #2f61bf;
+  --gf-palette-blue-600: #2955a8;
+  --gf-palette-blue-700: #224687;
+  --gf-palette-blue-soft: rgba(47, 97, 191, 0.12);
 
   --gf-palette-neutral-0: #ffffff;
-  --gf-palette-neutral-50: #f7f9fc;
-  --gf-palette-neutral-100: #eef2f8;
-  --gf-palette-neutral-200: #e7ebf3;
-  --gf-palette-neutral-700: #5b667f;
-  --gf-palette-neutral-900: #0f182a;
+  /* Neutral: align closer to AntD grey scale, reduce blue cast */
+  --gf-palette-neutral-50: #fafafa;
+  --gf-palette-neutral-100: #f5f5f5;
+  --gf-palette-neutral-200: #f0f0f0;
+  --gf-palette-neutral-700: #595959;
+  --gf-palette-neutral-900: #1f1f1f;
 
   /* Higher-contrast status colors for ops */
   --gf-palette-success: #22a06b;
@@ -65,43 +65,43 @@
   --gf-color-primary-hover: var(--gf-palette-blue-600);
   --gf-color-primary-active: var(--gf-palette-blue-700);
   --gf-color-primary-soft: var(--gf-palette-blue-soft);
-  --gf-color-primary-soft-hover: rgba(53, 111, 207, 0.14);
-  --gf-color-primary-soft-active: rgba(53, 111, 207, 0.18);
-  --gf-color-primary-border: rgba(53, 111, 207, 0.28);
-  --gf-color-primary-border-strong: rgba(53, 111, 207, 0.42);
+  --gf-color-primary-soft-hover: rgba(47, 97, 191, 0.16);
+  --gf-color-primary-soft-active: rgba(47, 97, 191, 0.22);
+  --gf-color-primary-border: rgba(47, 97, 191, 0.3);
+  --gf-color-primary-border-strong: rgba(47, 97, 191, 0.46);
 
   --gf-color-bg: var(--gf-palette-neutral-100);
   --gf-color-surface: var(--gf-palette-neutral-0);
   --gf-color-surface-muted: var(--gf-palette-neutral-50);
   --gf-color-surface-raised: rgba(255, 255, 255, 0.92);
 
-  /* Ambient background (nginxpulse-inspired, but more industrial) */
-  /* Keep the overall tone "blue-ish", but avoid painting everything blue */
-  --gf-bg-glow-1: rgba(53, 111, 207, 0.11);
-  --gf-bg-glow-2: rgba(240, 180, 41, 0.09);
-  --gf-bg-glow-3: rgba(56, 189, 248, 0.06);
+  /* Ambient background (subtle, finance-friendly) */
+  --gf-bg-glow-1: rgba(47, 97, 191, 0.12);
+  --gf-bg-glow-2: rgba(79, 131, 209, 0.07);
+  --gf-bg-glow-3: rgba(100, 116, 139, 0.06);
   --gf-bg-haze-top: rgba(255, 255, 255, 0.22);
-  /* Neutral grid line (reduce blue cast) */
-  --gf-bg-grid-line: rgba(15, 24, 42, 0.07);
+  /* Neutral grid line */
+  --gf-bg-grid-line: rgba(0, 0, 0, 0.06);
   --gf-bg-grid-size: 28px 28px;
 
   --gf-color-text: var(--gf-palette-neutral-900);
   --gf-color-text-secondary: var(--gf-palette-neutral-700);
-  --gf-color-text-tertiary: rgba(15, 24, 42, 0.62);
-  --gf-color-text-disabled: rgba(15, 24, 42, 0.38);
+  /* Text (AntD-ish alpha) */
+  --gf-color-text-tertiary: rgba(0, 0, 0, 0.45);
+  --gf-color-text-disabled: rgba(0, 0, 0, 0.25);
 
   /* Border: stronger outline, still subtle */
   /* Neutral borders: keep contrast without a blue tint everywhere */
-  --gf-color-border-muted: rgba(15, 24, 42, 0.10);
-  --gf-color-border: rgba(15, 24, 42, 0.18);
-  --gf-color-border-strong: rgba(15, 24, 42, 0.28);
+  --gf-color-border-muted: rgba(0, 0, 0, 0.08);
+  --gf-color-border: rgba(0, 0, 0, 0.12);
+  --gf-color-border-strong: rgba(0, 0, 0, 0.18);
 
   /* Neutral fills (hover/selected backgrounds) */
-  --gf-color-fill: rgba(15, 24, 42, 0.06);
-  --gf-color-fill-secondary: rgba(15, 24, 42, 0.08);
-  --gf-color-fill-tertiary: rgba(15, 24, 42, 0.12);
-  --gf-color-fill-quaternary: rgba(15, 24, 42, 0.16);
-  --gf-color-zebra: rgba(15, 24, 42, 0.03);
+  --gf-color-fill: rgba(0, 0, 0, 0.04);
+  --gf-color-fill-secondary: rgba(0, 0, 0, 0.06);
+  --gf-color-fill-tertiary: rgba(0, 0, 0, 0.08);
+  --gf-color-fill-quaternary: rgba(0, 0, 0, 0.12);
+  --gf-color-zebra: rgba(0, 0, 0, 0.02);
 
   --gf-color-success: var(--gf-palette-success);
   --gf-color-warning: var(--gf-palette-warning);
@@ -115,33 +115,34 @@
   --gf-color-danger-border: rgba(228, 88, 108, 0.35);
 
   /* Floating layer colors */
-  --gf-color-mask: rgba(15, 24, 42, 0.42);
+  /* Mask: AntD-like dim */
+  --gf-color-mask: rgba(0, 0, 0, 0.45);
   --gf-color-overlay: rgba(255, 255, 255, 0.65);
-  --gf-color-tooltip-bg: rgba(15, 24, 42, 0.92);
+  --gf-color-tooltip-bg: rgba(15, 23, 42, 0.92);
   --gf-color-tooltip-text: #f5f8ff;
 
   /* Kbd / shortcut hint */
-  --gf-color-kbd-bg: rgba(15, 24, 42, 0.06);
-  --gf-color-kbd-border: rgba(15, 24, 42, 0.16);
-  --gf-color-kbd-text: rgba(15, 24, 42, 0.74);
+  --gf-color-kbd-bg: rgba(0, 0, 0, 0.04);
+  --gf-color-kbd-border: rgba(0, 0, 0, 0.12);
+  --gf-color-kbd-text: rgba(0, 0, 0, 0.65);
 
-  /* Shadows (subtle, consistent) */
-  --gf-shadow-1: 0 1px 2px rgba(15, 24, 42, 0.06), 0 10px 24px rgba(15, 24, 42, 0.06);
-  --gf-shadow-2: 0 2px 6px rgba(15, 24, 42, 0.08), 0 18px 40px rgba(15, 24, 42, 0.08);
+  /* Shadows (closer to AntD feel: tighter + less "lift") */
+  --gf-shadow-1: 0 2px 8px rgba(15, 23, 42, 0.10);
+  --gf-shadow-2: 0 8px 30px rgba(15, 23, 42, 0.16);
 
   /* Focus */
   --gf-color-focus-border: rgba(120, 176, 255, 0.92);
-  --gf-focus-ring: 0 0 0 3px rgba(53, 111, 207, 0.22);
+  --gf-focus-ring: 0 0 0 3px rgba(47, 97, 191, 0.22);
 
   /* Charts: balanced palette (still blue-first, but not all-blue) */
-  --gf-chart-1: #356fcf; /* blue */
+  --gf-chart-1: #2f61bf; /* blue */
   --gf-chart-2: #22a06b; /* green */
   --gf-chart-3: #f0b429; /* amber */
   --gf-chart-4: #e4586c; /* red/pink */
   --gf-chart-5: #3aa7c2; /* cyan */
   --gf-chart-6: #7b61d1; /* violet */
   --gf-chart-7: #fc8452; /* orange */
-  --gf-chart-8: #6d85ad; /* slate */
+  --gf-chart-8: #64748b; /* slate */
 
   /* Z-index scale */
   --gf-z-mask: 2400;
@@ -169,8 +170,8 @@
   --gf-shadow-strong: var(--gf-shadow-2);
 
   /* Keep for compatibility (no longer the default visual choice) */
-  --gf-gradient: linear-gradient(135deg, var(--gf-color-primary) 0%, rgba(104, 181, 255, 0.85) 100%);
-  --gf-panel-glow: 0 0 0 1px rgba(47, 111, 214, 0.12), 0 10px 30px rgba(31, 74, 148, 0.18);
+  --gf-gradient: linear-gradient(135deg, var(--gf-color-primary) 0%, rgba(79, 131, 209, 0.88) 100%);
+  --gf-panel-glow: 0 0 0 1px rgba(47, 97, 191, 0.14), 0 14px 40px rgba(15, 23, 42, 0.14);
 }
 
 .gf-theme-dark,
@@ -193,10 +194,10 @@
   --gf-space-8: 32px;
 
   /* Radius */
-  --gf-radius-xs: 2px;
-  --gf-radius-sm: 3px;
-  --gf-radius-md: 4px;
-  --gf-radius-lg: 4px;
+  --gf-radius-xs: 4px;
+  --gf-radius-sm: 6px;
+  --gf-radius-md: 8px;
+  --gf-radius-lg: 10px;
 
   /* Control heights */
   --gf-control-height-sm: 26px;
@@ -209,11 +210,11 @@
   --gf-motion-normal: 200ms;
 
   /* Palette */
-  --gf-palette-blue-400: #86c0ff;
-  --gf-palette-blue-500: #67adff;
-  --gf-palette-blue-600: #4ba0ff;
-  --gf-palette-blue-700: #2f84ec;
-  --gf-palette-blue-soft: rgba(103, 173, 255, 0.14);
+  --gf-palette-blue-400: #8db9ff;
+  --gf-palette-blue-500: #6aa6ff;
+  --gf-palette-blue-600: #4f92ff;
+  --gf-palette-blue-700: #2f79f2;
+  --gf-palette-blue-soft: rgba(106, 166, 255, 0.14);
 
   --gf-palette-neutral-0: #0f182a;
   --gf-palette-neutral-50: #0b1220;
@@ -232,21 +233,20 @@
   --gf-color-primary-hover: var(--gf-palette-blue-600);
   --gf-color-primary-active: var(--gf-palette-blue-700);
   --gf-color-primary-soft: var(--gf-palette-blue-soft);
-  --gf-color-primary-soft-hover: rgba(103, 173, 255, 0.2);
-  --gf-color-primary-soft-active: rgba(103, 173, 255, 0.26);
-  --gf-color-primary-border: rgba(103, 173, 255, 0.34);
-  --gf-color-primary-border-strong: rgba(103, 173, 255, 0.5);
+  --gf-color-primary-soft-hover: rgba(106, 166, 255, 0.22);
+  --gf-color-primary-soft-active: rgba(106, 166, 255, 0.3);
+  --gf-color-primary-border: rgba(106, 166, 255, 0.36);
+  --gf-color-primary-border-strong: rgba(106, 166, 255, 0.54);
 
   --gf-color-bg: var(--gf-palette-neutral-100);
   --gf-color-surface: var(--gf-palette-neutral-0);
   --gf-color-surface-muted: var(--gf-palette-neutral-50);
   --gf-color-surface-raised: rgba(18, 28, 48, 0.92);
 
-  /* Ambient background (nginxpulse-inspired, but more industrial) */
-  /* Dark: slightly calmer glow, keep blue as the primary accent */
-  --gf-bg-glow-1: rgba(47, 132, 236, 0.26);
-  --gf-bg-glow-2: rgba(255, 209, 102, 0.12);
-  --gf-bg-glow-3: rgba(134, 192, 255, 0.10);
+  /* Ambient background (subtle, finance-friendly) */
+  --gf-bg-glow-1: rgba(47, 121, 242, 0.32);
+  --gf-bg-glow-2: rgba(141, 185, 255, 0.16);
+  --gf-bg-glow-3: rgba(168, 180, 200, 0.12);
   --gf-bg-haze-top: rgba(0, 0, 0, 0.22);
   --gf-bg-grid-line: rgba(230, 237, 247, 0.12);
   --gf-bg-grid-size: 28px 28px;
@@ -278,7 +278,7 @@
   --gf-color-warning-border: rgba(255, 209, 102, 0.34);
   --gf-color-danger-border: rgba(255, 107, 131, 0.34);
 
-  --gf-color-mask: rgba(0, 0, 0, 0.56);
+  --gf-color-mask: rgba(0, 0, 0, 0.45);
   --gf-color-overlay: rgba(0, 0, 0, 0.32);
   --gf-color-tooltip-bg: rgba(17, 26, 44, 0.96);
   --gf-color-tooltip-text: rgba(230, 237, 247, 0.94);
@@ -293,10 +293,10 @@
 
   /* Focus */
   --gf-color-focus-border: rgba(155, 205, 255, 0.92);
-  --gf-focus-ring: 0 0 0 3px rgba(103, 173, 255, 0.26);
+  --gf-focus-ring: 0 0 0 3px rgba(106, 166, 255, 0.28);
 
   /* Charts: balanced palette (still blue-first, but not all-blue) */
-  --gf-chart-1: #67adff; /* blue */
+  --gf-chart-1: #6aa6ff; /* blue */
   --gf-chart-2: #33c28e; /* green */
   --gf-chart-3: #ffd166; /* amber */
   --gf-chart-4: #ff6b83; /* red/pink */
@@ -330,6 +330,6 @@
   --gf-shadow-soft: var(--gf-shadow-1);
   --gf-shadow-strong: var(--gf-shadow-2);
 
-  --gf-gradient: linear-gradient(135deg, var(--gf-color-primary) 0%, rgba(120, 197, 255, 0.75) 100%);
-  --gf-panel-glow: 0 0 0 1px rgba(90, 167, 255, 0.16), 0 12px 32px rgba(0, 0, 0, 0.28);
+  --gf-gradient: linear-gradient(135deg, var(--gf-color-primary) 0%, rgba(141, 185, 255, 0.78) 100%);
+  --gf-panel-glow: 0 0 0 1px rgba(106, 166, 255, 0.18), 0 18px 56px rgba(0, 0, 0, 0.28);
 }

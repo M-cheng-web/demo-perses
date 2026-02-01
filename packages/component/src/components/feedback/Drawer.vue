@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-  import { createNamespace, createTimeout, lockScroll, unlockScroll, type TimeoutHandle } from '../../utils';
+  import { createNamespace, createTimeout, lockScroll as lockBodyScroll, unlockScroll as unlockBodyScroll, type TimeoutHandle } from '../../utils';
   import Button from '../base/Button.vue';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
 
@@ -197,7 +197,7 @@
         if (props.lockScroll !== false) {
           const el = props.lockScrollEl ?? null;
           lockedScrollEl.value = el;
-          lockScroll(el);
+          lockBodyScroll(el);
           isScrollLocked.value = true;
         }
         if (isFirstSync) {
@@ -210,7 +210,7 @@
       } else {
         if (props.lockScroll !== false) {
           if (isScrollLocked.value) {
-            unlockScroll(lockedScrollEl.value ?? null);
+            unlockBodyScroll(lockedScrollEl.value ?? null);
             lockedScrollEl.value = null;
             isScrollLocked.value = false;
           }
@@ -234,10 +234,10 @@
       if (!props.open) return;
       if (props.lockScroll === false) return;
       // switch lock target while staying open
-      if (isScrollLocked.value) unlockScroll(lockedScrollEl.value ?? null);
+      if (isScrollLocked.value) unlockBodyScroll(lockedScrollEl.value ?? null);
       const el = nextEl ?? null;
       lockedScrollEl.value = el;
-      lockScroll(el);
+      lockBodyScroll(el);
       isScrollLocked.value = true;
     }
   );
@@ -248,7 +248,7 @@
       if (!props.open) return;
       if (enabled === false) {
         if (isScrollLocked.value) {
-          unlockScroll(lockedScrollEl.value ?? null);
+          unlockBodyScroll(lockedScrollEl.value ?? null);
           lockedScrollEl.value = null;
           isScrollLocked.value = false;
         }
@@ -257,13 +257,13 @@
       if (isScrollLocked.value) return;
       const el = props.lockScrollEl ?? null;
       lockedScrollEl.value = el;
-      lockScroll(el);
+      lockBodyScroll(el);
       isScrollLocked.value = true;
     }
   );
 
   onBeforeUnmount(() => {
-    if (props.open && props.lockScroll !== false && isScrollLocked.value) unlockScroll(lockedScrollEl.value ?? null);
+    if (props.open && props.lockScroll !== false && isScrollLocked.value) unlockBodyScroll(lockedScrollEl.value ?? null);
     clearTimers();
   });
 
@@ -293,6 +293,8 @@
     position: fixed;
     inset: 0;
     z-index: var(--gf-z-drawer);
+    /* Theme containers may set background-color; overlays must stay transparent. */
+    background: transparent;
   }
 
   .gf-drawer__mask {

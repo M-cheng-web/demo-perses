@@ -9,15 +9,12 @@
 <template>
   <div
     v-show="isActive"
-    ref="rootRef"
     :class="[bem(), { 'is-open': isOpen }]"
     :style="rootStyle"
     @wheel.stop
     @touchmove.stop
     @transitionend="handleHeaderTransitionEnd"
   >
-    <div :class="bem('mask')" @click="requestClose" />
-
     <div :class="bem('surface')">
       <Panel
         :class="bem('group-panel')"
@@ -27,22 +24,15 @@
         :collapsible="!isBooting"
         :collapsed="false"
         :bordered="false"
-        :ghost="true"
+        :ghost="false"
         :hoverable="false"
         :body-padding="false"
         @update:collapsed="handlePanelHeaderToggle"
-        @title-click="handleTitleClick"
       >
         <template #right>
           <div v-if="group && !isBooting" :class="bem('actions')">
             <Button type="text" size="small" :icon="h(ReloadOutlined)" :disabled="isBooting" @click="handleRefresh">刷新</Button>
-            <Button
-              v-if="canEditGroup"
-              size="small"
-              :type="isGroupEditing ? 'ghost' : 'primary'"
-              :disabled="isBooting"
-              @click="handleToggleEditing"
-            >
+            <Button v-if="canEditGroup" size="small" :type="isGroupEditing ? 'ghost' : 'primary'" :disabled="isBooting" @click="handleToggleEditing">
               {{ isGroupEditing ? '退出编辑' : '编辑' }}
             </Button>
           </div>
@@ -72,7 +62,7 @@
             :hide-on-single-page="false"
             :disabled="isBooting"
             @update:current="handleUpdateCurrentPage"
-            @update:pageSize="handleUpdatePageSize"
+            @update:page-size="handleUpdatePageSize"
           />
         </div>
       </Panel>
@@ -123,8 +113,6 @@
     (e: 'after-close'): void;
     (e: 'edit-group', group: PanelGroup): void;
   }>();
-
-  const rootRef = ref<HTMLElement | null>(null);
 
   const group = computed(() => props.pagedGroup?.group ?? null);
   const title = computed(() => group.value?.title || '未命名面板组');
@@ -191,12 +179,6 @@
 
   const handlePanelHeaderToggle = () => {
     requestClose();
-  };
-
-  const handleTitleClick = () => {
-    if (!group.value) return;
-    if (!canEditGroup.value) return;
-    emit('edit-group', group.value);
   };
 
   const handleUpdateCurrentPage = (page: number) => {
@@ -354,13 +336,8 @@
     inset: 0;
     z-index: 140;
     pointer-events: auto;
-
-    &__mask {
-      position: absolute;
-      inset: 0;
-      // 聚焦层背景必须是“不透”的：避免看到底层面板组列表（标题叠印/抖动感）
-      background: var(--gf-color-surface);
-    }
+    // Focus layer is a "page-like" surface: keep it solid (no translucent backdrop).
+    background: var(--gf-color-surface);
 
     &__surface {
       position: absolute;
@@ -377,18 +354,10 @@
     }
 
     // 覆盖 ghost panel 默认 overflow: visible（聚焦层需要固定高度 + 内部滚动）
-    :deep(.gf-panel.is-ghost) {
-      overflow: hidden;
-    }
-
-    // 聚焦层 header 与列表一致：透明背景 + 轻分割线
-    :deep(.gf-panel.is-ghost > .gf-panel__header) {
-      background: transparent;
-      border-bottom: 1px solid var(--gf-color-border-muted);
-    }
-
     // 只移动“聚焦层主 Panel”的 header（营造“标题浮起”的连续感）
     :deep(.dp-panel-group-focus-layer__group-panel > .gf-panel__header) {
+      background: var(--gf-color-surface);
+      border-bottom: none;
       transform: translateY(var(--dp-focus-start-y, 0px));
       transition: transform var(--dp-focus-motion, var(--gf-motion-normal)) var(--gf-easing);
     }
@@ -419,7 +388,7 @@
       justify-content: flex-end;
       padding: 0;
       background: var(--gf-color-surface-muted);
-      border-top: 1px solid var(--gf-color-border-muted);
+      border-top: none;
     }
 
     &.is-open {

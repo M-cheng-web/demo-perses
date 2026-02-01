@@ -579,14 +579,12 @@
       border: 1px solid var(--gf-color-border);
       transition:
         box-shadow var(--gf-motion-normal) var(--gf-easing),
-        border-color var(--gf-motion-normal) var(--gf-easing),
-        transform var(--gf-motion-normal) var(--gf-easing);
+        border-color var(--gf-motion-normal) var(--gf-easing);
     }
 
     &__header:hover {
       border-color: var(--gf-color-border-strong);
       box-shadow: var(--gf-shadow-1);
-      transform: translateY(-1px);
     }
 
     &__title {
@@ -664,14 +662,12 @@
       border-radius: var(--gf-radius-md);
       transition:
         box-shadow var(--gf-motion-normal) var(--gf-easing),
-        border-color var(--gf-motion-normal) var(--gf-easing),
-        transform var(--gf-motion-normal) var(--gf-easing);
+        border-color var(--gf-motion-normal) var(--gf-easing);
     }
 
     &__box:hover {
       border-color: var(--gf-color-border-strong);
       box-shadow: var(--gf-shadow-1);
-      transform: translateY(-1px);
     }
 
     &__mono {

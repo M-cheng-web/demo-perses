@@ -7,31 +7,63 @@
 -->
 <template>
   <div class="dp-dashboard-view">
-    <div v-if="state.dashboard" class="dp-dashboard-view__meta">
-      <div class="dp-dashboard-view__status">
-        <span>面板组: {{ state.panelGroups.length }}</span>
+    <div class="dp-dashboard-view__header">
+      <div class="dp-dashboard-view__headline">
+        <div class="dp-dashboard-view__title">
+          <div class="dp-dashboard-view__h1">Dashboard 测试台</div>
+          <div class="dp-dashboard-view__sub">本页仅用于本地回归：SDK / Toolbar / 弹窗 / 性能等能力验证（非生产 UI）。</div>
+        </div>
+
+        <div class="dp-dashboard-view__nav">
+          <Segmented v-model:value="themeModel" size="small" :options="themeOptions" />
+          <Button size="small" type="primary" @click="goComponents">组件库</Button>
+          <Button size="small" type="ghost" @click="goJsonEditor">JSON Editor</Button>
+          <Button size="small" type="ghost" @click="goPromql">PromQL</Button>
+          <Button size="small" type="ghost" @click="goPerf">性能</Button>
+        </div>
       </div>
-      <div class="dp-dashboard-view__actions">
-        <Segmented v-model:value="themeModel" :options="themeOptions" />
-        <Button type="primary" @click="goComponents">组件库</Button>
-        <Button type="ghost" @click="goJsonEditor">JSON Editor 测试</Button>
-        <Button type="ghost" @click="goPromql">PromQL 测试</Button>
-        <Button type="ghost" @click="goPerf">性能压测</Button>
-        <Button type="ghost" @click="reloadDashboard">重新加载</Button>
-        <Button type="ghost" @click="setQuickRange">最近 5 分钟</Button>
-        <Button type="ghost" @click="actions.openSettings">打开设置侧边栏</Button>
-        <Button type="ghost" @click="actions.toggleSettings">切换设置侧边栏</Button>
-        <Button type="ghost" @click="actions.toolbar.viewJson">Toolbar: 查看 JSON</Button>
-        <Button type="ghost" @click="actions.toolbar.exportJson">Toolbar: 导出 JSON</Button>
-        <Button type="ghost" @click="actions.toolbar.importJson">Toolbar: 导入 JSON</Button>
-        <Button type="ghost" @click="actions.toolbar.refresh">Toolbar: 刷新</Button>
-        <Button type="ghost" @click="() => actions.toolbar.setTimeRangePreset('now-5m')">Toolbar: 最近 5 分钟</Button>
-        <Button type="ghost" @click="actions.toolbar.togglePanelsView">Toolbar: 切换视图</Button>
-        <Button type="ghost" @click="handleRefresh">刷新时间范围</Button>
-        <Button type="ghost" @click="schedulerOpen = true">调度器监控</Button>
-        <Button type="ghost" @click="mountDashboard">挂载</Button>
-        <Button type="ghost" @click="unmountDashboard">卸载</Button>
-        <Button type="ghost" @click="debugOpen = true">调试信息</Button>
+
+      <div v-if="state.dashboard" class="dp-dashboard-view__stats">
+        <Tag size="small" color="var(--gf-color-primary)">面板组 {{ state.panelGroups.length }}</Tag>
+        <Tag size="small" :color="ready ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
+          {{ ready ? '已挂载' : '挂载中' }}
+        </Tag>
+        <Tag size="small" variant="neutral">Theme: {{ themeModel }}</Tag>
+        <Tag size="small" variant="neutral">容器: {{ containerSize.width }} × {{ containerSize.height }}</Tag>
+        <span class="dp-dashboard-view__mono" :title="api.baseUrl">{{ api.baseUrl }}</span>
+      </div>
+
+      <div v-if="state.dashboard" class="dp-dashboard-view__command-grid">
+        <div class="dp-dashboard-view__group">
+          <div class="dp-dashboard-view__group-title">Dashboard</div>
+          <div class="dp-dashboard-view__group-actions">
+            <Button size="small" type="primary" @click="reloadDashboard">重新加载</Button>
+            <Button size="small" type="ghost" @click="handleRefresh">刷新时间范围</Button>
+            <Button size="small" type="ghost" @click="setQuickRange">最近 5 分钟</Button>
+            <Button size="small" type="ghost" @click="mountDashboard">挂载</Button>
+            <Button size="small" type="ghost" @click="unmountDashboard">卸载</Button>
+          </div>
+        </div>
+
+        <div class="dp-dashboard-view__group">
+          <div class="dp-dashboard-view__group-title">Toolbar</div>
+          <div class="dp-dashboard-view__group-actions">
+            <Button size="small" type="ghost" @click="actions.toolbar.viewJson">查看 JSON</Button>
+            <Button size="small" type="ghost" @click="actions.toolbar.exportJson">导出 JSON</Button>
+            <Button size="small" type="ghost" @click="actions.toolbar.importJson">导入 JSON</Button>
+            <Button size="small" type="ghost" @click="actions.toolbar.refresh">刷新</Button>
+            <Button size="small" type="ghost" @click="() => actions.toolbar.setTimeRangePreset('now-5m')">最近 5 分钟</Button>
+            <Button size="small" type="ghost" @click="actions.toolbar.togglePanelsView">切换视图</Button>
+          </div>
+        </div>
+
+        <div class="dp-dashboard-view__group">
+          <div class="dp-dashboard-view__group-title">Debug</div>
+          <div class="dp-dashboard-view__group-actions">
+            <Button size="small" type="ghost" @click="schedulerOpen = true">调度器监控</Button>
+            <Button size="small" type="ghost" @click="debugOpen = true">调试信息</Button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -54,7 +86,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { useRouter } from 'vue-router';
-  import { Button, List, Modal, Segmented } from '@grafana-fast/component';
+  import { Button, List, Modal, Segmented, Tag } from '@grafana-fast/component';
   import { useDashboardSdk, DashboardApi } from '@grafana-fast/hooks';
   import type { DashboardTheme } from '@grafana-fast/dashboard';
   import { getPiniaQueryScheduler } from '@grafana-fast/dashboard';
@@ -145,37 +177,128 @@
     overflow: auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 12px;
+    gap: var(--gf-space-3);
+    padding: var(--gf-space-3);
 
-    &__meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      color: var(--gf-color-text);
-      font-size: 13px;
-      backdrop-filter: blur(12px);
-      background: var(--gf-color-surface);
+    &__header {
+      position: sticky;
+      top: var(--gf-space-3);
+      z-index: 20;
+      padding: 14px 16px;
+      border-radius: var(--gf-radius-lg);
       border: 1px solid var(--gf-color-border);
-      border-radius: var(--gf-radius-md);
+      background: var(--gf-color-surface);
+      box-shadow: none;
       transition:
         box-shadow var(--gf-motion-normal) var(--gf-easing),
-        border-color var(--gf-motion-normal) var(--gf-easing),
-        transform var(--gf-motion-normal) var(--gf-easing);
+        border-color var(--gf-motion-normal) var(--gf-easing);
     }
 
-    &__status {
+    &__header:hover {
+      border-color: var(--gf-color-border-strong);
+      box-shadow: var(--gf-shadow-1);
+    }
+
+    &__headline {
       display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
       gap: 12px;
-      color: var(--gf-color-text-secondary);
+      flex-wrap: wrap;
     }
 
-    &__actions {
+    &__title {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    &__h1 {
+      font-size: 18px;
+      line-height: 1.15;
+      font-weight: 820;
+      letter-spacing: 0.2px;
+    }
+
+    &__sub {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--gf-color-text-tertiary);
+      max-width: 640px;
+    }
+
+    &__nav {
       display: flex;
       gap: 8px;
       align-items: center;
+      justify-content: flex-end;
       flex-wrap: wrap;
+    }
+
+    &__stats {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding-top: 10px;
+      margin-top: 10px;
+      border-top: 1px solid var(--gf-color-border-muted);
+    }
+
+    &__mono {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      padding: 2px 8px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid var(--gf-color-border-muted);
+      background: var(--gf-color-surface-muted);
+      color: var(--gf-color-text-secondary);
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &__command-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    &__group {
+      padding: 10px;
+      border-radius: var(--gf-radius-md);
+      border: 1px solid var(--gf-color-border-muted);
+      background: var(--gf-color-surface);
+      transition:
+        border-color var(--gf-motion-normal) var(--gf-easing),
+        box-shadow var(--gf-motion-normal) var(--gf-easing);
+    }
+
+    &__group:hover {
+      border-color: var(--gf-color-border-strong);
+      box-shadow: 0 0 0 1px var(--gf-color-border-muted) inset;
+    }
+
+    &__group-title {
+      font-size: 11px;
+      font-weight: 760;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gf-color-text-tertiary);
+      padding-bottom: 8px;
+    }
+
+    &__group-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
     }
 
     &__scheduler-actions {
@@ -189,9 +312,9 @@
     &__canvas {
       flex: 1;
       min-height: 480px;
-      border-radius: var(--gf-radius-md);
+      border-radius: var(--gf-radius-lg);
       background: var(--gf-color-surface-muted);
-      border: 1px solid var(--gf-color-border-muted);
+      border: 1px solid var(--gf-color-border);
       overflow: hidden;
       position: relative;
     }
@@ -203,7 +326,7 @@
       border-radius: inherit;
       border: 1px solid var(--gf-color-border-muted);
       pointer-events: none;
-      box-shadow: 0 0 24px var(--gf-color-primary-soft);
+      box-shadow: none;
     }
   }
 </style>

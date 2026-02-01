@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
   import { computed, inject, onBeforeUnmount, watch } from 'vue';
-  import { createNamespace, lockScroll, unlockScroll } from '../../utils';
+  import { createNamespace, lockScroll as lockBodyScroll, unlockScroll as unlockBodyScroll } from '../../utils';
   import Button from '../base/Button.vue';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
 
@@ -100,12 +100,12 @@
         if (props.lockScroll !== false) {
           const el = props.lockScrollEl ?? null;
           lockedScrollEl = el;
-          lockScroll(el);
+          lockBodyScroll(el);
           isScrollLocked = true;
         }
       } else {
         if (props.lockScroll !== false && isScrollLocked) {
-          unlockScroll(lockedScrollEl ?? null);
+          unlockBodyScroll(lockedScrollEl ?? null);
           lockedScrollEl = null;
           isScrollLocked = false;
         }
@@ -119,10 +119,10 @@
     (nextEl) => {
       if (!props.open) return;
       if (props.lockScroll === false) return;
-      if (isScrollLocked) unlockScroll(lockedScrollEl ?? null);
+      if (isScrollLocked) unlockBodyScroll(lockedScrollEl ?? null);
       const el = nextEl ?? null;
       lockedScrollEl = el;
-      lockScroll(el);
+      lockBodyScroll(el);
       isScrollLocked = true;
     }
   );
@@ -132,7 +132,7 @@
     (enabled) => {
       if (!props.open) return;
       if (enabled === false) {
-        if (isScrollLocked) unlockScroll(lockedScrollEl ?? null);
+        if (isScrollLocked) unlockBodyScroll(lockedScrollEl ?? null);
         lockedScrollEl = null;
         isScrollLocked = false;
         return;
@@ -140,13 +140,13 @@
       if (isScrollLocked) return;
       const el = props.lockScrollEl ?? null;
       lockedScrollEl = el;
-      lockScroll(el);
+      lockBodyScroll(el);
       isScrollLocked = true;
     }
   );
 
   onBeforeUnmount(() => {
-    if (props.open && props.lockScroll !== false && isScrollLocked) unlockScroll(lockedScrollEl ?? null);
+    if (props.open && props.lockScroll !== false && isScrollLocked) unlockBodyScroll(lockedScrollEl ?? null);
   });
 
   const handleMaskClick = () => {
@@ -173,6 +173,8 @@
     align-items: center;
     justify-content: center;
     padding: var(--gf-space-4);
+    /* Theme containers may set background-color; overlays must stay transparent. */
+    background: transparent;
   }
 
   .gf-modal__mask {

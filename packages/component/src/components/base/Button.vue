@@ -12,7 +12,7 @@
         <component :is="icon" v-if="icon" />
       </slot>
     </span>
-    <span :class="bem('content')">
+    <span v-if="$slots.default" :class="bem('content')">
       <slot></slot>
     </span>
     <span v-if="shortcutLabel" :class="bem('shortcut')" aria-hidden="true">{{ shortcutLabel }}</span>

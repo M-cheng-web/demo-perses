@@ -101,7 +101,8 @@
       const layoutById = new Map<string, PanelLayout>();
       (group.layout ?? []).forEach((it) => layoutById.set(String(it.i), it));
 
-      for (const p of group.panels ?? []) {
+      const panels = group.panels ?? [];
+      for (const p of panels) {
         const pid = String(p.id);
         panelById.set(pid, p);
         groupByPanelId.set(pid, { groupId: group.id, groupTitle, panelDescription: p.description });

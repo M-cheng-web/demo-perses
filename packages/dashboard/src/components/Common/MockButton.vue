@@ -20,25 +20,23 @@
 <style scoped lang="less">
   .gf-mock-button {
     padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid #8fb4ff;
-    background: linear-gradient(135deg, #6ea9ff, #8bc5ff);
+    border-radius: var(--gf-radius-sm);
+    border: 1px solid transparent;
+    background: var(--gf-color-primary);
     color: #fff;
     font-size: 13px;
     cursor: pointer;
-    box-shadow: 0 6px 14px rgba(110, 169, 255, 0.35);
+    box-shadow: var(--gf-shadow-1);
     transition:
-      transform 0.12s ease,
-      box-shadow 0.12s ease;
+      background var(--gf-motion-fast) var(--gf-easing),
+      box-shadow var(--gf-motion-fast) var(--gf-easing);
 
     &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 20px rgba(110, 169, 255, 0.4);
+      background: var(--gf-color-primary-hover);
     }
 
     &:active {
-      transform: translateY(0);
-      box-shadow: 0 4px 10px rgba(110, 169, 255, 0.28);
+      background: var(--gf-color-primary-active);
     }
   }
 </style>

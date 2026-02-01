@@ -25,7 +25,7 @@
       </Tooltip>
       <Popconfirm title="确定要删除这个面板吗？" ok-text="确定" cancel-text="取消" @confirm="handleDelete">
         <Tooltip title="删除">
-          <Button type="text" size="small" danger :icon="h(DeleteOutlined)" />
+          <Button type="text" size="small" :class="bem('delete-btn')" :icon="h(DeleteOutlined)" />
         </Tooltip>
       </Popconfirm>
     </template>
@@ -107,10 +107,19 @@
       justify-content: center;
       font-size: 14px;
       border-radius: var(--gf-radius-sm);
+      --gf-btn-bg-hover: var(--gf-color-fill);
+      --gf-btn-bg-active: var(--gf-color-fill-secondary);
+    }
 
-      &:hover {
-        background-color: var(--gf-color-fill);
-      }
+    &__delete-btn {
+      // 删除按钮：只要红色图标，不要背景（hover/active 也保持透明）
+      --gf-btn-color: var(--gf-color-danger);
+      --gf-btn-bg: transparent;
+      --gf-btn-bg-hover: transparent;
+      --gf-btn-bg-active: transparent;
+      --gf-btn-border: transparent;
+      --gf-btn-border-hover: transparent;
+      --gf-btn-shadow-hover: none;
     }
   }
 </style>

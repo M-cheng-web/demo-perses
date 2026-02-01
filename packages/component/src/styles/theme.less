@@ -18,14 +18,20 @@
 
 :where(.gf-theme-blue, [data-gf-theme='light']) {
   color-scheme: light;
-  background-color: var(--gf-color-bg);
   color: var(--gf-text);
 }
 
 :where(.gf-theme-dark, [data-gf-theme='dark']) {
   color-scheme: dark;
-  background-color: var(--gf-color-bg);
   color: var(--gf-text);
+}
+
+:where(.gf-config-provider.gf-theme-blue, .gf-config-provider[data-gf-theme='light']) {
+  background-color: var(--gf-color-bg);
+}
+
+:where(.gf-config-provider.gf-theme-dark, .gf-config-provider[data-gf-theme='dark']) {
+  background-color: var(--gf-color-bg);
 }
 
 :where(.gf-theme-blue, .gf-theme-dark, [data-gf-theme]) * {
@@ -115,14 +121,12 @@
   background: var(--gf-surface);
   border: 1px solid var(--gf-border);
   border-radius: var(--gf-radius-md);
-  transition: box-shadow var(--gf-motion-normal) var(--gf-easing), border-color var(--gf-motion-normal) var(--gf-easing),
-    transform var(--gf-motion-normal) var(--gf-easing);
+  transition: box-shadow var(--gf-motion-normal) var(--gf-easing), border-color var(--gf-motion-normal) var(--gf-easing);
 }
 
 .gf-surface:hover {
   border-color: var(--gf-border-strong);
   box-shadow: var(--gf-shadow-1);
-  transform: translateY(-1px);
 }
 
 .gf-glow-ring {

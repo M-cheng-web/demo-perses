@@ -214,10 +214,15 @@
       }
     }
 
-    // 嵌入式：不提供背景，但列表需要一条轻分割线帮助区分组
+    // 列表行：更像 AntD 的 list row（无圆角，使用分割线）
     :deep(.dp-panel-group-list__group .gf-panel.is-ghost > .gf-panel__header) {
-      background: transparent;
+      background: var(--gf-color-surface);
       border-bottom: 1px solid var(--gf-color-border-muted);
+      border-radius: 0;
+    }
+
+    :deep(.dp-panel-group-list__group .gf-panel.is-ghost > .gf-panel__header:hover) {
+      background: var(--gf-color-surface-muted);
     }
 
     :deep(.dp-panel-group-list__group .gf-panel__right) {

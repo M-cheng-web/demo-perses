@@ -40,8 +40,12 @@
 
       <!-- 面板组列表 -->
       <div ref="contentEl" :class="[bem('content'), { 'is-locked': isFocusLayerActive }]" :style="contentStyle">
-        <Empty v-if="!panelGroups.length" :description="emptyText">
-          <Button type="primary" :disabled="isBooting || isReadOnly" @click="handleAddPanelGroup"> 创建面板组 </Button>
+        <Empty v-if="!currentDashboard" description="暂无仪表盘数据">
+          <div :class="bem('empty-hint')">点击右侧“设置”按钮，在工具栏中选择“导入 JSON”初始化仪表盘。</div>
+        </Empty>
+
+        <Empty v-else-if="!panelGroups.length" :description="emptyText">
+          <div :class="bem('empty-hint')">点击右侧“设置”按钮，在工具栏中创建面板组或导入 JSON。</div>
         </Empty>
 
         <template v-else>
@@ -84,6 +88,40 @@
       <!-- 全局面板组编辑对话框 -->
       <PanelGroupDialog ref="panelGroupDialogRef" />
 
+      <!-- JSON 查看/编辑模态框（SDK/外部可直接唤起，不依赖 settings drawer） -->
+      <Modal
+        v-model:open="jsonModalVisible"
+        title="仪表盘 JSON"
+        :width="860"
+        destroyOnClose
+        :maskClosable="false"
+        :lock-scroll="lockScrollEnabled"
+        :lock-scroll-el="lockScrollEl"
+      >
+        <div v-if="isGeneratingJson" :class="bem('json-loading')">正在生成 JSON（内容较大时可能需要几秒）...</div>
+        <DashboardJsonEditor
+          v-else
+          ref="dashboardJsonEditorRef"
+          v-model="dashboardJson"
+          :read-only="jsonModalMode === 'view'"
+          :max-editable-chars="MAX_EDITABLE_DASHBOARD_JSON_CHARS"
+          :supported-panel-types="supportedPanelTypes"
+          :validate="jsonModalMode === 'edit' ? validateDashboardStrict : undefined"
+          @validate="handleJsonValidate"
+        />
+        <template #footer>
+          <Space>
+            <Button @click="jsonModalVisible = false">取消</Button>
+            <Button v-if="jsonModalMode === 'edit'" type="primary" :disabled="isReadOnly || !isJsonValid || isBooting" @click="handleApplyJson">
+              应用
+            </Button>
+          </Space>
+        </template>
+      </Modal>
+
+      <!-- 隐藏的文件输入：用于导入 JSON（不依赖 toolbar/drawer） -->
+      <input ref="jsonFileInputRef" type="file" accept=".json" style="display: none" @change="handleJsonFileChange" />
+
       <!-- 全局 Loading Mask：boot 阶段锁住交互（禁止滚动/折叠/点击） -->
       <div v-if="isBooting" :class="bem('boot-mask')" @wheel.prevent @touchmove.prevent @pointerdown.prevent @keydown.prevent>
         <div :class="bem('boot-card')">
@@ -99,7 +137,7 @@
 <script setup lang="ts">
   import { ref, watch, onMounted, onUnmounted, computed, provide, inject, h, nextTick } from 'vue';
   import { getActivePinia, storeToRefs, type Pinia } from '@grafana-fast/store';
-  import { Button, ConfigProvider, Drawer, Empty, Loading, message } from '@grafana-fast/component';
+  import { Button, ConfigProvider, Drawer, Empty, Loading, Modal, Space, message } from '@grafana-fast/component';
   import { SettingOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useEditorStore, useTimeRangeStore, useTooltipStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
@@ -118,6 +156,10 @@
   import { GF_API_KEY, GF_RUNTIME_KEY } from '/#/runtime/keys';
   import { subscribeWindowResize } from '/#/runtime/windowEvents';
   import { setPiniaApiClient } from '/#/runtime/piniaAttachments';
+  import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
+  import { DashboardJsonEditor } from '@grafana-fast/json-editor';
+  import type { Dashboard } from '@grafana-fast/types';
+  import { getBuiltInPanelRegistry } from '/#/runtime/panels';
   import { usePanelGroupPagination } from '/#/composables/usePanelGroupPagination';
 
   const [_, bem] = createNamespace('dashboard');
@@ -767,22 +809,142 @@
     return parts.join(' / ');
   });
 
-  const ensureToolbarMounted = async () => {
-    if (toolbarRef.value) return;
-    openSettings();
+  // ---------------------------
+  // JSON Modal (SDK-friendly)
+  // ---------------------------
+  const MAX_EDITABLE_DASHBOARD_JSON_CHARS = 120_000;
+  const jsonModalVisible = ref(false);
+  const jsonModalMode = ref<'view' | 'edit'>('view');
+  const dashboardJson = ref('');
+  const isJsonValid = ref(true);
+  const isGeneratingJson = ref(false);
+  let generateJsonSeq = 0;
+
+  const dashboardJsonEditorRef = ref<null | { getDraftText: () => string; getDashboard: () => Dashboard }>(null);
+  const jsonFileInputRef = ref<HTMLInputElement>();
+
+  const supportedPanelTypes = getBuiltInPanelRegistry()
+    .list()
+    .map((p) => p.type)
+    .filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
+
+  const lockScrollEl = computed(() => contentEl.value ?? rootEl.value ?? null);
+  const lockScrollEnabled = computed(() => lockScrollEl.value != null);
+
+  const handleJsonValidate = (ok: boolean) => {
+    isJsonValid.value = ok;
+  };
+
+  const generateDashboardJsonText = async (dash: Dashboard) => {
+    const seq = ++generateJsonSeq;
+    isGeneratingJson.value = true;
+    // 避免“点击打开 → 先 stringify 大对象 → UI 卡死一段时间后才出现 modal”
     await nextTick();
+
+    // 让出一帧，确保 modal/loading 文案已渲染
+    await new Promise<void>((r) => window.setTimeout(r, 0));
+    if (seq !== generateJsonSeq) return;
+    if (!jsonModalVisible.value) return;
+
+    try {
+      // 大盘 JSON 生成成本很高：用更紧凑的缩进以降低体积与 stringify 压力
+      const indent = isLargeDashboard.value ? 1 : 2;
+      const text = JSON.stringify(dash, null, indent);
+      if (seq !== generateJsonSeq) return;
+      if (!jsonModalVisible.value) return;
+      dashboardJson.value = text;
+    } finally {
+      if (seq !== generateJsonSeq) return;
+      isGeneratingJson.value = false;
+    }
+  };
+
+  watch(
+    () => jsonModalVisible.value,
+    (open) => {
+      if (open) return;
+      // cancel any in-flight generation
+      generateJsonSeq++;
+      isGeneratingJson.value = false;
+    }
+  );
+
+  const openJsonModal = (mode: 'view' | 'edit' = 'view') => {
+    if (isBooting.value) return;
+    const dash = currentDashboard.value;
+    if (!dash) return;
+    jsonModalMode.value = isReadOnly.value && mode === 'edit' ? 'view' : mode;
+    jsonModalVisible.value = true;
+    void generateDashboardJsonText(dash);
+  };
+
+  const closeJsonModal = () => {
+    jsonModalVisible.value = false;
+  };
+
+  const handleJsonFileChange = (event: Event) => {
+    if (isReadOnly.value) {
+      const target = event.target as HTMLInputElement;
+      target.value = '';
+      message.warning('当前为只读模式，无法导入/应用 JSON');
+      return;
+    }
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const json = String(reader.result ?? '');
+      // 导入文件时不需要生成：取消可能存在的“生成当前 dashboard JSON”任务
+      generateJsonSeq++;
+      isGeneratingJson.value = false;
+      dashboardJson.value = json;
+      jsonModalMode.value = 'edit';
+      jsonModalVisible.value = true;
+      message.success('已加载 JSON，请检查并点击“应用”');
+    };
+    reader.readAsText(file);
+
+    // 清空 input 值，以便可以重复导入同一个文件
+    target.value = '';
+  };
+
+  const handleImportJson = () => {
+    if (isBooting.value) return;
+    if (isReadOnly.value) {
+      message.warning('当前为只读模式，无法导入/应用 JSON');
+      return;
+    }
+    jsonFileInputRef.value?.click();
+  };
+
+  const handleApplyJson = () => {
+    try {
+      if (isBooting.value) return;
+      if (isReadOnly.value) {
+        message.warning('当前为只读模式，无法应用 JSON');
+        return;
+      }
+      const dashboard = dashboardJsonEditorRef.value?.getDashboard();
+      if (!dashboard) {
+        message.error('无法应用：Dashboard JSON 不合法');
+        return;
+      }
+      const rawText = dashboardJsonEditorRef.value?.getDraftText?.() ?? dashboardJson.value;
+      void dashboardStore.applyDashboardFromJson(dashboard, rawText);
+      jsonModalVisible.value = false;
+      message.success('应用成功');
+    } catch (error) {
+      console.error('应用失败：JSON 格式错误', error);
+      message.error((error as Error)?.message ?? '应用失败');
+    }
   };
 
   const toolbarApi = {
-    // JSON modal（依赖 toolbar UI）
-    openJsonModal: async (mode: 'view' | 'edit' = 'view') => {
-      await ensureToolbarMounted();
-      toolbarRef.value?.openJsonModal?.(mode);
-    },
-    closeJsonModal: async () => {
-      await ensureToolbarMounted();
-      toolbarRef.value?.closeJsonModal?.();
-    },
+    // JSON modal（SDK/外部可直接唤起，不依赖 settings drawer）
+    openJsonModal,
+    closeJsonModal,
 
     // Core actions（无 UI 也可执行）
     refresh: () => {
@@ -821,18 +983,9 @@
       URL.revokeObjectURL(url);
       message.success('导出成功');
     },
-    importJson: async () => {
-      await ensureToolbarMounted();
-      toolbarRef.value?.handleImport?.();
-    },
-    viewJson: async () => {
-      await ensureToolbarMounted();
-      toolbarRef.value?.handleViewJson?.();
-    },
-    applyJson: async () => {
-      await ensureToolbarMounted();
-      toolbarRef.value?.handleApplyJson?.();
-    },
+    importJson: handleImportJson,
+    viewJson: () => openJsonModal('view'),
+    applyJson: handleApplyJson,
 
     // Controlled helpers
     setTimeRangePreset: (preset: string) => {
@@ -882,6 +1035,13 @@
       > * {
         width: 100%;
       }
+    }
+
+    &__empty-hint {
+      margin-top: var(--gf-space-2);
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--gf-color-text-secondary);
     }
 
     &__settings {

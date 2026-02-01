@@ -1,7 +1,13 @@
 <!-- 组件说明：简易菜单列表，可传入 items 或自定义插槽 -->
 <template>
   <ul :class="bem()">
-    <li v-for="item in normalizedItems" :key="item.key" :class="bem('item')" @click="handleClick(item)">
+    <li
+      v-for="item in normalizedItems"
+      :key="item.key"
+      :class="[bem('item'), { 'is-disabled': item.disabled }]"
+      :aria-disabled="item.disabled ? 'true' : undefined"
+      @click="handleClick(item)"
+    >
       <span v-if="item.icon" :class="bem('icon')">
         <component :is="item.icon" />
       </span>
@@ -21,6 +27,7 @@
     key: string | number;
     label: string;
     icon?: any;
+    disabled?: boolean;
   }
 
   const props = withDefaults(
@@ -42,6 +49,7 @@
   const normalizedItems = computed(() => props.items ?? []);
 
   const handleClick = (item: MenuItemData) => {
+    if (item.disabled) return;
     emit('click', { key: item.key, item });
   };
 </script>
@@ -61,14 +69,27 @@
       align-items: center;
       gap: 8px;
       padding: 8px 10px;
-      border-radius: 10px;
+      border-radius: var(--gf-radius-sm);
       cursor: pointer;
       color: var(--gf-text);
-      transition: all 0.2s var(--gf-easing);
+      transition:
+        background var(--gf-motion-fast) var(--gf-easing),
+        color var(--gf-motion-fast) var(--gf-easing),
+        opacity var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
         background: var(--gf-primary-soft);
         color: var(--gf-primary-strong);
+      }
+
+      &.is-disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      &.is-disabled:hover {
+        background: transparent;
+        color: var(--gf-text);
       }
     }
 
