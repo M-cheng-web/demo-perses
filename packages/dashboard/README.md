@@ -21,19 +21,19 @@ Peer dependencies（宿主应用需要提供）：
 ```ts
 import { useDashboardSdk } from '@grafana-fast/hooks';
 
-const { actions } = useDashboardSdk(dashboardRef, {
+const sdk = useDashboardSdk(dashboardRef, {
   dashboardId: 'default',
   instanceId: 'my-dashboard-1',
   // apiClient / theme / readOnly 等…
 });
 
-actions.toolbar.viewJson();
+sdk.actions.toolbar.viewJson();
 ```
 
 优点：
 
 - 自动处理 pinia 隔离、多实例销毁清理
-- 可直接拿到 `actions/state` 作为宿主控制面
+- 对外提供“命令式 actions + 事件订阅 on/off + getState/getDashboardSnapshot 快照读取”的稳定 API 面
 
 ## 直接使用组件：DashboardView
 

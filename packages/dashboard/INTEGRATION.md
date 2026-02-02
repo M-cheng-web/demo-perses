@@ -24,8 +24,10 @@
 
 ### 常用能力开关
 
-- `readOnly`：全局只读（禁用创建/删除/拖拽/导入/应用 JSON 等）
 - `theme`：`light | dark`
+
+> 说明：`readOnly`（全局只读能力）不再通过 DashboardView props 驱动。
+> 推荐由宿主通过 SDK/store 命令式控制（例如 `useDashboardSdk().actions.setReadOnly(true)`）。
 
 ### Portal（Teleport 挂载点）
 

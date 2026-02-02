@@ -18,9 +18,11 @@ useDashboardSdk(hostRef, { dashboardId: 'default' });
 
 ## 依赖要求
 
-- 宿主应用需要注册：
-  - `@grafana-fast/store`（Pinia + stores）
-  - `@grafana-fast/component`（UI kit，全局样式与基础组件）
+- 使用 `useDashboardSdk` 时：
+  - SDK 会创建一个**隔离的 pinia 实例**并用内部 `createApp()` 挂载 Dashboard
+  - 宿主无需手动在自己的 Vue app 上安装 Pinia（也不会污染宿主的 store）
+- 直接使用 `DashboardView` 组件时：
+  - 宿主需要自行提供 Pinia（并确保组件树内注入 pinia），否则内部 store 无法工作
 - `@grafana-fast/dashboard` / `@grafana-fast/hooks` 的 `peerDependencies` 需要由宿主提供（例如 `vue`、`echarts`）。
 - `/#/` 是 **dashboard 包内部** 的源码绝对路径别名，不建议在业务侧或其它包中使用。
 

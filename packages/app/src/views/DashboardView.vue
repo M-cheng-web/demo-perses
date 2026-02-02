@@ -24,12 +24,12 @@
       </div>
 
       <div v-if="state.dashboard" class="dp-dashboard-view__stats">
-        <Tag size="small" color="var(--gf-color-primary)">面板组 {{ state.panelGroups.length }}</Tag>
-        <Tag size="small" :color="ready ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
-          {{ ready ? '已挂载' : '挂载中' }}
+        <Tag size="small" color="var(--gf-color-primary)">面板组 {{ state.dashboard.groupCount }}</Tag>
+        <Tag size="small" :color="state.mounted ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
+          {{ state.mounted ? '已挂载' : '未挂载' }}
         </Tag>
         <Tag size="small" variant="neutral">Theme: {{ themeModel }}</Tag>
-        <Tag size="small" variant="neutral">容器: {{ containerSize.width }} × {{ containerSize.height }}</Tag>
+        <Tag size="small" variant="neutral">容器: {{ state.containerSize.width }} × {{ state.containerSize.height }}</Tag>
         <span class="dp-dashboard-view__mono" :title="api.baseUrl">{{ api.baseUrl }}</span>
       </div>
 
@@ -84,18 +84,23 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { computed, onUnmounted, ref, watch } from 'vue';
   import { useRouter } from 'vue-router';
   import { Button, List, Modal, Segmented, Tag } from '@grafana-fast/component';
   import { useDashboardSdk, DashboardApi } from '@grafana-fast/hooks';
   import type { DashboardTheme } from '@grafana-fast/dashboard';
-  import { getPiniaQueryScheduler } from '@grafana-fast/dashboard';
 
   const router = useRouter();
   const dashboardRef = ref<HTMLElement | null>(null);
   const debugOpen = ref(false);
   const schedulerOpen = ref(false);
-  const { pinia, state, actions, containerSize, api, ready, mountDashboard, unmountDashboard, theme } = useDashboardSdk(dashboardRef, {
+
+  const {
+    on,
+    getApiConfig,
+    getState,
+    actions: dashboardActions,
+  } = useDashboardSdk(dashboardRef, {
     dashboardId: 'default',
     apiConfig: {
       baseUrl: 'https://api.example.com',
@@ -105,20 +110,45 @@
     },
   });
 
-  const scheduler = computed(() => getPiniaQueryScheduler(pinia));
+  const api = getApiConfig();
+  const actions = dashboardActions;
+  const state = ref(getState());
+  on('change', (payload) => {
+    state.value = payload.state;
+  });
 
   const debugItems = computed(() => [
-    { key: 'size', label: '容器尺寸', value: `${containerSize.value.width} × ${containerSize.value.height}` },
-    { key: 'baseUrl', label: '当前 BaseUrl', value: api.value.baseUrl },
-    { key: 'load', label: '加载接口', value: api.value.endpoints[DashboardApi.LoadDashboard] },
-    { key: 'query', label: '查询接口', value: api.value.endpoints[DashboardApi.ExecuteQueries] },
-    { key: 'ready', label: '挂载状态', value: ready.value ? '已挂载' : '挂载中' },
-    { key: 'theme', label: '主题', value: theme.value },
+    { key: 'size', label: '容器尺寸', value: `${state.value.containerSize.width} × ${state.value.containerSize.height}` },
+    { key: 'baseUrl', label: '当前 BaseUrl', value: api.baseUrl },
+    { key: 'load', label: '加载接口', value: api.endpoints[DashboardApi.LoadDashboard] },
+    { key: 'query', label: '查询接口', value: api.endpoints[DashboardApi.ExecuteQueries] },
+    { key: 'mounted', label: '挂载状态', value: state.value.mounted ? '已挂载' : '未挂载' },
+    { key: 'ready', label: 'SDK Ready', value: state.value.ready ? '是' : '否' },
+    { key: 'theme', label: '主题', value: state.value.theme },
   ]);
 
+  const schedulerSnapshot = ref(dashboardActions.getQuerySchedulerSnapshot());
+  const refreshSchedulerSnapshot = () => {
+    schedulerSnapshot.value = dashboardActions.getQuerySchedulerSnapshot();
+  };
+
+  let schedulerTimer: number | null = null;
+  watch(schedulerOpen, (open) => {
+    if (!open) {
+      if (schedulerTimer != null) window.clearInterval(schedulerTimer);
+      schedulerTimer = null;
+      return;
+    }
+    refreshSchedulerSnapshot();
+    schedulerTimer = window.setInterval(refreshSchedulerSnapshot, 500);
+  });
+  onUnmounted(() => {
+    if (schedulerTimer != null) window.clearInterval(schedulerTimer);
+    schedulerTimer = null;
+  });
+
   const schedulerItems = computed(() => {
-    const debugRef = (scheduler.value as any).debug;
-    const snap = debugRef?.value ?? ((scheduler.value as any).getDebugSnapshot ? (scheduler.value as any).getDebugSnapshot() : null);
+    const snap = schedulerSnapshot.value;
     const top = (snap?.topPending ?? []) as Array<{ panelId: string; priority: number; reason: string; ageMs: number }>;
     return [
       { key: 'visiblePanels', label: '可视 panels（viewport + 0.5 屏）', value: String(snap?.visiblePanels ?? '-') },
@@ -142,24 +172,26 @@
   ] as const;
 
   const themeModel = computed({
-    get: () => theme.value,
+    get: () => state.value.theme,
     set: (value: DashboardTheme) => {
-      actions.setTheme(value);
+      dashboardActions.setTheme(value);
     },
   });
 
   const reloadDashboard = async () => {
     try {
-      await actions.loadDashboard('default');
+      await dashboardActions.loadDashboard('default');
     } catch {
       // demo page: errors are surfaced via console / onError hook in host apps
     }
   };
-  const handleRefresh = () => actions.refreshTimeRange();
-  const refreshVisibleNow = () => (scheduler.value as any).refreshVisible?.();
-  const clearQueryCacheNow = () => (scheduler.value as any).invalidateAll?.();
+  const handleRefresh = () => dashboardActions.refreshTimeRange();
+  const mountDashboard = () => actions.mountDashboard();
+  const unmountDashboard = () => actions.unmountDashboard();
+  const refreshVisibleNow = () => dashboardActions.refreshVisiblePanels();
+  const clearQueryCacheNow = () => dashboardActions.invalidateQueryCache();
   const setQuickRange = () =>
-    actions.setTimeRange({
+    dashboardActions.setTimeRange({
       from: 'now-5m',
       to: 'now',
     });

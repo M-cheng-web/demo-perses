@@ -27,7 +27,10 @@ export default defineConfig({
         { text: 'Dashboard JSON', link: '/guide/dashboard-json' },
         { text: 'Panels 插件化', link: '/guide/panels' }
       ],
-      '/sdk/': [{ text: 'Dashboard SDK', link: '/sdk/dashboard-sdk' }],
+      '/sdk/': [
+        { text: 'Dashboard SDK', link: '/sdk/dashboard-sdk' },
+        { text: 'SDK 使用说明', link: '/sdk/dashboard-sdk-usage' }
+      ],
       '/components/': [{ text: 'Dashboard 组件', link: '/components/dashboard' }]
     },
     socialLinks: [{ icon: 'github', link: 'https://github.com/grafana-fast/monorepo' }]

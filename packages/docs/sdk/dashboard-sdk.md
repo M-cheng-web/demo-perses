@@ -2,6 +2,8 @@
 
 `@grafana-fast/hooks` 提供 `useDashboardSdk`，用于在任意组件中驱动 Dashboard 与 Pinia 状态。
 
+更完整的接入方式与最佳实践请参考：`/sdk/dashboard-sdk-usage`。
+
 ## 快速示例
 
 ```vue
@@ -10,20 +12,27 @@ import { ref } from 'vue';
 import { useDashboardSdk } from '@grafana-fast/hooks';
 
 const root = ref<HTMLElement | null>(null);
-const { state, actions, containerSize, api } = useDashboardSdk(root, {
+const { on, getState, getApiConfig } = useDashboardSdk(root, {
   dashboardId: 'default',
   apiConfig: {
     baseUrl: 'https://api.example.com',
   },
 });
+
+const state = ref(getState());
+on('change', ({ state: next }) => {
+  state.value = next;
+});
+
+const api = getApiConfig();
 </script>
 
 <template>
   <div>
     <div ref="root" style="min-height: 480px;"></div>
     <aside v-if="state.dashboard">
-      <p>面板组数量：{{ state.panelGroups.length }}</p>
-      <p>容器尺寸：{{ containerSize.width }} × {{ containerSize.height }}</p>
+      <p>面板组数量：{{ state.dashboard.groupCount }}</p>
+      <p>容器尺寸：{{ state.containerSize.width }} × {{ state.containerSize.height }}</p>
       <p>加载接口：{{ api.endpoints.LoadDashboard }}</p>
     </aside>
   </div>
@@ -32,13 +41,11 @@ const { state, actions, containerSize, api } = useDashboardSdk(root, {
 
 ## 返回值
 
-- `state`：包含 `dashboard`、`panelGroups`、`viewPanel`、`timeRange`、`tooltip` 等核心状态（自动解包为 `computed`）。
-- `actions`：封装的操作集合（加载/保存 dashboard、增删改面板组、调整布局、时间范围、Tooltip 注册等）。
-- `containerSize`：跟踪传入 `ref` 的容器尺寸，便于外部布局计算。
-- `ready`：hook 初始化完成的标记。
-- `targetRef`：透传的容器 `ref`，内部已绑定鼠标事件用于 Tooltip 全局坐标。
-- `api`：包含当前 baseUrl 与计算后的接口路径，可通过 `apiConfig` 定制。
-- `mountDashboard/unmountDashboard`：手动控制 Dashboard 挂载/卸载。
+- `getState()`：获取当前**轻量快照**（不会泄漏内部引用，外部修改不会影响内部）。
+- `getDashboardSnapshot()`：获取当前 dashboard JSON 的**深拷贝**（可能较大，按需调用）。
+- `on/off`：事件总线订阅（例如 `change` / `error`）。
+- `getApiConfig()`：获取解析后的 API 配置（baseUrl + endpoints 完整 URL）。
+- `actions`：封装的命令式操作集合（加载/保存、增删改面板组、时间范围、主题、只读开关等）。
 
 ## 接口枚举
 

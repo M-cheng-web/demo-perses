@@ -63,6 +63,14 @@ interface DashboardState {
 
   /** 是否存在“尚未同步到远端”的变更（仅用于 UI/调试提示） */
   hasUnsyncedChanges: boolean;
+  /**
+   * Dashboard 内容变更代际（单调递增）
+   *
+   * 说明：
+   * - 用于 SDK/外部集成场景：无需 deep watch 大对象即可感知“dashboard JSON 有变化”
+   * - 任何会改变 currentDashboard 内容的操作都应 bump
+   */
+  dashboardContentRevision: number;
 
   // ---- Internal sync state (per store instance) ----
   _syncTimerId: number | null;
@@ -84,7 +92,7 @@ function safeUtf8Bytes(text: string): number {
   try {
     return new TextEncoder().encode(text).length;
   } catch {
-    // fallback: 近似值（UTF-16 code units）
+    // 兜底：近似值（UTF-16 code units）
     return text.length * 2;
   }
 }
@@ -113,6 +121,7 @@ export const useDashboardStore = defineStore('dashboard', {
     bootStage: 'idle',
     bootStats: { startedAt: null, groupCount: null, panelCount: null, jsonBytes: null, source: null },
     hasUnsyncedChanges: false,
+    dashboardContentRevision: 0,
     _syncTimerId: null,
     _syncQueued: false,
     _syncSeq: 0,
@@ -170,15 +179,64 @@ export const useDashboardStore = defineStore('dashboard', {
     /**
      * 当前面板组是否处于可编辑状态（仅打开态的组才会被设置为 editingGroupId）
      */
-    isGroupEditing: (state) => (groupId: ID): boolean => {
-      if (state.isBooting) return false;
-      if (state.isReadOnly) return false;
-      if (state.viewMode === 'allPanels') return false;
-      return state.editingGroupId != null && String(state.editingGroupId) === String(groupId);
-    },
+    isGroupEditing:
+      (state) =>
+      (groupId: ID): boolean => {
+        if (state.isBooting) return false;
+        if (state.isReadOnly) return false;
+        if (state.viewMode === 'allPanels') return false;
+        return state.editingGroupId != null && String(state.editingGroupId) === String(groupId);
+      },
   },
 
   actions: {
+    _bumpDashboardContentRevision() {
+      const next = (this.dashboardContentRevision ?? 0) + 1;
+      this.dashboardContentRevision = next <= Number.MAX_SAFE_INTEGER ? next : 0;
+    },
+
+    /**
+     * 直接替换当前 Dashboard（命令式入口，供 SDK/压测/回放等使用）
+     *
+     * 设计：
+     * - 不走 boot 阶段遮罩（避免“宿主只是替换数据，但 UI 一直 lock”的困惑）
+     * - 会重置可能指向旧对象的 UI 状态（editing/viewPanel）
+     * - 默认认为这是“已确认态”（markAsSynced=true），避免后续回滚无源
+     */
+    replaceDashboard(dashboard: Dashboard, options?: { markAsSynced?: boolean }) {
+      // 替换时停止自动同步，避免旧 debounce 定时器在新数据上触发
+      this.cancelPendingSync();
+
+      const next = deepCloneStructured(dashboard);
+      this.currentDashboard = next;
+
+      // 重置可能指向旧对象的 UI 状态（避免引用悬挂/状态错乱）。
+      this.editingGroupId = null;
+      this.viewPanelId = null;
+      this.viewMode = 'grouped';
+
+      // 保持 store 处于一致的“ready”态（不进入 boot 遮罩流程）。
+      this.isBooting = false;
+      this.bootStage = 'ready';
+      this.lastError = null;
+
+      // 更新统计信息（用于 UI 提示，例如“大盘加载更慢”等）。
+      const { groupCount, panelCount } = countDashboardStats(next);
+      this.bootStats.groupCount = groupCount;
+      this.bootStats.panelCount = panelCount;
+      this.bootStats.source = this.bootStats.source ?? 'import';
+
+      const markAsSynced = options?.markAsSynced !== false;
+      if (markAsSynced) {
+        this.syncedDashboard = deepCloneStructured(next);
+        this.hasUnsyncedChanges = false;
+      } else {
+        this.hasUnsyncedChanges = true;
+      }
+
+      this._bumpDashboardContentRevision();
+    },
+
     setReadOnly(readOnly: boolean) {
       const next = !!readOnly;
       this.isReadOnly = next;
@@ -195,7 +253,7 @@ export const useDashboardStore = defineStore('dashboard', {
         this._syncTimerId = null;
       }
       this._syncQueued = false;
-      // invalidate any in-flight completion callbacks
+      // 使任何 in-flight 的完成回调失效（避免老请求回写/干扰）。
       this._syncSeq++;
       this._syncInFlightSeq = null;
       this.isSyncing = false;
@@ -221,6 +279,7 @@ export const useDashboardStore = defineStore('dashboard', {
       this.editingGroupId = null;
       this.viewPanelId = null;
       this.hasUnsyncedChanges = false;
+      this._bumpDashboardContentRevision();
     },
 
     requestAutoSync() {
@@ -228,6 +287,7 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isBooting) return;
       if (this.isReadOnly) return;
 
+      this._bumpDashboardContentRevision();
       this.hasUnsyncedChanges = true;
 
       if (this._syncTimerId != null) {
@@ -254,26 +314,26 @@ export const useDashboardStore = defineStore('dashboard', {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
       if (this.isReadOnly) {
-        // auto sync: silent no-op; manual save: explicit error
+        // 自动同步：静默 no-op；手动保存：明确抛错提示。
         if (options?.mode === 'manual') throw new Error('Dashboard is read-only');
         return;
       }
 
       const mode = options?.mode ?? 'auto';
 
-      // manual save: wait for background sync to finish, then persist the latest state
+      // 手动保存：若后台正在 auto-sync，先等待其结束，再保存最新状态。
       if (mode === 'manual' && this.isSyncing) {
         await this.waitForSyncIdle();
       }
 
-      // auto sync: if already syncing, mark queued and return
+      // 自动同步：如果正在同步，标记 queued 后返回（后续会再跑一轮）。
       if (mode === 'auto' && this.isSyncing) {
         this._syncQueued = true;
         return;
       }
 
       if (this.isSyncing) {
-        // should be rare: re-entrancy/edge cases
+        // 极少数情况：重入/边界条件（守护一下）。
         this._syncQueued = true;
         return;
       }
@@ -284,13 +344,13 @@ export const useDashboardStore = defineStore('dashboard', {
       if (mode === 'manual') this.isSaving = true;
       this.lastError = null;
 
-      // Snapshot the payload so we persist a stable JSON even if UI keeps changing.
+      // 先做一次快照：保证本次持久化写入的是一个稳定 JSON（即使 UI 继续变化）。
       const payload = deepCloneStructured(toRaw(this.currentDashboard));
       try {
         const api = getPiniaApiClient(this.$pinia);
         await api.dashboard.saveDashboard(payload);
 
-        // Ignore stale completion (e.g., load/import happened during the request)
+        // 忽略过期完成：例如请求进行中发生了 load/import/replace，不能用老结果覆盖状态。
         if (this._syncInFlightSeq !== token) return;
 
         this.syncedDashboard = deepCloneStructured(payload);
@@ -314,7 +374,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
         if (this._syncQueued) {
           this._syncQueued = false;
-          // keep syncing the latest state (do not throw)
+          // 自动同步：继续尝试保存最新状态（不向上抛错）。
           void this.syncDashboard({ mode: 'auto' });
         }
       }
@@ -372,6 +432,7 @@ export const useDashboardStore = defineStore('dashboard', {
         const next = deepCloneStructured(dashboard);
         this.currentDashboard = next;
         this.markSyncedFromCurrent();
+        this._bumpDashboardContentRevision();
         this.finishBoot();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load dashboard';
@@ -419,6 +480,7 @@ export const useDashboardStore = defineStore('dashboard', {
           this.hasUnsyncedChanges = true;
         }
         this.finishBoot();
+        this._bumpDashboardContentRevision();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to apply dashboard json';
         this.failBoot(message);
@@ -435,7 +497,7 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
 
       try {
-        // manual save: flush pending debounce and persist immediately
+        // 手动保存：清空 debounce 计时器并立即持久化。
         if (this._syncTimerId != null) {
           window.clearTimeout(this._syncTimerId);
           this._syncTimerId = null;
@@ -621,7 +683,7 @@ export const useDashboardStore = defineStore('dashboard', {
         used.add(key);
         next.push(g);
       }
-      // append missing groups (keep previous relative order)
+      // 追加缺失的 group（保留原来的相对顺序）。
       for (const g of groups) {
         const key = String(g.id);
         if (used.has(key)) continue;

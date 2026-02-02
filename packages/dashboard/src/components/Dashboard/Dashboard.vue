@@ -209,21 +209,12 @@
        * @default 200
        */
       panelGroupFocusMotionMs?: number;
-      /**
-       * 全局只读模式（宿主能力开关）
-       *
-       * 语义：
-       * - true：禁用所有会修改 Dashboard JSON 的操作（创建/删除/拖拽/导入/应用/保存/编辑面板等）
-       * - false：允许编辑（仍受 viewMode / 当前打开组等规则约束）
-       */
-      readOnly?: boolean;
     }>(),
     {
       theme: 'light',
       portalTarget: null,
       apiClient: undefined,
       panelGroupFocusMotionMs: 200,
-      readOnly: false,
     }
   );
 
@@ -269,7 +260,7 @@
   });
 
   // ---------------------------
-  // Settings button position (per dashboard instance)
+  // 设置按钮位置（按 dashboard 实例隔离）
   // ---------------------------
   const SETTINGS_POS_KEY_PREFIX = 'gf-dashboard-settings-pos:';
   const settingsPos = ref<{ x: number; y: number } | null>(null);
@@ -318,7 +309,7 @@
     if (!root) return false;
     const { w } = getSettingsButtonSize();
     const maxX = Math.max(0, Math.floor(root.clientWidth - w));
-    // maxX=0 表示容器太窄/按钮太宽：此时不做 peek（避免按钮完全不可见）
+    // maxX=0 表示容器太窄/按钮太宽：此时不做“半隐藏”（避免按钮完全不可见）
     if (maxX <= 0) return false;
     const x = Math.floor(Number(pos.x ?? 0));
     return x >= maxX - SETTINGS_PEEK_EDGE_PX;
@@ -354,7 +345,7 @@
       if (!Number.isFinite(x) || !Number.isFinite(y)) return;
       settingsPos.value = clampSettingsPos({ x, y });
     } catch {
-      // ignore
+      // 忽略：localStorage 不可用/超额等不应影响主流程
     }
   };
 
@@ -363,7 +354,7 @@
       if (!settingsPos.value) return;
       localStorage.setItem(settingsStorageKey.value, JSON.stringify(settingsPos.value));
     } catch {
-      // ignore
+      // 忽略：localStorage 不可用/超额等不应影响主流程
     }
   };
 
@@ -377,7 +368,7 @@
   });
 
   // ---------------------------
-  // Pagination state (per group)
+  // 分页状态（按面板组隔离）
   // ---------------------------
   const {
     getPagedGroupById,
@@ -411,7 +402,7 @@
   };
 
   // ---------------------------
-  // Focus layer (open one group without changing background scroll)
+  // 聚焦层（打开单个组，不影响背景滚动位置）
   // ---------------------------
   const focusedGroupId = ref<PanelGroup['id'] | null>(null);
   const focusStartOffsetY = ref(0);
@@ -434,7 +425,7 @@
   const isFocusLayerActive = computed(() => !isAllPanelsView.value && focusedGroupId.value != null);
 
   // ---------------------------
-  // Host container height syncing
+  // 宿主容器高度同步
   // ---------------------------
   // 目标：Dashboard 自己感知“被挂载的容器”的可用高度，并把自己 height 锁定为该高度，
   // 这样宿主只需要控制挂载容器的尺寸即可（无需 dashboard 内部写死固定高度）。
@@ -512,7 +503,7 @@
   };
 
   // ---------------------------
-  // Default open behavior: single group
+  // 默认打开策略：仅一个面板组时自动打开
   // ---------------------------
   // 需求：当仅有一个面板组时，默认打开该面板组。
   // 注意：这里只做“默认打开一次”，不强制锁定。用户手动关闭后不自动再次打开。
@@ -622,7 +613,7 @@
     try {
       (event.currentTarget as HTMLElement | null)?.setPointerCapture?.(event.pointerId);
     } catch {
-      // ignore
+      // 忽略：部分浏览器/节点可能不支持 setPointerCapture
     }
   };
 
@@ -649,17 +640,17 @@
     endSettingsDrag();
   };
 
-  // Provide runtime-scoped dependencies
+  // 提供“运行时依赖”（按实例隔离）
   const apiClient = computed(() => props.apiClient ?? createMockApiClient());
   provide(GF_API_KEY, apiClient.value);
   provide(GF_RUNTIME_KEY, { id: instanceId.value, rootEl, scrollEl: contentEl });
 
-  // NOTE: inject() must be called during setup (not inside onMounted).
+  // 注意：inject() 必须在 setup 阶段调用（不能放在 onMounted 内部）。
   const injectedPinia = inject<Pinia | undefined>('pinia', undefined);
 
-  // Also attach to active pinia so stores (non-component) can access the instance-scoped dependencies.
+  // 同时挂到当前 pinia：让 store（非组件）也能访问“按实例隔离”的运行时依赖。
   onMounted(() => {
-    // Prefer injected pinia for multi-instance isolation (multiple Vue apps on one page).
+    // 优先使用注入的 pinia：适配同页多个 Vue app 的多实例隔离场景。
     const active = injectedPinia ?? getActivePinia();
     if (active) {
       setPiniaApiClient(active, apiClient.value);
@@ -697,25 +688,14 @@
     }
   });
 
-  // 宿主只读能力开关：在 store 层统一收敛（actions 也会兜底 guard）
-  watch(
-    () => !!props.readOnly,
-    (ro) => {
-      dashboardStore.setReadOnly(ro);
-      if (ro) {
-        // 进入只读：退出编辑 UI（避免出现“编辑抽屉打开但无法保存/应用”的困惑）
-        editorStore.closeEditor();
-        dashboardStore.setEditingGroup(null);
-      }
-    },
-    { immediate: true }
-  );
+  // 注意：
+  // 只读能力开关（readOnly）由 store/SDK 作为单一事实来源（SSOT），Dashboard 组件内部不再监听外部 props 触发业务。
 
   // ---------------------------
-  // Optimistic sync feedback
+  // 乐观同步的反馈提示
   // ---------------------------
   // 自动同步失败时 store 会回滚到 syncedDashboard，这在 UI 上会表现为“刚改完又变回去了”。
-  // 这里提供 toast 提示，避免误解为 bug/丢数据。
+  // 这里提供 toast 提示，避免误解为问题/丢数据。
   const lastErrorToastAt = ref(0);
   const lastErrorToastMessage = ref<string | null>(null);
   const ERROR_TOAST_COOLDOWN_MS = 2_500;
@@ -787,7 +767,7 @@
     detachHostObserver();
   });
 
-  // root element changes (unlikely) -> rebind
+  // root 节点变化（很少见）：重新绑定鼠标追踪与宿主高度监听
   watch(
     rootEl,
     (el, prev) => {
@@ -825,7 +805,7 @@
   });
 
   // ---------------------------
-  // JSON Modal (SDK-friendly)
+  // JSON 弹窗（对 SDK/外部更友好）
   // ---------------------------
   const MAX_EDITABLE_DASHBOARD_JSON_CHARS = 120_000;
   const jsonModalVisible = ref(false);
@@ -878,7 +858,7 @@
     () => jsonModalVisible.value,
     (open) => {
       if (open) return;
-      // cancel any in-flight generation
+      // 取消任何进行中的“生成 dashboard JSON 文本”任务
       generateJsonSeq++;
       isGeneratingJson.value = false;
     }
@@ -957,11 +937,11 @@
   };
 
   const toolbarApi = {
-    // JSON modal（SDK/外部可直接唤起，不依赖 settings drawer）
+    // JSON 弹窗（SDK/外部可直接唤起，不依赖右侧设置抽屉）
     openJsonModal,
     closeJsonModal,
 
-    // Core actions（无 UI 也可执行）
+    // 核心动作（无界面也可执行）
     refresh: () => {
       if (isBooting.value) return;
       timeRangeStore.refresh();
@@ -980,7 +960,7 @@
       dashboardStore.addPanelGroup({ title: '新面板组', description: '' });
     },
 
-    // JSON import/export（export 可无 UI，import/view/apply 依赖 toolbar UI）
+    // JSON 导入/导出（导出可无界面；导入/查看/应用依赖工具条）
     exportJson: () => {
       if (isBooting.value) return;
       const dash = dashboardStore.currentDashboard;
@@ -1002,7 +982,7 @@
     viewJson: () => openJsonModal('view'),
     applyJson: handleApplyJson,
 
-    // Controlled helpers
+    // 受控辅助能力
     setTimeRangePreset: (preset: string) => {
       if (isBooting.value) return;
       timeRangeStore.setTimeRange({ from: preset, to: 'now' });
@@ -1035,7 +1015,7 @@
       z-index: 1;
     }
 
-    // overlay components must not be forced into normal flow by `> * { position: relative }`
+    // 说明：浮层类组件不应被 `> * { position: relative }` 影响布局流，因此这里显式把聚焦层定位为 absolute。
     :deep(.dp-panel-group-focus-layer) {
       position: absolute;
       inset: 0;

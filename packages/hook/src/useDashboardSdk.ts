@@ -8,22 +8,23 @@
  * 说明：
  * - 这是对外导出的核心 API 文件之一，因此注释会相对更完整
  */
-import { computed, createApp, defineComponent, h, onMounted, onUnmounted, ref, watch, type App, type ComputedRef, type Ref } from 'vue';
-import { createPinia, getActivePinia, setActivePinia } from '@grafana-fast/store';
-import type { Pinia } from '@grafana-fast/store';
+import { createApp, defineComponent, h, onMounted, onUnmounted, ref, toRaw, watch, type App, type Ref } from 'vue';
+import { createPinia } from '@grafana-fast/store';
 import type { Dashboard, Panel, PanelGroup, PanelLayout, ID, TimeRange } from '@grafana-fast/types';
 import {
+  DashboardView,
+  disposePiniaQueryScheduler,
+  getPiniaQueryScheduler,
   getStoredThemePreference,
   setDashboardThemePreference,
-  type DashboardTheme,
-  type DashboardThemePreference,
+  setPiniaApiClient,
   useDashboardStore,
   useTimeRangeStore,
   useTooltipStore,
+  type DashboardTheme,
+  type DashboardThemePreference,
   type MousePosition,
-  type TooltipData,
 } from '@grafana-fast/dashboard';
-import { DashboardView } from '@grafana-fast/dashboard';
 import {
   createHttpApiClient,
   createMockApiClient,
@@ -33,8 +34,8 @@ import {
   type ApiImplementationKind,
   type GrafanaFastApiClient,
 } from '@grafana-fast/api';
-import { setPiniaApiClient, disposePiniaQueryScheduler } from '@grafana-fast/dashboard';
-import { createPrefixedId, url } from '@grafana-fast/utils';
+import { createPrefixedId, deepCloneStructured, url } from '@grafana-fast/utils';
+import { createEmitter, type Unsubscribe } from './emitter';
 
 const DEFAULT_BASE_URL = '/api';
 
@@ -64,8 +65,6 @@ export interface DashboardSdkOptions {
    * 未提供时会生成一个“当前 SDK 生命周期内稳定”的随机 id（刷新页面后会变化）。
    */
   instanceId?: string;
-  /** 可选 pinia 实例，默认取当前 active pinia 或自动创建 */
-  pinia?: Pinia;
   /** 是否自动加载 dashboard 数据，默认为 true */
   autoLoad?: boolean;
   /** 自定义 API 根路径（baseUrl）以及接口路径配置 */
@@ -86,13 +85,6 @@ export interface DashboardSdkOptions {
    * - 需要在运行时切换不同数据源或不同后端实例
    */
   apiClient?: GrafanaFastApiClient;
-  /**
-   * Pinia 实例隔离策略（用于同一页面挂载多个 dashboard 的场景）
-   *
-   * - `isolate`（默认）：当未传入 options.pinia 时，自动创建新的 pinia 实例，实现 store/调度器/tooltip 等隔离
-   * - `shared`：优先复用当前 active pinia（如果存在），适合“全站共享 store”场景
-   */
-  piniaStrategy?: 'isolate' | 'shared';
   /** SDK 准备好后触发 */
   onReady?: () => void;
   /** SDK 释放前触发 */
@@ -141,23 +133,52 @@ export interface DashboardSdkOptions {
   readOnly?: boolean;
 }
 
-export interface DashboardSdkState {
-  /** 当前 dashboard 数据 */
-  dashboard: Dashboard | null;
-  /** 面板组集合 */
-  panelGroups: PanelGroup[];
-  /** 当前全屏查看的面板 */
-  viewPanel: Panel | null;
-  /** 当前时间范围 */
-  timeRange: TimeRange;
-  /** 全局 Tooltip 数据 */
-  tooltip: TooltipData | null;
-  /** 全局鼠标位置（用于 Tooltip 联动） */
-  mousePosition: MousePosition | null;
-  /** 当前主题（light/dark） */
+export type DashboardSdkViewMode = 'grouped' | 'allPanels';
+export type DashboardSdkBootStage = 'idle' | 'fetching' | 'parsing' | 'initializing' | 'ready' | 'error';
+
+export interface DashboardSdkDashboardSummary {
+  id: ID;
+  name: string;
+  groupCount: number;
+  panelCount: number;
+}
+
+/**
+ * 对宿主应用暴露的“状态快照”（Snapshot）
+ *
+ * 设计目标（强隔离 + 可观测）：
+ * - **强隔离**：永远不要返回内部 store/ref/reactive 对象的引用（避免外部直接改内部）
+ * - **轻量**：大对象（dashboard JSON）不放在 state 里；通过 `getDashboardSnapshot()` 按需拉取
+ * - **可观测**：配合 `on('change')` 事件，宿主可建立自己的镜像 state（但镜像仍是宿主侧的数据）
+ */
+export interface DashboardSdkStateSnapshot {
+  instanceId: string;
+  mounted: boolean;
+  ready: boolean;
+  containerSize: { width: number; height: number };
   theme: DashboardTheme;
-  /** 全局只读状态（与 DashboardView/store 一致） */
+  themePreference: DashboardThemePreference;
   readOnly: boolean;
+  viewMode: DashboardSdkViewMode;
+  isBooting: boolean;
+  bootStage: DashboardSdkBootStage;
+  isSaving: boolean;
+  isSyncing: boolean;
+  hasUnsyncedChanges: boolean;
+  lastError: string | null;
+  timeRange: TimeRange;
+  /** 当前全屏面板 id（如有）；`null` 表示没有处于全屏状态的面板。 */
+  viewPanelId: { groupId: ID; panelId: ID } | null;
+  /** Dashboard 摘要信息（不包含重的 JSON 内容）。 */
+  dashboard: DashboardSdkDashboardSummary | null;
+  /**
+   * dashboard 内容变更代际（单调递增）
+   *
+   * 用途：
+   * - 让宿主侧无需 deep-watch 大对象，就能知道 dashboard JSON 是否发生变化
+   * - 宿主若确需全量 JSON，可在检测到该值变化后再调用 `getDashboardSnapshot()`
+   */
+  dashboardRevision: number;
 }
 
 export interface DashboardSdkApiConfig {
@@ -172,13 +193,67 @@ export interface ResolvedDashboardSdkApiConfig {
   endpoints: Record<DashboardApi, string>;
 }
 
+export interface DashboardQuerySchedulerDebugTask {
+  panelId: string;
+  priority: number;
+  reason: string;
+  ageMs: number;
+}
+
+/**
+ * QueryScheduler 调试快照（稳定结构 + 可深拷贝）
+ *
+ * 说明：
+ * - 这里刻意不暴露 scheduler 实例（否则会打破 SDK 边界）
+ * - 仅提供一个“稳定数据结构”的快照，用于宿主页面展示/调试
+ */
+export interface DashboardQuerySchedulerSnapshot {
+  updatedAt: number;
+  conditionGeneration: number;
+  queueGeneration: number;
+  registeredPanels: number;
+  visiblePanels: number;
+  pendingTasks: number;
+  inflightPanels: number;
+  maxPanelConcurrency: number;
+  runnerMaxConcurrency: number;
+  runnerCacheTtlMs: number;
+  topPending: DashboardQuerySchedulerDebugTask[];
+}
+
+export interface DashboardSdkChangePayload {
+  /** 事件触发时间戳（ms）。 */
+  at: number;
+  /** 最新的 public state 快照。 */
+  state: DashboardSdkStateSnapshot;
+  /** 上一次对外发出的 state（首次触发时为 null）。 */
+  prevState: DashboardSdkStateSnapshot | null;
+  /** 相对于 prevState，发生变化的顶层 key 列表。 */
+  changedKeys: Array<keyof DashboardSdkStateSnapshot>;
+  /** 便捷标记：dashboard 是否变化（等价于 changedKeys 包含 dashboardRevision）。 */
+  dashboardChanged: boolean;
+}
+
+export interface DashboardSdkEventMap {
+  /** 统一的变化事件（state + diff 元信息）。 */
+  change: DashboardSdkChangePayload;
+  /** SDK 或内部 store 的错误事件。 */
+  error: { error: unknown };
+}
+
+export type DashboardSdkEventName = keyof DashboardSdkEventMap;
+
 export interface DashboardSdkActions {
+  /** 手动挂载 Dashboard（一般由 SDK 自动触发；高级用法/调试用途） */
+  mountDashboard: () => void;
+  /** 手动卸载 Dashboard（用于释放资源/重置；高级用法/调试用途） */
+  unmountDashboard: () => void;
   /** 按 id 加载 dashboard（不做历史 schema 迁移，依赖后端/宿主保证结构正确） */
-  loadDashboard: (id: ID) => Promise<unknown>;
+  loadDashboard: (id: ID) => Promise<void>;
   /** 保存当前 dashboard（落库或写回后端/本地实现） */
-  saveDashboard: () => Promise<unknown>;
+  saveDashboard: () => Promise<void>;
   /** 直接替换当前 dashboard（导入/回放/压测） */
-  setDashboard: (dashboard: Dashboard) => void;
+  setDashboard: (dashboard: Dashboard, options?: { markAsSynced?: boolean }) => void;
   /** 新增面板组 */
   addPanelGroup: (group: Partial<PanelGroup>) => unknown;
   /** 更新面板组（标题/描述/折叠等） */
@@ -191,10 +266,10 @@ export interface DashboardSdkActions {
   duplicatePanel: (groupId: ID, panelId: ID) => unknown;
   /** 切换面板全屏查看（viewPanel） */
   togglePanelView: (groupId: ID, panelId: ID) => unknown;
-  /** 通过 id 获取面板组（用于只读查询） */
-  getPanelGroupById: (id: ID) => unknown;
-  /** 通过 groupId + panelId 获取面板（用于只读查询） */
-  getPanelById: (groupId: ID, panelId: ID) => unknown;
+  /** 通过 id 获取面板组快照（用于只读查询；不会泄漏内部引用） */
+  getPanelGroupById: (id: ID) => PanelGroup | null;
+  /** 通过 groupId + panelId 获取面板快照（用于只读查询；不会泄漏内部引用） */
+  getPanelById: (groupId: ID, panelId: ID) => Panel | null;
   /** 设置时间范围（会触发相关面板刷新） */
   setTimeRange: (range: TimeRange) => unknown;
   /** 设置刷新间隔（ms，0 表示关闭自动刷新） */
@@ -220,6 +295,13 @@ export interface DashboardSdkActions {
 
   /** 设置全局只读模式（能力开关） */
   setReadOnly: (readOnly: boolean) => void;
+
+  /** QueryScheduler 监控快照（稳定数据结构，不暴露 scheduler 实例） */
+  getQuerySchedulerSnapshot: () => DashboardQuerySchedulerSnapshot;
+  /** 刷新当前可视区域（viewport + overscan） */
+  refreshVisiblePanels: () => void;
+  /** 清空查询缓存（下次刷新会强制重新拉取） */
+  invalidateQueryCache: () => void;
 
   /** 打开 Dashboard 右侧“设置/工具栏”侧边栏 */
   openSettings: () => void;
@@ -247,67 +329,48 @@ export interface DashboardSdkActions {
 }
 
 export interface UseDashboardSdkResult {
-  /** SDK 使用的 pinia 实例（可用于与宿主应用共享或隔离） */
-  pinia: Pinia;
-  /** SDK 是否已完成挂载与初始化 */
-  ready: Ref<boolean>;
-  /** Dashboard 挂载目标容器 ref */
-  targetRef: Ref<HTMLElement | null>;
-  /** 容器尺寸（用于响应式布局、resize 触发等） */
-  containerSize: Ref<{ width: number; height: number }>;
-  /** 聚合后的只读状态（对外稳定形态） */
-  state: ComputedRef<DashboardSdkState>;
-  /** 解析后的 API 配置（baseUrl + endpoints 完整 URL），方便调试 */
-  api: ComputedRef<ResolvedDashboardSdkApiConfig>;
-  /** 对外操作集合（稳定 API 面） */
-  actions: DashboardSdkActions;
-  /** 当前实际主题（light/dark） */
-  theme: Ref<DashboardTheme>;
-  /** 主题偏好（light/dark/system） */
-  themePreference: Ref<DashboardThemePreference>;
-  /** 手动挂载（一般由 SDK 自动触发；高级用法） */
-  mountDashboard: () => void;
-  /** 手动卸载（用于释放资源/重置） */
-  unmountDashboard: () => void;
   /**
-   * 高级/调试用途：直接拿到内部 store 实例
+   * 订阅 SDK 事件（实例级，不是全局事件总线）
    *
-   * 说明：
-   * - 这里刻意标为 `unknown`，避免把内部 store 结构当成“稳定对外 API”
-   * - 对外推荐使用 `state` + `actions`（更稳定、可做兼容层）
+   * 返回值：
+   * - 一个 unsubscribe 函数，用于取消订阅（建议在 onUnmounted 中调用）
    */
-  dashboardStore: unknown;
-  timeRangeStore: unknown;
-  tooltipStore: unknown;
+  on: <K extends DashboardSdkEventName>(event: K, handler: (payload: DashboardSdkEventMap[K]) => void) => Unsubscribe;
+  /** 取消订阅（也可直接调用 on() 的返回值）。 */
+  off: <K extends DashboardSdkEventName>(event: K, handler: (payload: DashboardSdkEventMap[K]) => void) => void;
+
+  /** 获取最新的 public state 快照（可被外部安全修改，不会影响内部）。 */
+  getState: () => DashboardSdkStateSnapshot;
+  /** 获取当前 dashboard JSON 的深拷贝（可能很大，建议按需调用）。 */
+  getDashboardSnapshot: () => Dashboard | null;
+  /** 获取指定面板组的深拷贝快照。 */
+  getPanelGroupSnapshot: (id: ID) => PanelGroup | null;
+  /** 获取指定面板的深拷贝快照。 */
+  getPanelSnapshot: (groupId: ID, panelId: ID) => Panel | null;
+  /** 获取解析后的 API 配置（baseUrl + endpoints 完整 URL）。 */
+  getApiConfig: () => ResolvedDashboardSdkApiConfig;
+
+  /** 命令式操作集合（宿主修改内部的唯一支持方式）。 */
+  actions: DashboardSdkActions;
 }
 
-function ensurePinia(pinia: Pinia | undefined, strategy: 'isolate' | 'shared') {
-  if (pinia) {
-    // 外部传入实例时，直接设为当前激活实例
-    setActivePinia(pinia);
-    return pinia;
-  }
-
-  // 默认行为（多实例隔离）：
-  // 未传 pinia 时，除非显式选择 shared，否则创建新的 pinia 实例用于隔离多个 dashboard。
-  if (strategy === 'shared') {
-    const active = getActivePinia();
-    if (active) return active;
-  }
-
-  const created = createPinia();
-  setActivePinia(created);
-  return created;
-}
+// 重要：SDK 总是创建“隔离的 pinia 实例”，避免把内部状态泄漏给宿主应用。
 
 /**
  * 将 Dashboard 渲染到指定容器并暴露状态/操作
  * @param targetRef 要挂载 Dashboard 的容器 ref
- * @param options   配置项（dashboardId、pinia、接口路径、生命周期钩子等）
+ * @param options   配置项（dashboardId、接口路径、生命周期钩子等）
  */
 export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: DashboardSdkOptions = {}): UseDashboardSdkResult {
-  // 保证 Pinia 上下文存在
-  const pinia = ensurePinia(options.pinia, options.piniaStrategy ?? 'isolate');
+  const emitter = createEmitter<DashboardSdkEventMap>();
+
+  // SDK 始终使用隔离的 pinia，防止宿主通过 store 引用直接篡改内部状态。
+  const pinia = createPinia();
+
+  const emitError = (error: unknown) => {
+    emitter.emit('error', { error });
+    options.onError?.(error);
+  };
 
   // 解析 apiClient：默认使用 mock（后端接口未就绪时不阻塞前端）
   const resolvedApiClient: GrafanaFastApiClient =
@@ -332,41 +395,14 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const theme = ref<DashboardTheme>('light');
   const themePersist = options.persistThemePreference === true;
   const themeApplyToDocument = options.applyThemeToDocument === true;
-  const readOnly = ref(options.readOnly === true);
   const instanceId = options.instanceId ?? `sdk-${resolvedApiClient.kind}-${createPrefixedId('dash')}`;
   const dashboardViewRef = ref<any>(null);
+  const isDashboardMounted = ref(false);
 
-  // Ensure initial state is applied before first render.
-  dashboardStore.setReadOnly(readOnly.value);
+  // 在首次渲染前应用 readOnly（仅写入 store；不走 props-driven 同步）。
+  dashboardStore.setReadOnly(options.readOnly === true);
 
-  const DashboardSdkRoot = defineComponent({
-    name: 'DashboardSdkRoot',
-    setup() {
-      return () =>
-        h(DashboardView, {
-          ref: dashboardViewRef,
-          theme: theme.value,
-          portalTarget: options.portalTarget ?? null,
-          readOnly: readOnly.value,
-          apiClient: resolvedApiClient,
-          instanceId,
-        });
-    },
-  });
-
-  const updateSize = () => {
-    const el = targetRef.value;
-    if (!el) return;
-    containerSize.value = {
-      width: el.clientWidth,
-      height: el.clientHeight,
-    };
-  };
-
-  let resizeObserver: ResizeObserver | null = null;
-
-  // 将 baseUrl 与自定义 endpoints 合并为完整 URL，暴露给外部调试/使用
-  const resolvedApiConfig = computed<ResolvedDashboardSdkApiConfig>(() => {
+  const resolveApiConfig = (): ResolvedDashboardSdkApiConfig => {
     const baseUrl = url.normalizeBase(options.apiConfig?.baseUrl ?? DEFAULT_BASE_URL);
     const overrides = options.apiConfig?.endpoints ?? {};
     const endpoints: Record<DashboardApi, string> = { ...DEFAULT_DASHBOARD_ENDPOINTS, ...overrides };
@@ -377,9 +413,172 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       })
     ) as Record<DashboardApi, string>;
     return { baseUrl, endpoints: resolved };
+  };
+  const resolvedApiConfig = resolveApiConfig();
+
+  const getDashboardSummary = (): DashboardSdkDashboardSummary | null => {
+    const dash = dashboardStore.currentDashboard;
+    if (!dash) return null;
+    const groups = dash.panelGroups ?? [];
+    let panelCount = 0;
+    for (const g of groups) panelCount += g.panels?.length ?? 0;
+    return {
+      id: dash.id,
+      name: dash.name,
+      groupCount: groups.length,
+      panelCount,
+    };
+  };
+
+  const getDashboardRevision = (): number => {
+    const raw = Number((dashboardStore as any).dashboardContentRevision ?? 0);
+    return Number.isFinite(raw) ? Math.floor(raw) : 0;
+  };
+
+  const getState = (): DashboardSdkStateSnapshot => {
+    const timeRange = deepCloneStructured(toRaw(timeRangeStore.timeRange));
+    const rawViewPanelId = ((dashboardStore as any).viewPanelId ?? null) as { groupId: ID; panelId: ID } | null;
+    const viewPanelId = rawViewPanelId ? (deepCloneStructured(toRaw(rawViewPanelId)) as { groupId: ID; panelId: ID }) : null;
+    return {
+      instanceId,
+      mounted: !!isDashboardMounted.value,
+      ready: !!ready.value,
+      containerSize: { ...containerSize.value },
+      theme: theme.value,
+      themePreference: themePreference.value,
+      readOnly: !!dashboardStore.isReadOnly,
+      viewMode: (dashboardStore.viewMode as DashboardSdkViewMode) ?? 'grouped',
+      isBooting: !!dashboardStore.isBooting,
+      bootStage: (dashboardStore.bootStage as DashboardSdkBootStage) ?? 'idle',
+      isSaving: !!dashboardStore.isSaving,
+      isSyncing: !!dashboardStore.isSyncing,
+      hasUnsyncedChanges: !!dashboardStore.hasUnsyncedChanges,
+      lastError: dashboardStore.lastError ?? null,
+      timeRange: timeRange as TimeRange,
+      viewPanelId,
+      dashboard: getDashboardSummary(),
+      dashboardRevision: getDashboardRevision(),
+    };
+  };
+
+  const getDashboardSnapshot = (): Dashboard | null => {
+    const dash = dashboardStore.currentDashboard;
+    if (!dash) return null;
+    return deepCloneStructured(toRaw(dash));
+  };
+
+  const getPanelGroupSnapshot = (id: ID): PanelGroup | null => {
+    const group = dashboardStore.getPanelGroupById(id) as PanelGroup | undefined;
+    if (!group) return null;
+    return deepCloneStructured(toRaw(group));
+  };
+
+  const getPanelSnapshot = (groupId: ID, panelId: ID): Panel | null => {
+    const panel = dashboardStore.getPanelById(groupId, panelId) as Panel | undefined;
+    if (!panel) return null;
+    return deepCloneStructured(toRaw(panel));
+  };
+
+  let changeEmitQueued = false;
+  let lastEmittedState: DashboardSdkStateSnapshot | null = null;
+
+  const isSameTimeRange = (a: TimeRange, b: TimeRange) => {
+    const af = String((a as any)?.from ?? '');
+    const at = String((a as any)?.to ?? '');
+    const bf = String((b as any)?.from ?? '');
+    const bt = String((b as any)?.to ?? '');
+    return af === bf && at === bt;
+  };
+
+  const isSameViewPanelId = (a: DashboardSdkStateSnapshot['viewPanelId'], b: DashboardSdkStateSnapshot['viewPanelId']) => {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    return String(a.groupId) === String(b.groupId) && String(a.panelId) === String(b.panelId);
+  };
+
+  const isSameDashboardSummary = (a: DashboardSdkDashboardSummary | null, b: DashboardSdkDashboardSummary | null) => {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    return String(a.id) === String(b.id) && a.name === b.name && a.groupCount === b.groupCount && a.panelCount === b.panelCount;
+  };
+
+  const computeChangedKeys = (
+    prev: DashboardSdkStateSnapshot | null,
+    next: DashboardSdkStateSnapshot
+  ): Array<keyof DashboardSdkStateSnapshot> => {
+    if (!prev) return Object.keys(next) as Array<keyof DashboardSdkStateSnapshot>;
+
+    const changed: Array<keyof DashboardSdkStateSnapshot> = [];
+    const mark = (key: keyof DashboardSdkStateSnapshot, same: boolean) => {
+      if (!same) changed.push(key);
+    };
+
+    mark('instanceId', prev.instanceId === next.instanceId);
+    mark('mounted', prev.mounted === next.mounted);
+    mark('ready', prev.ready === next.ready);
+    mark('containerSize', prev.containerSize.width === next.containerSize.width && prev.containerSize.height === next.containerSize.height);
+    mark('theme', prev.theme === next.theme);
+    mark('themePreference', prev.themePreference === next.themePreference);
+    mark('readOnly', prev.readOnly === next.readOnly);
+    mark('viewMode', prev.viewMode === next.viewMode);
+    mark('isBooting', prev.isBooting === next.isBooting);
+    mark('bootStage', prev.bootStage === next.bootStage);
+    mark('isSaving', prev.isSaving === next.isSaving);
+    mark('isSyncing', prev.isSyncing === next.isSyncing);
+    mark('hasUnsyncedChanges', prev.hasUnsyncedChanges === next.hasUnsyncedChanges);
+    mark('lastError', prev.lastError === next.lastError);
+    mark('timeRange', isSameTimeRange(prev.timeRange, next.timeRange));
+    mark('viewPanelId', isSameViewPanelId(prev.viewPanelId, next.viewPanelId));
+    mark('dashboard', isSameDashboardSummary(prev.dashboard, next.dashboard));
+    mark('dashboardRevision', prev.dashboardRevision === next.dashboardRevision);
+
+    return changed;
+  };
+
+  const emitChange = () => {
+    const next = getState();
+    const prev = lastEmittedState;
+    const changedKeys = computeChangedKeys(prev, next);
+    const dashboardChanged = prev ? prev.dashboardRevision !== next.dashboardRevision : true;
+    // 存一份内部副本：即便宿主错误地修改了事件回调拿到的快照对象，
+    // 也不会影响下一次 diff 的比较逻辑（避免“外部污染内部对比基线”）。
+    lastEmittedState = deepCloneStructured(next);
+    emitter.emit('change', { at: Date.now(), state: next, prevState: prev, changedKeys, dashboardChanged });
+  };
+
+  const scheduleChange = () => {
+    if (changeEmitQueued) return;
+    changeEmitQueued = true;
+    queueMicrotask(() => {
+      changeEmitQueued = false;
+      emitChange();
+    });
+  };
+
+  const DashboardSdkRoot = defineComponent({
+    name: 'DashboardSdkRoot',
+    setup() {
+      return () =>
+        h(DashboardView, {
+          ref: dashboardViewRef,
+          theme: theme.value,
+          portalTarget: options.portalTarget ?? null,
+          apiClient: resolvedApiClient,
+          instanceId,
+        });
+    },
   });
 
-  const isDashboardMounted = ref(false);
+  const updateSize = () => {
+    const el = targetRef.value;
+    if (!el) return;
+    const next = { width: el.clientWidth, height: el.clientHeight };
+    if (next.width === containerSize.value.width && next.height === containerSize.value.height) return;
+    containerSize.value = next;
+    scheduleChange();
+  };
+
+  let resizeObserver: ResizeObserver | null = null;
 
   const mountDashboard = () => {
     if (dashboardApp.value || !targetRef.value || isDashboardMounted.value) return;
@@ -388,14 +587,15 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     app.mount(targetRef.value);
     dashboardApp.value = app;
     isDashboardMounted.value = true;
+    scheduleChange();
   };
 
-  // 卸载 Dashboard，可用于调试/重置
   const unmountDashboard = () => {
     if (dashboardApp.value && isDashboardMounted.value) {
       dashboardApp.value.unmount();
       dashboardApp.value = null;
       isDashboardMounted.value = false;
+      scheduleChange();
     }
   };
 
@@ -444,64 +644,102 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       }
 
       ready.value = true;
+      scheduleChange();
       options.onReady?.();
     } catch (error) {
-      options.onError?.(error);
+      emitError(error);
     }
   });
 
   onUnmounted(() => {
     resizeObserver?.disconnect();
     resizeObserver = null;
-    // 隔离实例场景下，卸载时要停止后台刷新，避免内存泄漏或多实例互相影响
+
+    // 卸载时要停止后台刷新，避免内存泄漏或多实例互相影响
     try {
       (timeRangeStore as any).stopAutoRefresh?.();
     } catch {
-      // ignore
+      // 忽略：不影响卸载流程
     }
-    if (!options.pinia && (options.piniaStrategy ?? 'isolate') === 'isolate') {
-      try {
-        disposePiniaQueryScheduler(pinia);
-      } catch {
-        // ignore
-      }
+
+    try {
+      disposePiniaQueryScheduler(pinia);
+    } catch {
+      // 忽略：不影响卸载流程
     }
+
     options.onBeforeUnmount?.();
     unmountDashboard();
+    emitter.clear();
   });
 
-  const state = computed<DashboardSdkState>(() => ({
-    dashboard: dashboardStore.currentDashboard,
-    panelGroups: dashboardStore.panelGroups,
-    viewPanel: dashboardStore.viewPanel,
-    timeRange: timeRangeStore.timeRange,
-    tooltip: tooltipStore.currentTooltipData,
-    mousePosition: tooltipStore.currentPosition,
-    theme: theme.value,
-    readOnly: dashboardStore.isReadOnly,
-  }));
+  // 轻量级“public 快照变化跟踪”：避免 deep watch dashboard 大对象。
+  watch(
+    [
+      () => dashboardStore.isReadOnly,
+      () => dashboardStore.viewMode,
+      () => dashboardStore.isBooting,
+      () => dashboardStore.bootStage,
+      () => dashboardStore.isSaving,
+      () => dashboardStore.isSyncing,
+      () => dashboardStore.hasUnsyncedChanges,
+      () => dashboardStore.lastError,
+      () => (dashboardStore as any).editingGroupId,
+      () => (dashboardStore as any).viewPanelId,
+      () => timeRangeStore.timeRange.from,
+      () => timeRangeStore.timeRange.to,
+      () => theme.value,
+      () => themePreference.value,
+      () => getDashboardRevision(),
+    ],
+    () => scheduleChange(),
+    { immediate: true }
+  );
 
   const actions: DashboardSdkActions = {
+    mountDashboard: () => mountDashboard(),
+    unmountDashboard: () => unmountDashboard(),
     // Dashboard 数据加载/保存
     loadDashboard: async (id: ID) => {
       try {
-        return await dashboardStore.loadDashboard(id);
+        await dashboardStore.loadDashboard(id);
+        scheduleChange();
       } catch (error) {
-        options.onError?.(error);
+        emitError(error);
         throw error;
       }
     },
     saveDashboard: async () => {
       try {
-        return await dashboardStore.saveDashboard();
+        await dashboardStore.saveDashboard();
+        scheduleChange();
       } catch (error) {
-        options.onError?.(error);
+        emitError(error);
         throw error;
       }
     },
-    setDashboard: (dashboard: Dashboard) => {
-      // 按当前策略：不做历史 schema 迁移；宿主传入的 dashboard 必须符合当前结构
-      dashboardStore.currentDashboard = dashboard;
+    setDashboard: (dashboard: Dashboard, opts?: { markAsSynced?: boolean }) => {
+      const next = deepCloneStructured(dashboard);
+
+      // 优先使用 store 提供的 replaceDashboard：把一致性约束收敛在 store 层（更可靠）。
+      const replace = (dashboardStore as any).replaceDashboard as undefined | ((d: Dashboard, o?: any) => void);
+      if (typeof replace === 'function') {
+        replace(next, { markAsSynced: opts?.markAsSynced !== false });
+      } else {
+        // 兜底：兼容旧版本 store（尽力重置关键 UI 状态）。
+        (dashboardStore as any).cancelPendingSync?.();
+        dashboardStore.currentDashboard = next;
+        (dashboardStore as any).editingGroupId = null;
+        (dashboardStore as any).viewPanelId = null;
+        dashboardStore.viewMode = 'grouped' as any;
+        if (opts?.markAsSynced !== false) {
+          (dashboardStore as any).markSyncedFromCurrent?.();
+        } else {
+          dashboardStore.hasUnsyncedChanges = true;
+        }
+      }
+
+      scheduleChange();
     },
     // 面板组管理
     addPanelGroup: (group: Partial<PanelGroup>) => dashboardStore.addPanelGroup(group),
@@ -511,10 +749,10 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     // 面板管理
     duplicatePanel: (groupId: ID, panelId: ID) => dashboardStore.duplicatePanel(groupId, panelId),
     togglePanelView: (groupId: ID, panelId: ID) => dashboardStore.togglePanelView(groupId, panelId),
-    getPanelGroupById: (id: ID) => dashboardStore.getPanelGroupById(id),
-    getPanelById: (groupId: ID, panelId: ID) => dashboardStore.getPanelById(groupId, panelId),
+    getPanelGroupById: (id: ID) => getPanelGroupSnapshot(id),
+    getPanelById: (groupId: ID, panelId: ID) => getPanelSnapshot(groupId, panelId),
     // 时间范围
-    setTimeRange: (range: TimeRange) => timeRangeStore.setTimeRange(range),
+    setTimeRange: (range: TimeRange) => timeRangeStore.setTimeRange(deepCloneStructured(range)),
     setRefreshInterval: (interval: number) => timeRangeStore.setRefreshInterval(interval),
     refreshTimeRange: () => timeRangeStore.refresh(),
     // Tooltip 联动
@@ -527,23 +765,69 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     setTheme: (next: DashboardTheme) => {
       themePreference.value = next;
       theme.value = setDashboardThemePreference(next, { persist: themePersist, apply: themeApplyToDocument });
+      scheduleChange();
       return theme.value;
     },
     setThemePreference: (preference: DashboardThemePreference) => {
       themePreference.value = preference;
       theme.value = setDashboardThemePreference(preference, { persist: themePersist, apply: themeApplyToDocument });
+      scheduleChange();
       return theme.value;
     },
     toggleTheme: () => {
       const next = theme.value === 'dark' ? 'light' : 'dark';
       themePreference.value = next;
       theme.value = setDashboardThemePreference(next, { persist: themePersist, apply: themeApplyToDocument });
+      scheduleChange();
       return theme.value;
     },
 
     setReadOnly: (ro: boolean) => {
-      readOnly.value = !!ro;
-      dashboardStore.setReadOnly(readOnly.value);
+      dashboardStore.setReadOnly(!!ro);
+      scheduleChange();
+    },
+
+    // QueryScheduler（仅当前 SDK 实例可见）
+    getQuerySchedulerSnapshot: () => {
+      const empty = (): DashboardQuerySchedulerSnapshot => ({
+        updatedAt: Date.now(),
+        conditionGeneration: 0,
+        queueGeneration: 0,
+        registeredPanels: 0,
+        visiblePanels: 0,
+        pendingTasks: 0,
+        inflightPanels: 0,
+        maxPanelConcurrency: 0,
+        runnerMaxConcurrency: 0,
+        runnerCacheTtlMs: 0,
+        topPending: [],
+      });
+
+      try {
+        const scheduler = getPiniaQueryScheduler(pinia) as any;
+        const snap = scheduler?.getDebugSnapshot ? scheduler.getDebugSnapshot() : scheduler?.debug?.value ?? null;
+        if (!snap) return empty();
+        return deepCloneStructured(toRaw(snap)) as DashboardQuerySchedulerSnapshot;
+      } catch (error) {
+        emitError(error);
+        return empty();
+      }
+    },
+    refreshVisiblePanels: () => {
+      try {
+        const scheduler = getPiniaQueryScheduler(pinia) as any;
+        scheduler?.refreshVisible?.();
+      } catch (error) {
+        emitError(error);
+      }
+    },
+    invalidateQueryCache: () => {
+      try {
+        const scheduler = getPiniaQueryScheduler(pinia) as any;
+        scheduler?.invalidateAll?.();
+      } catch (error) {
+        emitError(error);
+      }
     },
 
     openSettings: () => dashboardViewRef.value?.openSettings?.(),
@@ -564,21 +848,14 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     },
   };
 
-  // 对外暴露的状态、API 配置和操作
   return {
-    pinia,
-    ready,
-    targetRef,
-    containerSize,
-    state,
-    api: resolvedApiConfig,
-    dashboardStore,
-    timeRangeStore,
-    tooltipStore,
+    on: emitter.on,
+    off: emitter.off,
+    getState,
+    getDashboardSnapshot,
+    getPanelGroupSnapshot,
+    getPanelSnapshot,
+    getApiConfig: () => deepCloneStructured(resolvedApiConfig),
     actions,
-    theme,
-    themePreference,
-    mountDashboard,
-    unmountDashboard,
   };
 }
