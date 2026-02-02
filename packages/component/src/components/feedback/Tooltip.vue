@@ -2,7 +2,7 @@
 <template>
   <span :class="bem()" ref="triggerRef" v-bind="$attrs" @mouseenter="openTooltip" @mouseleave="closeTooltip">
     <slot></slot>
-    <Teleport to="body">
+    <Teleport :to="portalTarget">
       <transition name="fade">
         <div v-if="visible" :class="[bem('popup'), themeClass]" :data-gf-theme="colorScheme" :style="popupStyle" ref="popupRef">
           <slot name="title">
@@ -18,6 +18,7 @@
   import { computed, inject, nextTick, ref } from 'vue';
   import { createNamespace } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
+  import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
 
   defineOptions({ name: 'GfTooltip' });
 
@@ -40,6 +41,8 @@
   const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
   const themeClass = computed(() => themeContext?.themeClass.value);
   const colorScheme = computed(() => themeContext?.colorScheme.value);
+  const portalContext = inject(GF_PORTAL_CONTEXT_KEY, null);
+  const portalTarget = computed(() => portalContext?.target.value ?? 'body');
   const triggerRef = ref<HTMLElement>();
   const popupRef = ref<HTMLElement>();
   const visible = ref(false);

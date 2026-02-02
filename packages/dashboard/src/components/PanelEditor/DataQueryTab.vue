@@ -48,39 +48,41 @@
               <Tag v-if="draft.hide" color="orange">已隐藏</Tag>
             </div>
             <div :class="bem('query-actions')">
-              <div :class="bem('action-buttons')">
-                <Tooltip :title="draft.hide ? '已隐藏，点击显示' : '可见，点击隐藏'">
-                  <Button
-                    type="text"
-                    size="small"
-                    :class="bem('icon-btn')"
-                    :icon="h(draft.hide ? EyeInvisibleOutlined : EyeOutlined)"
-                    @click="toggleQueryVisibility(index)"
-                  />
-                </Tooltip>
+	              <div :class="bem('action-buttons')">
+	                <Tooltip :title="draft.hide ? '已隐藏，点击显示' : '可见，点击隐藏'">
+	                  <Button
+	                    icon-only
+	                    type="text"
+	                    size="small"
+	                    :class="bem('icon-btn')"
+	                    :icon="h(draft.hide ? EyeInvisibleOutlined : EyeOutlined)"
+	                    @click="toggleQueryVisibility(index)"
+	                  />
+	                </Tooltip>
 
-                <Tooltip :title="draft.collapsed ? '展开' : '折叠'">
-                  <Button
-                    type="text"
-                    size="small"
-                    :class="bem('icon-btn')"
-                    :icon="h(draft.collapsed ? DownOutlined : UpOutlined)"
-                    @click="togglePanelCollapsed(index)"
-                  />
-                </Tooltip>
+	                <Tooltip :title="draft.collapsed ? '展开' : '折叠'">
+	                  <Button
+	                    icon-only
+	                    type="text"
+	                    size="small"
+	                    :class="bem('icon-btn')"
+	                    :icon="h(draft.collapsed ? DownOutlined : UpOutlined)"
+	                    @click="togglePanelCollapsed(index)"
+	                  />
+	                </Tooltip>
 
-                <Tooltip v-if="queryMode === 'builder' && draft.builder.status === 'ok'" title="模版填充">
-                  <Button type="text" size="small" :class="bem('icon-btn')" :icon="h(ThunderboltOutlined)" @click="openQueryPatterns(index)" />
-                </Tooltip>
+	                <Tooltip v-if="queryMode === 'builder' && draft.builder.status === 'ok'" title="模版填充">
+	                  <Button icon-only type="text" size="small" :class="bem('icon-btn')" :icon="h(ThunderboltOutlined)" @click="openQueryPatterns(index)" />
+	                </Tooltip>
 
-                <Popconfirm v-if="queryDrafts.length > 1" title="确认删除该查询？" @confirm="removeQuery(index)">
-                  <Tooltip title="删除查询">
-                    <Button type="text" size="small" :class="bem('icon-btn', 'danger')" :icon="h(DeleteOutlined)" />
-                  </Tooltip>
-                </Popconfirm>
-              </div>
-            </div>
-          </div>
+	                <Popconfirm v-if="queryDrafts.length > 1" title="确认删除该查询？" @confirm="removeQuery(index)">
+	                  <Tooltip title="删除查询">
+	                    <Button icon-only danger type="text" size="small" :class="bem('icon-btn')" :icon="h(DeleteOutlined)" />
+	                  </Tooltip>
+	                </Popconfirm>
+	              </div>
+	            </div>
+	          </div>
 
           <!-- 查询内容区 -->
           <Transition name="fade-collapse">
@@ -1116,29 +1118,23 @@
       flex-wrap: wrap;
     }
 
-    &__action-buttons {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
+	    &__action-buttons {
+	      display: inline-flex;
+	      align-items: center;
+	      gap: 6px;
+	      flex-wrap: wrap;
+	    }
 
-    :deep(.dp-data-query-tab__icon-btn) {
-      --gf-btn-color: var(--gf-color-text-tertiary);
-      --gf-btn-bg-hover: var(--gf-color-fill-secondary);
-      --gf-btn-bg-active: var(--gf-color-fill-tertiary);
-      --gf-btn-shadow-hover: none;
-    }
+	    &__icon-btn.gf-button--type-text.gf-button--icon-only:not(.gf-button--danger) {
+	      --gf-btn-color: var(--gf-color-text-tertiary);
+	      --gf-btn-bg-hover: var(--gf-color-fill-secondary);
+	      --gf-btn-bg-active: var(--gf-color-fill-tertiary);
+	      --gf-btn-shadow-hover: none;
+	    }
 
-    :deep(.dp-data-query-tab__icon-btn:hover) {
-      --gf-btn-color: var(--gf-color-primary);
-    }
-
-    :deep(.dp-data-query-tab__icon-btn--danger) {
-      --gf-btn-color: var(--gf-color-danger);
-      --gf-btn-bg-hover: var(--gf-color-danger-soft);
-      --gf-btn-bg-active: var(--gf-color-danger-soft);
-    }
+	    &__icon-btn.gf-button--type-text.gf-button--icon-only:not(.gf-button--danger):hover:not(.is-disabled) {
+	      --gf-btn-color: var(--gf-color-primary);
+	    }
 
     &__query-content {
       padding: 12px;
@@ -1227,35 +1223,17 @@
       padding: 12px;
     }
 
-    &__mode-tabs {
-      min-width: 180px;
-
-      :deep(.gf-tabs__content) {
-        display: none;
-      }
-
-      :deep(.dp-data-query-tab__mode-tabs.gf-tabs) {
-        border: 1px solid var(--gf-color-border-muted);
-        border-radius: var(--gf-radius-sm);
-        background: var(--gf-color-surface);
-      }
-
-      :deep(.gf-tabs__nav) {
-        padding: 2px;
-        border-bottom: none;
-      }
-
-      :deep(.gf-tabs__tab) {
-        min-width: 86px;
-        padding: 5px 10px;
-        border-radius: var(--gf-radius-xs);
-      }
-
-      :deep(.gf-tabs__tab.is-active) {
-        background: var(--gf-color-primary-soft);
-        box-shadow: inset 0 -2px 0 var(--gf-color-primary);
-      }
-    }
+	    &__mode-tabs {
+	      min-width: 180px;
+	      --gf-tabs-border: 1px solid var(--gf-color-border-muted);
+	      --gf-tabs-radius: var(--gf-radius-sm);
+	      --gf-tabs-bg: var(--gf-color-surface);
+	      --gf-tabs-nav-padding: 2px;
+	      --gf-tabs-nav-border: none;
+	      --gf-tabs-content-display: none;
+	      --gf-tabs-tab-min-width: 86px;
+	      --gf-tabs-tab-padding: 5px 10px;
+	    }
 
     &__code-grid {
       display: grid;

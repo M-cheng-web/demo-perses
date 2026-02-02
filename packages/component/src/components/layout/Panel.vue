@@ -9,6 +9,7 @@
     :class="[
       bem(),
       bem({ [`size-${size}`]: true }),
+      bem({ [`header-${headerVariant}`]: headerVariant !== 'default' }),
       {
         'is-hoverable': hoverable,
         'is-borderless': bordered === false,
@@ -78,6 +79,12 @@
       title?: string;
       /** 标题右侧 Tooltip 描述（存在时展示 info） */
       description?: string;
+      /**
+       * Header 变体
+       * - default：常规面板 header
+       * - list-row：用于“列表行”场景（更接近 AntD list row：无圆角 + 分割线）
+       */
+      headerVariant?: 'default' | 'list-row';
       /** 是否展示折叠按钮 */
       collapsible?: boolean;
       /** 折叠状态（建议由外部 store 持有） */
@@ -96,6 +103,7 @@
     {
       title: '',
       description: '',
+      headerVariant: 'default',
       collapsible: false,
       collapsed: false,
       size: 'middle',
@@ -226,6 +234,16 @@
 
     &.is-ghost &__header {
       background: color-mix(in srgb, var(--gf-color-surface-muted), transparent 34%);
+    }
+
+    &--header-list-row &__header {
+      background: var(--gf-color-surface);
+      border-bottom: 1px solid var(--gf-color-border-muted);
+      border-radius: 0;
+    }
+
+    &--header-list-row &__header:hover {
+      background: var(--gf-color-surface-muted);
     }
 
     &__collapse {

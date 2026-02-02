@@ -1,6 +1,6 @@
 <!-- 组件说明：状态提示，支持图标、关闭操作与多种状态样式 -->
 <template>
-  <div v-if="visible" :class="[bem(), `gf-alert--${type}`, { 'is-with-description': hasDescription }]">
+  <div v-if="visible" :class="[bem(), bem({ [`size-${size}`]: true }), `gf-alert--${type}`, { 'is-with-description': hasDescription }]">
     <div v-if="showIcon" :class="bem('icon')" :data-symbol="iconSymbol" aria-hidden="true"></div>
     <div :class="bem('body')">
       <div v-if="message" :class="bem('message')">{{ message }}</div>
@@ -22,27 +22,30 @@
 
   defineOptions({ name: 'GfAlert' });
 
-  const props = withDefaults(
-    defineProps<{
-      /** 警告类型样式 */
-      type?: AlertType;
-      /** 简短标题文案 */
-      message?: string;
-      /** 详细描述文案 */
-      description?: string;
+	  const props = withDefaults(
+	    defineProps<{
+	      /** 警告类型样式 */
+	      type?: AlertType;
+	      /** 尺寸（影响 padding / 字号密度） */
+	      size?: 'small' | 'middle';
+	      /** 简短标题文案 */
+	      message?: string;
+	      /** 详细描述文案 */
+	      description?: string;
       /** 是否显示状态图标 */
       showIcon?: boolean;
       /** 是否显示关闭按钮 */
       closable?: boolean;
     }>(),
-    {
-      type: 'info',
-      message: '',
-      description: '',
-      showIcon: false,
-      closable: false,
-    }
-  );
+	    {
+	      type: 'info',
+	      size: 'middle',
+	      message: '',
+	      description: '',
+	      showIcon: false,
+	      closable: false,
+	    }
+	  );
 
   const emit = defineEmits<{
     (e: 'close'): void;
@@ -79,7 +82,7 @@
 </script>
 
 <style scoped lang="less">
-  .gf-alert {
+	  .gf-alert {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -118,10 +121,10 @@
       gap: 4px;
     }
 
-    &__message {
-      font-weight: 700;
-      font-size: var(--gf-font-size-md);
-    }
+	    &__message {
+	      font-weight: 700;
+	      font-size: var(--gf-font-size-md);
+	    }
 
     &__description {
       font-size: var(--gf-font-size-sm);
@@ -159,14 +162,33 @@
       }
     }
 
-    &.gf-alert--error {
-      border-color: var(--gf-color-danger-border);
-      background: var(--gf-color-danger-soft);
+	    &.gf-alert--error {
+	      border-color: var(--gf-color-danger-border);
+	      background: var(--gf-color-danger-soft);
 
       .gf-alert__icon {
         background: var(--gf-color-danger-soft);
         color: var(--gf-color-danger);
       }
-    }
-  }
-</style>
+	    }
+
+	    &--size-small {
+	      padding: 8px 12px;
+
+	      .gf-alert__icon {
+	        width: 20px;
+	        height: 20px;
+	        font-size: 11px;
+	      }
+
+	      .gf-alert__message {
+	        font-size: var(--gf-font-size-sm);
+	        font-weight: 500;
+	      }
+
+	      .gf-alert__description {
+	        font-size: var(--gf-font-size-sm);
+	      }
+	    }
+	  }
+	</style>

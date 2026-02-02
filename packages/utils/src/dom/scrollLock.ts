@@ -5,7 +5,7 @@
  * - Modal / Drawer 打开时锁定 body 滚动，关闭时恢复
  *
  * 注意：
- * - 内部用引用计数（lockCount）避免多个弹层互相干扰
+ * - 内部用引用计数（lockCount）避免多个弹层互相干扰（支持嵌套）
  * - 运行在非浏览器环境（SSR）时会直接 no-op
  */
 
@@ -18,11 +18,18 @@ type ElementLockState = {
   prevOverflow: string | null;
 };
 
-const elementLocks = new Map<HTMLElement, ElementLockState>();
+const elementLocks = new WeakMap<HTMLElement, ElementLockState>();
 
 function getScrollbarWidth(): number {
   if (typeof window === 'undefined') return 0;
   return Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+}
+
+function getComputedPaddingRightPx(el: HTMLElement): number {
+  if (typeof window === 'undefined') return 0;
+  const value = window.getComputedStyle(el).paddingRight;
+  const num = Number.parseFloat(value || '0');
+  return Number.isFinite(num) ? num : 0;
 }
 
 /**
@@ -41,8 +48,12 @@ export function lockBodyScroll(): void {
   const scrollbarWidth = getScrollbarWidth();
   body.style.overflow = 'hidden';
   if (scrollbarWidth > 0) {
-    const base = prevBodyPaddingRight && prevBodyPaddingRight.trim() ? prevBodyPaddingRight : '0px';
-    body.style.paddingRight = `calc(${base} + ${scrollbarWidth}px)`;
+    if (prevBodyPaddingRight && prevBodyPaddingRight.trim()) {
+      body.style.paddingRight = `calc(${prevBodyPaddingRight} + ${scrollbarWidth}px)`;
+    } else {
+      const computed = getComputedPaddingRightPx(body);
+      body.style.paddingRight = `${computed + scrollbarWidth}px`;
+    }
   }
 }
 
@@ -106,4 +117,25 @@ export function unlockScroll(target?: HTMLElement | null): void {
 
   if (existing.prevOverflow !== null) el.style.overflow = existing.prevOverflow;
   elementLocks.delete(el);
+}
+
+/**
+ * 获取一个“可释放”的滚动锁句柄（release 可重复调用，幂等）
+ *
+ * 说明：
+ * - 更接近 AntD/rc-dialog 的使用方式：open 时 acquire，close/unmount 时 release
+ * - 避免业务侧自己维护 lock/unlock 的配对关系（尤其是叠开多个浮层时）
+ */
+export function acquireScrollLock(target?: HTMLElement | null): () => void {
+  if (typeof document === 'undefined') return () => {};
+
+  const el = target ?? null;
+  lockScroll(el);
+
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    unlockScroll(el);
+  };
 }

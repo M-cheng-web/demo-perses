@@ -6,7 +6,7 @@
   - 作为 UI 组件回归测试的人工入口
 -->
 <template>
-  <ConfigProvider theme="inherit">
+  <ConfigProvider :theme="themeModel">
     <div class="dp-component-showcase">
       <div class="dp-component-showcase__header">
         <div class="dp-component-showcase__title">

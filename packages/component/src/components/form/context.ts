@@ -4,6 +4,7 @@ import type { GfFormRuleTrigger, GfFormRules } from '../../types';
 export const gfFormLayoutKey = 'gf-form-layout';
 export const gfFormLabelSpanKey = 'gf-form-label-span';
 export const gfFormContextKey = 'gf-form-context';
+export const gfFormValidateTriggerKey = 'gf-form-validate-trigger';
 export const gfFormItemContextKey = 'gf-form-item-context';
 
 export type GfFormValidateTrigger = GfFormRuleTrigger;

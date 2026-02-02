@@ -1,7 +1,19 @@
 <!-- 组件说明：操作按钮，可配置类型、尺寸、图标、加载与危险态等 -->
 <template>
   <button
-    :class="[bem(), bem({ [`type-${type}`]: true, [`size-${size}`]: true, block, danger, loading }), { 'is-disabled': disabled || loading }]"
+    :class="[
+      bem(),
+      bem({
+        [`type-${type}`]: true,
+        [`size-${size}`]: true,
+        [`shape-${effectiveShape}`]: effectiveShape !== 'default',
+        block,
+        danger,
+        loading,
+        'icon-only': iconOnly,
+      }),
+      { 'is-disabled': disabled || loading },
+    ]"
     type="button"
     :disabled="disabled || loading"
     @click="handleClick"
@@ -25,6 +37,7 @@
 
   type ButtonType = 'primary' | 'default' | 'ghost' | 'text' | 'dashed' | 'link';
   type ButtonSize = 'small' | 'middle' | 'large';
+  type ButtonShape = 'default' | 'square' | 'circle';
 
   defineOptions({ name: 'GfButton' });
 
@@ -42,6 +55,16 @@
       disabled?: boolean;
       /** 危险态样式 */
       danger?: boolean;
+      /**
+       * Icon-only 模式（常用于表格/列表/面板的右侧操作区）
+       *
+       * 说明：
+       * - 该模式会把按钮变为固定宽高的方形按钮
+       * - 默认形状为 square（可通过 shape 覆盖）
+       */
+      iconOnly?: boolean;
+      /** 形状 */
+      shape?: ButtonShape;
       /** 自定义图标渲染 */
       icon?: VNodeChild;
       /** 显示快捷键提示（如 "Ctrl+K" / ["Ctrl", "K"]） */
@@ -54,6 +77,8 @@
       loading: false,
       disabled: false,
       danger: false,
+      iconOnly: false,
+      shape: 'default',
       icon: undefined,
       shortcut: undefined,
     }
@@ -64,6 +89,12 @@
   }>();
 
   const [_, bem] = createNamespace('button');
+
+  const effectiveShape = computed<ButtonShape>(() => {
+    if (props.shape && props.shape !== 'default') return props.shape;
+    if (props.iconOnly) return 'square';
+    return 'default';
+  });
 
   const shortcutLabel = computed(() => {
     if (!props.shortcut) return '';
@@ -140,6 +171,14 @@
       padding: 6px 8px;
     }
 
+    // Icon-only in text mode: use neutral hover/active (less blue, closer to AntD)
+    &--icon-only&--type-text {
+      --gf-btn-bg-hover: var(--gf-color-fill);
+      --gf-btn-bg-active: var(--gf-color-fill-secondary);
+      --gf-btn-shadow-hover: none;
+      --gf-btn-color: var(--gf-color-text-secondary);
+    }
+
     &--type-link {
       --gf-btn-bg: transparent;
       --gf-btn-bg-hover: var(--gf-color-primary-soft-hover);
@@ -159,32 +198,87 @@
       border-style: dashed;
     }
 
+    // Danger (AntD-ish): follow button `type`
     &--danger {
-      --gf-btn-bg: var(--gf-color-danger);
-      --gf-btn-bg-hover: #d84d60;
-      --gf-btn-bg-active: #c74355;
-      --gf-btn-border: transparent;
-      --gf-btn-border-hover: transparent;
-      --gf-btn-color: #fff;
+      --gf-btn-color: var(--gf-color-danger);
+      --gf-btn-border: var(--gf-color-danger-border);
+      --gf-btn-border-hover: color-mix(in srgb, var(--gf-color-danger) 70%, var(--gf-color-danger-border));
+      --gf-btn-bg: var(--gf-color-surface);
+      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-danger-soft) 55%, var(--gf-color-surface));
+      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-danger-soft) 75%, var(--gf-color-surface));
       --gf-btn-shadow-hover: var(--gf-shadow-1);
     }
 
-    &--size-small {
-      padding: 5px 8px;
-      min-height: var(--gf-control-height-sm, 26px);
-      border-radius: var(--gf-radius-xs);
-      font-size: var(--gf-font-size-xs);
-      gap: 5px;
+    &--danger&--type-primary {
+      --gf-btn-bg: var(--gf-color-danger);
+      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-danger) 86%, black);
+      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-danger) 78%, black);
+      --gf-btn-color: #fff;
+      --gf-btn-border: transparent;
+      --gf-btn-border-hover: transparent;
     }
 
-    &--size-large {
-      padding: 8px 12px;
-      min-height: var(--gf-control-height-lg, 36px);
-      font-size: var(--gf-font-size-lg);
+    &--danger&--type-ghost {
+      --gf-btn-bg: transparent;
+      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-danger-soft) 65%, transparent);
+      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-danger-soft) 85%, transparent);
+      --gf-btn-shadow-hover: none;
     }
+
+    &--danger&--type-text,
+    &--danger&--type-link {
+      --gf-btn-bg: transparent;
+      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-danger-soft) 70%, transparent);
+      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-danger-soft) 88%, transparent);
+      --gf-btn-border: transparent;
+      --gf-btn-border-hover: transparent;
+      --gf-btn-shadow-hover: none;
+    }
+
+	    &--size-small {
+	      padding: 5px 8px;
+	      min-height: var(--gf-control-height-sm, 26px);
+	      border-radius: var(--gf-radius-xs);
+	      font-size: var(--gf-font-size-xs);
+	      gap: 5px;
+	    }
+
+	    &--type-link&--size-small {
+	      padding: 4px 6px;
+	    }
+
+	    &--size-large {
+	      padding: 8px 12px;
+	      min-height: var(--gf-control-height-lg, 36px);
+	      font-size: var(--gf-font-size-lg);
+	    }
 
     &--block {
       width: 100%;
+    }
+
+    &--icon-only {
+      padding: 0;
+      width: var(--gf-btn-icon-only-size, 28px);
+      height: var(--gf-btn-icon-only-size, 28px);
+      min-height: var(--gf-btn-icon-only-size, 28px);
+      gap: 0;
+    }
+
+    &--size-small&--icon-only {
+      --gf-btn-icon-only-size: 24px;
+    }
+
+    &--size-middle&--icon-only {
+      --gf-btn-icon-only-size: 28px;
+    }
+
+    &--size-large&--icon-only {
+      --gf-btn-icon-only-size: 32px;
+    }
+
+    &--shape-circle {
+      border-radius: 999px;
     }
 
     &:hover:not(.is-disabled) {
@@ -213,6 +307,7 @@
       align-items: center;
       justify-content: center;
       font-size: 14px;
+      line-height: 1;
     }
 
     &__spinner {

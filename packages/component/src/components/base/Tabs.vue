@@ -62,23 +62,35 @@
 
 <style scoped lang="less">
   .gf-tabs {
+    --gf-tabs-gap: var(--gf-space-2);
+    --gf-tabs-border: 1px solid var(--gf-color-border);
+    --gf-tabs-radius: var(--gf-radius-md);
+    --gf-tabs-bg: var(--gf-color-surface);
+    --gf-tabs-nav-padding: 6px 8px;
+    --gf-tabs-nav-border: 1px solid var(--gf-color-border-muted);
+    --gf-tabs-tab-padding: 6px 10px;
+    --gf-tabs-tab-min-width: auto;
+    --gf-tabs-content-padding: var(--gf-space-3);
+    --gf-tabs-content-display: block;
+
     display: flex;
     flex-direction: column;
-    gap: var(--gf-space-2);
-    border: 1px solid var(--gf-color-border);
-    border-radius: var(--gf-radius-md);
-    background: var(--gf-color-surface);
+    gap: var(--gf-tabs-gap);
+    border: var(--gf-tabs-border);
+    border-radius: var(--gf-tabs-radius);
+    background: var(--gf-tabs-bg);
 
     &__nav {
       display: flex;
       gap: var(--gf-space-1);
-      padding: 6px 8px;
+      padding: var(--gf-tabs-nav-padding);
       background: transparent;
-      border-bottom: 1px solid var(--gf-color-border-muted);
+      border-bottom: var(--gf-tabs-nav-border);
     }
 
     &__tab {
-      padding: 6px 10px;
+      min-width: var(--gf-tabs-tab-min-width);
+      padding: var(--gf-tabs-tab-padding);
       border-radius: var(--gf-radius-xs);
       cursor: pointer;
       color: var(--gf-text-secondary);
@@ -100,7 +112,8 @@
     }
 
     &__content {
-      padding: var(--gf-space-3);
+      display: var(--gf-tabs-content-display);
+      padding: var(--gf-tabs-content-padding);
     }
   }
 </style>

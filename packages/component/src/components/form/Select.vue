@@ -60,13 +60,7 @@
       </div>
       <template v-else>
         <template v-if="selectedOptions[0]">
-          <slot
-            name="value"
-            :option="selectedOptions[0]"
-            :value="selectedOptions[0].value"
-            :label="selectedOptions[0].label"
-            :open="open"
-          >
+          <slot name="value" :option="selectedOptions[0]" :value="selectedOptions[0].value" :label="selectedOptions[0].label" :open="open">
             <span :class="bem('value')">{{ selectedOptions[0].label }}</span>
           </slot>
         </template>
@@ -82,7 +76,7 @@
       </span>
     </div>
 
-    <Teleport to="body">
+    <Teleport :to="portalTarget">
       <transition name="fade">
         <div v-if="open" :class="[bem('dropdown'), themeClass]" :data-gf-theme="colorScheme" :style="dropdownStyle" ref="dropdownRef">
           <div v-if="showSearch && !isMultiple" :class="bem('dropdown-search')" @click.stop>
@@ -121,6 +115,7 @@
   import { CheckOutlined, CloseOutlined, DownOutlined } from '@ant-design/icons-vue';
   import { createNamespace, debounceCancellable } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
+  import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
   import Tag from '../base/Tag.vue';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
@@ -215,6 +210,8 @@
   const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
   const themeClass = computed(() => themeContext?.themeClass.value);
   const colorScheme = computed(() => themeContext?.colorScheme.value);
+  const portalContext = inject(GF_PORTAL_CONTEXT_KEY, null);
+  const portalTarget = computed(() => portalContext?.target.value ?? 'body');
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
 
   const rootRef = ref<HTMLElement>();
@@ -364,8 +361,11 @@
   };
 
   const close = () => {
+    if (!open.value) return;
     open.value = false;
     openedByFocusIn = false;
+    // Treat "dropdown closed" as finishing interaction (AntD-ish blur validation).
+    formItem?.onFieldBlur();
   };
 
   watch(open, (v) => emit('dropdown-visible-change', v));

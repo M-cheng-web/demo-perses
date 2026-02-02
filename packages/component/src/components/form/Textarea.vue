@@ -9,6 +9,7 @@
       :class="[bem('control'), 'gf-control', { 'gf-control--disabled': disabled }]"
       :disabled="disabled"
       @input="handleInput"
+      @blur="handleBlur"
     ></textarea>
   </div>
 </template>
@@ -83,6 +84,10 @@
     emit('change', innerValue.value);
     resize();
     formItem?.onFieldChange();
+  };
+
+  const handleBlur = () => {
+    formItem?.onFieldBlur();
   };
 </script>
 

@@ -74,30 +74,30 @@
   };
 </script>
 
-<style scoped lang="less">
-  .gf-checkbox {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    color: var(--gf-text);
-    font-size: var(--gf-font-size-sm);
-    transition: color 0.2s var(--gf-easing);
+	<style scoped lang="less">
+	  .gf-checkbox {
+	    display: inline-flex;
+	    align-items: center;
+	    gap: 8px;
+	    cursor: pointer;
+	    color: var(--gf-text);
+	    font-size: var(--gf-checkbox-font-size, var(--gf-font-size-sm));
+	    transition: color 0.2s var(--gf-easing);
 
-    input {
-      display: none;
-    }
+	    input {
+	      display: none;
+	    }
 
-    &__box {
-      width: 16px;
-      height: 16px;
-      border-radius: var(--gf-radius-sm);
-      border: 1px solid var(--gf-border);
-      background: var(--gf-color-surface);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: none;
+	    &__box {
+	      width: 16px;
+	      height: 16px;
+	      border-radius: var(--gf-radius-sm);
+	      border: 1px solid var(--gf-control-border-color, var(--gf-border));
+	      background: var(--gf-control-bg, var(--gf-color-surface));
+	      display: inline-flex;
+	      align-items: center;
+	      justify-content: center;
+	      box-shadow: none;
       transition: all 0.2s var(--gf-easing);
     }
 

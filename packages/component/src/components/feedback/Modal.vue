@@ -1,6 +1,6 @@
 <!-- 组件说明：模态对话框，支持自定义页眉/页脚、遮罩关闭等 -->
 <template>
-  <Teleport to="body">
+  <Teleport :to="portalTarget">
     <transition name="fade">
       <div v-if="open" :class="[bem(), themeClass]" :data-gf-theme="colorScheme" v-bind="$attrs">
         <div :class="bem('mask')" @click="handleMaskClick"></div>
@@ -26,9 +26,10 @@
 
 <script setup lang="ts">
   import { computed, inject, onBeforeUnmount, watch } from 'vue';
-  import { createNamespace, lockScroll as lockBodyScroll, unlockScroll as unlockBodyScroll } from '../../utils';
+  import { acquireScrollLock, createNamespace } from '../../utils';
   import Button from '../base/Button.vue';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
+  import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
 
   defineOptions({ name: 'GfModal', inheritAttrs: false });
 
@@ -83,8 +84,14 @@
   const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
   const themeClass = computed(() => themeContext?.themeClass.value);
   const colorScheme = computed(() => themeContext?.colorScheme.value);
-  let lockedScrollEl: HTMLElement | null = null;
-  let isScrollLocked = false;
+  const portalContext = inject(GF_PORTAL_CONTEXT_KEY, null);
+  const portalTarget = computed(() => portalContext?.target.value ?? 'body');
+  let releaseScrollLock: (() => void) | null = null;
+
+  const releaseIfNeeded = () => {
+    releaseScrollLock?.();
+    releaseScrollLock = null;
+  };
 
   const panelStyle = computed(() => {
     const w = typeof props.width === 'number' ? `${props.width}px` : props.width;
@@ -97,18 +104,11 @@
     () => props.open,
     (val) => {
       if (val) {
-        if (props.lockScroll !== false) {
-          const el = props.lockScrollEl ?? null;
-          lockedScrollEl = el;
-          lockBodyScroll(el);
-          isScrollLocked = true;
+        if (props.lockScroll !== false && !releaseScrollLock) {
+          releaseScrollLock = acquireScrollLock(props.lockScrollEl ?? null);
         }
       } else {
-        if (props.lockScroll !== false && isScrollLocked) {
-          unlockBodyScroll(lockedScrollEl ?? null);
-          lockedScrollEl = null;
-          isScrollLocked = false;
-        }
+        releaseIfNeeded();
       }
     },
     { immediate: true }
@@ -119,11 +119,8 @@
     (nextEl) => {
       if (!props.open) return;
       if (props.lockScroll === false) return;
-      if (isScrollLocked) unlockBodyScroll(lockedScrollEl ?? null);
-      const el = nextEl ?? null;
-      lockedScrollEl = el;
-      lockBodyScroll(el);
-      isScrollLocked = true;
+      releaseIfNeeded();
+      releaseScrollLock = acquireScrollLock(nextEl ?? null);
     }
   );
 
@@ -132,21 +129,16 @@
     (enabled) => {
       if (!props.open) return;
       if (enabled === false) {
-        if (isScrollLocked) unlockBodyScroll(lockedScrollEl ?? null);
-        lockedScrollEl = null;
-        isScrollLocked = false;
+        releaseIfNeeded();
         return;
       }
-      if (isScrollLocked) return;
-      const el = props.lockScrollEl ?? null;
-      lockedScrollEl = el;
-      lockBodyScroll(el);
-      isScrollLocked = true;
+      if (releaseScrollLock) return;
+      releaseScrollLock = acquireScrollLock(props.lockScrollEl ?? null);
     }
   );
 
   onBeforeUnmount(() => {
-    if (props.open && props.lockScroll !== false && isScrollLocked) unlockBodyScroll(lockedScrollEl ?? null);
+    releaseIfNeeded();
   });
 
   const handleMaskClick = () => {

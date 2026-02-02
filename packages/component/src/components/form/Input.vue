@@ -14,6 +14,7 @@
       :autocomplete="autocomplete"
       @input="handleInput"
       @change="handleChange"
+      @blur="handleBlur"
       @keydown.enter="handlePressEnter"
     />
     <button v-if="allowClear && innerValue" :class="bem('clear')" type="button" @click="clearValue">×</button>
@@ -94,7 +95,10 @@
 
   const handleChange = () => {
     emit('change', innerValue.value);
-    formItem?.onFieldChange();
+  };
+
+  const handleBlur = () => {
+    formItem?.onFieldBlur();
   };
 
   const handlePressEnter = () => {

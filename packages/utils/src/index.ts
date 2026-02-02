@@ -61,11 +61,12 @@ export const http = {
 // DOM
 // ----------------------------
 import { isBrowser, readCssVar } from './dom/cssVar';
-import { lockBodyScroll, lockScroll, unlockBodyScroll, unlockScroll } from './dom/scrollLock';
+import { acquireScrollLock, lockBodyScroll, lockScroll, unlockBodyScroll, unlockScroll } from './dom/scrollLock';
 
 export const dom = {
   isBrowser,
   readCssVar,
+  acquireScrollLock,
   lockBodyScroll,
   unlockBodyScroll,
   lockScroll,

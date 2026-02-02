@@ -7,14 +7,16 @@
   - 处理多实例隔离：鼠标跟踪、依赖注入与 pinia 附加依赖绑定
 -->
 <template>
-  <ConfigProvider :theme="props.theme">
+  <ConfigProvider :theme="props.theme" :portal-target="props.portalTarget">
     <div ref="rootEl" :class="bem()" :style="rootStyle">
       <!-- 右侧透明设置按钮：打开侧边栏工具面板 -->
       <div ref="settingsEl" :class="[bem('settings'), { 'is-dragging': isSettingsDragging, 'is-peek': isSettingsPeek }]" :style="settingsStyle">
         <Button
+          icon-only
           type="text"
           size="middle"
           :icon="h(SettingOutlined)"
+          :class="bem('settings-btn')"
           :disabled="isBooting"
           @click="handleSettingsClick"
           @pointerdown="handleSettingsPointerDown"
@@ -35,7 +37,14 @@
         @confirm="handleSettingsConfirm"
         @cancel="handleSettingsCancel"
       >
-        <DashboardToolbar ref="toolbarRef" variant="sidebar" @create-group="handleCreateGroup" />
+        <DashboardToolbar
+          ref="toolbarRef"
+          variant="sidebar"
+          @create-group="handleCreateGroup"
+          @view-json="() => openJsonModal('view')"
+          @import-json="handleImportJson"
+          @export-json="toolbarApi.exportJson"
+        />
       </Drawer>
 
       <!-- 面板组列表 -->
@@ -168,11 +177,16 @@
     defineProps<{
       /**
        * Dashboard 根节点使用的主题模式
-       * - 'inherit': 跟随 document / 父级 tokens（推荐：嵌入到宿主应用时使用）
-       * - 'light'/'blue': 强制浅色方案
-       * - 'dark': 强制深色方案
+       * - 'light': 浅色方案（默认）
+       * - 'dark': 深色方案
        */
-      theme?: 'blue' | 'light' | 'dark' | 'inherit';
+      theme?: 'light' | 'dark';
+      /**
+       * Portal 挂载点（用于 Modal/Drawer/Dropdown/Select 等 Teleport 浮层）
+       *
+       * 默认挂到 `body`，嵌入式场景可传入宿主容器以增强隔离/便于销毁。
+       */
+      portalTarget?: string | HTMLElement | null;
       /**
        * 可选：运行时注入的 apiClient（接口契约 + 实现）
        * 未提供时默认使用 mock 实现
@@ -205,7 +219,8 @@
       readOnly?: boolean;
     }>(),
     {
-      theme: 'inherit',
+      theme: 'light',
+      portalTarget: null,
       apiClient: undefined,
       panelGroupFocusMotionMs: 200,
       readOnly: false,
@@ -1067,32 +1082,28 @@
         opacity: 1;
       }
 
-      :deep(.gf-button) {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        border: 1px solid var(--gf-color-border-strong);
-        background: color-mix(in srgb, var(--gf-color-surface), transparent 6%);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        box-shadow: var(--gf-shadow-2);
-        cursor: grab;
-        font-size: 18px;
-      }
-
-      :deep(.gf-button:hover) {
-        background: color-mix(in srgb, var(--gf-color-surface), transparent 0%);
-        border-color: var(--gf-color-border-strong);
-        box-shadow: var(--gf-shadow-2);
-      }
-
       &.is-dragging {
         cursor: grabbing;
 
-        :deep(.gf-button) {
+        .dp-dashboard__settings-btn {
           cursor: grabbing;
         }
       }
+    }
+
+    &__settings-btn.gf-button--icon-only {
+      --gf-btn-icon-only-size: 44px;
+      --gf-btn-bg: color-mix(in srgb, var(--gf-color-surface), transparent 6%);
+      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-surface), transparent 0%);
+      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-surface), transparent 0%);
+      --gf-btn-border: var(--gf-color-border-strong);
+      --gf-btn-border-hover: var(--gf-color-border-strong);
+      --gf-btn-shadow: var(--gf-shadow-2);
+      --gf-btn-shadow-hover: var(--gf-shadow-2);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      cursor: grab;
     }
 
     &__boot-mask {

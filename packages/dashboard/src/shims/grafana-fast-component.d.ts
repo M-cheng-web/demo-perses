@@ -59,7 +59,7 @@ declare module '@grafana-fast/component' {
   export type TableProps = any;
   export type TableColumnType = any;
 
-  export type GfTheme = 'blue' | 'light' | 'dark' | 'inherit';
+  export type GfTheme = 'light' | 'dark';
   export type GfColorScheme = 'light' | 'dark' | undefined;
   export interface GfThemeContext {
     theme: ComputedRef<GfTheme>;

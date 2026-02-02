@@ -4,7 +4,7 @@
     <span @click="toggle">
       <slot></slot>
     </span>
-    <Teleport to="body">
+    <Teleport :to="portalTarget">
       <transition name="fade">
         <div v-if="open" :class="[bem('content'), themeClass]" :data-gf-theme="colorScheme" :style="popupStyle" ref="popupRef">
           <div :class="bem('message')">
@@ -25,6 +25,7 @@
   import { createNamespace } from '../../utils';
   import Button from '../base/Button.vue';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
+  import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
 
   defineOptions({ name: 'GfPopconfirm' });
 
@@ -47,6 +48,8 @@
   const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
   const themeClass = computed(() => themeContext?.themeClass.value);
   const colorScheme = computed(() => themeContext?.colorScheme.value);
+  const portalContext = inject(GF_PORTAL_CONTEXT_KEY, null);
+  const portalTarget = computed(() => portalContext?.target.value ?? 'body');
   const triggerRef = ref<HTMLElement>();
   const popupRef = ref<HTMLElement>();
   const open = ref(false);

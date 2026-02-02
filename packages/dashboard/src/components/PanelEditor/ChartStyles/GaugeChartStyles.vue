@@ -164,12 +164,13 @@
               </div>
               <div v-for="(threshold, index) in localOptions.thresholds.steps" :key="index" :class="bem('threshold-item')">
                 <span :class="bem('threshold-color')" :style="{ backgroundColor: threshold.color }"></span>
-                <Input v-model:value="threshold.name" size="small" placeholder="阈值名称" style="width: 80px" />
-                <Input v-model:value="threshold.color" size="small" placeholder="#52c41a" style="width: 110px" />
+                <Input v-model:value="threshold.name" size="small" placeholder="阈值名称" style="width: 80px" :class="bem('threshold-control')" />
+                <Input v-model:value="threshold.color" size="small" placeholder="#52c41a" style="width: 110px" :class="bem('threshold-control')" />
                 <InputNumber
                   :value="threshold.value ?? undefined"
                   size="small"
                   style="width: 110px"
+                  :class="bem('threshold-control')"
                   placeholder="0"
                   @update:value="(v: number | null | undefined) => (threshold.value = v ?? null)"
                 />
@@ -383,24 +384,20 @@
       font-weight: 500;
     }
 
-    &__threshold-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+	    &__threshold-item {
+	      display: flex;
+	      align-items: center;
+	      gap: 8px;
+	    }
 
-      :deep(.gf-input-number) {
-        flex-shrink: 0;
-      }
+	    &__threshold-control {
+	      flex-shrink: 0;
+	    }
 
-      :deep(.gf-input) {
-        flex-shrink: 0;
-      }
-    }
-
-    &__threshold-color {
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
+	    &__threshold-color {
+	      width: 20px;
+	      height: 20px;
+	      border-radius: 4px;
       flex-shrink: 0;
       border: 1px solid @border-color;
     }

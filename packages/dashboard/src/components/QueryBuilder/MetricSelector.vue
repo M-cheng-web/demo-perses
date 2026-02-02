@@ -130,11 +130,7 @@
   .dp-metric-selector__select {
     flex: 1;
     min-width: 0;
-  }
-
-  .dp-metric-selector__group :deep(.gf-select__control) {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+    --gf-control-radius: var(--gf-radius-sm) 0 0 var(--gf-radius-sm);
   }
 
   .dp-metric-selector__btn {

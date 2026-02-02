@@ -3,11 +3,11 @@
   <div :class="bem()">
     <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
 
-    <div :class="bem('wrapper')">
-      <Table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" size="small">
-        <template #bodyCell="{ column, text }">
-          <template v-if="column.key !== 'time'">
-            {{ formatValue(text, panel.options.format || {}) }}
+	    <div :class="bem('wrapper')">
+	      <Table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" size="small" :style="{ '--gf-table-wrap-height': '100%' }">
+	        <template #bodyCell="{ column, text }">
+	          <template v-if="column.key !== 'time'">
+	            {{ formatValue(text, panel.options.format || {}) }}
           </template>
           <template v-else>
             {{ text }}
@@ -146,27 +146,13 @@
       z-index: 10;
     }
 
-    &__wrapper {
-      flex: 1;
-      width: 100%;
-      height: 100%;
-      min-height: 0;
-      // padding: @spacing-sm-2;
-      overflow: auto;
-
-      :deep(.gf-table__wrap) {
-        height: 100%;
-      }
-
-      :deep(.gf-table th),
-      :deep(.gf-table td) {
-        font-size: 12px;
-      }
-
-      :deep(.gf-table th) {
-        background: var(--gf-color-surface-muted);
-        font-weight: 600;
-      }
-    }
-  }
+	    &__wrapper {
+	      flex: 1;
+	      width: 100%;
+	      height: 100%;
+	      min-height: 0;
+	      // padding: @spacing-sm-2;
+	      overflow: auto;
+	    }
+	  }
 </style>

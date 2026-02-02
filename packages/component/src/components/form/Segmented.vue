@@ -172,17 +172,17 @@
 </script>
 
 <style scoped lang="less">
-  .gf-segmented {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    width: auto;
-    padding: 6px 8px;
-    background: var(--gf-color-surface);
-    border: 1px solid var(--gf-color-border);
-    border-radius: var(--gf-radius-md);
-    gap: 0;
-    user-select: none;
+	  .gf-segmented {
+	    position: relative;
+	    display: inline-flex;
+	    align-items: center;
+	    width: auto;
+	    padding: 6px 8px;
+	    background: var(--gf-color-surface);
+	    border: 1px solid var(--gf-control-border-color, var(--gf-color-border));
+	    border-radius: var(--gf-radius-md);
+	    gap: 0;
+	    user-select: none;
 
     &__item {
       background: transparent;

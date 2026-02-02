@@ -38,7 +38,7 @@
             >
               <template v-if="isHydrated(layoutItem.i)" #right>
                 <Tooltip title="全屏查看">
-                  <Button type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen(String(layoutItem.i))" />
+                  <Button icon-only type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen(String(layoutItem.i))" />
                 </Tooltip>
               </template>
 
@@ -197,21 +197,6 @@
     &__panel-skeleton {
       height: 100%;
       padding: 12px;
-    }
-
-    :deep(.gf-button) {
-      padding: 0;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      border-radius: var(--gf-radius-sm);
-
-      &:hover {
-        background-color: var(--gf-color-fill);
-      }
     }
   }
 </style>

@@ -15,10 +15,10 @@
 
 ## 2. 主题使用方式
 
-Token 同时挂在 `:root` 和主题容器 `.gf-theme-blue` 上，因此你可以：
+Token 同时挂在主题容器 `.gf-theme-light`（以及历史兼容的 `.gf-theme-blue`）上，因此你可以：
 
 - 全局生效：直接使用 `:root`（默认）
-- 局部生效：在某个容器上加 `class="gf-theme-blue"`，token 仅在该子树生效
+- 局部生效：在某个容器上加 `class="gf-theme-light"`，token 仅在该子树生效（`.gf-theme-blue` 为兼容别名）
 
 同时提供工业风深色模式，token 挂在：
 
@@ -47,6 +47,18 @@ Token 同时挂在 `:root` 和主题容器 `.gf-theme-blue` 上，因此你可�
 - `--gf-color-border` / `--gf-color-border-strong`：边框层级
 - `--gf-color-success` / `--gf-color-warning` / `--gf-color-danger`：状态色
 - `--gf-color-zebra`：斑马纹底色（极浅冷灰，用于表格/列表行交替背景）
+- `--gf-color-mask`：浮层遮罩色（Modal/Drawer），默认 `rgba(0, 0, 0, 0.45)`（AntD-ish）
+
+### Form Validation（对齐 AntD-ish）
+
+用于 `FormItem` 的校验态（error/warning）统一视觉：
+
+- `--gf-color-form-error` / `--gf-color-form-error-border` / `--gf-color-form-error-bg` / `--gf-form-error-ring`
+- `--gf-color-form-warning` / `--gf-color-form-warning-border` / `--gf-color-form-warning-bg` / `--gf-form-warning-ring`
+
+实现方式：`FormItem` 通过设置一组“控件变量”影响 Input/Select/Cascader 等基础控件（减少业务层 `:deep()` 覆写）：
+
+- `--gf-control-border-color*` / `--gf-control-bg*` / `--gf-control-shadow*`
 
 ### Charts
 

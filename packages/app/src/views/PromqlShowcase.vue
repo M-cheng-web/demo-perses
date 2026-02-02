@@ -10,7 +10,7 @@
   - 这里尽量保持“一个模式”：直接使用 promql 包内置的默认策略（无额外选项）
 -->
 <template>
-  <ConfigProvider theme="inherit">
+  <ConfigProvider :theme="themeModel">
     <div class="dp-promql-showcase">
       <div class="dp-promql-showcase__header">
         <div class="dp-promql-showcase__title">

@@ -15,17 +15,18 @@
     update:open, select
 -->
 <template>
-  <Modal
-    v-model:open="isOpen"
-    title="查询模板"
-    width="700px"
-    :maskClosable="false"
-    :footer="null"
-    :lock-scroll="lockScrollEnabled"
-    :lock-scroll-el="lockScrollEl"
-    :class="bem()"
-    @cancel="handleClose"
-  >
+	  <Modal
+	    v-model:open="isOpen"
+	    title="查询模板"
+	    width="700px"
+	    :maskClosable="false"
+	    :footer="null"
+	    :lock-scroll="lockScrollEnabled"
+	    :lock-scroll-el="lockScrollEl"
+	    :body-style="{ padding: '16px' }"
+	    :class="bem()"
+	    @cancel="handleClose"
+	  >
     <div :class="bem('description')">
       <Alert description="选择一个查询模板快速构建常用的 PromQL 查询" type="info" show-icon />
     </div>
@@ -200,10 +201,6 @@
 </script>
 
 <style scoped>
-  .dp-query-patterns-modal :deep(.gf-modal__body) {
-    padding: 16px;
-  }
-
   .dp-query-patterns-modal__description {
     margin-bottom: 16px;
   }
@@ -222,30 +219,22 @@
     height: 100%;
   }
 
-  .dp-query-patterns-modal__card:hover {
-    box-shadow: var(--gf-shadow-1);
-  }
+	  .dp-query-patterns-modal__card:hover {
+	    box-shadow: var(--gf-shadow-1);
+	  }
 
-  .dp-query-patterns-modal__card :deep(.gf-card__header) {
-    background: var(--gf-color-surface-muted);
-    padding: 8px 12px;
-    min-height: auto;
-  }
+	  .dp-query-patterns-modal__card {
+	    --gf-card-header-bg: var(--gf-color-surface-muted);
+	    --gf-card-header-padding: 8px 12px;
+	    --gf-card-header-min-height: auto;
+	    --gf-card-title-font-size: var(--gf-font-size-lg);
+	    --gf-card-body-padding: 12px;
+	  }
 
-  .dp-query-patterns-modal__card :deep(.gf-card__title) {
-    font-weight: 600;
-    font-size: 14px;
-    padding: 0;
-  }
-
-  .dp-query-patterns-modal__card :deep(.gf-card__body) {
-    padding: 12px;
-  }
-
-  .dp-query-patterns-modal__card-content {
-    display: flex;
-    flex-direction: column;
-  }
+	  .dp-query-patterns-modal__card-content {
+	    display: flex;
+	    flex-direction: column;
+	  }
 
   .dp-query-patterns-modal__card-description {
     color: var(--gf-color-text-secondary);

@@ -42,6 +42,7 @@
             :title="group.title || '未命名面板组'"
             :description="group.description"
             size="large"
+            header-variant="list-row"
             :collapsible="!isBooting"
             :collapsed="true"
             :bordered="false"
@@ -52,14 +53,16 @@
             @title-click="() => handleTitleClick(group.id)"
           >
             <template v-if="canManageGroups" #right>
-              <Tooltip title="编辑面板组">
-                <Button type="text" size="small" :icon="h(EditOutlined)" @click="() => handleEditGroup(group)" />
-              </Tooltip>
-              <Popconfirm title="确定要删除这个面板组吗？" ok-text="确定" cancel-text="取消" @confirm="() => handleDeleteGroup(group.id)">
-                <Tooltip title="删除面板组">
-                  <Button type="text" size="small" :icon="h(DeleteOutlined)" :class="bem('delete-btn')" />
+              <div :class="bem('actions')">
+                <Tooltip title="编辑面板组">
+                  <Button icon-only type="text" size="middle" :icon="h(EditOutlined)" @click="() => handleEditGroup(group)" />
                 </Tooltip>
-              </Popconfirm>
+                <Popconfirm title="确定要删除这个面板组吗？" ok-text="确定" cancel-text="取消" @confirm="() => handleDeleteGroup(group.id)">
+                  <Tooltip title="删除面板组">
+                    <Button icon-only type="text" size="middle" :icon="h(DeleteOutlined)" :class="bem('delete-btn')" />
+                  </Tooltip>
+                </Popconfirm>
+              </div>
             </template>
           </Panel>
         </div>
@@ -208,40 +211,16 @@
     flex-direction: column;
     gap: 0;
 
+    &__actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
     &__group.is-focus-source {
       :deep(.gf-panel__header) {
         opacity: 0;
       }
-    }
-
-    // 列表行：更像 AntD 的 list row（无圆角，使用分割线）
-    :deep(.dp-panel-group-list__group .gf-panel.is-ghost > .gf-panel__header) {
-      background: var(--gf-color-surface);
-      border-bottom: 1px solid var(--gf-color-border-muted);
-      border-radius: 0;
-    }
-
-    :deep(.dp-panel-group-list__group .gf-panel.is-ghost > .gf-panel__header:hover) {
-      background: var(--gf-color-surface-muted);
-    }
-
-    :deep(.dp-panel-group-list__group .gf-panel__right) {
-      gap: 4px;
-    }
-
-    :deep(.dp-panel-group-list__group .gf-panel__right .gf-button) {
-      padding: 0;
-      width: 28px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      border-radius: var(--gf-radius-sm);
-    }
-
-    :deep(.dp-panel-group-list__group .gf-panel__right .gf-button:hover) {
-      background-color: var(--gf-color-fill);
     }
 
     &__delete-btn {
@@ -253,9 +232,5 @@
       --gf-btn-shadow-hover: none;
     }
 
-    // 删除按钮 hover: 保持透明（覆盖统一 hover 填充）
-    :deep(.dp-panel-group-list__group .gf-panel__right .dp-panel-group-list__delete-btn.gf-button:hover) {
-      background-color: transparent;
-    }
   }
 </style>

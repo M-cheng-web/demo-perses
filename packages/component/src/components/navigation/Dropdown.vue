@@ -4,7 +4,7 @@
     <div :class="bem('trigger')" @click="toggle">
       <slot></slot>
     </div>
-    <Teleport to="body">
+    <Teleport :to="portalTarget">
       <transition name="fade">
         <div v-if="open" :class="[bem('overlay'), themeClass]" :data-gf-theme="colorScheme" :style="overlayStyle" ref="overlayRef" @click="close">
           <slot name="overlay"></slot>
@@ -18,6 +18,7 @@
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { createNamespace } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
+  import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
 
   defineOptions({ name: 'GfDropdown' });
 
@@ -25,6 +26,8 @@
   const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
   const themeClass = computed(() => themeContext?.themeClass.value);
   const colorScheme = computed(() => themeContext?.colorScheme.value);
+  const portalContext = inject(GF_PORTAL_CONTEXT_KEY, null);
+  const portalTarget = computed(() => portalContext?.target.value ?? 'body');
   const triggerRef = ref<HTMLElement>();
   const overlayRef = ref<HTMLElement>();
   const open = ref(false);

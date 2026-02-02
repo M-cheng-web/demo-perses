@@ -347,11 +347,10 @@
       min-height: 0;
     }
 
-    // 让聚焦层里的 header 与列表 header 保持一致（复用同一个 Panel 组件）
-    :deep(.gf-panel) {
-      height: 100%;
-      max-width: 100%;
-    }
+	    &__group-panel {
+	      height: 100%;
+	      max-width: 100%;
+	    }
 
     // 覆盖 ghost panel 默认 overflow: visible（聚焦层需要固定高度 + 内部滚动）
     // 只移动“聚焦层主 Panel”的 header（营造“标题浮起”的连续感）

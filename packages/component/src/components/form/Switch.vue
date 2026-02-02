@@ -43,16 +43,16 @@
 </script>
 
 <style scoped lang="less">
-  .gf-switch {
-    position: relative;
-    width: 44px;
-    height: 24px;
-    border-radius: 999px;
-    border: 1px solid var(--gf-border);
-    background: var(--gf-color-surface-muted);
-    cursor: pointer;
-    transition: all 0.25s var(--gf-easing);
-    box-shadow: none;
+	  .gf-switch {
+	    position: relative;
+	    width: 44px;
+	    height: 24px;
+	    border-radius: 999px;
+	    border: 1px solid var(--gf-control-border-color, var(--gf-border));
+	    background: var(--gf-color-surface-muted);
+	    cursor: pointer;
+	    transition: all 0.25s var(--gf-easing);
+	    box-shadow: none;
     padding: 2px;
 
     &__handle {

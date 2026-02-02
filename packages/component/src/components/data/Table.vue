@@ -212,72 +212,86 @@
   });
 </script>
 
-<style scoped lang="less">
-  .gf-table {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gf-space-3);
-    width: 100%;
-    position: relative;
+	<style scoped lang="less">
+	  .gf-table {
+	    --gf-table-wrap-height: auto;
+	    --gf-table-wrap-border: 1px solid var(--gf-color-border);
+	    --gf-table-wrap-border-hover: var(--gf-color-border-strong);
+	    --gf-table-wrap-radius: var(--gf-radius-md);
+	    --gf-table-wrap-bg: var(--gf-color-surface);
+	    --gf-table-wrap-shadow-hover: var(--gf-shadow-1);
+	    --gf-table-header-bg: var(--gf-color-surface-muted);
+	    --gf-table-header-border: 1px solid var(--gf-color-border-muted);
+	    --gf-table-row-hover-bg: var(--gf-color-fill);
+	    --gf-table-row-zebra-bg: var(--gf-color-zebra);
+	    --gf-table-cell-padding: 8px 10px;
+	    --gf-table-cell-font-size: var(--gf-font-size-md);
 
-    &__wrap {
-      width: 100%;
-      overflow: auto;
-      border: 1px solid var(--gf-color-border);
-      border-radius: var(--gf-radius-md);
-      background: var(--gf-color-surface);
-      position: relative;
-      transition:
-        border-color var(--gf-motion-normal) var(--gf-easing),
-        box-shadow var(--gf-motion-normal) var(--gf-easing);
-    }
+	    display: flex;
+	    flex-direction: column;
+	    gap: var(--gf-space-3);
+	    width: 100%;
+	    position: relative;
 
-    &__wrap:hover {
-      border-color: var(--gf-color-border-strong);
-      box-shadow: var(--gf-shadow-1);
-    }
+	    &__wrap {
+	      width: 100%;
+	      overflow: auto;
+	      height: var(--gf-table-wrap-height);
+	      border: var(--gf-table-wrap-border);
+	      border-radius: var(--gf-table-wrap-radius);
+	      background: var(--gf-table-wrap-bg);
+	      position: relative;
+	      transition:
+	        border-color var(--gf-motion-normal) var(--gf-easing),
+	        box-shadow var(--gf-motion-normal) var(--gf-easing);
+	    }
+
+	    &__wrap:hover {
+	      border-color: var(--gf-table-wrap-border-hover);
+	      box-shadow: var(--gf-table-wrap-shadow-hover);
+	    }
 
     &__table {
       width: 100%;
       min-width: 400px;
     }
 
-    &__header {
-      display: grid;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      background: var(--gf-color-surface-muted);
-      border-bottom: 1px solid var(--gf-color-border-muted);
-    }
+	    &__header {
+	      display: grid;
+	      position: sticky;
+	      top: 0;
+	      z-index: 1;
+	      background: var(--gf-table-header-bg);
+	      border-bottom: var(--gf-table-header-border);
+	    }
 
     &__body {
       display: flex;
       flex-direction: column;
     }
 
-    &__row {
-      display: grid;
-      border-bottom: 1px solid var(--gf-color-border-muted);
-      transition: background var(--gf-motion-normal) var(--gf-easing);
+	    &__row {
+	      display: grid;
+	      border-bottom: 1px solid var(--gf-color-border-muted);
+	      transition: background var(--gf-motion-normal) var(--gf-easing);
 
-      &:nth-child(even) {
-        background: var(--gf-color-zebra);
-      }
+	      &:nth-child(even) {
+	        background: var(--gf-table-row-zebra-bg);
+	      }
 
-      &:hover {
-        background: var(--gf-color-fill);
-      }
-    }
+	      &:hover {
+	        background: var(--gf-table-row-hover-bg);
+	      }
+	    }
 
-    &__cell {
-      padding: 8px 10px;
-      text-align: left;
-      font-size: var(--gf-font-size-md);
-      color: var(--gf-text);
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
+	    &__cell {
+	      padding: var(--gf-table-cell-padding);
+	      text-align: left;
+	      font-size: var(--gf-table-cell-font-size);
+	      color: var(--gf-text);
+	      min-width: 0;
+	      overflow: hidden;
+	      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
@@ -332,10 +346,10 @@
       gap: 8px;
     }
 
-    &--size-small .gf-table__cell {
-      padding: 6px 8px;
-      font-size: var(--gf-font-size-sm);
-    }
+	    &--size-small .gf-table__cell {
+	      --gf-table-cell-padding: 6px 8px;
+	      --gf-table-cell-font-size: var(--gf-font-size-sm);
+	    }
 
     &__overlay {
       position: absolute;

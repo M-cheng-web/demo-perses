@@ -4,7 +4,8 @@
 // - Semantic tokens:   --gf-color-*, --gf-font-*, --gf-space-*, --gf-radius-*, --gf-shadow-*, --gf-z-*
 // - Legacy aliases:    --gf-primary, --gf-surface... (kept for backward compatibility)
 
-.gf-theme-blue,
+.gf-theme-light,
+.gf-theme-blue, // legacy alias (deprecated)
 [data-gf-theme='light'] {
   /* Typography */
   --gf-font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
@@ -113,6 +114,17 @@
   --gf-color-success-border: rgba(34, 160, 107, 0.35);
   --gf-color-warning-border: rgba(240, 180, 41, 0.35);
   --gf-color-danger-border: rgba(228, 88, 108, 0.35);
+
+  /* Form validation (AntD-ish) */
+  --gf-color-form-error: var(--gf-color-danger);
+  --gf-color-form-error-border: color-mix(in srgb, var(--gf-color-danger) 72%, var(--gf-color-border));
+  --gf-color-form-error-bg: color-mix(in srgb, var(--gf-color-danger-soft) 72%, var(--gf-color-surface));
+  --gf-form-error-ring: 0 0 0 3px color-mix(in srgb, var(--gf-color-danger) 22%, transparent);
+
+  --gf-color-form-warning: var(--gf-color-warning);
+  --gf-color-form-warning-border: color-mix(in srgb, var(--gf-color-warning) 68%, var(--gf-color-border));
+  --gf-color-form-warning-bg: color-mix(in srgb, var(--gf-color-warning-soft) 72%, var(--gf-color-surface));
+  --gf-form-warning-ring: 0 0 0 3px color-mix(in srgb, var(--gf-color-warning) 18%, transparent);
 
   /* Floating layer colors */
   /* Mask: AntD-like dim */
@@ -277,6 +289,17 @@
   --gf-color-success-border: rgba(51, 194, 142, 0.34);
   --gf-color-warning-border: rgba(255, 209, 102, 0.34);
   --gf-color-danger-border: rgba(255, 107, 131, 0.34);
+
+  /* Form validation (AntD-ish) */
+  --gf-color-form-error: var(--gf-color-danger);
+  --gf-color-form-error-border: color-mix(in srgb, var(--gf-color-danger) 72%, var(--gf-color-border));
+  --gf-color-form-error-bg: color-mix(in srgb, var(--gf-color-danger-soft) 64%, var(--gf-color-surface));
+  --gf-form-error-ring: 0 0 0 3px color-mix(in srgb, var(--gf-color-danger) 22%, transparent);
+
+  --gf-color-form-warning: var(--gf-color-warning);
+  --gf-color-form-warning-border: color-mix(in srgb, var(--gf-color-warning) 68%, var(--gf-color-border));
+  --gf-color-form-warning-bg: color-mix(in srgb, var(--gf-color-warning-soft) 64%, var(--gf-color-surface));
+  --gf-form-warning-ring: 0 0 0 3px color-mix(in srgb, var(--gf-color-warning) 18%, transparent);
 
   --gf-color-mask: rgba(0, 0, 0, 0.45);
   --gf-color-overlay: rgba(0, 0, 0, 0.32);

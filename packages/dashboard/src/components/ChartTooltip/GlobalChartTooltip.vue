@@ -13,11 +13,26 @@
       <div :class="bem('header')">
         <span :class="bem('time')">{{ formattedTime }}</span>
         <div :class="bem('actions')">
-          <Button v-if="isPinned" type="text" size="small" :class="bem('unpin-btn')" @click="handleUnpin">
-            <PushpinFilled />
+          <Button
+            v-if="isPinned"
+            icon-only
+            type="text"
+            size="small"
+            :class="[bem('action-btn'), bem('unpin-btn')]"
+            @click="handleUnpin"
+          >
+            <template #icon>
+              <PushpinFilled />
+            </template>
           </Button>
           <span v-else :class="bem('hint')">点击图表固定</span>
-          <Button v-if="totalSeries > visibleSeriesCount && !showAllSeries" type="text" size="small" @click="showAllSeries = true">
+          <Button
+            v-if="totalSeries > visibleSeriesCount && !showAllSeries"
+            type="text"
+            size="small"
+            :class="bem('action-btn')"
+            @click="showAllSeries = true"
+          >
             显示全部 ({{ totalSeries }})
           </Button>
         </div>
@@ -191,41 +206,44 @@
       flex-shrink: 0;
     }
 
-    &__actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
+	    &__actions {
+	      display: flex;
+	      align-items: center;
+	      gap: 8px;
+	      min-width: 0;
+	    }
 
-      :deep(.gf-button) {
-        color: var(--gf-color-tooltip-text);
-        padding: 0 4px;
-        height: 20px;
-        font-size: 11px;
-
-        &:hover {
-          color: var(--gf-color-primary-secondary);
-          background-color: rgba(255, 255, 255, 0.1);
-        }
-      }
-    }
-
-    &__hint {
-      font-size: 11px;
+	    &__hint {
+	      font-size: 11px;
       color: rgba(255, 255, 255, 0.56);
       white-space: nowrap;
     }
 
-    &__unpin-btn {
-      :deep(.gf-button) {
-        padding: 0;
-        width: 20px;
-      }
-    }
+	    &__action-btn.gf-button {
+	      --gf-btn-color: var(--gf-color-tooltip-text);
+	      --gf-btn-bg-hover: rgba(255, 255, 255, 0.1);
+	      --gf-btn-bg-active: rgba(255, 255, 255, 0.14);
+	      --gf-btn-shadow-hover: none;
+	    }
 
-    &__content {
-      padding: 8px 12px;
-      max-height: 400px;
+	    &__action-btn.gf-button:hover:not(.is-disabled) {
+	      --gf-btn-color: var(--gf-color-primary-secondary);
+	    }
+
+	    &__action-btn.gf-button--type-text.gf-button--size-small:not(.gf-button--icon-only) {
+	      padding: 0 4px;
+	      height: 20px;
+	      min-height: 20px;
+	      font-size: 11px;
+	    }
+
+	    &__unpin-btn.gf-button--size-small.gf-button--icon-only {
+	      --gf-btn-icon-only-size: 20px;
+	    }
+
+	    &__content {
+	      padding: 8px 12px;
+	      max-height: 400px;
       overflow-y: auto;
 
       &::-webkit-scrollbar {

@@ -1,6 +1,6 @@
 <!-- 组件说明：级联选择器（多级面板），用于逐级选择路径 -->
 <template>
-  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-open': open, 'is-disabled': disabled }]" ref="rootRef">
+	  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-open': open, 'is-disabled': disabled }]" ref="rootRef">
     <div v-if="$slots.default" ref="triggerRef" :class="bem('trigger')" tabindex="0" @click="toggle" @keydown="handleKeydown">
       <slot></slot>
     </div>
@@ -18,13 +18,19 @@
       <span :class="bem('arrow')">▾</span>
     </div>
 
-    <Teleport to="body">
-      <transition name="fade">
-        <div v-if="open" :class="[bem('dropdown'), themeClass]" :data-gf-theme="colorScheme" :style="dropdownStyle" ref="dropdownRef">
-          <div :class="bem('menus')">
-            <div v-for="(menu, depth) in menus" :key="depth" :class="bem('menu')">
-              <div
-                v-for="option in menu"
+	    <Teleport :to="portalTarget">
+	      <transition name="fade">
+	        <div
+	          v-if="open"
+	          :class="[bem('dropdown'), bem({ [`size-${size}`]: true }), themeClass]"
+	          :data-gf-theme="colorScheme"
+	          :style="dropdownStyle"
+	          ref="dropdownRef"
+	        >
+	          <div :class="bem('menus')">
+	            <div v-for="(menu, depth) in menus" :key="depth" :class="bem('menu')">
+	              <div
+	                v-for="option in menu"
                 :key="option.value"
                 :class="[
                   bem('option'),
@@ -55,6 +61,7 @@
   import { RightOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
+  import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfCascader' });
@@ -66,26 +73,33 @@
     disabled?: boolean;
   }
 
-  const props = withDefaults(
-    defineProps<{
+	  const props = withDefaults(
+	    defineProps<{
       /** 选中的路径值数组 */
       value?: any[];
       /** 级联选项 */
       options: CascaderOption[];
       /** 占位提示 */
       placeholder?: string;
-      /** 尺寸 */
-      size?: 'small' | 'middle' | 'large';
-      /** 禁用状态 */
-      disabled?: boolean;
-    }>(),
-    {
-      options: () => [],
-      placeholder: '请选择',
-      size: 'middle',
-      disabled: false,
-    }
-  );
+	      /** 尺寸 */
+	      size?: 'small' | 'middle' | 'large';
+	      /**
+	       * 下拉最小宽度（px）
+	       * - 默认：跟随触发器宽度
+	       * - 传入后：minWidth = max(triggerWidth, dropdownMinWidth)
+	       */
+	      dropdownMinWidth?: number;
+	      /** 禁用状态 */
+	      disabled?: boolean;
+	    }>(),
+	    {
+	      options: () => [],
+	      placeholder: '请选择',
+	      size: 'middle',
+	      dropdownMinWidth: undefined,
+	      disabled: false,
+	    }
+	  );
 
   const emit = defineEmits<{
     (e: 'update:value', value: any[]): void;
@@ -96,6 +110,8 @@
   const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
   const themeClass = computed(() => themeContext?.themeClass.value);
   const colorScheme = computed(() => themeContext?.colorScheme.value);
+  const portalContext = inject(GF_PORTAL_CONTEXT_KEY, null);
+  const portalTarget = computed(() => portalContext?.target.value ?? 'body');
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
   const rootRef = ref<HTMLElement>();
   const triggerRef = ref<HTMLElement>();
@@ -156,7 +172,10 @@
   };
 
   const close = () => {
+    if (!open.value) return;
     open.value = false;
+    // Treat "dropdown closed" as finishing interaction (AntD-ish blur validation).
+    formItem?.onFieldBlur();
   };
 
   const toggle = () => {
@@ -211,10 +230,10 @@
     });
   };
 
-  const syncDropdownPosition = async () => {
-    const trigger = triggerRef.value;
-    if (!trigger) return;
-    const rect = trigger.getBoundingClientRect();
+	  const syncDropdownPosition = async () => {
+	    const trigger = triggerRef.value;
+	    if (!trigger) return;
+	    const rect = trigger.getBoundingClientRect();
     await nextTick();
     const menu = dropdownRef.value;
     const menuWidth = menu?.offsetWidth || rect.width;
@@ -229,12 +248,14 @@
       if (top < padding) top = padding;
     }
 
-    dropdownStyle.value = {
-      minWidth: `${rect.width}px`,
-      left: `${left}px`,
-      top: `${top}px`,
-    };
-  };
+	    const minWidth = Math.max(rect.width, typeof props.dropdownMinWidth === 'number' ? props.dropdownMinWidth : 0);
+
+	    dropdownStyle.value = {
+	      minWidth: `${minWidth}px`,
+	      left: `${left}px`,
+	      top: `${top}px`,
+	    };
+	  };
 
   const handleOutside = (evt: MouseEvent) => {
     if (!rootRef.value) return;
@@ -268,7 +289,7 @@
 </script>
 
 <style scoped lang="less">
-  .gf-cascader {
+	  .gf-cascader {
     position: relative;
     width: 100%;
 
@@ -306,11 +327,11 @@
       font-size: 10px;
     }
 
-    &__dropdown {
-      position: fixed;
-      z-index: var(--gf-z-popover);
-      background: var(--gf-surface);
-      border: 1px solid var(--gf-border);
+	    &__dropdown {
+	      position: fixed;
+	      z-index: var(--gf-z-popover);
+	      background: var(--gf-surface);
+	      border: 1px solid var(--gf-border);
       border-radius: var(--gf-radius-md);
       box-shadow: var(--gf-shadow-2);
       overflow: hidden;
@@ -333,8 +354,8 @@
       }
     }
 
-    &__option {
-      padding: 0 10px;
+	    &__option {
+	      padding: 0 10px;
       border-radius: var(--gf-radius-sm);
       cursor: pointer;
       color: var(--gf-text);
@@ -370,28 +391,29 @@
       white-space: nowrap;
     }
 
-    &__option-arrow {
+	    &__option-arrow {
       width: 16px;
       height: 16px;
       display: grid;
       place-items: center;
       font-size: 11px;
       color: var(--gf-text-secondary);
-    }
+	    }
 
-    &--size-small &__option {
-      min-height: var(--gf-control-height-sm);
-      font-size: var(--gf-font-size-sm);
-    }
+	    &__dropdown.gf-cascader--size-small .gf-cascader__option {
+	      min-height: var(--gf-control-height-sm);
+	      font-size: var(--gf-font-size-sm);
+	      padding: 6px 10px;
+	    }
 
-    &--size-large &__option {
-      min-height: var(--gf-control-height-lg);
-      font-size: var(--gf-font-size-lg);
-    }
+	    &__dropdown.gf-cascader--size-large .gf-cascader__option {
+	      min-height: var(--gf-control-height-lg);
+	      font-size: var(--gf-font-size-lg);
+	    }
 
-    &.is-disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+	    &.is-disabled {
+	      opacity: 0.6;
+	      cursor: not-allowed;
     }
   }
 </style>

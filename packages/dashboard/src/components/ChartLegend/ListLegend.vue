@@ -116,21 +116,18 @@
           }
         }
 
-        &.global-selector {
-          font-weight: 500;
-          background-color: var(--gf-color-surface-muted);
-          border-bottom: 1px solid var(--gf-color-border-muted);
-          margin-bottom: 2px;
-          padding: 5px 6px;
+	        &.global-selector {
+	          font-weight: 500;
+	          background-color: var(--gf-color-surface-muted);
+	          border-bottom: 1px solid var(--gf-color-border-muted);
+	          margin-bottom: 2px;
+	          padding: 5px 6px;
+	          --gf-checkbox-font-size: 12px;
 
-          &:hover {
-            background-color: var(--gf-color-fill);
-          }
-
-          :deep(.gf-checkbox) {
-            font-size: 12px;
-          }
-        }
+	          &:hover {
+	            background-color: var(--gf-color-fill);
+	          }
+	        }
 
         .item-color {
           width: 8px;

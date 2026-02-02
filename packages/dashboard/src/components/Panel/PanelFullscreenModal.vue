@@ -7,7 +7,7 @@
     :footer="null"
     :lock-scroll="lockScrollEnabled"
     :lock-scroll-el="lockScrollEl"
-    :body-style="{ padding: 0, height: '80vh' }"
+    :body-style="{ padding: 0, height: '80vh', display: 'flex', flexDirection: 'column' }"
     :class="bem()"
     centered
     @cancel="handleClose"
@@ -58,16 +58,11 @@
 
 <style scoped lang="less">
   .dp-panel-fullscreen-modal {
-    &__content {
-      width: 100%;
-      height: 80vh;
-      padding: @spacing-md;
-      overflow: auto;
-    }
-
-    :deep(.gf-modal__body) {
-      display: flex;
-      flex-direction: column;
-    }
-  }
+	    &__content {
+	      width: 100%;
+	      height: 80vh;
+	      padding: @spacing-md;
+	      overflow: auto;
+	    }
+	  }
 </style>

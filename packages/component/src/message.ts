@@ -11,13 +11,22 @@ export interface MessageOptions {
 
 type MessageInput = MessageOptions | string;
 
+const resolveMountEl = () => {
+  // Prefer portal root so message can inherit theme tokens in embedded scenarios.
+  const roots = Array.from(document.querySelectorAll<HTMLElement>('.gf-portal-root'));
+  return roots[roots.length - 1] ?? document.body;
+};
+
 const ensureContainer = () => {
+  const mountEl = resolveMountEl();
   let el = document.querySelector<HTMLElement>('.gf-message-container');
   if (!el) {
     el = document.createElement('div');
     el.className = 'gf-message-container';
-    document.body.appendChild(el);
+    mountEl.appendChild(el);
+    return el;
   }
+  if (el.parentElement !== mountEl) mountEl.appendChild(el);
   return el;
 };
 

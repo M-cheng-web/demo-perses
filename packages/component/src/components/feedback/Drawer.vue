@@ -1,6 +1,6 @@
 <!-- 组件说明：抽屉侧边栏，支持左右方向与遮罩关闭 -->
 <template>
-  <Teleport to="body">
+  <Teleport :to="portalTarget">
     <div v-if="isRendered" :class="[bem(), themeClass]" :data-gf-theme="colorScheme" v-bind="$attrs">
       <div v-if="props.mask" :class="[bem('mask'), { 'is-visible': isMaskVisible }]" @click="handleMaskClick"></div>
       <div :class="[bem('panel'), bem('panel', props.placement), { 'is-visible': isPanelVisible }]" :style="panelStyle">
@@ -34,15 +34,15 @@
 
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-  import { createNamespace, createTimeout, lockScroll as lockBodyScroll, unlockScroll as unlockBodyScroll, type TimeoutHandle } from '../../utils';
+  import { acquireScrollLock, createNamespace, createTimeout, type TimeoutHandle } from '../../utils';
   import Button from '../base/Button.vue';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
+  import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
 
   defineOptions({ name: 'GfDrawer', inheritAttrs: false });
 
   const MASK_TRANSITION_MS = 180;
   const PANEL_TRANSITION_MS = 280;
-  const PANEL_OPEN_DELAY_MS = 60;
 
   const props = withDefaults(
     defineProps<{
@@ -86,6 +86,14 @@
       closeOnCancel?: boolean;
       /** 出现方向 */
       placement?: 'right' | 'left';
+      /**
+       * 打开时的 panel 延迟（ms）
+       *
+       * 说明：
+       * - 过去为了制造“mask 先出现”的层次感，panel 会有一个小延迟
+       * - 默认改为 0（mask/panel 同步出现，更接近 AntD 的观感）
+       */
+      openDelay?: number;
     }>(),
     {
       open: false,
@@ -106,6 +114,7 @@
       closeOnConfirm: true,
       closeOnCancel: true,
       placement: 'right',
+      openDelay: 0,
     }
   );
 
@@ -120,6 +129,8 @@
   const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
   const themeClass = computed(() => themeContext?.themeClass.value);
   const colorScheme = computed(() => themeContext?.colorScheme.value);
+  const portalContext = inject(GF_PORTAL_CONTEXT_KEY, null);
+  const portalTarget = computed(() => portalContext?.target.value ?? 'body');
 
   const isRendered = ref(false);
   const isMaskVisible = ref(false);
@@ -127,8 +138,12 @@
   const timeouts: TimeoutHandle[] = [];
   let rafId: number | null = null;
   let isFirstSync = true;
-  const lockedScrollEl = ref<HTMLElement | null>(null);
-  const isScrollLocked = ref(false);
+  let releaseScrollLock: (() => void) | null = null;
+
+  const releaseIfNeeded = () => {
+    releaseScrollLock?.();
+    releaseScrollLock = null;
+  };
 
   const clearTimers = () => {
     if (rafId != null) {
@@ -147,7 +162,7 @@
     await nextTick();
     rafId = requestAnimationFrame(() => {
       if (props.mask) isMaskVisible.value = true;
-      const delay = props.mask ? PANEL_OPEN_DELAY_MS : 0;
+      const delay = props.mask ? Math.max(0, Math.floor(Number(props.openDelay ?? 0))) : 0;
       timeouts.push(
         createTimeout(() => {
           isPanelVisible.value = true;
@@ -194,12 +209,7 @@
     () => props.open,
     async (val) => {
       if (val) {
-        if (props.lockScroll !== false) {
-          const el = props.lockScrollEl ?? null;
-          lockedScrollEl.value = el;
-          lockBodyScroll(el);
-          isScrollLocked.value = true;
-        }
+        if (props.lockScroll !== false && !releaseScrollLock) releaseScrollLock = acquireScrollLock(props.lockScrollEl ?? null);
         if (isFirstSync) {
           isRendered.value = true;
           isMaskVisible.value = !!props.mask;
@@ -208,13 +218,7 @@
           await openWithAnimation();
         }
       } else {
-        if (props.lockScroll !== false) {
-          if (isScrollLocked.value) {
-            unlockBodyScroll(lockedScrollEl.value ?? null);
-            lockedScrollEl.value = null;
-            isScrollLocked.value = false;
-          }
-        }
+        releaseIfNeeded();
         if (isFirstSync) {
           isRendered.value = false;
           isMaskVisible.value = false;
@@ -234,11 +238,8 @@
       if (!props.open) return;
       if (props.lockScroll === false) return;
       // switch lock target while staying open
-      if (isScrollLocked.value) unlockBodyScroll(lockedScrollEl.value ?? null);
-      const el = nextEl ?? null;
-      lockedScrollEl.value = el;
-      lockBodyScroll(el);
-      isScrollLocked.value = true;
+      releaseIfNeeded();
+      releaseScrollLock = acquireScrollLock(nextEl ?? null);
     }
   );
 
@@ -247,23 +248,16 @@
     (enabled) => {
       if (!props.open) return;
       if (enabled === false) {
-        if (isScrollLocked.value) {
-          unlockBodyScroll(lockedScrollEl.value ?? null);
-          lockedScrollEl.value = null;
-          isScrollLocked.value = false;
-        }
+        releaseIfNeeded();
         return;
       }
-      if (isScrollLocked.value) return;
-      const el = props.lockScrollEl ?? null;
-      lockedScrollEl.value = el;
-      lockBodyScroll(el);
-      isScrollLocked.value = true;
+      if (releaseScrollLock) return;
+      releaseScrollLock = acquireScrollLock(props.lockScrollEl ?? null);
     }
   );
 
   onBeforeUnmount(() => {
-    if (props.open && props.lockScroll !== false && isScrollLocked.value) unlockBodyScroll(lockedScrollEl.value ?? null);
+    releaseIfNeeded();
     clearTimers();
   });
 

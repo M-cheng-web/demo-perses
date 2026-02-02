@@ -1,6 +1,6 @@
 import type { ComputedRef, InjectionKey } from 'vue';
 
-export type GfTheme = 'blue' | 'light' | 'dark' | 'inherit';
+export type GfTheme = 'light' | 'dark';
 export type GfColorScheme = 'light' | 'dark' | undefined;
 
 export interface GfThemeContext {
@@ -10,4 +10,3 @@ export interface GfThemeContext {
 }
 
 export const GF_THEME_CONTEXT_KEY: InjectionKey<GfThemeContext> = Symbol('grafana-fast:theme');
-

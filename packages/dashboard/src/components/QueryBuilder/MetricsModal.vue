@@ -66,11 +66,11 @@
         <template v-if="column.key === 'name'">
           <code :class="bem('metric-name')">{{ record.name }}</code>
         </template>
-        <template v-else-if="column.key === 'type'">
-          <Tag v-if="record.type" :color="getTypeColor(record.type)">
-            {{ record.type }}
-          </Tag>
-          <span v-else :class="bem('no-type')">未知</span>
+	        <template v-else-if="column.key === 'type'">
+	          <Tag v-if="record.type" size="small" :color="getTypeColor(record.type)">
+	            {{ record.type }}
+	          </Tag>
+	          <span v-else :class="bem('no-type')">未知</span>
         </template>
         <template v-else-if="column.key === 'help'">
           <span :class="bem('description')">{{ record.help || '-' }}</span>
@@ -313,10 +313,6 @@
 </script>
 
 <style scoped>
-  .dp-metrics-modal :deep(.gf-modal__body) {
-    padding: var(--gf-space-3);
-  }
-
   .dp-metrics-modal__search-filters {
     display: flex;
     gap: 10px;
@@ -351,27 +347,5 @@
     color: var(--gf-color-text-secondary);
   }
 
-  /* 自定义 Table 样式 */
-  .dp-metrics-modal__table :deep(.gf-table) {
-    font-size: 13px;
-  }
-
-  .dp-metrics-modal__table :deep(.gf-table th) {
-    background: var(--gf-color-surface-muted);
-    font-weight: 600;
-    font-size: 12px;
-  }
-
-  .dp-metrics-modal__table :deep(.gf-table td:hover) {
-    background: var(--gf-color-fill);
-  }
-
-  .dp-metrics-modal__table :deep(.gf-tag) {
-    font-size: 11px;
-    margin: 0;
-  }
-
-  .dp-metrics-modal__table :deep(.gf-button) {
-    padding: 4px 6px;
-  }
-</style>
+	  /* Table/Tag 的基础样式已由组件库提供；避免业务层 deep 覆写 */
+	</style>

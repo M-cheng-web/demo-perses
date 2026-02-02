@@ -1,14 +1,25 @@
 <!-- 组件说明：表单项，负责标签与控件区域的布局 -->
 <template>
-  <div :class="[bem(), { 'is-required': computedRequired, 'is-vertical': layout === 'vertical', 'is-error': hasError }]" :style="inlineStyle">
+  <div
+    :class="[
+      bem(),
+      {
+        'is-required': computedRequired,
+        'is-vertical': layout === 'vertical',
+        'is-error': computedStatus === 'error',
+        'is-warning': computedStatus === 'warning',
+        'is-success': computedStatus === 'success',
+      },
+    ]"
+    :style="inlineStyle"
+  >
     <label v-if="label" :class="bem('label')">
       {{ label }}
       <span v-if="computedRequired" :class="bem('asterisk')">*</span>
     </label>
     <div :class="bem('control')">
       <slot></slot>
-      <p v-if="hasError" :class="bem('error')">{{ validateMessage }}</p>
-      <p v-if="help" :class="bem('help')">{{ help }}</p>
+      <p v-if="messageText" :class="[bem('message'), messageStatus ? bem('message', messageStatus) : undefined]">{{ messageText }}</p>
     </div>
   </div>
 </template>
@@ -22,6 +33,7 @@
     gfFormItemContextKey,
     gfFormLabelSpanKey,
     gfFormLayoutKey,
+    gfFormValidateTriggerKey,
     type GfFormContext,
     type GfFormItemContext,
     type GfFormValidateTrigger,
@@ -35,19 +47,32 @@
       label?: string;
       /** 是否必填，展示星号 */
       required?: boolean;
+      /**
+       * 表单项状态（外部可控）
+       * - 不传：由内部校验结果决定（error/空）
+       * - warning：用于“提示但不阻塞”的校验/业务规则
+       */
+      status?: '' | 'error' | 'warning' | 'success';
       /** 辅助说明 */
       help?: string;
       /** 字段名（用于从 Form model / rules 中读取） */
       prop?: string;
       /** 当前字段的校验规则（优先级高于 Form.rules[prop]） */
       rules?: GfFormRule | GfFormRule[];
+      /**
+       * 默认校验触发时机（当 rule.trigger 未指定时使用）
+       * 不传时继承 Form.validateTrigger（默认 change）
+       */
+      validateTrigger?: GfFormValidateTrigger | GfFormValidateTrigger[];
     }>(),
     {
       label: '',
       required: false,
+      status: '',
       help: '',
       prop: undefined,
       rules: undefined,
+      validateTrigger: undefined,
     }
   );
 
@@ -55,9 +80,37 @@
   const layout = inject<'horizontal' | 'vertical'>(gfFormLayoutKey, 'vertical');
   const labelSpan = inject<number>(gfFormLabelSpanKey, 24);
   const form = inject<GfFormContext | null>(gfFormContextKey, null);
+  const formValidateTrigger = inject<GfFormValidateTrigger | GfFormValidateTrigger[]>(gfFormValidateTriggerKey, 'change');
 
   const validateMessage = ref('');
-  const hasError = computed(() => !!validateMessage.value);
+
+  const computedStatus = computed<'' | 'error' | 'warning' | 'success'>(() => {
+    if (props.status) return props.status;
+    if (validateMessage.value) return 'error';
+    return '';
+  });
+
+  const messageText = computed(() => validateMessage.value || props.help || '');
+  const messageStatus = computed(() => {
+    if (validateMessage.value) return 'error';
+    if (props.status === 'warning') return 'warning';
+    if (props.status === 'success') return 'success';
+    if (props.status === 'error') return 'error';
+    return '';
+  });
+
+  const normalizeTriggers = (t: GfFormValidateTrigger | GfFormValidateTrigger[] | undefined) => {
+    if (!t) return [];
+    return Array.isArray(t) ? t : [t];
+  };
+
+  const resolvedValidateTriggers = computed<GfFormValidateTrigger[]>(() => {
+    const local = props.validateTrigger;
+    const fromForm = formValidateTrigger;
+    const picked = local === undefined ? fromForm : local;
+    const normalized = normalizeTriggers(picked);
+    return normalized.length ? normalized : ['change'];
+  });
 
   const normalizeRules = (rules?: GfFormRule | GfFormRule[]) => {
     if (!rules) return [];
@@ -117,9 +170,8 @@
 
   const ruleMatchesTrigger = (rule: GfFormRule, trigger: GfFormValidateTrigger) => {
     if (trigger === 'submit') return true;
-    if (!rule.trigger) return trigger === 'change';
-    if (Array.isArray(rule.trigger)) return rule.trigger.includes(trigger);
-    return rule.trigger === trigger;
+    const triggers = rule.trigger ? normalizeTriggers(rule.trigger) : resolvedValidateTriggers.value;
+    return triggers.includes(trigger);
   };
 
   const runRule = async (rule: GfFormRule, value: any) => {
@@ -159,12 +211,12 @@
     return '';
   };
 
-  const validate = async (trigger: GfFormValidateTrigger = 'submit') => {
+  const validate = async (trigger: GfFormValidateTrigger = 'submit', options?: { force?: boolean }) => {
     validateMessage.value = '';
     if (!props.prop) return true;
 
     const allRules = mergedRules.value;
-    const applicable = trigger === 'submit' ? allRules : allRules.filter((r) => ruleMatchesTrigger(r, trigger));
+    const applicable = trigger === 'submit' || options?.force ? allRules : allRules.filter((r) => ruleMatchesTrigger(r, trigger));
     if (!applicable.length) return true;
 
     const value = getPropValue(form?.model.value, props.prop);
@@ -189,12 +241,13 @@
   };
 
   const onFieldChange = () => {
-    if (hasError.value) void validate('change');
-    else clearValidate();
+    if (!props.prop) return;
+    void validate('change', { force: !!validateMessage.value });
   };
 
   const onFieldBlur = () => {
-    if (hasError.value) void validate('blur');
+    if (!props.prop) return;
+    void validate('blur', { force: !!validateMessage.value });
   };
 
   provide<GfFormItemContext>(gfFormItemContextKey, {
@@ -224,6 +277,16 @@
 
 <style scoped lang="less">
   .gf-form-item {
+    /* Default control states (used by `.gf-control` and other controls that opt-in) */
+    --gf-control-border-color: var(--gf-color-border);
+    --gf-control-border-color-hover: var(--gf-color-border-strong);
+    --gf-control-border-color-focus: var(--gf-color-focus-border);
+    --gf-control-shadow-hover: 0 0 0 2px var(--gf-color-primary-soft);
+    --gf-control-shadow-focus: var(--gf-focus-ring);
+    --gf-control-bg: var(--gf-color-surface);
+    --gf-control-bg-hover: var(--gf-color-surface);
+    --gf-control-bg-focus: var(--gf-color-surface);
+
     display: grid;
     grid-template-columns: 40% 1fr;
     gap: 10px;
@@ -238,7 +301,7 @@
     }
 
     &__asterisk {
-      color: #ff6b6b;
+      color: var(--gf-color-form-error);
       font-weight: 600;
     }
 
@@ -249,17 +312,23 @@
       gap: 6px;
     }
 
-    &__help {
+    &__message {
       margin: 0;
       font-size: 12px;
+      line-height: 1.35;
       color: var(--gf-text-secondary);
     }
 
-    &__error {
-      margin: 0;
-      font-size: 12px;
-      color: #ff4d4f;
-      line-height: 1.35;
+    &__message--error {
+      color: var(--gf-color-form-error);
+    }
+
+    &__message--warning {
+      color: var(--gf-color-form-warning);
+    }
+
+    &__message--success {
+      color: var(--gf-color-success);
     }
   }
 
@@ -272,17 +341,25 @@
   }
 
   .gf-form-item.is-error {
-    :deep(.gf-control) {
-      border-color: #ff4d4f;
-      box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
-    }
+    --gf-control-border-color: var(--gf-color-form-error-border);
+    --gf-control-border-color-hover: var(--gf-color-form-error);
+    --gf-control-border-color-focus: var(--gf-color-form-error);
+    --gf-control-shadow-hover: var(--gf-form-error-ring);
+    --gf-control-shadow-focus: var(--gf-form-error-ring);
+    --gf-control-bg: var(--gf-color-form-error-bg);
+    --gf-control-bg-hover: var(--gf-color-form-error-bg);
+    --gf-control-bg-focus: var(--gf-color-form-error-bg);
+  }
 
-    :deep(.gf-input-number),
-    :deep(.gf-input-number:hover),
-    :deep(.gf-input-number:focus-within) {
-      border-color: #ff4d4f;
-      box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
-    }
+  .gf-form-item.is-warning {
+    --gf-control-border-color: var(--gf-color-form-warning-border);
+    --gf-control-border-color-hover: var(--gf-color-form-warning);
+    --gf-control-border-color-focus: var(--gf-color-form-warning);
+    --gf-control-shadow-hover: var(--gf-form-warning-ring);
+    --gf-control-shadow-focus: var(--gf-form-warning-ring);
+    --gf-control-bg: var(--gf-color-form-warning-bg);
+    --gf-control-bg-hover: var(--gf-color-form-warning-bg);
+    --gf-control-bg-focus: var(--gf-color-form-warning-bg);
   }
 
   @media (max-width: 720px) {

@@ -180,7 +180,7 @@
   const themeDataAttr = computed(() => (props.theme === 'inherit' ? undefined : props.theme));
   const themeClass = computed(() => {
     if (props.theme === 'inherit') return undefined;
-    return props.theme === 'dark' ? 'gf-theme-dark' : 'gf-theme-blue';
+    return props.theme === 'dark' ? 'gf-theme-dark' : 'gf-theme-light';
   });
 
   const draftText = ref(props.modelValue ?? '');

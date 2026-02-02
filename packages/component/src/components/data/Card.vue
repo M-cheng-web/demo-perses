@@ -44,16 +44,21 @@
   const [_, bem] = createNamespace('card');
 </script>
 
-<style scoped lang="less">
-  .gf-card {
-    --gf-card-border: var(--gf-color-border-muted);
-    --gf-card-pad-x: var(--gf-space-4);
-    --gf-card-pad-y: var(--gf-space-3);
+	<style scoped lang="less">
+	  .gf-card {
+	    --gf-card-border: var(--gf-color-border-muted);
+	    --gf-card-pad-x: var(--gf-space-4);
+	    --gf-card-pad-y: var(--gf-space-3);
+	    --gf-card-header-bg: transparent;
+	    --gf-card-header-padding: var(--gf-card-pad-y) var(--gf-card-pad-x);
+	    --gf-card-header-min-height: auto;
+	    --gf-card-title-font-size: var(--gf-font-size-md);
+	    --gf-card-body-padding: var(--gf-card-pad-y) var(--gf-card-pad-x);
 
-    border: 1px solid var(--gf-card-border);
-    border-radius: var(--gf-radius-md);
-    background: var(--gf-card-bg, var(--gf-color-surface));
-    box-shadow: none;
+	    border: 1px solid var(--gf-card-border);
+	    border-radius: var(--gf-radius-md);
+	    background: var(--gf-card-bg, var(--gf-color-surface));
+	    box-shadow: none;
     transition:
       box-shadow var(--gf-motion-normal) var(--gf-easing),
       border-color var(--gf-motion-normal) var(--gf-easing),
@@ -75,24 +80,27 @@
       border-color: transparent;
     }
 
-    &__header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: var(--gf-card-pad-y) var(--gf-card-pad-x);
-      border-bottom: 1px solid var(--gf-color-border-muted);
-    }
+	    &__header {
+	      display: flex;
+	      align-items: center;
+	      justify-content: space-between;
+	      min-height: var(--gf-card-header-min-height);
+	      padding: var(--gf-card-header-padding);
+	      background: var(--gf-card-header-bg);
+	      border-bottom: 1px solid var(--gf-color-border-muted);
+	    }
 
-    &__title {
-      font-weight: 600;
-      color: var(--gf-text);
-    }
+	    &__title {
+	      font-weight: 600;
+	      font-size: var(--gf-card-title-font-size);
+	      color: var(--gf-text);
+	    }
 
-    &__body {
-      padding: var(--gf-card-pad-y) var(--gf-card-pad-x);
-      display: flex;
-      flex-direction: column;
-      gap: var(--gf-space-3);
-    }
-  }
+	    &__body {
+	      padding: var(--gf-card-body-padding);
+	      display: flex;
+	      flex-direction: column;
+	      gap: var(--gf-space-3);
+	    }
+	  }
 </style>

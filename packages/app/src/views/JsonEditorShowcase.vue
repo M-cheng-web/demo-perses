@@ -9,7 +9,7 @@
   - 这个页面类似 ComponentShowcase：它不是最终产品页，而是验证能力的工具页
 -->
 <template>
-  <ConfigProvider theme="inherit">
+  <ConfigProvider :theme="themeModel">
     <div class="dp-json-editor-showcase">
       <div class="dp-json-editor-showcase__header">
         <div class="dp-json-editor-showcase__title">

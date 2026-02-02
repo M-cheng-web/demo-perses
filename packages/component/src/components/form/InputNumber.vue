@@ -12,6 +12,7 @@
       :step="step"
       @input="handleInput"
       @change="emitChange"
+      @blur="handleBlur"
     />
     <div :class="bem('actions')">
       <button type="button" aria-label="增加" @click="increase" :disabled="disabled || !canIncrease">
@@ -111,7 +112,10 @@
 
   const emitChange = () => {
     emit('change', innerValue.value);
-    formItem?.onFieldChange();
+  };
+
+  const handleBlur = () => {
+    formItem?.onFieldBlur();
   };
 
   const handleInput = (evt: Event) => {
@@ -139,25 +143,25 @@
     align-items: stretch;
     border-radius: var(--gf-radius-sm);
     overflow: hidden;
-    border: 1px solid var(--gf-border);
+    border: 1px solid var(--gf-control-border-color, var(--gf-border));
     min-height: var(--gf-control-height-md);
     transition:
       border-color var(--gf-motion-normal) var(--gf-easing),
       box-shadow var(--gf-motion-normal) var(--gf-easing);
 
     &:hover {
-      border-color: var(--gf-border-strong);
-      box-shadow: 0 0 0 2px var(--gf-color-primary-soft);
+      border-color: var(--gf-control-border-color-hover, var(--gf-border-strong));
+      box-shadow: var(--gf-control-shadow-hover, 0 0 0 2px var(--gf-color-primary-soft));
     }
 
     &:focus-within {
-      border-color: var(--gf-color-focus-border);
-      box-shadow: var(--gf-focus-ring);
+      border-color: var(--gf-control-border-color-focus, var(--gf-color-focus-border));
+      box-shadow: var(--gf-control-shadow-focus, var(--gf-focus-ring));
     }
 
     &__control {
       border: none;
-      border-right: 1px solid var(--gf-border);
+      border-right: 1px solid var(--gf-control-border-color, var(--gf-border));
       min-width: 80px;
       box-shadow: none;
       -moz-appearance: textfield;
@@ -199,7 +203,7 @@
         }
 
         &:first-child {
-          border-bottom: 1px solid var(--gf-border);
+          border-bottom: 1px solid var(--gf-control-border-color, var(--gf-border));
         }
 
         &:disabled {

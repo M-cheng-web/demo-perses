@@ -124,6 +124,14 @@ export interface DashboardSdkOptions {
   applyThemeToDocument?: boolean;
 
   /**
+   * Portal 挂载点（用于 Modal/Drawer/Dropdown/Select 等 Teleport 浮层）
+   *
+   * 默认：不传（DashboardView 内部默认挂到 body）
+   * 嵌入式建议：传入 Dashboard 容器或宿主指定容器，增强隔离/便于销毁。
+   */
+  portalTarget?: string | HTMLElement | null;
+
+  /**
    * 全局只读模式（能力开关）
    *
    * 语义：
@@ -338,6 +346,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
         h(DashboardView, {
           ref: dashboardViewRef,
           theme: theme.value,
+          portalTarget: options.portalTarget ?? null,
           readOnly: readOnly.value,
           apiClient: resolvedApiClient,
           instanceId,

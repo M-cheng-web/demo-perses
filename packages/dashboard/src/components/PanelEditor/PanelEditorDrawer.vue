@@ -502,11 +502,5 @@
     &__badge--edit {
       border-color: var(--gf-color-border-muted);
     }
-
-    &__tabs {
-      :deep(.gf-tabs) {
-        box-shadow: none;
-      }
-    }
   }
 </style>

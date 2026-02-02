@@ -154,14 +154,15 @@
 
         <!-- 添加操作按钮 -->
         <div :class="bem('add-section')">
-          <Cascader
-            v-model:value="selectedNewOperation"
-            :options="cascaderOptions"
-            placeholder="选择操作"
-            size="small"
-            :class="bem('add-cascader')"
-            @change="handleAddOperation"
-          >
+	          <Cascader
+	            v-model:value="selectedNewOperation"
+	            :options="cascaderOptions"
+	            placeholder="选择操作"
+	            size="small"
+	            :dropdownMinWidth="160"
+	            :class="bem('add-cascader')"
+	            @change="handleAddOperation"
+	          >
             <Button size="small">
               <PlusOutlined />
               添加操作
@@ -695,18 +696,6 @@
       width: auto;
     }
 
-    /* 覆盖自定义级联/下拉样式 */
-    :deep(.gf-cascader__dropdown) {
-      min-width: 160px;
-    }
-
-    :deep(.gf-cascader__option) {
-      padding: 6px 10px;
-      font-size: 12px;
-    }
-
-    :deep(.gf-menu__item) {
-      font-size: 12px;
-    }
-  }
+	    /* Cascader 下拉样式统一由组件本身 + props 控制（避免 deep 覆写） */
+	  }
 </style>

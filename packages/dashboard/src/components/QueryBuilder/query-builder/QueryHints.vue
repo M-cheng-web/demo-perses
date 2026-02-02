@@ -20,7 +20,7 @@
     </div>
     <div :class="bem('content')">
       <div v-for="(hint, index) in hints" :key="index" :class="bem('card')">
-        <Alert :type="hint.type" :message="hint.title" show-icon>
+        <Alert size="small" :type="hint.type" :message="hint.title" show-icon>
           <template #description>
             <div :class="bem('hint-content')">
               <p>{{ hint.description }}</p>
@@ -227,21 +227,6 @@
 
     &__card {
       width: 100%;
-
-      :deep(.gf-alert) {
-        margin-bottom: 0;
-        padding: 8px 12px;
-        font-size: 12px;
-      }
-
-      :deep(.gf-alert__message) {
-        font-size: 12px;
-        font-weight: 500;
-      }
-
-      :deep(.gf-alert__description) {
-        font-size: 12px;
-      }
     }
 
     &__hint-content {

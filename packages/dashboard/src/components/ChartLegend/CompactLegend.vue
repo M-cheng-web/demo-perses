@@ -132,23 +132,20 @@
         }
       }
 
-      &.dp-compact-legend__item--global {
-        font-weight: 500;
-        background-color: transparent;
-        border: 1px solid @border-color;
-        margin-right: 2px;
-        padding: 2px 6px;
+	      &.dp-compact-legend__item--global {
+	        font-weight: 500;
+	        background-color: transparent;
+	        border: 1px solid @border-color;
+	        margin-right: 2px;
+	        padding: 2px 6px;
+	        --gf-checkbox-font-size: 11px;
 
-        &:hover {
-          background-color: var(--gf-color-primary-soft);
-          border-color: var(--gf-color-primary);
-        }
-
-        :deep(.gf-checkbox) {
-          font-size: 11px;
-        }
-      }
-    }
+	        &:hover {
+	          background-color: var(--gf-color-primary-soft);
+	          border-color: var(--gf-color-primary);
+	        }
+	      }
+	    }
 
     &__color {
       width: 8px;

@@ -25,13 +25,10 @@ import { ConfigProvider } from '@grafana-fast/component';
 </script>
 ```
 
-如果你希望主题由文档根节点（`:root[data-gf-theme]`）统一控制、并且避免某个容器「覆写」主题，可以使用：
+如果你希望主题由文档根节点（`:root[data-gf-theme]`）统一控制：
 
-```vue
-<ConfigProvider theme="inherit">
-  <App />
-</ConfigProvider>
-```
+- 可以不使用 `ConfigProvider`（直接依赖 `data-gf-theme`）
+- 或者由宿主应用把全局主题状态映射为 `ConfigProvider theme="light|dark"`（推荐：这样 Teleport 浮层也能稳定继承主题）
 
 也可以在任意容器上手动控制：
 

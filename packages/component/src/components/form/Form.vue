@@ -8,7 +8,15 @@
 <script setup lang="ts">
   import { provide, ref, toRef } from 'vue';
   import { createNamespace } from '../../utils';
-  import { gfFormContextKey, gfFormLabelSpanKey, gfFormLayoutKey, type GfFormContext, type GfFormItemInstance } from './context';
+  import {
+    gfFormContextKey,
+    gfFormLabelSpanKey,
+    gfFormLayoutKey,
+    gfFormValidateTriggerKey,
+    type GfFormContext,
+    type GfFormItemInstance,
+    type GfFormValidateTrigger,
+  } from './context';
   import type { GfFormRules } from '../../types';
 
   defineOptions({ name: 'GfForm' });
@@ -21,6 +29,15 @@
       rules?: GfFormRules;
       /** 布局方向 */
       layout?: 'horizontal' | 'vertical';
+      /**
+       * 默认校验触发时机（当 rule.trigger 未指定时使用）
+       *
+       * 与 AntD 对齐的建议值：
+       * - Input/Textarea：change
+       * - Select/Cascader：change
+       * - 需要“失焦才校验”的场景：blur
+       */
+      validateTrigger?: GfFormValidateTrigger | GfFormValidateTrigger[];
       /** 标签列占比（仅横向） */
       labelCol?: { span: number };
     }>(),
@@ -28,6 +45,7 @@
       model: undefined,
       rules: undefined,
       layout: 'vertical',
+      validateTrigger: () => ['change'],
       labelCol: () => ({ span: 24 }),
     }
   );
@@ -80,6 +98,7 @@
 
   provide(gfFormLayoutKey, props.layout);
   provide(gfFormLabelSpanKey, props.labelCol?.span ?? 24);
+  provide(gfFormValidateTriggerKey, props.validateTrigger);
   provide(gfFormContextKey, { model: modelRef, rules: rulesRef, addField, removeField });
 </script>
 

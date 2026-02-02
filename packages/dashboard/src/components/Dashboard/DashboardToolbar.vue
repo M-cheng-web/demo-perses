@@ -67,61 +67,19 @@
         </div>
       </div>
     </template>
-
-    <!-- JSON 查看/编辑模态框 -->
-    <Modal
-      v-model:open="jsonModalVisible"
-      title="仪表盘 JSON"
-      :width="800"
-      destroyOnClose
-      :maskClosable="false"
-      :lock-scroll="lockScrollEnabled"
-      :lock-scroll-el="lockScrollEl"
-    >
-      <div v-if="isGeneratingJson" :class="bem('json-loading')">正在生成 JSON（内容较大时可能需要几秒）...</div>
-      <DashboardJsonEditor
-        v-else
-        ref="dashboardJsonEditorRef"
-        v-model="dashboardJson"
-        :read-only="jsonModalMode === 'view'"
-        :max-editable-chars="MAX_EDITABLE_DASHBOARD_JSON_CHARS"
-        :supported-panel-types="supportedPanelTypes"
-        :validate="jsonModalMode === 'edit' ? validateDashboardStrict : undefined"
-        @validate="handleJsonValidate"
-      />
-      <template #footer>
-        <Space>
-          <Button @click="jsonModalVisible = false">取消</Button>
-          <Button v-if="jsonModalMode === 'edit'" type="primary" @click="handleApplyJson" :disabled="isReadOnly || !isJsonValid || isBooting">
-            应用
-          </Button>
-        </Space>
-      </template>
-    </Modal>
-
-    <!-- 隐藏的文件输入 -->
-    <input ref="fileInputRef" type="file" accept=".json" style="display: none" @change="handleFileChange" />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, h, nextTick, watch } from 'vue';
-  import { Button, Card, Flex, Modal, Segmented, Space, TimeRangePicker, Dropdown, Menu } from '@grafana-fast/component';
+  import { ref, computed, h, watch } from 'vue';
+  import { Button, Card, Flex, Segmented, TimeRangePicker, Dropdown, Menu } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import { MoreOutlined, DownloadOutlined, UploadOutlined, FileTextOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useTimeRangeStore } from '/#/stores';
-  import { useDashboardRuntime } from '/#/runtime/useInjected';
   import { message } from '@grafana-fast/component';
-  import { DashboardJsonEditor } from '@grafana-fast/json-editor';
-  import type { Dashboard } from '@grafana-fast/types';
-  import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
   import { createNamespace } from '/#/utils';
-  import { getBuiltInPanelRegistry } from '/#/runtime/panels';
 
   const [_, bem] = createNamespace('dashboard-toolbar');
-  const MAX_EDITABLE_DASHBOARD_JSON_CHARS = 120_000;
-  const isGeneratingJson = ref(false);
-  let generateJsonSeq = 0;
 
   const props = withDefaults(
     defineProps<{
@@ -133,21 +91,17 @@
 
   const emit = defineEmits<{
     (e: 'create-group'): void;
+    (e: 'view-json'): void;
+    (e: 'import-json'): void;
+    (e: 'export-json'): void;
   }>();
 
   const variant = computed(() => props.variant ?? 'header');
 
   const dashboardStore = useDashboardStore();
   const timeRangeStore = useTimeRangeStore();
-  const runtime = useDashboardRuntime();
-  const lockScrollEl = computed(() => runtime.scrollEl?.value ?? runtime.rootEl?.value ?? null);
-  const lockScrollEnabled = computed(() => lockScrollEl.value != null);
-  const supportedPanelTypes = getBuiltInPanelRegistry()
-    .list()
-    .map((p) => p.type)
-    .filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
 
-  const { currentDashboard, viewMode, isSaving, isBooting, isLargeDashboard, isReadOnly } = storeToRefs(dashboardStore);
+  const { currentDashboard, viewMode, isSaving, isBooting, isReadOnly } = storeToRefs(dashboardStore);
 
   const dashboardName = computed(() => currentDashboard.value?.name || '仪表盘');
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
@@ -184,16 +138,21 @@
     timeRangeStore.setTimeRange({ from: draftTimeRange.value, to: 'now' });
   };
 
-  // JSON 相关
-  const jsonModalVisible = ref(false);
-  const jsonModalMode = ref<'view' | 'edit'>('view');
-  const dashboardJson = ref('');
-  const isJsonValid = ref(true);
-  const fileInputRef = ref<HTMLInputElement>();
-  const dashboardJsonEditorRef = ref<null | {
-    getDraftText: () => string;
-    getDashboard: () => Dashboard;
-  }>(null);
+  // JSON actions are handled by Dashboard.vue (single source of truth).
+  const handleViewJson = () => {
+    if (isBooting.value) return;
+    emit('view-json');
+  };
+
+  const handleImport = () => {
+    if (isBooting.value) return;
+    emit('import-json');
+  };
+
+  const handleExport = () => {
+    if (isBooting.value) return;
+    emit('export-json');
+  };
 
   const handleTimeRangeChange = (value: string) => {
     if (isBooting.value) return;
@@ -247,164 +206,9 @@
     }
   };
 
-  const handleExport = () => {
-    if (isBooting.value) return;
-    if (!currentDashboard.value) {
-      message.error('没有可导出的 Dashboard');
-      return;
-    }
-
-    const json = JSON.stringify(currentDashboard.value, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `dashboard-${currentDashboard.value.name}-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    message.success('导出成功');
-  };
-
-  const handleImport = () => {
-    if (isBooting.value) return;
-    if (isReadOnly.value) {
-      message.warning('当前为只读模式，无法导入/应用 JSON');
-      return;
-    }
-    fileInputRef.value?.click();
-  };
-
-  const handleFileChange = (event: Event) => {
-    if (isReadOnly.value) {
-      const target = event.target as HTMLInputElement;
-      target.value = '';
-      message.warning('当前为只读模式，无法导入/应用 JSON');
-      return;
-    }
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        // 统一走 JSON 编辑器：非法 JSON 只在编辑器内部报错，不会污染外部状态
-        const json = String(e.target?.result ?? '');
-        // 导入文件时不需要生成：取消可能存在的“生成当前 dashboard JSON”任务
-        generateJsonSeq++;
-        isGeneratingJson.value = false;
-        dashboardJson.value = json;
-        jsonModalMode.value = 'edit';
-        jsonModalVisible.value = true;
-        message.success('已加载 JSON，请检查并点击“应用”');
-      } catch (error) {
-        console.error('导入失败：JSON 格式错误', error);
-      }
-    };
-    reader.readAsText(file);
-
-    // 清空 input 值，以便可以重复导入同一个文件
-    target.value = '';
-  };
-
-  const handleViewJson = () => {
-    if (isBooting.value) return;
-    if (!currentDashboard.value) {
-      message.error('没有可查看的 Dashboard');
-      return;
-    }
-
-    jsonModalMode.value = 'view';
-    jsonModalVisible.value = true;
-    void generateDashboardJsonText(currentDashboard.value);
-  };
-
-  const handleJsonValidate = (isValid: boolean) => {
-    isJsonValid.value = isValid;
-  };
-
-  const handleApplyJson = () => {
-    try {
-      if (isBooting.value) return;
-      if (isReadOnly.value) {
-        message.warning('当前为只读模式，无法应用 JSON');
-        return;
-      }
-      const dashboard = dashboardJsonEditorRef.value?.getDashboard();
-      if (!dashboard) {
-        message.error('无法应用：Dashboard JSON 不合法');
-        return;
-      }
-      const rawText = dashboardJsonEditorRef.value?.getDraftText?.() ?? dashboardJson.value;
-      void dashboardStore.applyDashboardFromJson(dashboard, rawText);
-      jsonModalVisible.value = false;
-      message.success('应用成功');
-    } catch (error) {
-      console.error('应用失败：JSON 格式错误', error);
-      message.error((error as Error)?.message ?? '应用失败');
-    }
-  };
-
-  const openJsonModal = (mode: 'view' | 'edit' = 'view') => {
-    if (isBooting.value) return;
-    if (!currentDashboard.value) return;
-    jsonModalMode.value = isReadOnly.value && mode === 'edit' ? 'view' : mode;
-    jsonModalVisible.value = true;
-    void generateDashboardJsonText(currentDashboard.value);
-  };
-
-  const closeJsonModal = () => {
-    jsonModalVisible.value = false;
-  };
-
-  const generateDashboardJsonText = async (dash: Dashboard) => {
-    const seq = ++generateJsonSeq;
-    isGeneratingJson.value = true;
-    // 避免“点击打开 → 先 stringify 大对象 → UI 卡死一段时间后才出现 modal”
-    await nextTick();
-
-    // 让出一帧，确保 modal/loading 文案已渲染
-    await new Promise<void>((r) => window.setTimeout(r, 0));
-    if (seq !== generateJsonSeq) return;
-    if (!jsonModalVisible.value) return;
-
-    try {
-      // 大盘 JSON 生成成本很高：用更紧凑的缩进以降低体积与 stringify 压力
-      const indent = isLargeDashboard.value ? 1 : 2;
-      const text = JSON.stringify(dash, null, indent);
-      if (seq !== generateJsonSeq) return;
-      if (!jsonModalVisible.value) return;
-      dashboardJson.value = text;
-    } finally {
-      if (seq !== generateJsonSeq) return;
-      isGeneratingJson.value = false;
-    }
-  };
-
-  watch(
-    () => jsonModalVisible.value,
-    (open) => {
-      if (open) return;
-      // cancel any in-flight generation
-      generateJsonSeq++;
-      isGeneratingJson.value = false;
-    }
-  );
-
   defineExpose({
-    // Drawer / UI
-    openJsonModal,
-    closeJsonModal,
-    // Sidebar draft controls
     resetSidebarDraft,
     applySidebarDraft,
-    // Actions (mirror toolbar capabilities)
-    handleSave,
-    handleTogglePanelsView,
-    handleExport,
-    handleImport,
-    handleViewJson,
-    handleApplyJson,
   });
 </script>
 
