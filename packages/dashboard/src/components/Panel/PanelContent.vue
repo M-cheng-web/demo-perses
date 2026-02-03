@@ -41,10 +41,10 @@
   import { Alert, Loading, Empty } from '@grafana-fast/component';
   import type { Panel } from '@grafana-fast/types';
   import { createNamespace } from '/#/utils';
-  import { getBuiltInPanelRegistry } from '/#/runtime/panels';
   import { getPiniaQueryScheduler } from '/#/runtime/piniaAttachments';
   import { useDashboardRuntime } from '/#/runtime/useInjected';
   import UnsupportedPanel from '/#/components/Panel/UnsupportedPanel.vue';
+  import { getBuiltInPanelComponent } from '/#/panels/builtInPanels';
   import { applyTransformations } from '/#/transformations';
 
   const [_, bem] = createNamespace('panel-content');
@@ -52,8 +52,6 @@
   const props = defineProps<{
     panel: Panel;
   }>();
-
-  const registry = getBuiltInPanelRegistry();
 
   const scheduler = getPiniaQueryScheduler();
   const runtime = useDashboardRuntime();
@@ -95,7 +93,6 @@
       .filter(Boolean);
 
     if (!errors.length) return '';
-    // Keep it short; detailed view belongs in a future Query Inspector.
     const uniq = Array.from(new Set(errors));
     return uniq.length === 1 ? uniq[0]! : `${uniq[0]} 等 ${uniq.length} 个错误`;
   });
@@ -104,8 +101,7 @@
   const chartComponent = computed(() => {
     const type = props.panel.type;
     if (!type) return null;
-    const plugin = registry.get(type);
-    return plugin?.component ?? UnsupportedPanel;
+    return getBuiltInPanelComponent(type) ?? UnsupportedPanel;
   });
 
   // 查询执行由中心调度器统一管理（timeRange + variables + panel queries）。

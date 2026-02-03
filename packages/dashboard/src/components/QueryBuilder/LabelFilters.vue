@@ -38,15 +38,17 @@
         <Select v-model:value="filter.op" size="small" style="width: 124px" :options="operatorOptions" @change="handleFilterChange" />
 
         <Select
-          v-model:value="filter.value"
-          placeholder="标签值"
+          :value="filter.value ? [filter.value] : []"
+          mode="tags"
+          :max-tag-count="1"
+          placeholder="标签值（可输入 $var）"
           show-search
           size="small"
-          style="width: 140px"
+          style="width: 180px"
           :loading="loadingValues[index]"
           :options="labelValueOptions[index] || []"
-          @focus="() => loadLabelValues(index, filter.label)"
-          @change="handleFilterChange"
+          @dropdown-visible-change="handleValueDropdownVisibleChange(index, $event)"
+          @update:value="handleValueChange(index, $event)"
         />
 
         <Button type="text" danger size="small" @click="removeFilter(index)">
@@ -162,6 +164,22 @@
     handleFilterChange();
   };
 
+  const handleValueChange = (index: number, value: unknown) => {
+    const filter = filters.value[index];
+    if (!filter) return;
+    const values = Array.isArray(value) ? value : [];
+    const last = values.length ? values[values.length - 1] : '';
+    filter.value = last == null ? '' : String(last);
+    handleFilterChange();
+  };
+
+  const handleValueDropdownVisibleChange = (index: number, open: boolean) => {
+    if (!open) return;
+    const filter = filters.value[index];
+    if (!filter?.label) return;
+    void loadLabelValues(index, filter.label);
+  };
+
   const handleFilterChange = () => {
     emit('update:modelValue', filters.value);
   };
@@ -171,11 +189,16 @@
 
     loadingValues.value[index] = true;
     try {
+      const looksLikeVariableRef = (value: string) => /\$\{|\[\[|\$[A-Za-z_]/.test(value);
+
       // 构建其他标签的键值对
       const otherLabels: Record<string, string> = {};
       filters.value.forEach((f, i) => {
         if (i !== index && f.label && f.value) {
-          otherLabels[f.label] = f.value;
+          // 当 otherLabels 里含有变量引用（$var）时，后端通常无法识别；
+          // 这里跳过它们，避免 fetchLabelValues 被“未解析变量”误导。
+          const v = String(f.value);
+          if (!looksLikeVariableRef(v)) otherLabels[f.label] = v;
         }
       });
 

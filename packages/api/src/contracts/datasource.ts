@@ -1,7 +1,7 @@
 /**
  * 文件说明：DatasourceService 契约
  *
- * 用于屏蔽数据源获取方式（mock/http/prometheus-direct）的差异，给 QueryRunner/QueryBuilder 提供统一入口。
+ * 用于屏蔽数据源获取方式（mock/http）的差异，给 QueryRunner/QueryBuilder 提供统一入口。
  */
 import type { Datasource, ID } from '@grafana-fast/types';
 
@@ -9,7 +9,7 @@ import type { Datasource, ID } from '@grafana-fast/types';
  * DatasourceService（契约层）
  *
  * 设计意图：
- * - 屏蔽数据源获取方式的差异（mock / HTTP / prometheus-direct / 未来更多）
+ * - 屏蔽数据源获取方式的差异（mock / HTTP / 未来更多）
  * - UI 存储层用 datasourceRef（types 中的 DatasourceRef）引用数据源
  * - 具体“数据源详情字段结构/后端 DTO”变更，优先由实现层适配
  */

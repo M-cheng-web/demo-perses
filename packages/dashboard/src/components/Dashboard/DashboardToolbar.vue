@@ -33,6 +33,58 @@
             <TimeRangePicker v-model:value="draftTimeRange" :disabled="isBooting" />
           </div>
         </Card>
+
+        <Card size="small" title="变量" :class="bem('card')">
+          <div :class="bem('hint')">
+            <div>更改将在点击底部“确定”后生效；仅当查询 expr 中使用了 <code>$变量名</code> 才会影响面板。</div>
+            <div v-if="variableDefs.length > 0" :class="bem('var-help-list')">
+              <div :class="bem('var-help-title')">当前仪表盘变量说明：</div>
+              <div v-for="v in variableDefs" :key="v.id" :class="bem('var-help-item')">
+                <div :class="bem('var-help-name')">
+                  <code>{{ formatVariableToken(v.name) }}</code>
+                  <span style="margin-left: 6px">{{ v.label || v.name }}</span>
+                </div>
+                <template v-for="(line, idx) in getVariableHelpLines(v)" :key="`${v.id}-${idx}`">
+                  <div :class="bem('var-help-line')">- {{ line }}</div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="variableDefs.length === 0" :class="bem('hint')">当前仪表盘未定义 variables。</div>
+
+          <template v-else>
+            <div v-if="isResolvingVariableOptions" :class="bem('hint')" style="margin-top: 0">选项加载中...</div>
+            <div v-if="variableLastError" :class="bem('hint')" style="margin-top: 0">上次刷新失败：{{ variableLastError }}</div>
+
+            <div v-for="v in variableDefs" :key="v.id" :class="bem('field')">
+              <div :class="bem('var-label')" :title="v.label || v.name">{{ v.label || v.name }}</div>
+              <div :class="bem('var-control')">
+                <Select
+                  v-if="isSelectLikeVariable(v)"
+                  v-model:value="draftVariableValues[v.name]"
+                  :mode="v.multi ? 'multiple' : undefined"
+                  show-search
+                  allow-clear
+                  size="small"
+                  style="width: 100%"
+                  :disabled="isBooting || v.type === 'constant'"
+                  :options="getVariableSelectOptions(v)"
+                  :placeholder="getVariablePlaceholder(v)"
+                />
+                <Input
+                  v-else
+                  v-model:value="draftVariableValues[v.name]"
+                  size="small"
+                  allow-clear
+                  style="width: 100%"
+                  :disabled="isBooting || v.type === 'constant'"
+                  :placeholder="v.type === 'constant' ? '常量' : '请输入'"
+                />
+              </div>
+            </div>
+          </template>
+        </Card>
       </div>
     </template>
 
@@ -72,12 +124,13 @@
 
 <script setup lang="ts">
   import { ref, computed, h, watch } from 'vue';
-  import { Button, Card, Flex, Segmented, TimeRangePicker, Dropdown, Menu } from '@grafana-fast/component';
+  import { Button, Card, Flex, Segmented, TimeRangePicker, Dropdown, Menu, Select, Input } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import { MoreOutlined, DownloadOutlined, UploadOutlined, FileTextOutlined } from '@ant-design/icons-vue';
-  import { useDashboardStore, useTimeRangeStore } from '/#/stores';
+  import { useDashboardStore, useTimeRangeStore, useVariablesStore } from '/#/stores';
   import { message } from '@grafana-fast/component';
   import { createNamespace } from '/#/utils';
+  import type { DashboardVariable, VariableOption } from '@grafana-fast/types';
 
   const [_, bem] = createNamespace('dashboard-toolbar');
 
@@ -100,11 +153,16 @@
 
   const dashboardStore = useDashboardStore();
   const timeRangeStore = useTimeRangeStore();
+  const variablesStore = useVariablesStore();
 
   const { currentDashboard, viewMode, isSaving, isBooting, isReadOnly } = storeToRefs(dashboardStore);
+  const { variables: variableDefsRef, isResolvingOptions: isResolvingVariableOptions, lastError: variableLastError } = storeToRefs(variablesStore);
 
   const dashboardName = computed(() => currentDashboard.value?.name || '仪表盘');
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
+
+  const variableDefs = computed(() => variableDefsRef.value ?? []);
+  const draftVariableValues = ref<Record<string, string | string[]>>({});
 
   const selectedTimeRange = ref('now-1h');
   const { timeRange } = storeToRefs(timeRangeStore);
@@ -130,12 +188,137 @@
   const resetSidebarDraft = () => {
     draftViewMode.value = isAllPanelsView.value ? 'allPanels' : 'grouped';
     draftTimeRange.value = selectedTimeRange.value || 'now-1h';
+
+    const next: Record<string, string | string[]> = {};
+    const values = (variablesStore.state?.values ?? {}) as Record<string, unknown>;
+    for (const v of variableDefs.value) {
+      const name = String(v?.name ?? '').trim();
+      if (!name) continue;
+      next[name] = normalizeVariableValue(v, name in values ? values[name] : v.current);
+    }
+    draftVariableValues.value = next;
   };
+
+  function isSameVariableValue(a: unknown, b: unknown): boolean {
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      return a.every((v, i) => String(v) === String(b[i]));
+    }
+    if (Array.isArray(a) || Array.isArray(b)) return false;
+    return String(a ?? '') === String(b ?? '');
+  }
+
+  function normalizeVariableValue(def: Pick<DashboardVariable, 'multi'> | undefined, value: unknown): string | string[] {
+    const multi = !!def?.multi;
+    if (multi) {
+      if (Array.isArray(value)) return value.map((v) => String(v));
+      const v = String(value ?? '').trim();
+      return v ? [v] : [];
+    }
+    if (Array.isArray(value)) return String(value[0] ?? '');
+    return String(value ?? '');
+  }
+
+  function isSelectLikeVariable(v: DashboardVariable): boolean {
+    return v.type === 'select' || v.type === 'query';
+  }
+
+  function getVariableOptions(v: DashboardVariable): VariableOption[] {
+    const name = String(v?.name ?? '').trim();
+    if (!name) return [];
+    const runtime = variablesStore.getOptions(name);
+    if (Array.isArray(runtime) && runtime.length > 0) return runtime;
+    return Array.isArray(v.options) ? v.options : [];
+  }
+
+  function getVariableSelectOptions(v: DashboardVariable): Array<{ label: string; value: string }> {
+    return getVariableOptions(v).map((opt) => ({ label: String(opt.text ?? opt.value ?? ''), value: String(opt.value ?? opt.text ?? '') }));
+  }
+
+  function getVariablePlaceholder(v: DashboardVariable): string {
+    if (v.type === 'query') return '请选择（query variable）';
+    return '请选择';
+  }
+
+  function isDurationLikeValue(value: unknown): boolean {
+    if (typeof value !== 'string') return false;
+    const v = value.trim();
+    return /^[0-9]+[smhdwy]$/.test(v);
+  }
+
+  function isWindowLikeVariable(v: DashboardVariable): boolean {
+    const name = String(v?.name ?? '').toLowerCase();
+    const label = String(v?.label ?? '').toLowerCase();
+    if (name === 'window' || name === 'interval' || name === 'range' || name === 'step') return true;
+    if (label.includes('窗口') || label.includes('间隔') || label.includes('步长')) return true;
+    const opts = Array.isArray(v.options) ? v.options : [];
+    return opts.some((o) => isDurationLikeValue((o as any)?.value ?? (o as any)?.text));
+  }
+
+  function formatVariableToken(name: string): string {
+    // UI 展示用：用 `$name` 表达变量引用（与插值层保持一致）
+    return `$${name}`;
+  }
+
+  function getVariableHelpLines(v: DashboardVariable): string[] {
+    const name = String(v?.name ?? '').trim();
+    const token = name ? formatVariableToken(name) : '$变量名';
+    const multi = !!v.multi;
+
+    // window 类变量：强调和 timeRange 的区别 + 推荐用法
+    if (isWindowLikeVariable(v)) {
+      const example = name ? `rate(x[${token}])` : 'rate(x[$window])';
+      return [
+        `用途：用于 PromQL 的窗口（range vector），例如 ${example}；只影响每个点的统计窗口`,
+        '区别：时间范围决定 from/to（展示多久）；窗口决定每个点往回看多久（平滑/降噪/口径）',
+      ];
+    }
+
+    // select / query / input / constant：给出“替换形态 + 推荐写法”
+    if (v.type === 'constant') {
+      return [`常量：值固定（只读），用于 expr 中的 ${token}`];
+    }
+
+    if (v.type === 'input') {
+      return [`输入：自由文本，直接替换到 expr 中的 ${token}`];
+    }
+
+    if (v.type === 'select' || v.type === 'query') {
+      if (multi) {
+        return [
+          `多选：替换结果会是 a|b|c（regex join），推荐在标签过滤里用 ${name || 'label'}=~"${token}"`,
+          v.type === 'query' ? '选项：点击弹窗“确定”后自动刷新（由后端/实现层返回）' : '选项：来自 Dashboard JSON 的静态 options',
+        ];
+      }
+      return [
+        `单选：直接替换为一个值，推荐在标签过滤里用 ${name || 'label'}="${token}"`,
+        v.type === 'query' ? '选项：点击弹窗“确定”后自动刷新（由后端/实现层返回）' : '选项：来自 Dashboard JSON 的静态 options',
+      ];
+    }
+
+    // 兜底：保证每个变量都有“含义对齐”说明
+    return [`用法：在查询 expr 中使用 ${token}（支持 ${token} / \${${name || 'var'}} / [[${name || 'var'}]]）`];
+  }
 
   const applySidebarDraft = () => {
     if (isBooting.value) return;
     dashboardStore.setViewMode(draftViewMode.value === 'allPanels' ? 'allPanels' : 'grouped');
     timeRangeStore.setTimeRange({ from: draftTimeRange.value, to: 'now' });
+
+    const patch: Record<string, string | string[]> = {};
+    const currentValues = (variablesStore.state?.values ?? {}) as Record<string, unknown>;
+    for (const v of variableDefs.value) {
+      const name = String(v?.name ?? '').trim();
+      if (!name) continue;
+      if (!(name in draftVariableValues.value)) continue;
+      const next = normalizeVariableValue(v, (draftVariableValues.value as any)[name]);
+      const current = name in currentValues ? currentValues[name] : undefined;
+      if (!isSameVariableValue(current, next)) patch[name] = next;
+    }
+    if (Object.keys(patch).length > 0) variablesStore.setValues(patch);
+
+    // 约定：variables 的 query options 刷新不单独暴露按钮，跟随 Drawer 的“确定”动作触发。
+    void variablesStore.resolveOptions();
   };
 
   // JSON actions are handled by Dashboard.vue (single source of truth).
@@ -350,6 +533,51 @@
         width: 42px;
         font-size: 12px;
         color: color-mix(in srgb, @text-color, transparent 30%);
+      }
+
+      .dp-dashboard-toolbar__var-label {
+        flex: 0 0 auto;
+        width: 96px;
+        font-size: 12px;
+        color: color-mix(in srgb, @text-color, transparent 30%);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .dp-dashboard-toolbar__var-control {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .dp-dashboard-toolbar__var-help-list {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px dashed var(--gf-color-border-muted);
+      }
+
+      .dp-dashboard-toolbar__var-help-title {
+        font-size: 12px;
+        line-height: 1.45;
+        color: color-mix(in srgb, @text-color, transparent 28%);
+        margin-bottom: 6px;
+      }
+
+      .dp-dashboard-toolbar__var-help-item {
+        margin-bottom: 8px;
+      }
+
+      .dp-dashboard-toolbar__var-help-name {
+        font-size: 12px;
+        line-height: 1.45;
+        color: color-mix(in srgb, @text-color, transparent 20%);
+        margin-bottom: 2px;
+      }
+
+      .dp-dashboard-toolbar__var-help-line {
+        font-size: 12px;
+        line-height: 1.45;
+        color: color-mix(in srgb, @text-color, transparent 45%);
       }
 
       .dp-dashboard-toolbar__hint {

@@ -3,7 +3,7 @@
 
   目标：
   - 为 @grafana-fast/json-editor 提供一个“回归与测试”的人工入口
-  - 覆盖常见场景：合法/非法 JSON、非 Dashboard JSON、缺插件、迁移预检、外部校验错误
+  - 覆盖常见场景：合法/非法 JSON、非 Dashboard JSON、结构风险提示、外部校验错误
 
   说明：
   - 这个页面类似 ComponentShowcase：它不是最终产品页，而是验证能力的工具页
@@ -12,10 +12,10 @@
   <ConfigProvider :theme="themeModel">
     <div class="dp-json-editor-showcase">
       <div class="dp-json-editor-showcase__header">
-        <div class="dp-json-editor-showcase__title">
-          <div class="dp-json-editor-showcase__h1">@grafana-fast/json-editor 测试页</div>
-          <div class="dp-json-editor-showcase__sub">用于验证导入/导出、诊断提示（行列）、迁移预检、缺插件、外部校验。</div>
-        </div>
+          <div class="dp-json-editor-showcase__title">
+            <div class="dp-json-editor-showcase__h1">@grafana-fast/json-editor 测试页</div>
+          <div class="dp-json-editor-showcase__sub">用于验证导入/导出、诊断提示（行列）、结构风险提示、外部校验。</div>
+          </div>
 
         <Flex justify="end" :gap="10" wrap>
           <Segmented v-model:value="themeModel" size="small" :options="themeOptions" />

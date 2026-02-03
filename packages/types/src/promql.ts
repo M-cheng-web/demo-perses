@@ -1,98 +1,23 @@
 /**
- * PromQL Query Builder 类型定义
- * 参考 Grafana 的实现进行简化
+ * @deprecated
+ *
+ * 历史遗留入口：`promql.ts` 早期包含了一套 PromQL/QueryBuilder 相关类型，
+ * 但仓库已经把“稳定契约类型”收敛到：
+ * - `queryBuilder.ts`（PromVisualQuery / QueryBuilder*）
+ * - `prometheus.ts`（PrometheusQueryResult 等）
+ *
+ * 该文件保留仅作为兼容层：统一 re-export 到新的单一来源，避免类型重复定义与语义漂移。
  */
 
-// 标签过滤器
-export interface LabelFilter {
-  label: string;
-  op: '=' | '!=' | '=~' | '!~';
-  value: string;
-}
+export type {
+  QueryBuilderLabelFilter as LabelFilter,
+  QueryBuilderOperation as Operation,
+  QueryBuilderOperationParamValue as OperationParamValue,
+  QueryBuilderOperationDef as OperationDef,
+  QueryBuilderOperationParamDef as OperationParamDef,
+  PromVisualQuery,
+} from './queryBuilder';
 
-// 操作参数类型
-export type OperationParamValue = string | number | boolean;
+export { PromVisualQueryOperationCategory as OperationCategory, QueryEditorMode, PromOperationId } from './queryBuilder';
 
-// 操作定义
-export interface Operation {
-  id: string;
-  params: OperationParamValue[];
-}
-
-// 可视化查询模型
-export interface PromVisualQuery {
-  metric: string;
-  labels: LabelFilter[];
-  operations: Operation[];
-}
-
-// 时间范围选项
-export interface TimeRange {
-  value: string;
-  label: string;
-}
-
-// 操作定义
-export interface OperationDef {
-  id: string;
-  name: string;
-  category: OperationCategory;
-  params: OperationParamDef[];
-  defaultParams: OperationParamValue[];
-  description?: string;
-}
-
-// 操作参数定义
-export interface OperationParamDef {
-  name: string;
-  type: 'string' | 'number' | 'boolean' | 'select';
-  options?: { label: string; value: any }[];
-  placeholder?: string;
-  optional?: boolean;
-}
-
-// 操作分类
-// @ts-ignore
-export enum OperationCategory {
-  RangeFunctions = 'Range Functions',
-  Aggregations = 'Aggregations',
-  Functions = 'Functions',
-  BinaryOps = 'Binary Operations',
-}
-
-// 查询编辑器模式
-// @ts-ignore
-export enum QueryEditorMode {
-  Builder = 'builder',
-  Code = 'code',
-}
-
-// Prometheus 查询结果
-export interface PrometheusQueryResult {
-  status: 'success' | 'error';
-  data: {
-    resultType: 'matrix' | 'vector' | 'scalar' | 'string';
-    result: PrometheusDataPoint[];
-  };
-  error?: string;
-}
-
-// Prometheus 数据点
-export interface PrometheusDataPoint {
-  metric: Record<string, string>;
-  values?: [number, string][]; // matrix 类型
-  value?: [number, string]; // vector 类型
-}
-
-// 通用数据点（解析后的格式）
-export interface DataPoint {
-  timestamp: number;
-  value: number;
-}
-
-// 时间序列
-export interface TimeSeries {
-  name: string;
-  labels: string;
-  data: DataPoint[];
-}
+export type { PrometheusQueryResult, PrometheusDataPoint, TimeSeries } from './prometheus';

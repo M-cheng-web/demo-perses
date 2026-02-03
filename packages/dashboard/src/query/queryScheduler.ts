@@ -15,9 +15,10 @@
 import { onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue';
 import type { Panel, QueryContext, QueryResult } from '@grafana-fast/types';
 import { storeToRefs, type Pinia } from '@grafana-fast/store';
-import { useTimeRangeStore } from '/#/stores';
+import { useTimeRangeStore, useVariablesStore } from '/#/stores';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
 import { QueryRunner } from './queryRunner';
+import { interpolateExpr } from './interpolate';
 
 export interface PanelQueryState {
   /** 当前是否加载中 */
@@ -52,7 +53,7 @@ interface PanelRegistration {
   lastLoadedConditionGen: number;
 }
 
-type RefreshReason = 'timeRange' | 'panel-change' | 'became-visible' | 'manual';
+type RefreshReason = 'timeRange' | 'variables' | 'panel-change' | 'became-visible' | 'manual';
 
 interface RefreshTask {
   panelId: string;
@@ -100,6 +101,8 @@ export function createQueryScheduler(pinia?: Pinia) {
 
   const timeRangeStore = useTimeRangeStore(pinia);
   const { absoluteTimeRange } = storeToRefs(timeRangeStore);
+  const variablesStore = useVariablesStore(pinia);
+  const { valuesGeneration } = storeToRefs(variablesStore);
 
   /**
    * 注意：不要把这些 Map 包进 Vue 响应式系统（reactive）
@@ -300,7 +303,15 @@ export function createQueryScheduler(pinia?: Pinia) {
 
     let aborted = false;
     try {
-      const results = await runner.executeQueries(queries, context, { signal: reg.abort.signal });
+      const values = (variablesStore.state?.values ?? {}) as Record<string, string | string[]>;
+      const resolvedQueries = queries.map((q) => {
+        const rawExpr = String(q.expr ?? '');
+        const expr = interpolateExpr(rawExpr, values, { multiFormat: 'regex', unknown: 'keep' });
+        // Avoid object churn if expr doesn't change.
+        return expr === rawExpr ? q : { ...q, expr };
+      });
+
+      const results = await runner.executeQueries(resolvedQueries, context, { signal: reg.abort.signal });
       reg.state.results.value = results;
     } catch (err) {
       if ((err as any)?.name === 'AbortError') {
@@ -364,6 +375,12 @@ export function createQueryScheduler(pinia?: Pinia) {
   watch(absoluteTimeRange, () => {
     bumpConditionGeneration();
     enqueueVisible('timeRange', 30);
+  });
+
+  // 变量值变化 -> 刷新可视面板（优先级略低于 timeRange）
+  watch(valuesGeneration, () => {
+    bumpConditionGeneration();
+    enqueueVisible('variables', 28);
   });
 
   const registerPanel = (panelId: string, panelRef: Ref<Panel> | ComputedRef<Panel>): PanelQueryState => {

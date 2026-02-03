@@ -111,6 +111,7 @@ function buildGroupLayout(panels: Panel[], rng: () => number): PanelLayout[] {
 }
 
 function createFixedCpuGroup(): PanelGroup {
+  const scopeSelector = '{cluster="$cluster",namespace=~"$namespace",service="$service",instance=~"$instance"}';
   return {
     id: 'group-1',
     title: 'CPU 监控',
@@ -127,7 +128,7 @@ function createFixedCpuGroup(): PanelGroup {
             id: 'q-1',
             refId: 'A',
             datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-            expr: 'cpu_usage',
+            expr: `cpu_usage${scopeSelector}`,
             legendFormat: 'CPU {{cpu}}',
             format: 'time_series',
             instant: false,
@@ -150,7 +151,7 @@ function createFixedCpuGroup(): PanelGroup {
             id: 'q-2',
             refId: 'A',
             datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-            expr: 'avg(cpu_usage)',
+            expr: `avg(cpu_usage${scopeSelector})`,
             format: 'time_series',
             instant: false,
             hide: false,
@@ -171,7 +172,7 @@ function createFixedCpuGroup(): PanelGroup {
             id: 'q-3',
             refId: 'A',
             datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-            expr: 'max(cpu_usage)',
+            expr: `max(cpu_usage${scopeSelector})`,
             format: 'time_series',
             instant: false,
             hide: false,
@@ -192,7 +193,7 @@ function createFixedCpuGroup(): PanelGroup {
             id: 'q-4',
             refId: 'A',
             datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-            expr: 'cpu_usage',
+            expr: `cpu_usage${scopeSelector}`,
             legendFormat: 'CPU {{cpu}}',
             format: 'time_series',
             instant: false,
@@ -215,7 +216,7 @@ function createFixedCpuGroup(): PanelGroup {
             id: 'q-5',
             refId: 'A',
             datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-            expr: 'cpu_usage',
+            expr: `cpu_usage${scopeSelector}`,
             format: 'time_series',
             instant: false,
             hide: false,
@@ -243,6 +244,7 @@ function createLargeGroup(): PanelGroup {
   const totalPanels = 1000;
   const rng = createRng(0x1a2b3c4d);
   const pickLocal = <T>(items: T[]): T => items[Math.floor(rng() * items.length)]!;
+  const scopeSelector = '{cluster="$cluster",namespace=~"$namespace",service="$service",instance=~"$instance"}';
 
   const panels: Panel[] = Array.from({ length: totalPanels }).map((_, idx) => {
     const n = idx + 1;
@@ -256,7 +258,7 @@ function createLargeGroup(): PanelGroup {
           id: `q-big-${n}`,
           refId: 'A',
           datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-          expr: 'cpu_usage',
+          expr: `cpu_usage${scopeSelector}`,
           legendFormat: 'CPU {{cpu}}',
           format: 'time_series',
           instant: false,
@@ -326,7 +328,16 @@ function createDefaultDashboard(): Dashboard {
 
   const panelTypes: CorePanelType[] = ['timeseries', 'stat', 'bar', 'pie', 'table', 'gauge', 'heatmap'];
   // mock 数据池目前对这些 expr 有稳定的返回（见 defaultDataPool.ts）
-  const exprCandidates = ['cpu_usage', 'avg(cpu_usage)', 'max(cpu_usage)', 'memory_usage', 'up'];
+  const scopeSelector = '{cluster="$cluster",namespace=~"$namespace",service="$service",instance=~"$instance"}';
+  const exprCandidates = [
+    `cpu_usage${scopeSelector}`,
+    `avg(cpu_usage${scopeSelector})`,
+    `max(cpu_usage${scopeSelector})`,
+    `memory_usage${scopeSelector}`,
+    `up${scopeSelector}`,
+    // window / rate demo (still matches cpu_usage in defaultDataPool)
+    `avg(rate(cpu_usage${scopeSelector}[$window]))`,
+  ];
 
   const remainingGroups = Math.max(0, groupCount - fixedGroups.length);
   const groups: PanelGroup[] = [
@@ -388,17 +399,59 @@ function createDefaultDashboard(): Dashboard {
     refreshInterval: 0,
     variables: [
       {
+        id: 'var-cluster',
+        name: 'cluster',
+        label: '集群',
+        type: 'select',
+        options: [
+          { text: 'prod-a', value: 'prod-a' },
+          { text: 'prod-b', value: 'prod-b' },
+          { text: 'staging', value: 'staging' },
+        ],
+        current: 'prod-a',
+      },
+      {
+        id: 'var-namespace',
+        name: 'namespace',
+        label: '命名空间',
+        type: 'query',
+        query: 'label_values(up, namespace)',
+        multi: true,
+        options: [],
+        current: ['default'],
+      },
+      {
+        id: 'var-service',
+        name: 'service',
+        label: '服务',
+        type: 'query',
+        query: 'label_values(http_requests_total, job)',
+        multi: false,
+        options: [],
+        current: 'api',
+      },
+      {
         id: 'var-instance',
         name: 'instance',
         label: '实例',
         type: 'query',
-        datasource: 'prometheus',
-        query: 'up',
+        query: 'label_values(up, instance)',
         multi: true,
-        includeAll: true,
-        allValue: '.*',
         options: [],
-        current: ['all'],
+        current: ['server-1'],
+      },
+      {
+        id: 'var-window',
+        name: 'window',
+        label: '窗口',
+        type: 'select',
+        options: [
+          { text: '1m', value: '1m' },
+          { text: '5m', value: '5m' },
+          { text: '10m', value: '10m' },
+          { text: '15m', value: '15m' },
+        ],
+        current: '5m',
       },
     ],
     createdAt: now,

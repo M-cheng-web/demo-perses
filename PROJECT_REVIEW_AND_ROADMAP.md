@@ -1,7 +1,7 @@
 # grafana-fast / demo-perses 项目评审与路线图（面向“超越 Grafana”）
 
 > 目标读者：项目 Owner/核心开发者  
-> 目标：在保持 Grafana 核心 Dashboard 能力的基础上，通过“可嵌入 + 插件化 + 可移植 JSON + 性能/调试体验”在多个领域超越 Grafana。  
+> 目标：在保持 Grafana 核心 Dashboard 能力的基础上，通过“可嵌入（SDK） + 可移植 JSON + 性能/调试体验”在多个领域超越 Grafana。  
 > 范围：基于当前仓库 `demo-perses`（pnpm monorepo）代码现状的评审与可执行计划。  
 
 ---
@@ -13,7 +13,7 @@ Grafana 是“完整产品”（含服务端、权限、数据源管理、告警
 
 - 你提供的是 **SDK/组件引擎**：宿主应用把它当作可嵌入的 dashboard runtime。
 - **宿主负责**：用户体系、鉴权、权限、组织/文件夹、分享策略、后端存储与审计等“产品/平台”能力。
-- **你负责**：渲染与编辑体验、查询编排、变量系统、JSON 可移植、插件系统、性能与调试能力。
+- **你负责**：渲染与编辑体验、查询编排、变量系统、JSON 可移植、性能与调试能力（插件化后置/可选）。
 
 这条路线有一个天然优势：**Grafana 在“多实例同页嵌入、强隔离、无全局副作用”上很难做到极致**，而你可以。
 
@@ -29,7 +29,7 @@ Grafana 是“完整产品”（含服务端、权限、数据源管理、告警
   - 领域模型：Dashboard/Panel/Query/TimeRange/Variable 等
   - 目前 `schemaVersion` 只是“保留字段”，migration 目录为空（这会影响“JSON 可迁移”的长期承诺）
 - `packages/api`（`@grafana-fast/api`）
-  - 合同层 contracts + 实现层 impl（mock/http/prometheus-direct）
+  - 合同层 contracts + 实现层 impl（mock/http）
   - UI 只依赖稳定接口：`GrafanaFastApiClient`
 - `packages/store`（`@grafana-fast/store`）
   - 轻量 Pinia-like，重点解决 **多实例隔离**（组件上下文 injected pinia 优先）
@@ -82,38 +82,24 @@ Grafana 是“完整产品”（含服务端、权限、数据源管理、告警
    - 把 `any` 收敛到“边界层”（例如解析外部 JSON、HTTP DTO），核心模型使用 `@grafana-fast/types`
    - 对 PanelOptions、TransformationOptions 引入更明确的类型（哪怕先是 discriminated union）
 
-2) **“插件元信息”不够完整，导致面板编辑器里出现硬编码映射**  
-现状：`PanelEditorDrawer.vue` 里维护了：
-   - panel type -> style component map
-   - panel type -> default options map  
+2) **面板编辑器“类型映射”容易分散（已收敛）**  
+现状（已改造）：面板类型相关的映射已集中到单一来源：
+   - `packages/dashboard/src/panels/builtInPanels.ts`：type -> component / styleComponent / defaultOptions
+   - PanelEditor/PanelContent/Strict 校验都依赖该映射，避免“新增一个面板要改很多处”的问题
 
-这会导致：每新增一个 panel type，至少要改 2~3 处，还容易漏（可维护性差）。  
+后续（可选）：如果未来需要插件化，再把 `builtInPanels.ts` 演进为 registry（而不是先引入一整套宿主可注入体系）。
 
-建议（很关键）：把 PanelPlugin 扩展为：
-   - `type/displayName/component`
-   - `defaultOptions()`
-   - `editor`（style tab schema/component）
-   - `migrations`（options schemaVersion）  
-然后让 PanelEditor/PanelContent 都只依赖 registry 的能力。
+3) **Dashboard JSON 与运行时 store 的一致性（已补齐 serialize）**  
+现状（已改造）：
+   - timeRange/refreshInterval/variables 属于运行时全局状态，统一由 store 承载
+   - 保存/导出使用“可持久化快照”（serialize）把运行时状态合并回 Dashboard JSON，避免“看似保存成功但再导入不可复现”
 
-3) **Dashboard JSON 与运行时 store 的“单一事实源”不够统一**  
-观察到的风险点：
-   - variables 会写回 dashboard JSON（`variablesStore.applyToDashboard`）
-   - timeRange/refreshInterval 目前更多是 store 内部状态，不一定会写回 Dashboard JSON
-
-这会影响：导出/保存之后“再导入是否可复现”。  
-
-建议：明确策略（二选一）：
-   - A：Dashboard JSON 是 source of truth（store 只是运行时投影），任何变更都写回 JSON
-   - B：运行时 store 是 source of truth，导出时进行“serialize”（生成完整 JSON）
-
-SDK 产品化时，A 更直观；工程实现上，B 更灵活但要求 serialize/migrate 做得更严谨。
+后续注意：如果再引入新的运行时字段（例如 viewport、adhoc filters），需要同步补齐 serialize 逻辑与回归样例。
 
 4) **文档/代码不一致点会反噬信任**
 典型例子：
-   - `packages/types/src/dashboard.ts` 写“未上线不提供 migration”
-   - `FUTURE.md` 中把 migration 作为长期底座强调
-   - `tsconfig.base.json` 里存在 `@grafana-fast/panels` 路径，但仓库当前没有该包
+   - `schemaVersion` 字段在 types 里存在，但是否提供 migration 需要在文档中明确“当前不做/后置”
+   - `tsconfig.base.json` 的路径别名必须与实际 packages 保持一致（例如不再提供 `@grafana-fast/panels` 时应移除配置）
 
 建议：把“承诺项”尽早落地一个最小可用版本（见第 6 节的近期计划）。
 
@@ -126,10 +112,10 @@ SDK 产品化时，A 更直观；工程实现上，B 更灵活但要求 serializ
 建议把能力拆成三层（并在代码结构中显式体现）：
 
 1) **Core（稳定内核）**
-   - Dashboard JSON schema + migration
+   - Dashboard JSON schema + schemaVersion（migration 后置/可选）
    - Query execution contracts（CanonicalQuery / QueryResult）
    - QueryScheduler/Runner（调度、缓存、取消、debug）
-   - Transformations pipeline（可序列化、可迁移）
+   - Transformations pipeline（可序列化；UI 配置入口后置）
 
 2) **Plugins（可替换扩展）**
    - Panel plugins（渲染 + editor schema + default options + migrations）
@@ -214,18 +200,18 @@ P2（产品级能力，通常需要后端/平台配合）
 
 - 统一 source of truth：明确 timeRange/refreshInterval/variables 与 Dashboard JSON 的同步策略
 - 清理不一致项
-  - `@grafana-fast/panels` 路径与实际包（要么补包，要么移除配置）
-  - `types` 的 migration 方向：哪怕先做“空迁移框架”，也要有真实入口
-- 让 PanelPlugin 承担更多元信息（默认 options、editor 配置、migrations），减少编辑器硬编码
+  - `@grafana-fast/panels`：已明确不做，并移除相关配置/代码（避免长期占心智）
+  - `schemaVersion`：当前仅做持久化；migration 后置/可选（避免“承诺但没落地”）
+- 让单一来源承担更多元信息（默认 options、editor 配置等），减少编辑器硬编码（当前已通过 `builtInPanels.ts` 收敛）
 - 增加 4 类最小回归脚本（见第 4.2）
 
 验收标准：
 - 导出 JSON -> 导入 -> 渲染结果一致（timeRange/variables/transformations 都一致）
 - 新增一个 panel type 时，不需要在 3 个地方各写一份映射
 
-### Sprint 2（2~3 周）：做一个“Query Inspector”（这是你最容易超越 Grafana 的抓手）
+### Sprint 2（后置/可选）：做一个“Query Inspector”
 
-目标：把 QueryScheduler 的 debug 信息产品化，形成差异化。
+目标：把 QueryScheduler 的 debug 信息产品化，形成差异化（当前阶段可先保持“简短错误摘要”即可）。
 
 - 在 UI 中提供一个 Inspector 面板（可挂在 DashboardToolbar 的 “更多” 菜单）
 - 至少展示：
@@ -236,9 +222,9 @@ P2（产品级能力，通常需要后端/平台配合）
 验收标准：
 - 100 panels 场景下，用户能解释“现在为什么慢/谁在排队/谁失败”
 
-### Sprint 3（3~6 周）：插件化的第一步（先做 transformations 插件化，收益最大）
+### Sprint 3（后置/可选）：可扩展能力（Transformations 等）
 
-目标：把“可扩展能力”从代码结构变成真实可用的生态入口。
+目标：把“可扩展能力”从代码结构变成真实可用的生态入口（前提是回归资产与范围都足够清晰）。
 
 - Transformations 插件 registry：内置 + 自定义注册
 - 让 transformation options 具备 schemaVersion + migration（从一开始就设计好）
@@ -279,7 +265,6 @@ Grafana 的护城河是生态和深度。你要赢，必须 **避开正面战场
 你如果确认“先做哪 3 个差异化方向”，我可以继续帮你把计划落到更细粒度的工程任务，例如：
 
 - 输出一份 `RFC: Plugin System v1`（panel/transformation/datasource 的最小契约）
-- 把 QueryInspector 做成一个可合并的 PR（UI + debug 数据结构）
-- 补齐“Dashboard JSON 与 store 同步”的一致性改造（并附带回归脚本）
-- 给 `PanelEditorDrawer` 做一次结构化重构：去硬编码映射、修复默认 options 逻辑、增强类型约束
-
+- 输出一份 `RFC: Variables Consumption UI v1`（只做消费，不做变量编辑器）
+- （可选/后置）把 QueryInspector 做成一个可合并的 PR（UI + debug 数据结构）
+- 增加回归脚本：导出 JSON -> 导入 -> 渲染结果一致（timeRange/variables 等）

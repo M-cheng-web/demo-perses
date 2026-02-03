@@ -4,9 +4,11 @@
 
 import { defineStore } from '@grafana-fast/store';
 import { toRaw } from 'vue';
-import type { Dashboard, PanelGroup, Panel, PanelLayout, ID } from '@grafana-fast/types';
+import type { Dashboard, PanelGroup, Panel, PanelLayout, ID, DashboardVariable, VariableOption } from '@grafana-fast/types';
 import { createPrefixedId, deepClone, deepCloneStructured } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
+import { useTimeRangeStore } from './timeRange';
+import { useVariablesStore } from './variables';
 
 type BootStage = 'idle' | 'fetching' | 'parsing' | 'initializing' | 'ready' | 'error';
 type DashboardViewMode = 'grouped' | 'allPanels';
@@ -106,6 +108,23 @@ function countDashboardStats(d: Dashboard): { groupCount: number; panelCount: nu
   return { groupCount: groups.length, panelCount };
 }
 
+function normalizeNonNegativeInt(value: unknown, fallback: number): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.floor(n));
+}
+
+function normalizeVariableCurrent(def: DashboardVariable, value: unknown): string | string[] {
+  const multi = !!def.multi;
+  if (multi) {
+    if (Array.isArray(value)) return value.map((v) => String(v));
+    const v = String(value ?? '').trim();
+    return v ? [v] : [];
+  }
+  if (Array.isArray(value)) return String(value[0] ?? '');
+  return String(value ?? '');
+}
+
 export const useDashboardStore = defineStore('dashboard', {
   state: (): DashboardState => ({
     currentDashboard: null,
@@ -190,6 +209,88 @@ export const useDashboardStore = defineStore('dashboard', {
   },
 
   actions: {
+    /**
+     * 将 Dashboard JSON 的“默认/持久化字段”同步到运行时 store（timeRange/variables）
+     *
+     * 说明：
+     * - timeRange/refreshInterval/variables 是“运行时需要全局读取”的字段，不应散落在多个地方各自维护
+     * - 这里把它们统一落在 store 中：
+     *   - timeRangeStore：timeRange + refreshInterval（并负责 auto refresh timer）
+     *   - variablesStore：values/options（并负责 options 解析）
+     */
+    _syncRuntimeStoresFromDashboard(dashboard: Dashboard) {
+      try {
+        const timeRangeStore = useTimeRangeStore(this.$pinia);
+        // 深拷贝：避免外部 dashboard 引用污染运行时 store
+        timeRangeStore.setTimeRange(deepCloneStructured(dashboard.timeRange));
+        timeRangeStore.setRefreshInterval(normalizeNonNegativeInt(dashboard.refreshInterval, 0));
+      } catch {
+        // ignore: runtime sync should never break dashboard flow
+      }
+
+      try {
+        const variablesStore = useVariablesStore(this.$pinia);
+        variablesStore.initializeFromDashboard(dashboard.variables);
+        // 解析 options 属于增强能力：异步失败不应阻断主流程
+        void variablesStore.resolveOptions();
+      } catch {
+        // ignore
+      }
+    },
+
+    /**
+     * 构造一个“可持久化/可导出”的 Dashboard 快照：
+     * - 合并运行时的 timeRange/refreshInterval（来自 timeRangeStore）
+     * - 合并运行时的变量 current/options（来自 variablesStore）
+     *
+     * 重要：
+     * - 该快照用于 save/export/json-view 等场景，避免 Dashboard JSON 与运行时 state 不一致
+     */
+    _buildPersistableDashboardSnapshot(): Dashboard {
+      if (!this.currentDashboard) throw new Error('No dashboard');
+      const dash = deepCloneStructured(toRaw(this.currentDashboard)) as Dashboard;
+
+      try {
+        const timeRangeStore = useTimeRangeStore(this.$pinia);
+        dash.timeRange = deepCloneStructured(toRaw(timeRangeStore.timeRange));
+        dash.refreshInterval = normalizeNonNegativeInt(toRaw(timeRangeStore.refreshInterval), dash.refreshInterval ?? 0);
+      } catch {
+        // ignore: use dashboard's own fields as fallback
+      }
+
+      try {
+        const variablesStore = useVariablesStore(this.$pinia);
+        const values = (variablesStore.state?.values ?? {}) as Record<string, unknown>;
+        const options = (variablesStore.state?.options ?? {}) as Record<string, VariableOption[]>;
+        if (Array.isArray(dash.variables)) {
+          dash.variables = dash.variables.map((v) => {
+            const name = String(v?.name ?? '').trim();
+            if (!name) return v;
+            const next: DashboardVariable = { ...v };
+            if (name in values) next.current = normalizeVariableCurrent(v, values[name]);
+            if (name in options) next.options = deepCloneStructured(options[name] ?? []);
+            return next;
+          });
+        }
+      } catch {
+        // ignore
+      }
+
+      return dash;
+    },
+
+    /**
+     * 给 UI/SDK 暴露的导出快照（稳定入口）
+     */
+    getPersistableDashboardSnapshot(): Dashboard | null {
+      if (!this.currentDashboard) return null;
+      try {
+        return this._buildPersistableDashboardSnapshot();
+      } catch {
+        return deepCloneStructured(toRaw(this.currentDashboard));
+      }
+    },
+
     _bumpDashboardContentRevision() {
       const next = (this.dashboardContentRevision ?? 0) + 1;
       this.dashboardContentRevision = next <= Number.MAX_SAFE_INTEGER ? next : 0;
@@ -210,6 +311,9 @@ export const useDashboardStore = defineStore('dashboard', {
       const next = deepCloneStructured(dashboard);
       this.currentDashboard = next;
 
+      // 同步运行时 store（timeRange/variables）
+      this._syncRuntimeStoresFromDashboard(next);
+
       // 重置可能指向旧对象的 UI 状态（避免引用悬挂/状态错乱）。
       this.editingGroupId = null;
       this.viewPanelId = null;
@@ -228,7 +332,8 @@ export const useDashboardStore = defineStore('dashboard', {
 
       const markAsSynced = options?.markAsSynced !== false;
       if (markAsSynced) {
-        this.syncedDashboard = deepCloneStructured(next);
+        // 注意：syncedDashboard 代表“已确认态”，应使用可持久化快照（保证与运行时一致）
+        this.syncedDashboard = deepCloneStructured(this.getPersistableDashboardSnapshot() ?? next);
         this.hasUnsyncedChanges = false;
       } else {
         this.hasUnsyncedChanges = true;
@@ -274,7 +379,10 @@ export const useDashboardStore = defineStore('dashboard', {
     resetToSynced() {
       if (!this.syncedDashboard) return;
       // 同上：先 toRaw 再 clone，避免 structuredClone 克隆 Proxy 报错
-      this.currentDashboard = deepCloneStructured(toRaw(this.syncedDashboard));
+      const next = deepCloneStructured(toRaw(this.syncedDashboard));
+      this.currentDashboard = next;
+      // 回滚后同步运行时 store，避免 timeRange/variables 仍停留在“回滚前”的值
+      this._syncRuntimeStoresFromDashboard(next);
       // 回滚后，清理可能指向“已失效对象”的 UI 状态，避免残留交互异常
       this.editingGroupId = null;
       this.viewPanelId = null;
@@ -345,7 +453,7 @@ export const useDashboardStore = defineStore('dashboard', {
       this.lastError = null;
 
       // 先做一次快照：保证本次持久化写入的是一个稳定 JSON（即使 UI 继续变化）。
-      const payload = deepCloneStructured(toRaw(this.currentDashboard));
+      const payload = this._buildPersistableDashboardSnapshot();
       try {
         const api = getPiniaApiClient(this.$pinia);
         await api.dashboard.saveDashboard(payload);
@@ -431,6 +539,7 @@ export const useDashboardStore = defineStore('dashboard', {
         // 大 JSON 下用 structuredClone 降低 stringify/parse 的主线程压力。
         const next = deepCloneStructured(dashboard);
         this.currentDashboard = next;
+        this._syncRuntimeStoresFromDashboard(next);
         this.markSyncedFromCurrent();
         this._bumpDashboardContentRevision();
         this.finishBoot();
@@ -467,6 +576,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
         const next = deepCloneStructured(dashboard);
         this.currentDashboard = next;
+        this._syncRuntimeStoresFromDashboard(next);
         // Import/apply 属于“用户主动修改”：但此时还未被远端确认，不能直接覆盖 syncedDashboard，
         // 否则后续保存失败将无法回滚到远端快照。
         //

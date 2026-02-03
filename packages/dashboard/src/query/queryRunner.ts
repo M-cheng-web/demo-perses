@@ -8,7 +8,7 @@
  *
  * 设计原则：
  * - QueryRunner 不关心 UI（面板布局/组件），只专注“如何稳定执行查询”
- * - 具体请求如何发出由 @grafana-fast/api 的实现层决定（mock/http/prom-direct）
+ * - 具体请求如何发出由 @grafana-fast/api 的实现层决定（mock/http）
  */
 import type { GrafanaFastApiClient } from '@grafana-fast/api';
 import type { CanonicalQuery, QueryContext, QueryResult } from '@grafana-fast/types';

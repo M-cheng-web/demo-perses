@@ -87,6 +87,28 @@
           <!-- 查询内容区 -->
           <Transition name="fade-collapse">
             <div v-show="!draft.collapsed" :class="bem('query-content')">
+              <!-- Dashboard variables helper (for template dashboards) -->
+              <div v-if="availableVariables.length > 0" :class="bem('vars-bar')">
+                <div :class="bem('vars-label')">变量</div>
+                <div :class="bem('vars-list')">
+                  <Button
+                    v-for="v in availableVariables"
+                    :key="v.id"
+                    type="text"
+                    size="small"
+                    :class="bem('var-chip')"
+                    :title="`${v.label || v.name} ($${v.name})`"
+                    @click="handleUseVariable(index, v.name)"
+                  >
+                    ${{ v.name }}
+                  </Button>
+                </div>
+                <div :class="bem('vars-hint')">
+                  <template v-if="queryMode === 'code'">点击将追加到 PromQL 并复制</template>
+                  <template v-else>点击复制，可粘贴到标签值/操作参数中</template>
+                </div>
+              </div>
+
               <!-- QueryBuilder 模式 -->
               <div v-if="queryMode === 'builder'" :class="bem('builder-mode')">
                 <Space direction="vertical" :size="10" style="width: 100%">
@@ -266,7 +288,7 @@
 </template>
 
 <script setup lang="ts">
-  import { h, onBeforeUnmount, ref, watch } from 'vue';
+  import { computed, h, onBeforeUnmount, ref, watch } from 'vue';
   import {
     Alert,
     Button,
@@ -303,14 +325,18 @@
   import QueryPatternsModal from '/#/components/QueryBuilder/QueryPatternsModal.vue';
   import { parsePromqlToVisualQuery, promQueryModeller } from '@grafana-fast/utils';
   import { createNamespace, createPrefixedId, debounceCancellable, deepClone } from '/#/utils';
-  import type { CanonicalQuery, DatasourceRef, PromVisualQuery } from '@grafana-fast/types';
+  import type { CanonicalQuery, Datasource, DatasourceRef, DatasourceType, PromVisualQuery } from '@grafana-fast/types';
   import type { PromqlParseConfidence, PromqlParseWarning } from '@grafana-fast/utils';
+  import { useVariablesStore } from '/#/stores';
 
   const [_, bem] = createNamespace('data-query-tab');
 
+  const variablesStore = useVariablesStore();
+  const availableVariables = computed(() => variablesStore.variables ?? []);
+
   interface Props {
     queries?: CanonicalQuery[];
-    datasource?: any;
+    datasource?: Pick<Datasource, 'id' | 'type' | 'name'> | null;
     /**
      * 可选：session key，用于强制重新初始化
      * - 当面板编辑器切换到另一个 panel 时，父组件应改变该值
@@ -449,9 +475,16 @@
     return `${indexToRefId(0)}_${Math.random().toString(16).slice(2, 6)}`;
   }
 
+  function normalizeDatasourceType(type: unknown): DatasourceType {
+    const t = String(type ?? '').trim();
+    if (t === 'prometheus' || t === 'influxdb' || t === 'elasticsearch') return t;
+    return 'prometheus';
+  }
+
   function getDatasourceRef(): DatasourceRef {
     const uid = props.datasource?.id ? String(props.datasource.id) : 'prometheus-mock';
-    return { type: 'prometheus', uid };
+    const type = normalizeDatasourceType(props.datasource?.type);
+    return { type, uid };
   }
 
   function renderPromql(query: PromVisualQuery): string {
@@ -663,6 +696,38 @@
 
   const handleCodeExprChange = (_index: number) => {
     // 预留：后续可在这里接入校验/格式化逻辑
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleUseVariable = async (index: number, name: string) => {
+    const d = queryDrafts.value[index];
+    if (!d) return;
+    const token = `$${String(name ?? '').trim()}`;
+    if (token === '$') return;
+
+    // Code 模式：直接插入到 expr（末尾），并同步 builder 状态（避免继续使用旧 Builder PromQL）
+    if (queryMode.value === 'code') {
+      const cur = String(d.code.expr ?? '');
+      const sep = cur && !/\s$/.test(cur) ? ' ' : '';
+      d.code.expr = `${cur}${sep}${token}`;
+      handleCodeExprInput(index);
+    }
+
+    const ok = await copyToClipboard(token);
+    if (ok) {
+      message.success(`已复制：${token}`);
+    } else {
+      // clipboard 失败时，至少给用户可见提示（用户仍可手动输入 $var）
+      message.info(`变量：${token}`);
+    }
   };
 
   const addQuery = () => {
@@ -1139,6 +1204,50 @@
     &__query-content {
       padding: 12px;
       background: var(--gf-color-surface);
+    }
+
+    &__vars-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      border: 1px dashed var(--gf-color-border-muted);
+      border-radius: var(--gf-radius-sm);
+      background: var(--gf-color-surface-muted);
+    }
+
+    &__vars-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gf-color-text-tertiary);
+      letter-spacing: 0.2px;
+    }
+
+    &__vars-list {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    &__var-chip.gf-button--type-text {
+      height: 22px;
+      padding: 0 8px;
+      border-radius: var(--gf-radius-xs);
+      border: 1px solid var(--gf-color-border-muted);
+      background: var(--gf-color-surface);
+      color: var(--gf-color-primary);
+      font-weight: 600;
+    }
+
+    &__vars-hint {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--gf-color-text-tertiary);
+      white-space: nowrap;
     }
 
     &__builder-mode,

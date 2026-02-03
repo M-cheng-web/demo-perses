@@ -1,15 +1,25 @@
 # FUTURE / 路线图（目标：在体验上超越 Grafana）
 
 > 这份文件不是“需求堆栈”，而是从整个项目架构与业务闭环出发，为 `grafana-fast` 规划的长期路线图。
-> 核心目标：把它做成一个 **Embedded-first（可嵌入优先）**、**Plugin-first（插件化优先）**、**JSON 可迁移/可移植**、并且在 **性能与调试体验** 上能超过 Grafana 的 Dashboard SDK。
+> 核心目标：把它做成一个 **Embedded-first（可嵌入优先）**、**SDK-first（宿主集成优先）**，并且在 **性能与调试体验** 上能超过 Grafana 的 Dashboard 引擎。
 
 ## 0. 我们到底在做什么（用一句话对齐）
 
 `grafana-fast` 不是 “再做一个 Grafana UI”，而是一个可被任何宿主应用嵌入的 Dashboard 引擎：
 
 - 对宿主而言：它是一个 SDK（`@grafana-fast/hooks` + `useDashboardSdk`），能在任何页面里挂载多个 dashboard 且互不干扰。
-- 对业务而言：它是一个“可扩展的视图系统”：用户复制粘贴 JSON 就能展示面板；缺插件不崩溃、不丢信息；未来装上插件即可恢复。
+- 对业务而言：它是一个“可嵌入的视图系统”：用户复制粘贴 JSON 就能展示内置面板；不支持的面板类型会被严格校验拦截（避免 silent fallback）。
 - 对工程而言：它是一个“稳定的核心 + 可替换的数据访问层 + 可插拔的渲染层”。
+
+## 0.1 当前阶段的范围（明确冻结/删减项）
+
+为了“功能够用但心智负担更低”，当前仓库明确不做/已移除：
+
+- **Prometheus Direct（直连 Prometheus）**：不在范围内，已从实现与文档中移除。
+- **Panel 插件化/面板可裁剪/缺插件恢复**：当前仅支持固定内置面板类型；`panel.type` 严格校验，未知类型不会被兼容导入。
+- **schema migration**：当前不提供内置迁移/兼容逻辑；`schemaVersion` 仅作为持久化字段保留（用于未来演进）。
+- **Query Inspector**：不做；错误展示保持“简短摘要”（够排障，不占心智）。
+- **Transformations**：保留执行层口子，但不开放 UI 配置入口（作为内部数据修饰能力使用）。
 
 ## 1. 现状盘点：当前项目的“业务闭环”已经长什么样了
 
@@ -19,23 +29,20 @@
 
 - `@grafana-fast/types`
   - 领域模型：`Dashboard / Panel / PanelGroup / Layout / Query / Variable` 等
-  - `schemaVersion + migration`（内部版本迁移）：保证旧 JSON 仍可导入（**这是“复制粘贴 JSON 就能展示”必须的底座**）
+  - `schemaVersion`（保留字段）：当前仅做持久化；不内置 migration（未来需要再补）
 - `@grafana-fast/api`
   - 数据访问层：**契约层（contracts）** + **实现层（impl）**
-  - 实现层当前默认 `mock`，并预留 `http` / `prometheus-direct` 实现入口
+  - 实现层当前默认 `mock`，并预留 `http` 实现入口
   - 目标是：后端接口变化尽量只影响实现层，不影响 dashboard 核心包
 - `@grafana-fast/dashboard`
   - 仪表板体验包：渲染、编辑、QueryBuilder、Tooltip 联动等
-  - 核心特性：运行时注入 `apiClient/panelRegistry`，并做多实例隔离
+  - 核心特性：运行时注入 `apiClient`，并做多实例隔离
   - 查询体系：`QueryScheduler`（调度）+ `QueryRunner`（执行）+ 变量插值/依赖分析
-- `@grafana-fast/panels`
-  - 面板插件选择器：`all().exclude().insert().build()`
-  - 宿主可裁剪/替换面板能力（插件化的对外入口）
 - `@grafana-fast/store`
   - 轻量 Pinia-like：支持多实例隔离（组件上下文优先 `inject('pinia')`）
 - `@grafana-fast/hooks`
   - SDK 入口：`useDashboardSdk`
-  - 负责：pinia 隔离策略、主题、load/save、apiClient/panelRegistry 注入与生命周期管理
+  - 负责：pinia 隔离策略、主题、load/save、apiClient 注入与生命周期管理
 - `packages/app`
   - 演示站点（未来可升级为“回归验证平台”）
 - `packages/docs`
@@ -47,10 +54,10 @@
 
 1. **Dashboard JSON**（`@grafana-fast/types`）进入系统  
    - `useDashboardSdk` / `dashboardStore.loadDashboard()` 拉取或导入 JSON  
-   - `migrateDashboard()` 统一迁移到当前 schema（保证旧 JSON 可用）
+   - `validateDashboardStrict` 负责严格校验（`schemaVersion:number`、`panel.type` 必须是内置类型等）
 2. **运行时注入**  
-   - `apiClient`（mock/http/prom-direct）注入到 pinia 实例上  
-   - `panelRegistry` 注入（插件化），面板类型缺失会用 `UnsupportedPanel` 占位（不丢 options）
+   - `apiClient`（mock/http）注入到 pinia 实例上  
+   - 面板类型由内置映射解析；渲染层对不支持类型会兜底 `UnsupportedPanel`（避免崩溃）
 3. **变量系统**（VariablesStore）  
    - 从 dashboard.variables 初始化 `values/options`
    - query-based variable 的 options 由 `api.variable.resolveOptions`（best-effort）
@@ -59,8 +66,8 @@
    - variable 变化：基于表达式依赖分析，仅刷新受影响 panel  
    - `QueryRunner`：并发限制、缓存、取消（AbortSignal）、in-flight 去重
 5. **面板渲染**  
-   - `panel.type` -> registry 查找对应渲染组件  
-   - 不存在：`UnsupportedPanel` 展示缺失插件 + 原始 options（可复制）
+   - `panel.type` -> 内置面板映射查找对应渲染组件  
+   - 不支持：`UnsupportedPanel` 展示类型 + 原始 options（可复制）
 
 这条链路是“超过 Grafana”的基础：因为你掌握了 **宿主/运行时**，可以把隔离、稳定性、可移植性做得比 Grafana 更极致。
 
@@ -76,13 +83,13 @@ Grafana 本质是产品，而你在做 SDK。你可以做到：
 - 宿主可控：宿主可完全控制 API 客户端、鉴权、网络策略、主题策略、全局埋点
 - 微前端友好：避免全局副作用（window 事件监听、全局 store 单例、全局 CSS 覆盖）
 
-### 2.2 JSON 可移植/可迁移：比 Grafana 更“稳”
+### 2.2 JSON 可移植：导入/导出可预测，比 Grafana 更“稳”
 
 目标不是兼容 Grafana JSON，而是：
 
-- 任何历史版本的 grafana-fast JSON 都能导入（schemaVersion + migration）
-- 缺插件时：不崩溃、不丢信息（UnsupportedPanel），未来安装插件自动恢复
-- 导出要可预测：导出永远是“当前 schema 的标准形态”，migration 有可解释的变更日志
+- 当前阶段不承诺“旧版本自动兼容”：不内置 migration；仅保留 `schemaVersion` 持久化字段为未来演进留口子
+- 导入/导出要可预测：同版本内 round-trip 不丢信息（保存/导出时序列化出一致 JSON）
+- 面板类型严格：未知 `panel.type` 会被校验拦截；渲染层仍提供 `UnsupportedPanel` 兜底避免崩溃
 
 ### 2.3 调试体验：把“查询与变量”变成一等公民（Grafana 反而不够产品化）
 
@@ -110,12 +117,12 @@ Grafana 在大盘（100+ panels）时也会吃力。你可以通过更彻底的�
 **目标**：任何重构都不再靠“手测碰运气”，而是有稳定的回归资产。
 
 - 建立 `packages/app` 的“能力验证矩阵”
-  - mock vs http（预留） vs prom-direct（预留）
+  - mock vs http（预留）
   - 变量联动 + 依赖刷新
-  - 缺插件 JSON 导入 -> 占位 -> 恢复
+  - JSON 导入/导出 round-trip（同版本不丢信息）
   - 100 panels 压测页（关键 KPI）
 - 建立最小自动化回归：
-  - unit：`migrateDashboard`、`interpolateExpr`、`extractVariableRefs`、`QueryRunner cacheKey`、`QueryScheduler deps`
+  - unit：`validateDashboardStrict`、`interpolateExpr`、`extractVariableRefs`、`QueryRunner cacheKey`、`QueryScheduler deps`
   - e2e（最小覆盖）：打开 dashboard -> 出图 -> 打开编辑器 -> 修改 -> 导出 -> 再导入
 - 工具链稳定：
   - 固化 Node 版本（建议加入 `.nvmrc` 或 `volta` 配置），避免开发者环境不一致导致构建失败
@@ -124,22 +131,19 @@ Grafana 在大盘（100+ panels）时也会吃力。你可以通过更彻底的�
 - 能在 CI/本地一键跑通类型检查 + 单测（即使不跑 Vite build，也要有可验证的核心逻辑测试）
 - 关键链路（导入/渲染/查询/编辑/导出）有自动化回归
 
-### Milestone B：Dashboard JSON 产品化（导入/导出/诊断/迁移）
+### Milestone B：Dashboard JSON 产品化（导入/导出/诊断）
 
 **目标**：让“复制粘贴 JSON”成为真正可靠的产品能力，而不只是 demo。
 
-- schemaVersion + migration 完整体系
-  - migration 具备可测试性与可解释性（每次迁移能输出变更摘要）
-  - 版本升级策略明确：新增字段、重命名字段、拆分字段、默认值补齐
+- schemaVersion（保留字段）
+  - 当前仅做持久化（不内置 migration/兼容）
+  - 未来如需演进 schema，再补 migration 框架（并配套回归样例与变更摘要）
 - JSON 校验与诊断（比 Grafana 更好用）
-  - 导入前预检：缺插件、未知字段、非法类型、变量未定义、datasourceRef 缺失
-  - 导入后报告：哪些字段被迁移、哪些被保留、哪些被降级
-- “缺插件恢复”
-  - 安装/注册某插件后，自动扫描 UnsupportedPanel 并恢复（不要求用户手动改 JSON）
+  - 导入前预检：未知字段、非法类型、变量未定义、datasourceRef 缺失
+  - 导入后报告：哪些字段不符合约束/被忽略（保证用户知道“导入后会发生什么”）
 
 **验收标准**：
-- 历史 v1/v2/v3… JSON 都能导入并展示（至少内部维护 3 个版本样例作为回归资产）
-- 缺插件 JSON 导入后信息不丢失，导出再导入仍可恢复
+- 同版本 dashboard JSON 可导入并展示；导出再导入结果一致（round-trip 可回归）
 
 ### Milestone C：变量系统升级为“可解释的模型”
 
@@ -181,7 +185,7 @@ Grafana 在大盘（100+ panels）时也会吃力。你可以通过更彻底的�
 
 ### Milestone E：插件生态（Panel + Transformations + Datasource）
 
-**目标**：实现“插件化不是堆功能”的长期可持续扩展。
+**目标**：实现“插件化不是堆功能”的长期可持续扩展（**后置/可选**）。
 
 - Panel 插件体系升级
   - 插件元信息：displayName、category、capabilities、schemaVersion、migrations
@@ -193,10 +197,10 @@ Grafana 在大盘（100+ panels）时也会吃力。你可以通过更彻底的�
   - worker 化执行（大盘性能关键）
 - Datasource 插件（长线）
   - contract 层保持稳定，上层用 capabilities 决定 UI 展示
-  - prom-direct / http / mock 的能力差异可被 UI 自动降级处理
+  - http / mock 的能力差异可被 UI 自动降级处理
 
 **验收标准**：
-- 缺插件不崩溃 + 可恢复（已具备雏形），并可扩展到 transformations/datasource
+- 插件/扩展能力可裁剪、可注入、可回归（不引入宿主心智负担）
 - transformations 能显著提升 stat/gauge/table 表现力（接近并可部分超越 Grafana）
 
 ## 4. AI 方向：要不要加？加什么？怎么加才不会“噱头化”
@@ -279,29 +283,28 @@ AI 一旦进入“可观测数据域”，会马上遇到企业级合规与安�
 
 ## 5. 风险清单（提前规避，才能跑得快）
 
-- **循环依赖风险**：`dashboard/panels/hooks/api/types` 的依赖方向必须持续保持（避免 runtime/import 混乱）
+- **循环依赖风险**：`dashboard/hooks/api/types` 的依赖方向必须持续保持（避免 runtime/import 混乱）
 - **全局副作用风险**：tooltip/keyboard/window event 必须严格 scoped（否则多实例会出诡异 bug）
 - **性能风险**：ECharts + 大盘 + transformations 如果不做 worker/分批渲染，很快会撞墙
 - **契约漂移风险**：后端接口变化会不断发生，contract 层必须稳定，变动尽量消化在 impl 层
-- **生态碎片风险**：插件化会导致 JSON 不通用；必须坚持“缺插件占位 + 可恢复 + 不丢信息”
+- **范围膨胀风险**：过早引入插件化/migration/复杂编辑器，会显著增加代码量与阅读负担（需明确 DoD 与回归资产）
 
 ## 6. 你要如何“超过 Grafana”（一句话的执行策略）
 
 不要试图在“面板种类数量”上短期超过 Grafana；而是用你的架构优势去赢：
 
-1) **把 JSON 可移植/可迁移做到极致**（缺插件也能导入且可恢复）  
+1) **把 JSON 可移植做到极致**（稳定导入/导出 + 严格校验 + schemaVersion 预留）  
 2) **把查询与变量的调试体验做到极致**（插值预览 + 查询 timeline + 依赖可视化）  
 3) **把可嵌入与多实例隔离做到极致**（宿主可控、无全局副作用、性能可治理）  
-4) 再逐步扩展 plugins/transforms/datasources，形成可持续生态
+4) 在可回归前提下逐步扩展 transformations/datasources（必要时再引入插件化）
 
 ---
 
 ## 附录：与现有文档的关系
 
 - 架构概览：`packages/docs/guide/architecture.md`
-- Dashboard JSON 与迁移：`packages/docs/guide/dashboard-json.md`
-- Panels 插件化：`packages/docs/guide/panels.md`
+- Dashboard JSON：`packages/docs/guide/dashboard-json.md`
 
 
 ## 个人总结
-+ 加入AI能力
+- 加入 AI 能力（可选）

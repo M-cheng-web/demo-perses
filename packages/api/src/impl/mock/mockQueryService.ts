@@ -6,7 +6,7 @@
  * - 同时提供 QueryBuilder 所需的 metrics/labels/value 列表能力
  */
 import type { QueryService } from '../../contracts';
-import type { CanonicalQuery, QueryContext, QueryResult, TimeSeriesData } from '@grafana-fast/types';
+import type { CanonicalQuery, QueryContext, QueryResult, TimeRange, TimeSeriesData } from '@grafana-fast/types';
 import { getDefaultDataByExpr } from './defaultDataPool';
 
 const mockMetrics = [
@@ -20,18 +20,57 @@ const mockMetrics = [
 ];
 
 const mockLabelKeys: Record<string, string[]> = {
-  up: ['job', 'instance'],
-  cpu_usage: ['cpu', 'instance'],
-  memory_usage: ['type', 'instance'],
-  http_requests_total: ['method', 'status', 'endpoint', 'instance', 'job'],
+  up: ['job', 'instance', 'cluster', 'namespace'],
+  cpu_usage: ['cpu', 'instance', 'cluster', 'namespace', 'service'],
+  memory_usage: ['type', 'instance', 'cluster', 'namespace', 'service'],
+  http_requests_total: ['method', 'status', 'endpoint', 'instance', 'job', 'cluster', 'namespace'],
 };
 
 const mockLabelValues: Record<string, Record<string, string[]>> = {
-  cpu_usage: { cpu: ['0', '1', '2', '3'], instance: ['server-1', 'server-2'] },
-  memory_usage: { type: ['used', 'cached', 'buffer'], instance: ['server-1'] },
-  up: { instance: ['server-1', 'server-2'], job: ['node-exporter'] },
-  http_requests_total: { method: ['GET', 'POST'], status: ['200', '500'], endpoint: ['/api', '/health'], instance: ['server-1'], job: ['api'] },
+  cpu_usage: {
+    cpu: ['0', '1', '2', '3'],
+    instance: ['server-1', 'server-2'],
+    cluster: ['prod-a', 'prod-b', 'staging'],
+    namespace: ['default', 'kube-system', 'monitoring'],
+    service: ['api', 'web', 'gateway'],
+  },
+  memory_usage: {
+    type: ['used', 'cached', 'buffer'],
+    instance: ['server-1', 'server-2'],
+    cluster: ['prod-a', 'prod-b'],
+    namespace: ['default', 'kube-system', 'monitoring'],
+    service: ['api', 'web', 'gateway'],
+  },
+  up: {
+    instance: ['server-1', 'server-2'],
+    job: ['node-exporter'],
+    cluster: ['prod-a', 'prod-b', 'staging'],
+    namespace: ['default', 'kube-system', 'monitoring'],
+  },
+  http_requests_total: {
+    method: ['GET', 'POST'],
+    status: ['200', '500'],
+    endpoint: ['/api', '/health'],
+    instance: ['server-1', 'server-2'],
+    job: ['api', 'web', 'gateway'],
+    cluster: ['prod-a', 'prod-b', 'staging'],
+    namespace: ['default', 'kube-system', 'monitoring'],
+  },
 };
+
+function parseLabelValuesExpr(expr: string): { metric: string; label: string } | null {
+  // Support a tiny subset of Grafana-like variable queries:
+  // - label_values(metric, label)
+  // - label_values(metric{...}, label)  (selectors are ignored in mock)
+  const text = String(expr ?? '').trim();
+  const m = text.match(/label_values\s*\(\s*([A-Za-z_:][A-Za-z0-9_:]*)(?:\s*\{[^}]*\})?\s*,\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)\s*$/);
+  if (!m) return null;
+  return { metric: m[1]!, label: m[2]! };
+}
+
+function getMockLabelValues(metric: string, labelKey: string): string[] {
+  return mockLabelValues[metric]?.[labelKey] ?? ['value1', 'value2', 'value3'];
+}
 
 export function createMockQueryService(): QueryService {
   return {
@@ -65,13 +104,21 @@ export function createMockQueryService(): QueryService {
     },
 
     async fetchLabelValues(metric: string, labelKey: string): Promise<string[]> {
-      return mockLabelValues[metric]?.[labelKey] ?? ['value1', 'value2', 'value3'];
+      return getMockLabelValues(metric, labelKey);
     },
 
-    async fetchVariableValues(expr: string): Promise<Array<{ text: string; value: string }>> {
-      const metric = expr.trim();
-      const values = (mockLabelValues[metric]?.instance ?? ['server-1', 'server-2']).map((v) => ({ text: v, value: v }));
-      return values;
+    async fetchVariableValues(expr: string, _timeRange: TimeRange): Promise<Array<{ text: string; value: string }>> {
+      const text = String(expr ?? '').trim();
+      const parsed = parseLabelValuesExpr(text);
+      if (parsed) {
+        const values = getMockLabelValues(parsed.metric, parsed.label);
+        return values.map((v) => ({ text: v, value: v }));
+      }
+
+      // Fallback: treat expr as a metric name and return its instance values (legacy behavior).
+      const metric = text;
+      const values = getMockLabelValues(metric, 'instance');
+      return values.map((v) => ({ text: v, value: v }));
     },
   };
 }

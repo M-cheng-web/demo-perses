@@ -11,13 +11,13 @@ import type { TimeRange } from './timeRange';
  */
 export interface Dashboard {
   /**
-   * Dashboard JSON schema 版本号（保留字段）
+   * Dashboard JSON schema 版本号（保留字段，当前仅做持久化）
    *
    * 说明：
-   * - 当前项目未上线阶段不提供内置 migration
-   * - 未来如需做“导入旧 JSON”的演进，可基于该字段实现迁移策略
+   * - 当前阶段不在前端内置 migration/兼容逻辑
+   * - 该字段会随 Dashboard JSON 一起保存/导出，供未来演进使用
    */
-  schemaVersion?: number;
+  schemaVersion: number;
   /** Dashboard ID */
   id: ID;
   /** Dashboard 名称 */
@@ -37,15 +37,6 @@ export interface Dashboard {
   /** 更新时间 */
   updatedAt: Timestamp;
 }
-
-/**
- * 当前 Dashboard JSON schema 版本号
- *
- * 说明：
- * - 用于“导入/导出 JSON”的一致性校验（不做 migration 时也建议保留）
- * - 当未来 schema 发生不兼容变更时，可以递增该值并实现迁移策略
- */
-export const CURRENT_DASHBOARD_SCHEMA_VERSION = 1 as const;
 
 /**
  * Dashboard 变量

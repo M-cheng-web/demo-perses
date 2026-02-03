@@ -10,7 +10,6 @@
 
   说明：
   - 本组件不做 schemaVersion migration（不修改/不迁移 JSON），但会输出更完整的“诊断报告”
-  - “缺插件”检查需要宿主传入 supportedPanelTypes（否则只能展示“面板类型统计”）
   - 外部只会拿到“最后一次通过校验的 JSON 文本”；草稿状态完全留在组件内部
 -->
 <template>
@@ -56,15 +55,6 @@
       show-icon
       message="JSON 合法，但不是 Dashboard JSON"
       description="需要包含 panelGroups 等字段。该内容不会同步到外部。"
-      style="margin-top: 10px"
-    />
-
-    <Alert
-      v-else-if="diagnostics.json.ok && diagnostics.looksLikeDashboard && diagnostics.schemaVersionOk === false"
-      type="error"
-      show-icon
-      message="Dashboard schemaVersion 不匹配"
-      :description="schemaVersionDescription"
       style="margin-top: 10px"
     />
 
@@ -147,14 +137,6 @@
        * - 设为 0 表示不限制（不推荐）
        */
       maxEditableChars?: number;
-      /**
-       * 可选：宿主已注册/支持的面板类型列表（用于“缺插件”诊断）
-       *
-       * 说明：
-       * - json-editor 不依赖 dashboard 的 panel registry；由宿主传入即可
-       * - 未传入时仍会展示“面板类型统计”，但不会判断是否缺插件
-       */
-      supportedPanelTypes?: string[];
     }>(),
     {
       modelValue: '',
@@ -165,7 +147,6 @@
       validate: undefined,
       validateDebounceMs: 0,
       maxEditableChars: 1_048_576,
-      supportedPanelTypes: undefined,
     }
   );
 
@@ -257,7 +238,7 @@
       validating.value = false;
 
       const d = diagnostics.value;
-      const ok = d.json.ok && d.looksLikeDashboard && d.schemaVersionOk !== false && validatorErrors.value.length === 0;
+      const ok = d.json.ok && d.looksLikeDashboard && validatorErrors.value.length === 0;
 
       // 外部校验结束后，如果此时内容仍然是当前 draft，且校验通过，则将其同步到外部
       if (ok && draftText.value === text && text !== (props.modelValue ?? '')) {
@@ -285,7 +266,7 @@
   const canSyncToOuter = computed(() => {
     if (validating.value) return false;
     const d = diagnostics.value;
-    return d.json.ok && d.looksLikeDashboard && d.schemaVersionOk !== false && validatorErrors.value.length === 0;
+    return d.json.ok && d.looksLikeDashboard && validatorErrors.value.length === 0;
   });
 
   const setDraft = (value: string) => {
@@ -302,7 +283,7 @@
 
     // 没有外部校验器时：可以在本次输入内直接决定是否同步（更跟手）
     if (!props.validate) {
-      const ok = d.json.ok && d.looksLikeDashboard && d.schemaVersionOk !== false;
+      const ok = d.json.ok && d.looksLikeDashboard;
       if (ok && value !== (props.modelValue ?? '')) emit('update:modelValue', value);
       emit('validate', ok);
       return;
@@ -327,32 +308,6 @@
     return entries.map(([type, count]) => `${type}：${count}`);
   });
 
-  const missingPluginLines = computed(() => {
-    const d = diagnostics.value;
-    const counts = d.panelTypeCounts;
-    const supported = (props.supportedPanelTypes ?? []).map((s) => String(s).trim()).filter(Boolean);
-    if (!d.looksLikeDashboard || !counts || supported.length === 0) return [];
-
-    const supportedSet = new Set(supported);
-    const missing = Object.entries(counts)
-      .filter(([type, count]) => typeof type === 'string' && type.trim() && Number(count) > 0 && !supportedSet.has(type))
-      .sort((a, b) => Number(b[1]) - Number(a[1]) || String(a[0]).localeCompare(String(b[0])));
-    if (missing.length === 0) return [];
-
-    const head = missing.map(([type, count]) => `缺少插件：${type}（${count}）`);
-    const supportHint =
-      supported.length > 0
-        ? `运行时已注册面板类型：${supported.length} 种（示例：${supported.slice(0, 8).join(', ')}${supported.length > 8 ? ' ...' : ''}）`
-        : '';
-    return supportHint ? [...head, supportHint] : head;
-  });
-
-  const schemaVersionDescription = computed(() => {
-    const d = diagnostics.value;
-    const base = d.schemaVersionError || 'schemaVersion 不匹配。该内容不会同步到外部。';
-    return `${base} 当前版本不提供自动迁移/降级，请在外部完成迁移后重新导入。`;
-  });
-
   const reportSections = computed(() => {
     const d = diagnostics.value;
     if (!d.json.ok) return [];
@@ -362,10 +317,8 @@
 
     if (summaryLines.value.length > 0) sections.push({ title: '摘要', lines: summaryLines.value });
     if (panelTypeLines.value.length > 0) sections.push({ title: '面板类型统计', lines: panelTypeLines.value });
-    if (missingPluginLines.value.length > 0) sections.push({ title: '缺插件', lines: missingPluginLines.value });
 
     const riskLines: string[] = [];
-    if (d.schemaVersionOk === false) riskLines.push('schemaVersion 不匹配：当前版本不提供自动迁移/降级（需要外部迁移后再导入）');
     if (Array.isArray(d.issues) && d.issues.length > 0) riskLines.push(...d.issues);
     if (isTooLargeToEdit.value) riskLines.push('内容过大：已自动切换为只读模式（仍支持查看/复制/校验/应用）');
 

@@ -1,10 +1,9 @@
 <!--
-  文件说明：UnsupportedPanel（缺失插件占位面板）
+  文件说明：UnsupportedPanel（不支持的面板类型占位面板）
 
   目标：
-  - 当 dashboard JSON 中出现未注册的 panel.type 时，不丢信息
-  - 用占位 UI 提示“缺少插件：xxx”，并展示原始 options JSON（可复制）
-  - 保留在 dashboard 结构中，未来注册对应插件后可恢复
+  - 当 dashboard JSON 中出现不支持的 panel.type 时，不丢信息
+  - 用占位 UI 展示类型与原始 options JSON（可复制），避免渲染阶段崩溃
 -->
 <template>
   <div :class="bem()">
@@ -12,8 +11,8 @@
       <Alert
         type="warning"
         show-icon
-        :message="`缺少插件：${missingType}`"
-        description="当前环境未注册该面板类型。面板数据已保留，待安装/注册对应插件后可恢复。"
+        :message="`不支持的面板类型：${panelType}`"
+        description="当前环境不支持该面板类型。面板配置已保留，请检查数据来源或切换为受支持的类型。"
       />
     </div>
 
@@ -21,7 +20,7 @@
       <div :class="bem('row')">
         <div :class="bem('label')">面板类型</div>
         <div :class="bem('value')">
-          <code>{{ missingType }}</code>
+          <code>{{ panelType }}</code>
         </div>
       </div>
 
@@ -48,7 +47,7 @@
     panel: Panel;
   }>();
 
-  const missingType = computed(() => props.panel.type || '(未知)');
+  const panelType = computed(() => props.panel.type || '(未知)');
   const optionsJson = computed(() => {
     try {
       return JSON.stringify(props.panel.options ?? {}, null, 2);

@@ -114,7 +114,6 @@
           v-model="dashboardJson"
           :read-only="jsonModalMode === 'view'"
           :max-editable-chars="MAX_EDITABLE_DASHBOARD_JSON_CHARS"
-          :supported-panel-types="supportedPanelTypes"
           :validate="jsonModalMode === 'edit' ? validateDashboardStrict : undefined"
           @validate="handleJsonValidate"
         />
@@ -168,7 +167,6 @@
   import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
   import { DashboardJsonEditor } from '@grafana-fast/json-editor';
   import type { Dashboard } from '@grafana-fast/types';
-  import { getBuiltInPanelRegistry } from '/#/runtime/panels';
   import { usePanelGroupPagination } from '/#/composables/usePanelGroupPagination';
 
   const [_, bem] = createNamespace('dashboard');
@@ -818,11 +816,6 @@
   const dashboardJsonEditorRef = ref<null | { getDraftText: () => string; getDashboard: () => Dashboard }>(null);
   const jsonFileInputRef = ref<HTMLInputElement>();
 
-  const supportedPanelTypes = getBuiltInPanelRegistry()
-    .list()
-    .map((p) => p.type)
-    .filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
-
   const lockScrollEl = computed(() => contentEl.value ?? rootEl.value ?? null);
   const lockScrollEnabled = computed(() => lockScrollEl.value != null);
 
@@ -866,7 +859,7 @@
 
   const openJsonModal = (mode: 'view' | 'edit' = 'view') => {
     if (isBooting.value) return;
-    const dash = currentDashboard.value;
+    const dash = dashboardStore.getPersistableDashboardSnapshot();
     if (!dash) return;
     jsonModalMode.value = isReadOnly.value && mode === 'edit' ? 'view' : mode;
     jsonModalVisible.value = true;
@@ -963,7 +956,7 @@
     // JSON 导入/导出（导出可无界面；导入/查看/应用依赖工具条）
     exportJson: () => {
       if (isBooting.value) return;
-      const dash = dashboardStore.currentDashboard;
+      const dash = dashboardStore.getPersistableDashboardSnapshot();
       if (!dash) {
         message.error('没有可导出的 Dashboard');
         return;

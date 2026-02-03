@@ -16,7 +16,7 @@ export * from './query';
 export * from './queryModel';
 // 图表通用配置：axis/legend/format/threshold 等
 export * from './chart';
-// 面板定义：Panel/PanelOptions/PanelType
+// 面板定义：Panel/PanelOptions/CorePanelType
 export * from './panel';
 // 布局：PanelLayout 等
 export * from './layout';

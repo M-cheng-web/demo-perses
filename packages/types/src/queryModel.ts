@@ -10,7 +10,7 @@ import type { ID } from './common';
 
 /**
  * Datasource 轻量引用（用于 Dashboard JSON / 查询存储）
- * - uid: 用于唯一定位 datasource（mock/http/prom-direct 均可复用）
+ * - uid: 用于唯一定位 datasource（mock/http 均可复用）
  * - type: datasource 类型（prometheus / influxdb / elasticsearch...）
  */
 export interface DatasourceRef {

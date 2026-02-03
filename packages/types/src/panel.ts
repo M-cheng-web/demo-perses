@@ -17,7 +17,7 @@ export interface Panel {
   /** 面板描述 */
   description?: string;
   /** 面板类型 */
-  type: PanelType;
+  type: CorePanelType;
   /** 查询列表 */
   queries: CanonicalQuery[];
   /** 面板选项 */
@@ -31,16 +31,10 @@ export interface Panel {
 }
 
 /**
- * 面板类型
- */
-export type PanelType = string;
-
-/**
  * 内置面板类型（Core）
  *
  * 说明：
- * - 这些类型由仓库内置的 panels 子包提供实现
- * - 插件化后，外部面板也可以注册任意 `PanelType`（字符串）
+ * - 当前仓库仅支持这些固定类型
  */
 export type CorePanelType = 'timeseries' | 'pie' | 'bar' | 'table' | 'stat' | 'gauge' | 'heatmap';
 

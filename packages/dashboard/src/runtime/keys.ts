@@ -2,7 +2,7 @@
  * Dashboard Runtime 注入 Key 定义（依赖注入的“协议”）
  *
  * 这些 key 用于在 Dashboard 组件树中注入/获取运行时依赖：
- * - API Client：数据访问层（mock/http/prometheus-direct），屏蔽后端变化
+ * - API Client：数据访问层（mock/http），屏蔽后端变化
  * - RuntimeContext：当前 Dashboard 实例的运行时上下文（多实例隔离/事件作用域）
  *
  * 注意：

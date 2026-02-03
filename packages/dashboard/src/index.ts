@@ -30,6 +30,7 @@ export * from '/#/runtime/piniaAttachments';
  */
 export * from '/#/stores/dashboard';
 export * from '/#/stores/timeRange';
+export * from '/#/stores/variables';
 export * from '/#/stores/editor';
 export * from '/#/stores/tooltip';
 

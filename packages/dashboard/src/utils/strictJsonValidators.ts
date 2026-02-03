@@ -9,7 +9,7 @@
  * - 给 dashboard 内的所有 JSON 编辑入口提供统一的“业务校验钩子”
  * - 当用户输入了不符合当前业务约束的内容时：
  *   1) 编辑器内部展示错误
- *   2) 不会把内容同步到外部状态（避免面板预览出现 UnsupportedPanel/缺少插件 等提示）
+ *   2) 不会把内容同步到外部状态（避免面板预览出现 UnsupportedPanel/不支持类型 等提示）
  *
  * 使用位置（当前仓库）：
  * - DashboardToolbar 的 DashboardJsonEditor（导入/编辑整个 dashboard JSON）
@@ -19,15 +19,11 @@
 
 import type { JsonTextValidator } from '@grafana-fast/json-editor';
 import type { Dashboard, DashboardVariable } from '@grafana-fast/types';
-import { CURRENT_DASHBOARD_SCHEMA_VERSION } from '@grafana-fast/types';
 import { isPlainObject } from '@grafana-fast/utils';
-import { getBuiltInPanelRegistry } from '/#/runtime/panels';
+import { isBuiltInPanelType, listBuiltInPanelTypes } from '/#/panels/builtInPanels';
 
 function supportedPanelTypes(): string[] {
-  return getBuiltInPanelRegistry()
-    .list()
-    .map((p) => p.type)
-    .filter((t) => typeof t === 'string' && t.length > 0);
+  return listBuiltInPanelTypes();
 }
 
 function validatePanelObject(panel: unknown, path: string): string[] {
@@ -43,8 +39,7 @@ function validatePanelObject(panel: unknown, path: string): string[] {
     return errors;
   }
 
-  const registry = getBuiltInPanelRegistry();
-  if (!registry.has(type)) {
+  if (!isBuiltInPanelType(type)) {
     const allowed = supportedPanelTypes().join(', ');
     errors.push(`${path}.type 不支持：${type}（可选：${allowed}）`);
   }
@@ -84,15 +79,16 @@ function validateVariables(variables: unknown, path: string): string[] {
     if (typeof v.name !== 'string' || !v.name.trim()) errors.push(`${p}.name 必填`);
     if (typeof v.label !== 'string') errors.push(`${p}.label 必须是 string`);
     if (typeof v.type !== 'string' || !v.type.trim()) errors.push(`${p}.type 必填`);
-    if (!Array.isArray((v as any).options)) errors.push(`${p}.options 必须是数组`);
+    const options = (v as any).options;
+    if (options != null && !Array.isArray(options)) errors.push(`${p}.options 必须是数组`);
 
     // current 的类型取决于 multi
     const multi = !!(v as any).multi;
     const current = (v as any).current;
     if (multi) {
-      if (!Array.isArray(current)) errors.push(`${p}.current 在 multi=true 时必须是数组`);
+      if (!(Array.isArray(current) || typeof current === 'string')) errors.push(`${p}.current 在 multi=true 时必须是 string 或 string[]`);
     } else {
-      if (typeof current !== 'string') errors.push(`${p}.current 在 multi=false 时必须是 string`);
+      if (!(typeof current === 'string' || Array.isArray(current))) errors.push(`${p}.current 在 multi=false 时必须是 string 或 string[]`);
     }
 
     if (typeof v.name === 'string' && v.name.trim()) {
@@ -122,8 +118,8 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
 
   // 基础字段校验：避免导入后出现“看似成功，但运行时异常/状态不一致”
   const schemaVersion = (dashboard as any).schemaVersion;
-  if (schemaVersion !== CURRENT_DASHBOARD_SCHEMA_VERSION) {
-    errors.push(`dashboard.schemaVersion 必须为 ${CURRENT_DASHBOARD_SCHEMA_VERSION}（当前为 ${schemaVersion ?? 'undefined'}）`);
+  if (typeof schemaVersion !== 'number' || Number.isNaN(schemaVersion)) {
+    errors.push(`dashboard.schemaVersion 必填且必须是 number（当前为 ${schemaVersion ?? 'undefined'}）`);
   }
 
   if (typeof (dashboard as any).name !== 'string' || !(dashboard as any).name.trim()) {
@@ -142,7 +138,7 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
     return errors;
   }
 
-  // 面板类型校验：保证不会出现 “缺少插件：xxx” 这类 UI 警告
+  // 面板类型校验：保证不会出现 “不支持的面板类型：xxx” 这类 UI 警告
   (dashboard.panelGroups ?? []).forEach((g: any, gi: number) => {
     const base = `panelGroups[${gi}]`;
     if (!g || typeof g !== 'object') {

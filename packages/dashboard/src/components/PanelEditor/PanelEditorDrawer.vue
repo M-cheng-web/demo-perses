@@ -118,33 +118,17 @@
   import { useDashboardStore, useEditorStore } from '/#/stores';
   import { useDashboardRuntime } from '/#/runtime/useInjected';
   import { createPrefixedId, debounceCancellable, deepClone, createNamespace } from '/#/utils';
-  import { PanelType } from '/#/enums/panelType';
-  import { getBuiltInPanelRegistry } from '/#/runtime/panels';
-  import TimeSeriesChartStyles from './ChartStyles/TimeSeriesChartStyles.vue';
-  import BarChartStyles from './ChartStyles/BarChartStyles.vue';
-  import PieChartStyles from './ChartStyles/PieChartStyles.vue';
-  import GaugeChartStyles from './ChartStyles/GaugeChartStyles.vue';
-  import HeatmapChartStyles from './ChartStyles/HeatmapChartStyles.vue';
-  import StatPanelStyles from './ChartStyles/StatPanelStyles.vue';
-  import TableChartStyles from './ChartStyles/TableChartStyles.vue';
-  import type { Panel } from '@grafana-fast/types';
+  import { getBuiltInPanelDefaultOptions, getBuiltInPanelStyleComponent, getBuiltInPanelTypeOptions } from '/#/panels/builtInPanels';
+  import type { CanonicalQuery, Panel } from '@grafana-fast/types';
   import { JsonEditorLite, analyzeJsonText } from '@grafana-fast/json-editor';
   import { validatePanelStrict } from '/#/utils/strictJsonValidators';
   import PanelPreview from './PanelPreview.vue';
   import DataQueryTab from './DataQueryTab.vue';
-  import { getDefaultTimeSeriesOptions } from './ChartStylesDefaultOptions/timeSeriesDefaultOptions';
-  import { getDefaultBarChartOptions } from './ChartStylesDefaultOptions/barChartDefaultOptions';
-  import { getDefaultPieChartOptions } from './ChartStylesDefaultOptions/pieChartDefaultOptions';
-  import { getDefaultGaugeChartOptions } from './ChartStylesDefaultOptions/gaugeChartDefaultOptions';
-  import { getDefaultStatPanelOptions } from './ChartStylesDefaultOptions/statPanelDefaultOptions';
-  import { getDefaultTableChartOptions } from './ChartStylesDefaultOptions/tableChartDefaultOptions';
-  import { getDefaultHeatmapChartOptions } from './ChartStylesDefaultOptions/heatmapChartDefaultOptions';
 
   const [_, bem] = createNamespace('panel-editor-drawer');
 
   const dashboardStore = useDashboardStore();
   const editorStore = useEditorStore();
-  const panelRegistry = getBuiltInPanelRegistry();
 
   const { isDrawerOpen, editingPanel, editingMode, targetGroupId, originalPanelId } = storeToRefs(editorStore);
   const { currentDashboard, isReadOnly } = storeToRefs(dashboardStore);
@@ -158,13 +142,11 @@
   const isJsonValid = ref(true);
   const selectedGroupId = ref<string>('');
   const panelPreviewRef = ref<InstanceType<typeof PanelPreview>>();
-  const dataQueryTabRef = ref<
-    | null
-    | (InstanceType<typeof DataQueryTab> & {
-        validateAndGetQueriesForSave: () => { ok: boolean; errors: Array<{ refId: string; message: string }>; queries: any[] };
-        validateAndGetQueriesForExecute: () => { ok: boolean; errors: Array<{ refId: string; message: string }>; queries: any[] };
-      })
-  >(null);
+  type DataQueryTabExpose = InstanceType<typeof DataQueryTab> & {
+    validateAndGetQueriesForSave: () => { ok: boolean; errors: Array<{ refId: string; message: string }>; queries: CanonicalQuery[] };
+    validateAndGetQueriesForExecute: () => { ok: boolean; errors: Array<{ refId: string; message: string }>; queries: CanonicalQuery[] };
+  };
+  const dataQueryTabRef = ref<DataQueryTabExpose | null>(null);
   const jsonDraft = ref<string>('');
 
   // 获取面板组列表
@@ -176,41 +158,10 @@
     }));
   });
 
-  // 面板类型选项（当前阶段：来自内置 panels 列表）
-  const panelTypeOptions = computed(() => {
-    const plugins = panelRegistry.list();
-    return plugins.map((p) => ({ label: p.displayName, value: p.type }));
-  });
+  // 面板类型选项（当前阶段：仅支持内置类型）
+  const panelTypeOptions = computed(() => getBuiltInPanelTypeOptions());
 
-  // 样式配置组件映射
-  const styleComponentMap: Record<string, any> = {
-    [PanelType.TIMESERIES]: TimeSeriesChartStyles,
-    [PanelType.BAR]: BarChartStyles,
-    [PanelType.PIE]: PieChartStyles,
-    [PanelType.STAT]: StatPanelStyles,
-    [PanelType.TABLE]: TableChartStyles,
-    [PanelType.GAUGE]: GaugeChartStyles,
-    [PanelType.HEATMAP]: HeatmapChartStyles,
-  };
-
-  // 根据面板类型获取样式配置组件
-  const styleComponent = computed(() => styleComponentMap[formData.type]);
-
-  // 根据面板类型获取默认配置
-  const getDefaultOptionsByType = (type: string): any => {
-    const defaultOptionsMap: Record<string, any> = {
-      [PanelType.TIMESERIES]: getDefaultTimeSeriesOptions,
-      [PanelType.BAR]: getDefaultBarChartOptions,
-      [PanelType.PIE]: getDefaultPieChartOptions,
-      [PanelType.STAT]: getDefaultStatPanelOptions,
-      [PanelType.TABLE]: getDefaultTableChartOptions,
-      [PanelType.GAUGE]: getDefaultGaugeChartOptions,
-      [PanelType.HEATMAP]: getDefaultHeatmapChartOptions,
-    };
-
-    const getDefaultFn = defaultOptionsMap[type];
-    return getDefaultFn ? getDefaultFn() : {};
-  };
+  const getDefaultOptionsByType = (type: string): any => getBuiltInPanelDefaultOptions(type);
 
   // 表单数据
   const formData = reactive<any>({
@@ -219,10 +170,11 @@
     description: '',
     type: 'timeseries' as any,
     queries: [],
-    options: {
-      ...deepClone(getDefaultTimeSeriesOptions()),
-    },
+    options: deepClone(getDefaultOptionsByType('timeseries')),
   });
+
+  // 根据面板类型获取样式配置组件（仅内置类型）
+  const styleComponent = computed(() => getBuiltInPanelStyleComponent(formData.type));
 
   const handleJsonValidate = (isValid: boolean) => {
     isJsonValid.value = isValid;
@@ -292,7 +244,7 @@
   );
 
   // 处理查询更新
-  const handleQueriesUpdate = (queries: any[]) => {
+  const handleQueriesUpdate = (queries: CanonicalQuery[]) => {
     formData.queries = queries;
   };
 
@@ -333,7 +285,7 @@
     }
 
     // 更新 formData.queries 用于查询执行（不会自动请求；仅供预览组件读取）
-    formData.queries = queries as any;
+    formData.queries = queries;
 
     // 执行查询并更新预览
     message.loading({ content: '正在执行查询...', key: 'executeQuery', duration: 0 });
@@ -402,7 +354,7 @@
       }
       return;
     }
-    formData.queries = (qres.queries ?? []) as any;
+    formData.queries = qres.queries ?? [];
 
     if (formData.queries.length === 0) {
       message.warning('建议至少添加一个查询');

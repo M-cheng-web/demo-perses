@@ -4,5 +4,6 @@
 
 export * from './dashboard';
 export * from './timeRange';
+export * from './variables';
 export * from './editor';
 export * from './tooltip';

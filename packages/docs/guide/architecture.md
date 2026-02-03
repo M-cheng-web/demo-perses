@@ -13,14 +13,14 @@
 
 `types` → `api` → `dashboard` → `hooks`
 
-当前阶段 dashboard 内置全部 Panel（不提供对外的 panel 插件筛选/裁剪 API）。
+当前阶段 dashboard 仅支持内置的固定 Panel 类型（不提供对外的筛选/裁剪/插件化能力）。
 
 ## 运行时注入（契约层）
 
 Dashboard 运行时通过注入拿到：
 
-- `apiClient`：由 `@grafana-fast/api` 提供，默认 mock；后续可切换 `http` / `prometheus-direct`
-- 当前阶段不注入 `panelRegistry`：dashboard 内置全部 Panel；未识别的 `panel.type` 会在渲染层兜底为 `UnsupportedPanel`（防止崩溃）
+- `apiClient`：由 `@grafana-fast/api` 提供，默认 mock；后续可切换 `http`
+- 渲染层对未知的 `panel.type` 会使用占位面板兜底（避免崩溃）
 
 ## 多实例隔离
 

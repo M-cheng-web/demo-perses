@@ -3,7 +3,7 @@
  *
  * 分层说明：
  * - contracts：接口契约层（稳定对外暴露面）
- * - impl：实现层（mock/http/prometheus-direct）
+ * - impl：实现层（mock/http）
  *
  * 推荐用法：
  * - UI/核心包只依赖 contracts 暴露的能力（通过 createXxxApiClient() 得到 client）
@@ -12,4 +12,3 @@
 export * from './contracts';
 export * from './impl/mock';
 export * from './impl/http';
-export * from './impl/prometheusDirect';

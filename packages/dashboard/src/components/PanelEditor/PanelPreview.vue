@@ -15,11 +15,12 @@
   import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
   import { Empty } from '@grafana-fast/component';
   import type { Panel, QueryResult, QueryContext } from '@grafana-fast/types';
-  import { useTimeRangeStore } from '/#/stores';
+  import { useTimeRangeStore, useVariablesStore } from '/#/stores';
   import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
   import { QueryRunner } from '/#/query/queryRunner';
-  import { getBuiltInPanelRegistry } from '/#/runtime/panels';
+  import { interpolateExpr } from '/#/query/interpolate';
   import UnsupportedPanel from '/#/components/Panel/UnsupportedPanel.vue';
+  import { getBuiltInPanelComponent } from '/#/panels/builtInPanels';
   import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('panel-preview');
@@ -37,15 +38,14 @@
   );
 
   const timeRangeStore = useTimeRangeStore();
-  const registry = getBuiltInPanelRegistry();
+  const variablesStore = useVariablesStore();
   const queryResults = ref<QueryResult[]>([]);
   const isLoading = ref(false);
   let abortController: AbortController | null = null;
 
   // 根据面板类型选择对应的图表组件
   const chartComponent = computed(() => {
-    const plugin = registry.get(props.panel.type);
-    return plugin?.component ?? UnsupportedPanel;
+    return getBuiltInPanelComponent(props.panel.type) ?? UnsupportedPanel;
   });
 
   // 执行查询（使用和外部一样的查询逻辑，确保数据一致）
@@ -65,7 +65,14 @@
       const api = getPiniaApiClient();
       const runner = new QueryRunner(api, { maxConcurrency: 4, cacheTtlMs: 0 });
 
-      const results = await runner.executeQueries(props.panel.queries, context, { signal: abortController.signal });
+      const values = (variablesStore.state?.values ?? {}) as Record<string, string | string[]>;
+      const resolvedQueries = (props.panel.queries ?? []).map((q) => {
+        const rawExpr = String(q.expr ?? '');
+        const expr = interpolateExpr(rawExpr, values, { multiFormat: 'regex', unknown: 'keep' });
+        return expr === rawExpr ? q : { ...q, expr };
+      });
+
+      const results = await runner.executeQueries(resolvedQueries, context, { signal: abortController.signal });
 
       queryResults.value = results;
     } catch (error) {
@@ -112,6 +119,16 @@
       }
     },
     { deep: true }
+  );
+
+  // 监听变量变化：预览应与实际运行时一致（变量影响 expr 插值）
+  watch(
+    () => variablesStore.valuesGeneration,
+    () => {
+      if (props.autoExecute) {
+        executeQueriesInternal();
+      }
+    }
   );
 
   onMounted(() => {

@@ -10,7 +10,7 @@
  */
 import { createApp, defineComponent, h, onMounted, onUnmounted, ref, toRaw, watch, type App, type Ref } from 'vue';
 import { createPinia } from '@grafana-fast/store';
-import type { Dashboard, Panel, PanelGroup, PanelLayout, ID, TimeRange } from '@grafana-fast/types';
+import type { Dashboard, Panel, PanelGroup, PanelLayout, ID, TimeRange, VariablesState } from '@grafana-fast/types';
 import {
   DashboardView,
   disposePiniaQueryScheduler,
@@ -21,6 +21,7 @@ import {
   useDashboardStore,
   useTimeRangeStore,
   useTooltipStore,
+  useVariablesStore,
   type DashboardTheme,
   type DashboardThemePreference,
   type MousePosition,
@@ -28,7 +29,6 @@ import {
 import {
   createHttpApiClient,
   createMockApiClient,
-  createPrometheusDirectApiClient,
   HttpApiEndpointKey,
   DEFAULT_HTTP_API_ENDPOINTS,
   type ApiImplementationKind,
@@ -74,7 +74,7 @@ export interface DashboardSdkOptions {
    *
    * 说明：
    * - 在后端接口未就绪前，默认走 mock 数据，保证前端开发不被阻塞
-   * - `http` / `prometheus-direct` 先预留入口：即便内部实现不同，调用层的方法名保持稳定
+   * - `http` 预留入口：即便内部实现不同，调用层的方法名保持稳定
    */
   apiKind?: ApiImplementationKind;
   /**
@@ -171,6 +171,14 @@ export interface DashboardSdkStateSnapshot {
   viewPanelId: { groupId: ID; panelId: ID } | null;
   /** Dashboard 摘要信息（不包含重的 JSON 内容）。 */
   dashboard: DashboardSdkDashboardSummary | null;
+  /**
+   * variables 值变化代际（单调递增）
+   *
+   * 用途：
+   * - 让宿主侧无需 deep-watch variables/options 大对象，就能知道“变量值是否变化”
+   * - 宿主若确需全量变量状态，可在检测到该值变化后再调用 `getVariablesSnapshot()`
+   */
+  variablesRevision: number;
   /**
    * dashboard 内容变更代际（单调递增）
    *
@@ -296,6 +304,13 @@ export interface DashboardSdkActions {
   /** 设置全局只读模式（能力开关） */
   setReadOnly: (readOnly: boolean) => void;
 
+  /** 设置单个变量值（会触发相关面板刷新） */
+  setVariableValue: (name: string, value: string | string[]) => void;
+  /** 批量设置变量值（会触发相关面板刷新） */
+  setVariableValues: (values: Record<string, string | string[]>) => void;
+  /** 刷新变量 options（query 型变量） */
+  refreshVariableOptions: () => void;
+
   /** QueryScheduler 监控快照（稳定数据结构，不暴露 scheduler 实例） */
   getQuerySchedulerSnapshot: () => DashboardQuerySchedulerSnapshot;
   /** 刷新当前可视区域（viewport + overscan） */
@@ -343,6 +358,8 @@ export interface UseDashboardSdkResult {
   getState: () => DashboardSdkStateSnapshot;
   /** 获取当前 dashboard JSON 的深拷贝（可能很大，建议按需调用）。 */
   getDashboardSnapshot: () => Dashboard | null;
+  /** 获取当前 variables 运行时状态快照（可被外部安全修改，不会影响内部）。 */
+  getVariablesSnapshot: () => VariablesState;
   /** 获取指定面板组的深拷贝快照。 */
   getPanelGroupSnapshot: (id: ID) => PanelGroup | null;
   /** 获取指定面板的深拷贝快照。 */
@@ -374,12 +391,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
 
   // 解析 apiClient：默认使用 mock（后端接口未就绪时不阻塞前端）
   const resolvedApiClient: GrafanaFastApiClient =
-    options.apiClient ??
-    (options.apiKind === 'http'
-      ? createHttpApiClient({ apiConfig: options.apiConfig })
-      : options.apiKind === 'prometheus-direct'
-        ? createPrometheusDirectApiClient({ apiConfig: options.apiConfig })
-        : createMockApiClient());
+    options.apiClient ?? (options.apiKind === 'http' ? createHttpApiClient({ apiConfig: options.apiConfig }) : createMockApiClient());
 
   // 把 runtime 依赖挂到 pinia 实例上，让 dashboard 内部 store 可以在“无全局单例”的情况下获取到 apiClient
   setPiniaApiClient(pinia, resolvedApiClient);
@@ -387,6 +399,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const dashboardStore = useDashboardStore(pinia);
   const timeRangeStore = useTimeRangeStore(pinia);
   const tooltipStore = useTooltipStore(pinia);
+  const variablesStore = useVariablesStore(pinia);
 
   const containerSize = ref({ width: 0, height: 0 });
   const ready = ref(false);
@@ -457,14 +470,23 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       timeRange: timeRange as TimeRange,
       viewPanelId,
       dashboard: getDashboardSummary(),
+      variablesRevision: Number(variablesStore.valuesGeneration ?? 0) || 0,
       dashboardRevision: getDashboardRevision(),
     };
   };
 
   const getDashboardSnapshot = (): Dashboard | null => {
-    const dash = dashboardStore.currentDashboard;
-    if (!dash) return null;
-    return deepCloneStructured(toRaw(dash));
+    const snap = dashboardStore.getPersistableDashboardSnapshot?.() ?? dashboardStore.currentDashboard;
+    if (!snap) return null;
+    return deepCloneStructured(toRaw(snap));
+  };
+
+  const getVariablesSnapshot = (): VariablesState => {
+    try {
+      return deepCloneStructured(toRaw(variablesStore.state)) as VariablesState;
+    } catch {
+      return { values: {}, options: {}, lastUpdatedAt: Date.now() };
+    }
   };
 
   const getPanelGroupSnapshot = (id: ID): PanelGroup | null => {
@@ -502,10 +524,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     return String(a.id) === String(b.id) && a.name === b.name && a.groupCount === b.groupCount && a.panelCount === b.panelCount;
   };
 
-  const computeChangedKeys = (
-    prev: DashboardSdkStateSnapshot | null,
-    next: DashboardSdkStateSnapshot
-  ): Array<keyof DashboardSdkStateSnapshot> => {
+  const computeChangedKeys = (prev: DashboardSdkStateSnapshot | null, next: DashboardSdkStateSnapshot): Array<keyof DashboardSdkStateSnapshot> => {
     if (!prev) return Object.keys(next) as Array<keyof DashboardSdkStateSnapshot>;
 
     const changed: Array<keyof DashboardSdkStateSnapshot> = [];
@@ -530,6 +549,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     mark('timeRange', isSameTimeRange(prev.timeRange, next.timeRange));
     mark('viewPanelId', isSameViewPanelId(prev.viewPanelId, next.viewPanelId));
     mark('dashboard', isSameDashboardSummary(prev.dashboard, next.dashboard));
+    mark('variablesRevision', prev.variablesRevision === next.variablesRevision);
     mark('dashboardRevision', prev.dashboardRevision === next.dashboardRevision);
 
     return changed;
@@ -688,6 +708,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       () => (dashboardStore as any).viewPanelId,
       () => timeRangeStore.timeRange.from,
       () => timeRangeStore.timeRange.to,
+      () => variablesStore.valuesGeneration,
       () => theme.value,
       () => themePreference.value,
       () => getDashboardRevision(),
@@ -787,6 +808,30 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       scheduleChange();
     },
 
+    setVariableValue: (name: string, value: string | string[]) => {
+      try {
+        variablesStore.setValue(name, value);
+        scheduleChange();
+      } catch (error) {
+        emitError(error);
+      }
+    },
+    setVariableValues: (values: Record<string, string | string[]>) => {
+      try {
+        variablesStore.setValues(values);
+        scheduleChange();
+      } catch (error) {
+        emitError(error);
+      }
+    },
+    refreshVariableOptions: () => {
+      try {
+        void variablesStore.resolveOptions();
+      } catch (error) {
+        emitError(error);
+      }
+    },
+
     // QueryScheduler（仅当前 SDK 实例可见）
     getQuerySchedulerSnapshot: () => {
       const empty = (): DashboardQuerySchedulerSnapshot => ({
@@ -805,7 +850,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
 
       try {
         const scheduler = getPiniaQueryScheduler(pinia) as any;
-        const snap = scheduler?.getDebugSnapshot ? scheduler.getDebugSnapshot() : scheduler?.debug?.value ?? null;
+        const snap = scheduler?.getDebugSnapshot ? scheduler.getDebugSnapshot() : (scheduler?.debug?.value ?? null);
         if (!snap) return empty();
         return deepCloneStructured(toRaw(snap)) as DashboardQuerySchedulerSnapshot;
       } catch (error) {
@@ -853,6 +898,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     off: emitter.off,
     getState,
     getDashboardSnapshot,
+    getVariablesSnapshot,
     getPanelGroupSnapshot,
     getPanelSnapshot,
     getApiConfig: () => deepCloneStructured(resolvedApiConfig),
