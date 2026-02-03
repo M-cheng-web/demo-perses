@@ -315,8 +315,9 @@
 <style scoped>
   .dp-metrics-modal__search-filters {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 16px;
+    align-items: center;
   }
 
   .dp-metrics-modal__search-input {
@@ -324,7 +325,7 @@
   }
 
   .dp-metrics-modal__table {
-    margin-top: 16px;
+    margin-top: 12px;
   }
 
   .dp-metrics-modal__metric-name {

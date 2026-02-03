@@ -1,4 +1,4 @@
-<!-- 组件说明：抽屉侧边栏，支持左右方向与遮罩关闭 -->
+<!-- 组件说明：抽屉侧边栏，支持左右方向与遮罩关闭 (AntD-inspired) -->
 <template>
   <Teleport :to="portalTarget">
     <div v-if="isRendered" :class="[bem(), themeClass]" :data-gf-theme="colorScheme" v-bind="$attrs">
@@ -9,7 +9,9 @@
             <div :class="bem('title')">{{ title }}</div>
             <div v-if="props.subtitle" :class="bem('subtitle')">{{ props.subtitle }}</div>
           </div>
-          <button :class="bem('close')" type="button" @click="handleClose">×</button>
+          <button :class="bem('close')" type="button" aria-label="Close" @click="handleClose">
+            <CloseOutlined />
+          </button>
         </div>
         <div :class="bem('body')">
           <slot></slot>
@@ -17,13 +19,13 @@
         <div v-if="showFooter" :class="bem('footer')">
           <slot name="footer">
             <template v-if="props.confirmable">
-              <Button type="ghost" @click="handleCancel">{{ props.cancelText }}</Button>
+              <Button @click="handleCancel">{{ props.cancelText }}</Button>
               <Button type="primary" :loading="props.okLoading" :disabled="props.okDisabled" @click="handleConfirm">
                 {{ props.okText }}
               </Button>
             </template>
             <template v-else>
-              <Button type="ghost" @click="handleClose">关闭</Button>
+              <Button @click="handleClose">关闭</Button>
             </template>
           </slot>
         </div>
@@ -34,6 +36,7 @@
 
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+  import { CloseOutlined } from '@ant-design/icons-vue';
   import { acquireScrollLock, createNamespace, createTimeout, type TimeoutHandle } from '../../utils';
   import Button from '../base/Button.vue';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
@@ -287,8 +290,8 @@
     position: fixed;
     inset: 0;
     z-index: var(--gf-z-drawer);
-    /* Theme containers may set background-color; overlays must stay transparent. */
     background: transparent;
+    pointer-events: none;
   }
 
   .gf-drawer__mask {
@@ -297,7 +300,7 @@
     background: var(--gf-color-mask);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.18s var(--gf-easing, ease);
+    transition: opacity var(--gf-motion-normal) var(--gf-easing);
   }
 
   .gf-drawer__mask.is-visible {
@@ -309,38 +312,39 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    background: var(--gf-surface);
-    border-left: 1px solid var(--gf-border);
+    background: var(--gf-color-surface);
     box-shadow: var(--gf-shadow-2);
     display: flex;
     flex-direction: column;
-    will-change: transform, opacity;
+    will-change: transform;
     transform: translateX(var(--gf-drawer-slide-from, 100%));
-    opacity: 0;
     pointer-events: none;
-    transition:
-      transform 0.28s var(--gf-easing, ease),
-      opacity 0.18s var(--gf-easing, ease);
+    transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   .gf-drawer__panel.is-visible {
     transform: translateX(0);
-    opacity: 1;
     pointer-events: auto;
   }
 
-  .gf-drawer__panel--left {
+  .gf-drawer__panel--right {
+    right: 0;
     border-left: none;
-    border-right: 1px solid var(--gf-border);
+  }
+
+  .gf-drawer__panel--left {
+    left: 0;
+    border-right: none;
   }
 
   .gf-drawer__header {
-    padding: var(--gf-space-2) var(--gf-space-3);
-    border-bottom: 1px solid var(--gf-border);
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--gf-color-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
+    flex-shrink: 0;
   }
 
   .gf-drawer__header--center {
@@ -369,18 +373,18 @@
 
   .gf-drawer__title {
     font-size: 16px;
-    font-weight: 700;
-    line-height: 1.25;
-    color: var(--gf-text);
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--gf-color-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .gf-drawer__subtitle {
-    font-size: 12px;
-    line-height: 1.4;
-    color: var(--gf-text-secondary);
+    font-size: var(--gf-font-size-sm);
+    line-height: 1.5714285714285714;
+    color: var(--gf-color-text-secondary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -389,31 +393,41 @@
   .gf-drawer__body {
     flex: 1;
     overflow: auto;
-    padding: var(--gf-space-3);
+    padding: 24px;
+    font-size: var(--gf-font-size-sm);
+    line-height: 1.5714285714285714;
+    color: var(--gf-color-text);
   }
 
   .gf-drawer__footer {
-    padding: var(--gf-space-2) var(--gf-space-3);
-    border-top: 1px solid var(--gf-border);
+    padding: 12px 16px;
+    border-top: 1px solid var(--gf-color-border);
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+    flex-shrink: 0;
     background: var(--gf-color-surface-muted);
   }
 
   .gf-drawer__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
     border: none;
     background: transparent;
-    color: var(--gf-text-secondary);
+    color: var(--gf-color-text-tertiary);
     cursor: pointer;
-    font-size: 16px;
-    padding: 4px 6px;
-    border-radius: var(--gf-radius-sm);
-    transition: all 0.2s var(--gf-easing);
+    border-radius: var(--gf-radius-xs);
+    transition:
+      color var(--gf-motion-fast) var(--gf-easing),
+      background var(--gf-motion-fast) var(--gf-easing);
 
     &:hover {
-      color: var(--gf-primary-strong);
-      background: var(--gf-primary-soft);
+      color: var(--gf-color-text);
+      background: var(--gf-color-fill);
     }
   }
 </style>

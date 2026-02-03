@@ -290,6 +290,10 @@
       left: 50%;
       transform: translate(-50%, -50%);
       z-index: 10;
+      background: var(--gf-color-surface);
+      border-radius: var(--gf-radius-sm);
+      padding: 16px;
+      box-shadow: var(--gf-shadow-1);
     }
 
     &__wrapper {
@@ -299,6 +303,7 @@
       width: 100%;
       height: 100%;
       min-height: 0;
+      transition: opacity var(--gf-motion-fast) var(--gf-easing);
     }
 
     &__chart {

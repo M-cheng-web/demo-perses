@@ -1,5 +1,5 @@
 <!--
-  组件说明：通用 Panel 容器（头部 + 内容）
+  组件说明：通用 Panel 容器（头部 + 内容）(AntD-inspired)
   - 支持标题 / description Tooltip / 折叠
   - 支持右侧操作区 slot（#right）
   - size 用于控制密度（面板组：large；单图表：small）
@@ -38,18 +38,15 @@
         aria-label="切换折叠"
         @click.stop="toggleCollapse"
       >
-        <svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M7.2 4.9a1 1 0 0 1 1.4 0l5.2 5.1a1 1 0 0 1 0 1.4l-5.2 5.1a1 1 0 1 1-1.4-1.4l4.5-4.4-4.5-4.4a1 1 0 0 1 0-1.4Z"
-          />
-        </svg>
+        <RightOutlined />
       </div>
 
       <div :class="bem('title-area')">
         <div v-if="title" :class="bem('title')" @click.stop="handleTitleClick">{{ title }}</div>
         <Tooltip v-if="description" :title="description">
-          <span :class="bem('info')" aria-label="描述" @click.stop>i</span>
+          <span :class="bem('info')" aria-label="描述" @click.stop>
+            <InfoCircleOutlined />
+          </span>
         </Tooltip>
       </div>
 
@@ -68,6 +65,7 @@
 
 <script setup lang="ts">
   import { computed, ref, useSlots } from 'vue';
+  import { RightOutlined, InfoCircleOutlined } from '@ant-design/icons-vue';
   import Tooltip from '../feedback/Tooltip.vue';
   import { createNamespace } from '../../utils';
 
@@ -250,20 +248,21 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       padding: 0;
-      border: 1px solid transparent;
+      border: none;
       background: transparent;
       color: var(--gf-color-text-secondary);
-      border-radius: var(--gf-radius-sm);
+      border-radius: var(--gf-radius-xs);
       cursor: pointer;
+      font-size: 12px;
       transition:
-        background-color var(--gf-motion-fast) var(--gf-easing),
-        transform var(--gf-motion-fast) var(--gf-easing);
+        color var(--gf-motion-fast) var(--gf-easing),
+        transform 0.24s var(--gf-easing);
 
       &:hover {
-        background: var(--gf-color-fill);
+        color: var(--gf-color-text);
       }
 
       &.is-expanded {
@@ -291,20 +290,18 @@
     }
 
     &__info {
-      width: 16px;
-      height: 16px;
-      border-radius: 999px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
-      font-weight: 700;
-      line-height: 1;
-      border: 1px solid var(--gf-color-border-muted);
-      color: var(--gf-color-text-secondary);
-      background: color-mix(in srgb, var(--gf-color-surface), transparent 10%);
+      font-size: 14px;
+      color: var(--gf-color-text-tertiary);
       cursor: help;
       flex-shrink: 0;
+      transition: color var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        color: var(--gf-color-text-secondary);
+      }
     }
 
     &__right {

@@ -70,24 +70,25 @@
   .dp-unsupported-panel {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 12px;
+    gap: 12px;
+    padding: 16px;
 
     &__body {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
     &__row {
       display: grid;
       grid-template-columns: 120px minmax(0, 1fr);
-      gap: 10px;
+      gap: 12px;
       align-items: start;
     }
 
     &__label {
-      font-size: 12px;
+      font-size: 13px;
+      line-height: 1.5714285714285714;
       color: var(--gf-color-text-secondary);
       padding-top: 2px;
     }
@@ -98,17 +99,37 @@
 
     &__code {
       margin: 0;
-      padding: 8px;
+      padding: 10px 12px;
       border: 1px solid var(--gf-color-border-muted);
       border-radius: var(--gf-radius-sm);
       background: var(--gf-color-surface-muted);
       color: var(--gf-color-text);
-      font-size: 11px;
-      line-height: 1.5;
+      font-size: 12px;
+      line-height: 1.5714285714285714;
       max-height: 220px;
       overflow: auto;
       white-space: pre-wrap;
       word-break: break-word;
+
+      /* Scrollbar styling */
+      &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: var(--gf-color-fill-secondary);
+        border-radius: 3px;
+
+        &:hover {
+          background: var(--gf-color-fill);
+        }
+      }
     }
 
     &__copy {

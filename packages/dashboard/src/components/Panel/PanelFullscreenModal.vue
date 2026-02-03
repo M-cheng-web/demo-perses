@@ -58,11 +58,32 @@
 
 <style scoped lang="less">
   .dp-panel-fullscreen-modal {
-	    &__content {
-	      width: 100%;
-	      height: 80vh;
-	      padding: @spacing-md;
-	      overflow: auto;
-	    }
-	  }
+    &__content {
+      width: 100%;
+      height: 80vh;
+      padding: 16px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+
+      &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: var(--gf-color-fill-tertiary);
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: var(--gf-color-fill-secondary);
+        border-radius: 3px;
+
+        &:hover {
+          background: var(--gf-color-fill);
+        }
+      }
+    }
+  }
 </style>

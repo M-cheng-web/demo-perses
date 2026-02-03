@@ -336,7 +336,6 @@
     inset: 0;
     z-index: 140;
     pointer-events: auto;
-    // Focus layer is a "page-like" surface: keep it solid (no translucent backdrop).
     background: var(--gf-color-surface);
 
     &__surface {
@@ -347,21 +346,18 @@
       min-height: 0;
     }
 
-	    &__group-panel {
-	      height: 100%;
-	      max-width: 100%;
-	    }
+    &__group-panel {
+      height: 100%;
+      max-width: 100%;
+    }
 
-    // 覆盖 ghost panel 默认 overflow: visible（聚焦层需要固定高度 + 内部滚动）
-    // 只移动“聚焦层主 Panel”的 header（营造“标题浮起”的连续感）
     :deep(.dp-panel-group-focus-layer__group-panel > .gf-panel__header) {
       background: var(--gf-color-surface);
-      border-bottom: none;
+      border-bottom: 1px solid var(--gf-color-border-muted);
       transform: translateY(var(--dp-focus-start-y, 0px));
       transition: transform var(--dp-focus-motion, var(--gf-motion-normal)) var(--gf-easing);
     }
 
-    // 让 body 成为 column，以便 pagination 固定在底部
     :deep(.gf-panel__body) {
       display: flex;
       flex-direction: column;
@@ -385,9 +381,9 @@
       flex: 0 0 auto;
       display: flex;
       justify-content: flex-end;
-      padding: 0;
+      padding: 12px 16px;
       background: var(--gf-color-surface-muted);
-      border-top: none;
+      border-top: 1px solid var(--gf-color-border-muted);
     }
 
     &.is-open {

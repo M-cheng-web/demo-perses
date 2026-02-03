@@ -1,27 +1,37 @@
-<!-- 组件说明：二次确认气泡，包含确认/取消操作 -->
+<!-- 组件说明：二次确认气泡，包含确认/取消操作 (AntD-inspired) -->
 <template>
   <div :class="bem()" ref="triggerRef">
     <span @click="toggle">
       <slot></slot>
     </span>
     <Teleport :to="portalTarget">
-      <transition name="fade">
+      <Transition name="gf-zoom-big-fast">
         <div v-if="open" :class="[bem('content'), themeClass]" :data-gf-theme="colorScheme" :style="popupStyle" ref="popupRef">
-          <div :class="bem('message')">
-            <slot name="title">{{ title }}</slot>
-          </div>
-          <div :class="bem('actions')">
-            <Button size="small" type="ghost" @click="handleCancel">取消</Button>
-            <Button size="small" type="primary" danger @click="handleConfirm">确认</Button>
+          <div :class="bem('arrow')"></div>
+          <div :class="bem('inner')">
+            <div :class="bem('message')">
+              <span :class="bem('icon')">
+                <ExclamationCircleFilled />
+              </span>
+              <div :class="bem('title')">
+                <slot name="title">{{ title }}</slot>
+              </div>
+            </div>
+            <div v-if="description" :class="bem('description')">{{ description }}</div>
+            <div :class="bem('actions')">
+              <Button size="small" @click="handleCancel">{{ cancelText }}</Button>
+              <Button size="small" type="primary" :danger="okDanger" @click="handleConfirm">{{ okText }}</Button>
+            </div>
           </div>
         </div>
-      </transition>
+      </Transition>
     </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+  import { ExclamationCircleFilled } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
   import Button from '../base/Button.vue';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
@@ -29,13 +39,28 @@
 
   defineOptions({ name: 'GfPopconfirm' });
 
-  const _props = withDefaults(
+  const props = withDefaults(
     defineProps<{
       /** 确认提示文案 */
       title?: string;
+      /** 详细描述 */
+      description?: string;
+      /** 确认按钮文字 */
+      okText?: string;
+      /** 取消按钮文字 */
+      cancelText?: string;
+      /** 确认按钮是否为危险按钮 */
+      okDanger?: boolean;
+      /** 气泡位置 */
+      placement?: 'top' | 'bottom' | 'left' | 'right';
     }>(),
     {
       title: '确认执行该操作？',
+      description: '',
+      okText: '确定',
+      cancelText: '取消',
+      okDanger: false,
+      placement: 'top',
     }
   );
 
@@ -119,30 +144,94 @@
   .gf-popconfirm {
     display: inline-flex;
     position: relative;
+  }
 
-    &__content {
-      position: fixed;
-      transform: translate(-50%, -100%);
+  .gf-popconfirm__content {
+    position: fixed;
+    transform: translate(-50%, -100%);
+    z-index: var(--gf-z-popover);
+  }
+
+  .gf-popconfirm__arrow {
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+
+    &::before {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      bottom: 6px;
+      left: 4px;
       background: var(--gf-color-surface);
-      border: 1px solid var(--gf-border);
-      border-radius: var(--gf-radius-md);
-      box-shadow: var(--gf-shadow-2);
-      padding: 10px 12px;
-      color: var(--gf-text);
-      min-width: 180px;
-      z-index: var(--gf-z-popover);
+      transform: rotate(45deg);
+      box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.07);
     }
+  }
 
-    &__actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 10px;
-    }
+  .gf-popconfirm__inner {
+    background: var(--gf-color-surface);
+    border-radius: var(--gf-radius-lg);
+    box-shadow: var(--gf-shadow-2);
+    padding: 12px 16px;
+    min-width: 200px;
+    max-width: 300px;
+  }
 
-    &__message {
-      font-size: var(--gf-font-size-md);
-      color: var(--gf-text-secondary);
-    }
+  .gf-popconfirm__message {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .gf-popconfirm__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+    color: var(--gf-color-warning);
+    margin-top: 1px;
+  }
+
+  .gf-popconfirm__title {
+    font-size: var(--gf-font-size-sm);
+    line-height: 1.5714285714285714;
+    color: var(--gf-color-text);
+    font-weight: 600;
+  }
+
+  .gf-popconfirm__description {
+    font-size: var(--gf-font-size-sm);
+    line-height: 1.5714285714285714;
+    color: var(--gf-color-text-secondary);
+    margin-top: 4px;
+    margin-left: 22px;
+  }
+
+  .gf-popconfirm__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  // Animation
+  .gf-zoom-big-fast-enter-active,
+  .gf-zoom-big-fast-leave-active {
+    transition:
+      opacity 0.1s var(--gf-easing),
+      transform 0.1s var(--gf-easing);
+  }
+
+  .gf-zoom-big-fast-enter-from,
+  .gf-zoom-big-fast-leave-to {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(0.8);
   }
 </style>

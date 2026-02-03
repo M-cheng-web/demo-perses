@@ -102,7 +102,7 @@
   const tooltipStyle = computed(() => {
     const pos = currentPosition.value;
 
-    if (!pos) return { visibility: 'hidden' as const };
+    if (!pos) return { visibility: 'hidden' as const, left: '-9999px', top: '-9999px' };
 
     const padding = 16;
     let x = pos.pageX + padding;
@@ -125,8 +125,10 @@
       }
     }
 
+    // 使用 left/top 定位而非 transform，避免 transition 导致的跟手延迟
     return {
-      transform: `translate3d(${x}px, ${y}px, 0)`,
+      left: `${x}px`,
+      top: `${y}px`,
       visibility: 'visible' as const,
     };
   });
@@ -171,79 +173,95 @@
 <style scoped lang="less">
   .dp-chart-tooltip {
     position: fixed;
-    top: 0;
-    left: 0;
+    // 初始位置在屏幕外，避免首次渲染时从左上角闪现
+    left: -9999px;
+    top: -9999px;
     min-width: 240px;
     max-width: 450px;
     background-color: var(--gf-color-tooltip-bg);
     color: var(--gf-color-tooltip-text);
-    border-radius: var(--gf-radius-md);
-    font-size: 12px;
+    border-radius: var(--gf-radius-lg);
+    font-size: 14px;
     pointer-events: none;
     z-index: 9999;
-    box-shadow: var(--gf-shadow-2);
-    backdrop-filter: blur(2px);
-    transition: transform 0.1s ease-out;
+    box-shadow: var(--gf-shadow-3);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    // 仅对 opacity 做 transition，不对位置做 transition 以保证跟手
+    transition: opacity var(--gf-motion-fast) var(--gf-easing);
+    // 入场动画仅淡入，不做位置偏移
+    animation: dp-tooltip-fade-in var(--gf-motion-fast) var(--gf-easing);
+
+    @keyframes dp-tooltip-fade-in {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
 
     &.dp-chart-tooltip--pinned {
       pointer-events: auto;
       background-color: var(--gf-color-tooltip-bg);
+      box-shadow: var(--gf-shadow-3), 0 0 0 2px var(--gf-color-primary-border);
     }
 
     &__header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 40px;
+      height: 44px;
       padding: 0 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-      gap: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      gap: 12px;
     }
 
     &__time {
       font-weight: 500;
-      font-size: 13px;
+      font-size: 14px;
       flex-shrink: 0;
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
     }
 
-	    &__actions {
-	      display: flex;
-	      align-items: center;
-	      gap: 8px;
-	      min-width: 0;
-	    }
+    &__actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
 
-	    &__hint {
-	      font-size: 11px;
-      color: rgba(255, 255, 255, 0.56);
+    &__hint {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.5);
       white-space: nowrap;
     }
 
-	    &__action-btn.gf-button {
-	      --gf-btn-color: var(--gf-color-tooltip-text);
-	      --gf-btn-bg-hover: rgba(255, 255, 255, 0.1);
-	      --gf-btn-bg-active: rgba(255, 255, 255, 0.14);
-	      --gf-btn-shadow-hover: none;
-	    }
+    &__action-btn.gf-button {
+      --gf-btn-color: var(--gf-color-tooltip-text);
+      --gf-btn-bg-hover: rgba(255, 255, 255, 0.1);
+      --gf-btn-bg-active: rgba(255, 255, 255, 0.15);
+      --gf-btn-shadow-hover: none;
+    }
 
-	    &__action-btn.gf-button:hover:not(.is-disabled) {
-	      --gf-btn-color: var(--gf-color-primary-secondary);
-	    }
+    &__action-btn.gf-button:hover:not(.is-disabled) {
+      --gf-btn-color: #fff;
+    }
 
-	    &__action-btn.gf-button--type-text.gf-button--size-small:not(.gf-button--icon-only) {
-	      padding: 0 4px;
-	      height: 20px;
-	      min-height: 20px;
-	      font-size: 11px;
-	    }
+    &__action-btn.gf-button--type-text.gf-button--size-small:not(.gf-button--icon-only) {
+      padding: 0 6px;
+      height: 22px;
+      min-height: 22px;
+      font-size: 12px;
+    }
 
-	    &__unpin-btn.gf-button--size-small.gf-button--icon-only {
-	      --gf-btn-icon-only-size: 20px;
-	    }
+    &__unpin-btn.gf-button--size-small.gf-button--icon-only {
+      --gf-btn-icon-only-size: 22px;
+    }
 
-	    &__content {
-	      padding: 8px 12px;
-	      max-height: 400px;
+    &__content {
+      padding: 8px 12px 12px;
+      max-height: 400px;
       overflow-y: auto;
 
       &::-webkit-scrollbar {
@@ -268,24 +286,24 @@
     &__series-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 5px 0;
-      transition: background-color 0.2s;
+      gap: 10px;
+      padding: 6px 4px;
+      margin: 0 -4px;
+      border-radius: var(--gf-radius-sm);
+      transition: background-color var(--gf-motion-fast) var(--gf-easing);
       cursor: pointer;
 
       &:hover {
-        background-color: rgba(255, 255, 255, 0.05);
-        margin: 0 -4px;
-        padding: 5px 4px;
-        border-radius: 3px;
+        background-color: rgba(255, 255, 255, 0.08);
       }
     }
 
     &__series-color {
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 2px;
       flex-shrink: 0;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
     }
 
     &__series-label {
@@ -293,23 +311,24 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: 12px;
+      font-size: 13px;
       min-width: 0;
+      color: rgba(255, 255, 255, 0.85);
     }
 
     &__series-value {
       font-weight: 600;
       font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-      font-size: 12px;
+      font-size: 13px;
       color: #fff;
       flex-shrink: 0;
     }
 
     &__empty {
-      padding: 20px;
+      padding: 24px;
       text-align: center;
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 12px;
+      color: rgba(255, 255, 255, 0.45);
+      font-size: 14px;
     }
   }
 </style>

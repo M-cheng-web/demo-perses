@@ -1,4 +1,4 @@
-<!-- 组件说明：分段控制器，用于少量选项的快速切换 -->
+<!-- 组件说明：分段控制器，用于少量选项的快速切换 (AntD-inspired) -->
 <template>
   <div
     ref="rootRef"
@@ -18,7 +18,10 @@
       :disabled="disabled || option.disabled"
       @click="handleSelect(option.value)"
     >
-      <span>{{ option.label }}</span>
+      <span v-if="option.icon" :class="bem('item-icon')">
+        <component :is="option.icon" />
+      </span>
+      <span :class="bem('item-label')">{{ option.label }}</span>
     </button>
   </div>
 </template>
@@ -37,6 +40,7 @@
         label: string;
         value: SegmentedValue;
         disabled?: boolean;
+        icon?: any;
       };
 
   const props = withDefaults(
@@ -71,9 +75,9 @@
   const normalizedOptions = computed(() => {
     return (props.options ?? []).map((opt, idx) => {
       if (typeof opt === 'string' || typeof opt === 'number') {
-        return { key: `${String(opt)}-${idx}`, label: String(opt), value: opt, disabled: false };
+        return { key: `${String(opt)}-${idx}`, label: String(opt), value: opt, disabled: false, icon: undefined };
       }
-      return { key: `${String(opt.value)}-${idx}`, label: opt.label, value: opt.value, disabled: !!opt.disabled };
+      return { key: `${String(opt.value)}-${idx}`, label: opt.label, value: opt.value, disabled: !!opt.disabled, icon: opt.icon };
     });
   });
 
@@ -172,17 +176,16 @@
 </script>
 
 <style scoped lang="less">
-	  .gf-segmented {
-	    position: relative;
-	    display: inline-flex;
-	    align-items: center;
-	    width: auto;
-	    padding: 6px 8px;
-	    background: var(--gf-color-surface);
-	    border: 1px solid var(--gf-control-border-color, var(--gf-color-border));
-	    border-radius: var(--gf-radius-md);
-	    gap: 0;
-	    user-select: none;
+  .gf-segmented {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+    padding: 2px;
+    background: var(--gf-color-fill);
+    border-radius: var(--gf-radius-sm);
+    gap: 0;
+    user-select: none;
 
     &__item {
       background: transparent;
@@ -192,78 +195,97 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 64px;
-      padding: 6px 10px;
+      gap: 6px;
+      min-width: 0;
+      padding: 4px 11px;
+      height: 28px;
       border-radius: var(--gf-radius-xs);
-      color: var(--gf-color-text-secondary);
+      color: var(--gf-color-text);
       cursor: pointer;
       white-space: nowrap;
       font-size: var(--gf-font-size-sm);
-      line-height: 1;
+      line-height: 1.5714285714285714;
       transition:
         color var(--gf-motion-fast) var(--gf-easing),
-        background var(--gf-motion-fast) var(--gf-easing),
-        box-shadow var(--gf-motion-fast) var(--gf-easing);
+        background var(--gf-motion-fast) var(--gf-easing);
 
       &.is-active {
-        color: var(--gf-color-primary);
+        color: var(--gf-color-text);
+        font-weight: 500;
       }
 
       &:hover:not(.is-active):not(.is-disabled) {
-        background: var(--gf-color-fill);
+        color: var(--gf-color-text);
       }
 
       &:focus-visible {
         outline: none;
-        box-shadow: var(--gf-focus-ring);
+        box-shadow: 0 0 0 2px var(--gf-color-primary-soft);
       }
 
       &.is-disabled {
-        opacity: 0.55;
+        color: var(--gf-color-text-tertiary);
         cursor: not-allowed;
       }
     }
 
+    &__item-icon {
+      display: inline-flex;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    &__item-label {
+      display: inline-block;
+    }
+
     &__thumb {
       position: absolute;
-      top: 6px;
-      bottom: 6px;
+      top: 2px;
+      bottom: 2px;
       left: 0;
       border-radius: var(--gf-radius-xs);
-      background: var(--gf-color-primary-soft);
-      box-shadow: inset 0 -2px 0 var(--gf-color-primary);
+      background: var(--gf-color-surface);
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
       transition:
-        transform 220ms var(--gf-easing),
-        width 220ms var(--gf-easing);
+        transform 200ms cubic-bezier(0.645, 0.045, 0.355, 1),
+        width 200ms cubic-bezier(0.645, 0.045, 0.355, 1);
       will-change: transform, width;
     }
 
-    &--size-small .gf-segmented__item {
-      font-size: var(--gf-font-size-xs);
-      padding: 5px 10px;
+    &--size-small {
+      padding: 2px;
+
+      .gf-segmented__item {
+        padding: 0 10px;
+        height: 24px;
+        font-size: var(--gf-font-size-xs);
+      }
+
+      .gf-segmented__thumb {
+        top: 2px;
+        bottom: 2px;
+      }
     }
 
-    &--size-middle .gf-segmented__item {
-      padding: 6px 10px;
-    }
+    &--size-large {
+      padding: 2px;
 
-    &--size-large .gf-segmented__item {
-      font-size: var(--gf-font-size-md);
-      padding: 8px 12px;
-    }
+      .gf-segmented__item {
+        padding: 6px 14px;
+        height: 36px;
+        font-size: var(--gf-font-size-md);
+      }
 
-    &--size-small .gf-segmented__thumb {
-      top: 6px;
-      bottom: 6px;
-    }
-
-    &--size-large .gf-segmented__thumb {
-      top: 6px;
-      bottom: 6px;
+      .gf-segmented__thumb {
+        top: 2px;
+        bottom: 2px;
+      }
     }
 
     &.is-block {
       width: 100%;
+      display: flex;
 
       .gf-segmented__item {
         flex: 1;
@@ -273,8 +295,16 @@
     }
 
     &.is-disabled {
-      opacity: 0.6;
       cursor: not-allowed;
+
+      .gf-segmented__item {
+        color: var(--gf-color-text-tertiary);
+        cursor: not-allowed;
+      }
+
+      .gf-segmented__thumb {
+        background: var(--gf-color-fill-secondary);
+      }
     }
   }
 </style>

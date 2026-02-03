@@ -211,10 +211,26 @@
     flex-direction: column;
     gap: 0;
 
+    &__group {
+      border-radius: var(--gf-radius-md);
+      transition: box-shadow var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        box-shadow: var(--gf-shadow-1);
+      }
+    }
+
     &__actions {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity var(--gf-motion-fast) var(--gf-easing);
+    }
+
+    // Show actions on hover
+    :deep(.gf-panel:hover) .dp-panel-group-list__actions {
+      opacity: 1;
     }
 
     &__group.is-focus-source {
@@ -224,13 +240,51 @@
     }
 
     &__delete-btn {
-      // 删除按钮：只要红色图标，不要背景（hover/active 也保持透明）
       --gf-btn-color: var(--gf-color-danger);
       --gf-btn-bg: transparent;
-      --gf-btn-bg-hover: transparent;
-      --gf-btn-bg-active: transparent;
+      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-danger), transparent 90%);
+      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-danger), transparent 85%);
       --gf-btn-shadow-hover: none;
+
+      &:hover {
+        --gf-btn-color: var(--gf-color-danger-hover);
+      }
     }
 
+    // Grid item styling
+    :deep(.vue-grid-item) {
+      transition: transform var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        z-index: 10;
+      }
+
+      &.vue-draggable-dragging {
+        z-index: 100;
+        box-shadow: var(--gf-shadow-2);
+      }
+    }
+
+    // Panel header styling in list view
+    :deep(.gf-panel--header-variant-list-row) {
+      .gf-panel__header {
+        padding: 0 16px;
+        height: 44px;
+        border-radius: var(--gf-radius-md);
+        background: var(--gf-color-surface);
+        border: 1px solid var(--gf-color-border-muted);
+        transition: all var(--gf-motion-fast) var(--gf-easing);
+
+        &:hover {
+          border-color: var(--gf-color-border);
+          background: var(--gf-color-surface-raised);
+        }
+      }
+
+      .gf-panel__title {
+        font-size: 14px;
+        font-weight: 500;
+      }
+    }
   }
 </style>

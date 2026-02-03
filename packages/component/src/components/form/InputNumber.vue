@@ -1,26 +1,35 @@
-<!-- 组件说明：数字输入框，带增减按钮与边界控制 -->
+<!-- 组件说明：数字输入框，带增减按钮与边界控制 (AntD-inspired) -->
 <template>
-  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-disabled': disabled }]">
-    <input
-      :value="displayValue"
-      type="number"
-      :placeholder="placeholder"
-      :class="['gf-control', controlSizeClass, bem('control'), { 'gf-control--disabled': disabled }]"
-      :disabled="disabled"
-      :min="min"
-      :max="max"
-      :step="step"
-      @input="handleInput"
-      @change="emitChange"
-      @blur="handleBlur"
-    />
-    <div :class="bem('actions')">
-      <button type="button" aria-label="增加" @click="increase" :disabled="disabled || !canIncrease">
-        <UpOutlined />
-      </button>
-      <button type="button" aria-label="减少" @click="decrease" :disabled="disabled || !canDecrease">
-        <DownOutlined />
-      </button>
+  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-disabled': disabled, 'is-focused': isFocused }]">
+    <div :class="bem('handler-wrap')">
+      <span
+        :class="[bem('handler'), bem('handler-up'), { 'is-disabled': disabled || !canIncrease }]"
+        @click="increase"
+      >
+        <UpOutlined :class="bem('handler-icon')" />
+      </span>
+      <span
+        :class="[bem('handler'), bem('handler-down'), { 'is-disabled': disabled || !canDecrease }]"
+        @click="decrease"
+      >
+        <DownOutlined :class="bem('handler-icon')" />
+      </span>
+    </div>
+    <div :class="bem('input-wrap')">
+      <input
+        ref="inputRef"
+        :value="displayValue"
+        type="text"
+        inputmode="decimal"
+        :placeholder="placeholder"
+        :class="bem('input')"
+        :disabled="disabled"
+        @input="handleInput"
+        @change="emitChange"
+        @blur="handleBlur"
+        @focus="handleFocus"
+        @keydown="handleKeyDown"
+      />
     </div>
   </div>
 </template>
@@ -43,37 +52,42 @@
       max?: number;
       /** 步长 */
       step?: number;
+      /** 精度 (小数位数) */
+      precision?: number;
       /** 占位提示 */
       placeholder?: string;
       /** 尺寸 */
       size?: 'small' | 'middle' | 'large';
       /** 禁用状态 */
       disabled?: boolean;
+      /** 是否只允许键盘输入 */
+      keyboard?: boolean;
     }>(),
     {
       value: undefined,
       min: undefined,
       max: undefined,
       step: 1,
+      precision: undefined,
       placeholder: '',
       size: 'middle',
       disabled: false,
+      keyboard: true,
     }
   );
 
   const emit = defineEmits<{
     (e: 'update:value', value: number | undefined): void;
     (e: 'change', value: number | undefined): void;
+    (e: 'focus', evt: FocusEvent): void;
+    (e: 'blur', evt: FocusEvent): void;
   }>();
 
   const [_, bem] = createNamespace('input-number');
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
+  const inputRef = ref<HTMLInputElement>();
   const innerValue = ref<number | undefined>(props.value);
-  const controlSizeClass = computed(() => {
-    if (props.size === 'small') return 'gf-control--size-small';
-    if (props.size === 'large') return 'gf-control--size-large';
-    return undefined;
-  });
+  const isFocused = ref(false);
 
   watch(
     () => props.value,
@@ -82,13 +96,21 @@
     }
   );
 
-  const displayValue = computed(() => (innerValue.value ?? '') as number | string);
+  const displayValue = computed(() => {
+    if (innerValue.value === undefined || innerValue.value === null) return '';
+    if (props.precision !== undefined) {
+      return innerValue.value.toFixed(props.precision);
+    }
+    return String(innerValue.value);
+  });
+
   const canIncrease = computed(() => {
     if (props.disabled) return false;
     if (props.max === undefined) return true;
     if (innerValue.value === undefined) return true;
     return innerValue.value < props.max;
   });
+
   const canDecrease = computed(() => {
     if (props.disabled) return false;
     if (props.min === undefined) return true;
@@ -103,10 +125,16 @@
     return val;
   };
 
+  const formatPrecision = (val: number | undefined) => {
+    if (val === undefined || props.precision === undefined) return val;
+    return Number(val.toFixed(props.precision));
+  };
+
   const updateValue = (val: number | undefined) => {
-    const next = clamp(val);
-    innerValue.value = next;
-    emit('update:value', next);
+    const clamped = clamp(val);
+    const formatted = formatPrecision(clamped);
+    innerValue.value = formatted;
+    emit('update:value', formatted);
     formItem?.onFieldChange();
   };
 
@@ -114,14 +142,50 @@
     emit('change', innerValue.value);
   };
 
-  const handleBlur = () => {
+  const handleFocus = (evt: FocusEvent) => {
+    isFocused.value = true;
+    emit('focus', evt);
+  };
+
+  const handleBlur = (evt: FocusEvent) => {
+    isFocused.value = false;
+    // Re-clamp on blur to ensure valid value
+    if (innerValue.value !== undefined) {
+      updateValue(innerValue.value);
+    }
+    emit('blur', evt);
     formItem?.onFieldBlur();
   };
 
   const handleInput = (evt: Event) => {
     const target = evt.target as HTMLInputElement;
-    const parsed = target.value === '' ? undefined : Number(target.value);
-    updateValue(isNaN(parsed as number) ? undefined : parsed);
+    const value = target.value;
+
+    // Allow empty input
+    if (value === '' || value === '-') {
+      innerValue.value = undefined;
+      emit('update:value', undefined);
+      return;
+    }
+
+    const parsed = Number(value);
+    if (!isNaN(parsed)) {
+      innerValue.value = parsed;
+      emit('update:value', parsed);
+      formItem?.onFieldChange();
+    }
+  };
+
+  const handleKeyDown = (evt: KeyboardEvent) => {
+    if (!props.keyboard) return;
+
+    if (evt.key === 'ArrowUp') {
+      evt.preventDefault();
+      increase();
+    } else if (evt.key === 'ArrowDown') {
+      evt.preventDefault();
+      decrease();
+    }
   };
 
   const increase = () => {
@@ -135,97 +199,182 @@
     updateValue((innerValue.value ?? 0) - props.step);
     emitChange();
   };
+
+  // Expose focus method
+  defineExpose({
+    focus: () => inputRef.value?.focus(),
+    blur: () => inputRef.value?.blur(),
+  });
 </script>
 
 <style scoped lang="less">
   .gf-input-number {
+    position: relative;
     display: inline-flex;
-    align-items: stretch;
+    width: 90px;
     border-radius: var(--gf-radius-sm);
-    overflow: hidden;
     border: 1px solid var(--gf-control-border-color, var(--gf-border));
-    min-height: var(--gf-control-height-md);
+    background: var(--gf-control-bg, var(--gf-color-surface));
     transition:
-      border-color var(--gf-motion-normal) var(--gf-easing),
-      box-shadow var(--gf-motion-normal) var(--gf-easing);
+      border-color var(--gf-motion-fast) var(--gf-easing),
+      box-shadow var(--gf-motion-fast) var(--gf-easing);
 
-    &:hover {
-      border-color: var(--gf-control-border-color-hover, var(--gf-border-strong));
-      box-shadow: var(--gf-control-shadow-hover, 0 0 0 2px var(--gf-color-primary-soft));
-    }
+    &:hover:not(.is-disabled) {
+      border-color: var(--gf-color-primary);
 
-    &:focus-within {
-      border-color: var(--gf-control-border-color-focus, var(--gf-color-focus-border));
-      box-shadow: var(--gf-control-shadow-focus, var(--gf-focus-ring));
-    }
-
-    &__control {
-      border: none;
-      border-right: 1px solid var(--gf-control-border-color, var(--gf-border));
-      min-width: 80px;
-      box-shadow: none;
-      -moz-appearance: textfield;
-      appearance: textfield;
-    }
-
-    &__control::-webkit-outer-spin-button,
-    &__control::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-
-    &__control:hover,
-    &__control:focus,
-    &__control:focus-visible {
-      box-shadow: none;
-    }
-
-    &__actions {
-      display: flex;
-      flex-direction: column;
-      width: 32px;
-      background: var(--gf-color-surface-muted);
-
-      button {
-        flex: 1;
-        border: none;
-        background: transparent;
-        cursor: pointer;
-        color: var(--gf-text-secondary);
-        display: grid;
-        place-items: center;
-        font-size: 10px;
-        transition: all 0.2s var(--gf-easing);
-
-        &:hover {
-          background: var(--gf-primary-soft);
-          color: var(--gf-primary-strong);
-        }
-
-        &:first-child {
-          border-bottom: 1px solid var(--gf-control-border-color, var(--gf-border));
-        }
-
-        &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
+      .gf-input-number__handler-wrap {
+        opacity: 1;
       }
     }
 
-    &--size-small {
-      min-height: var(--gf-control-height-sm);
+    &.is-focused:not(.is-disabled) {
+      border-color: var(--gf-color-primary);
+      box-shadow: 0 0 0 2px var(--gf-color-primary-soft);
 
-      .gf-input-number__actions {
-        width: 30px;
+      .gf-input-number__handler-wrap {
+        opacity: 1;
+      }
+    }
+
+    &__input-wrap {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    &__input {
+      width: 100%;
+      height: 100%;
+      min-height: var(--gf-control-height-md);
+      padding: 0 11px;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--gf-text);
+      font-size: var(--gf-font-size-sm);
+      line-height: 1.5714285714285714;
+      text-align: left;
+
+      &::placeholder {
+        color: var(--gf-color-text-tertiary);
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        color: var(--gf-color-text-disabled);
+      }
+
+      // Hide browser number input spinners
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      -moz-appearance: textfield;
+    }
+
+    &__handler-wrap {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 22px;
+      height: 100%;
+      background: var(--gf-color-surface);
+      border-left: 1px solid var(--gf-border);
+      border-radius: 0 var(--gf-radius-sm) var(--gf-radius-sm) 0;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity var(--gf-motion-fast) var(--gf-easing);
+    }
+
+    &__handler {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      cursor: pointer;
+      color: var(--gf-color-text-tertiary);
+      font-size: 10px;
+      transition:
+        color var(--gf-motion-fast) var(--gf-easing),
+        background var(--gf-motion-fast) var(--gf-easing);
+      user-select: none;
+
+      &:hover:not(.is-disabled) {
+        color: var(--gf-color-primary);
+        background: var(--gf-color-primary-soft);
+      }
+
+      &.is-disabled {
+        cursor: not-allowed;
+        color: var(--gf-color-text-disabled);
+      }
+    }
+
+    &__handler-up {
+      border-bottom: 1px solid var(--gf-border);
+      border-radius: 0 var(--gf-radius-sm) 0 0;
+    }
+
+    &__handler-down {
+      border-radius: 0 0 var(--gf-radius-sm) 0;
+    }
+
+    &__handler-icon {
+      transform: scale(0.83333);
+    }
+
+    // Size variants
+    &--size-small {
+      width: 70px;
+
+      .gf-input-number__input {
+        min-height: var(--gf-control-height-sm);
+        padding: 0 7px;
+        font-size: var(--gf-font-size-sm);
+      }
+
+      .gf-input-number__handler-wrap {
+        width: 18px;
+      }
+
+      .gf-input-number__handler {
+        font-size: 8px;
       }
     }
 
     &--size-large {
-      min-height: var(--gf-control-height-lg);
+      width: 110px;
 
-      .gf-input-number__actions {
-        width: 34px;
+      .gf-input-number__input {
+        min-height: var(--gf-control-height-lg);
+        padding: 0 11px;
+        font-size: var(--gf-font-size-md);
+      }
+
+      .gf-input-number__handler-wrap {
+        width: 26px;
+      }
+
+      .gf-input-number__handler {
+        font-size: 12px;
+      }
+    }
+
+    // Disabled state
+    &.is-disabled {
+      background: var(--gf-color-fill);
+      cursor: not-allowed;
+
+      &:hover {
+        border-color: var(--gf-border);
+      }
+
+      .gf-input-number__handler-wrap {
+        background: var(--gf-color-fill);
       }
     }
   }

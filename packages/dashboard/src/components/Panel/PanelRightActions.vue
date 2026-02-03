@@ -90,23 +90,33 @@
   .dp-panel-right-actions {
     display: none;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
     flex-shrink: 0;
     margin-left: auto;
+    opacity: 0;
+    transition: opacity var(--gf-motion-fast) var(--gf-easing);
 
     &.is-visible {
       display: flex;
+      opacity: 1;
+    }
+
+    :deep(.gf-button--icon-only) {
+      --gf-btn-icon-only-size: 28px;
     }
 
     &__delete-btn {
-      // 删除按钮：只要红色图标，不要背景（hover/active 也保持透明）
       --gf-btn-color: var(--gf-color-danger);
       --gf-btn-bg: transparent;
-      --gf-btn-bg-hover: transparent;
-      --gf-btn-bg-active: transparent;
+      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-danger), transparent 90%);
+      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-danger), transparent 85%);
       --gf-btn-border: transparent;
       --gf-btn-border-hover: transparent;
       --gf-btn-shadow-hover: none;
+
+      &:hover {
+        --gf-btn-color: var(--gf-color-danger-hover);
+      }
     }
   }
 </style>

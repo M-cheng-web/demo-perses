@@ -387,14 +387,19 @@
   .dp-panel-editor-drawer {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 2px;
+    gap: 20px;
+    padding: 4px;
 
     &__section {
       background: var(--gf-color-surface);
-      border: 1px solid var(--gf-color-border);
-      border-radius: var(--gf-radius-md);
+      border: 1px solid var(--gf-color-border-muted);
+      border-radius: var(--gf-radius-lg);
       overflow: hidden;
+      transition: border-color var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        border-color: var(--gf-color-border);
+      }
     }
 
     &__section-header {
@@ -402,21 +407,21 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 10px 12px;
+      padding: 12px 16px;
       background: var(--gf-color-surface-muted);
       border-bottom: 1px solid var(--gf-color-border-muted);
     }
 
     &__section-title {
-      font-weight: 650;
-      font-size: 13px;
+      font-weight: 600;
+      font-size: 14px;
       color: var(--gf-color-text);
       letter-spacing: 0.01em;
-      line-height: 1.2;
+      line-height: 1.5714285714285714;
     }
 
     &__section-body {
-      padding: 12px;
+      padding: 16px;
     }
 
     &__section-actions {
@@ -427,21 +432,22 @@
 
     &__hint {
       color: var(--gf-color-text-tertiary);
-      font-size: 12px;
-      line-height: 1.2;
+      font-size: 13px;
+      line-height: 1.6;
       white-space: nowrap;
     }
 
     &__badge {
       display: inline-flex;
       align-items: center;
-      height: 22px;
-      padding: 0 8px;
+      height: 24px;
+      padding: 0 10px;
       border-radius: var(--gf-radius-sm);
       border: 1px solid var(--gf-color-border-muted);
       background: var(--gf-color-surface);
       color: var(--gf-color-text-secondary);
-      font-size: 12px;
+      font-size: 13px;
+      font-weight: 500;
       line-height: 1;
     }
 
@@ -453,6 +459,14 @@
 
     &__badge--edit {
       border-color: var(--gf-color-border-muted);
+    }
+
+    // Tabs styling
+    :deep(.gf-tabs) {
+      .gf-tabs__nav {
+        padding: 0;
+        background: transparent;
+      }
     }
   }
 </style>

@@ -1,10 +1,20 @@
-<!-- 组件说明：选项卡容器，管理 TabPane 的切换与注册 -->
+<!-- 组件说明：选项卡容器，管理 TabPane 的切换与注册 (AntD-inspired) -->
 <template>
-  <div :class="bem()">
-    <div :class="bem('nav')">
-      <div v-for="tab in panes" :key="tab.key" :class="[bem('tab'), { 'is-active': tab.key === current }]" @click="setActive(tab.key)">
-        {{ tab.label }}
+  <div :class="[bem(), bem({ [`type-${type}`]: true, [`size-${size}`]: true })]">
+    <div :class="bem('nav')" ref="navRef">
+      <div
+        v-for="tab in panes"
+        :key="tab.key"
+        :ref="(el) => setTabRef(el, tab.key)"
+        :class="[bem('tab'), { 'is-active': tab.key === current, 'is-disabled': tab.disabled }]"
+        @click="handleTabClick(tab)"
+      >
+        <span v-if="tab.icon" :class="bem('tab-icon')">
+          <component :is="tab.icon" />
+        </span>
+        <span>{{ tab.label }}</span>
       </div>
+      <div v-if="type === 'line'" :class="bem('ink-bar')" :style="inkBarStyle"></div>
     </div>
     <div :class="bem('content')">
       <slot></slot>
@@ -13,37 +23,88 @@
 </template>
 
 <script setup lang="ts">
-  import { provide, reactive, ref, watch } from 'vue';
+  import { provide, reactive, ref, watch, nextTick, onMounted } from 'vue';
   import { createNamespace } from '../../utils';
 
   defineOptions({ name: 'GfTabs' });
 
-  const props = defineProps<{
-    /** 当前激活的标签键值 */
-    activeKey?: string;
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      /** 当前激活的标签键值 */
+      activeKey?: string;
+      /** 标签页类型 */
+      type?: 'line' | 'card';
+      /** 尺寸 */
+      size?: 'small' | 'middle' | 'large';
+    }>(),
+    {
+      activeKey: undefined,
+      type: 'line',
+      size: 'middle',
+    }
+  );
 
   const emit = defineEmits<{
     (e: 'update:activeKey', key: string): void;
+    (e: 'change', key: string): void;
   }>();
 
   const [_, bem] = createNamespace('tabs');
-  const panes = reactive<{ key: string; label: string }[]>([]);
+  const panes = reactive<{ key: string; label: string; icon?: any; disabled?: boolean }[]>([]);
   const current = ref(props.activeKey || '');
+  const navRef = ref<HTMLElement>();
+  const tabRefs = new Map<string, HTMLElement>();
+  const inkBarStyle = ref<Record<string, string>>({});
+
+  const setTabRef = (el: any, key: string) => {
+    if (el) {
+      tabRefs.set(key, el as HTMLElement);
+    }
+  };
+
+  const updateInkBar = async () => {
+    await nextTick();
+    const nav = navRef.value;
+    const activeTab = tabRefs.get(current.value);
+    if (!nav || !activeTab) {
+      inkBarStyle.value = { width: '0', transform: 'translateX(0)' };
+      return;
+    }
+    const navRect = nav.getBoundingClientRect();
+    const tabRect = activeTab.getBoundingClientRect();
+    inkBarStyle.value = {
+      width: `${tabRect.width}px`,
+      transform: `translateX(${tabRect.left - navRect.left}px)`,
+    };
+  };
+
+  const handleTabClick = (tab: { key: string; disabled?: boolean }) => {
+    if (tab.disabled) return;
+    setActive(tab.key);
+  };
 
   const setActive = (key: string) => {
     current.value = key;
     emit('update:activeKey', key);
+    emit('change', key);
+    updateInkBar();
   };
 
   watch(
     () => props.activeKey,
     (val) => {
-      if (val) current.value = val;
+      if (val && val !== current.value) {
+        current.value = val;
+        updateInkBar();
+      }
     }
   );
 
-  provide('gf-tabs-register', (pane: { key: string; label: string }) => {
+  onMounted(() => {
+    updateInkBar();
+  });
+
+  provide('gf-tabs-register', (pane: { key: string; label: string; icon?: any; disabled?: boolean }) => {
     if (!panes.find((p) => p.key === pane.key)) {
       panes.push(pane);
     }
@@ -62,58 +123,100 @@
 
 <style scoped lang="less">
   .gf-tabs {
-    --gf-tabs-gap: var(--gf-space-2);
-    --gf-tabs-border: 1px solid var(--gf-color-border);
-    --gf-tabs-radius: var(--gf-radius-md);
-    --gf-tabs-bg: var(--gf-color-surface);
-    --gf-tabs-nav-padding: 6px 8px;
-    --gf-tabs-nav-border: 1px solid var(--gf-color-border-muted);
-    --gf-tabs-tab-padding: 6px 10px;
-    --gf-tabs-tab-min-width: auto;
-    --gf-tabs-content-padding: var(--gf-space-3);
-    --gf-tabs-content-display: block;
-
     display: flex;
     flex-direction: column;
-    gap: var(--gf-tabs-gap);
-    border: var(--gf-tabs-border);
-    border-radius: var(--gf-tabs-radius);
-    background: var(--gf-tabs-bg);
 
     &__nav {
+      position: relative;
       display: flex;
-      gap: var(--gf-space-1);
-      padding: var(--gf-tabs-nav-padding);
-      background: transparent;
-      border-bottom: var(--gf-tabs-nav-border);
+      gap: 0;
+      border-bottom: 1px solid var(--gf-color-border);
+      margin-bottom: 16px;
     }
 
     &__tab {
-      min-width: var(--gf-tabs-tab-min-width);
-      padding: var(--gf-tabs-tab-padding);
-      border-radius: var(--gf-radius-xs);
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
       cursor: pointer;
-      color: var(--gf-text-secondary);
+      color: var(--gf-color-text);
       font-size: var(--gf-font-size-sm);
-      transition:
-        background var(--gf-motion-fast) var(--gf-easing),
-        color var(--gf-motion-fast) var(--gf-easing);
+      line-height: 1.5714285714285714;
+      background: transparent;
+      border: none;
+      outline: none;
+      transition: color var(--gf-motion-fast) var(--gf-easing);
 
-      &.is-active {
-        background: var(--gf-color-primary-soft);
+      &:hover:not(.is-disabled) {
         color: var(--gf-color-primary);
-        box-shadow: inset 0 -2px 0 var(--gf-color-primary);
       }
 
-      &:hover:not(.is-active) {
-        background: var(--gf-color-fill);
-        color: var(--gf-color-text);
+      &.is-active {
+        color: var(--gf-color-primary);
+      }
+
+      &.is-disabled {
+        color: var(--gf-color-text-tertiary);
+        cursor: not-allowed;
       }
     }
 
+    &__tab-icon {
+      display: inline-flex;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    &__ink-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      background: var(--gf-color-primary);
+      transition:
+        width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1),
+        transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+    }
+
     &__content {
-      display: var(--gf-tabs-content-display);
-      padding: var(--gf-tabs-content-padding);
+      display: block;
+    }
+
+    // Card type
+    &--type-card &__nav {
+      gap: 2px;
+      border-bottom: 1px solid var(--gf-color-border);
+      background: transparent;
+    }
+
+    &--type-card &__tab {
+      background: var(--gf-color-fill);
+      border: 1px solid var(--gf-color-border);
+      border-bottom: none;
+      border-radius: var(--gf-radius-sm) var(--gf-radius-sm) 0 0;
+      margin-bottom: -1px;
+
+      &.is-active {
+        background: var(--gf-color-surface);
+        border-bottom: 1px solid var(--gf-color-surface);
+      }
+    }
+
+    &--type-card &__ink-bar {
+      display: none;
+    }
+
+    // Size variants
+    &--size-small &__tab {
+      padding: 8px 12px;
+      font-size: var(--gf-font-size-xs);
+    }
+
+    &--size-large &__tab {
+      padding: 16px 20px;
+      font-size: var(--gf-font-size-md);
     }
   }
 </style>

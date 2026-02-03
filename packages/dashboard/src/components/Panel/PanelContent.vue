@@ -111,7 +111,7 @@
   .dp-panel-content {
     position: relative;
     flex: 1;
-    padding: @spacing-sm-2;
+    padding: 8px;
     overflow: hidden;
     min-height: 0;
     display: flex;
@@ -133,9 +133,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: color-mix(in srgb, var(--gf-color-surface), transparent 45%);
-      backdrop-filter: blur(1px);
+      background: color-mix(in srgb, var(--gf-color-surface), transparent 30%);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
       pointer-events: all;
+      transition: opacity var(--gf-motion-normal) var(--gf-easing);
     }
 
     &__wrapper {
@@ -155,7 +157,12 @@
     }
 
     &__warning {
-      padding: @spacing-sm-2;
+      padding: 8px;
+      margin-bottom: 8px;
+
+      :deep(.gf-alert) {
+        margin: 0;
+      }
     }
 
     &__error,
@@ -164,6 +171,7 @@
       align-items: center;
       justify-content: center;
       height: 100%;
+      padding: 16px;
     }
   }
 </style>

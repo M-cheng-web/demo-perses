@@ -152,17 +152,18 @@
   .dp-panel-preview {
     &__header {
       position: absolute;
-      top: 10px;
+      top: 12px;
       left: 12px;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 4px 8px;
+      padding: 4px 10px;
       border-radius: var(--gf-radius-sm);
       border: 1px solid var(--gf-color-border-muted);
       background: var(--gf-color-surface-raised);
       box-shadow: var(--gf-shadow-1);
       pointer-events: none;
+      z-index: 10;
     }
 
     &__content {
@@ -176,13 +177,18 @@
       border: 1px solid var(--gf-color-border);
       border-radius: var(--gf-radius-md);
       overflow: hidden;
+      transition: border-color var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        border-color: var(--gf-color-border-strong);
+      }
     }
 
     &__title {
       font-size: 12px;
-      font-weight: 650;
+      font-weight: 600;
       color: var(--gf-color-text-secondary);
-      line-height: 1;
+      line-height: 1.5714285714285714;
     }
   }
 </style>

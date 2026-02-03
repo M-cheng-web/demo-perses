@@ -490,7 +490,7 @@
       align-items: center;
       gap: 8px;
       padding: 5px 0;
-      transition: background-color 0.2s;
+      transition: background-color var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
         background-color: rgba(255, 255, 255, 0.05);
@@ -505,6 +505,7 @@
       height: 12px;
       border-radius: 2px;
       flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
     }
 
     &__series-label {
@@ -513,6 +514,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       font-size: 12px;
+      line-height: 1.5714285714285714;
       min-width: 0;
     }
 
@@ -520,6 +522,7 @@
       font-weight: 600;
       font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
       font-size: 12px;
+      font-feature-settings: 'tnum';
       color: #fff;
       flex-shrink: 0;
     }
@@ -529,6 +532,7 @@
       text-align: center;
       color: rgba(255, 255, 255, 0.5);
       font-size: 12px;
+      line-height: 1.5714285714285714;
     }
   }
 </style>

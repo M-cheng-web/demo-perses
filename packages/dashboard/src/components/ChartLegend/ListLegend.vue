@@ -80,25 +80,26 @@
 
 <style scoped lang="less">
   .list-legend {
-    padding: 6px;
+    padding: 8px;
     max-height: 200px;
     overflow-y: auto;
 
     .legend-items {
       display: flex;
       flex-direction: column;
-      gap: 1px;
+      gap: 2px;
 
       .legend-item {
         display: flex;
         align-items: center;
-        gap: 6px;
-        padding: 4px 6px;
-        border-radius: 3px;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: var(--gf-radius-sm);
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all var(--gf-motion-fast) var(--gf-easing);
         user-select: none;
-        font-size: 11px;
+        font-size: 12px;
+        line-height: 1.5714285714285714;
 
         &:hover {
           background-color: var(--gf-color-fill);
@@ -106,44 +107,50 @@
 
         &.is-selected {
           background-color: var(--gf-color-primary-soft);
+          border: 1px solid var(--gf-color-primary-border);
+          margin: -1px;
         }
 
         &.is-dimmed {
           opacity: 0.3;
+          transition: opacity var(--gf-motion-fast) var(--gf-easing);
 
           &:hover {
             opacity: 0.6;
           }
         }
 
-	        &.global-selector {
-	          font-weight: 500;
-	          background-color: var(--gf-color-surface-muted);
-	          border-bottom: 1px solid var(--gf-color-border-muted);
-	          margin-bottom: 2px;
-	          padding: 5px 6px;
-	          --gf-checkbox-font-size: 12px;
+        &.global-selector {
+          font-weight: 500;
+          background-color: var(--gf-color-surface-muted);
+          border-bottom: 1px solid var(--gf-color-border-muted);
+          margin-bottom: 4px;
+          padding: 6px 8px;
+          --gf-checkbox-font-size: 12px;
+          border-radius: var(--gf-radius-sm) var(--gf-radius-sm) 0 0;
 
-	          &:hover {
-	            background-color: var(--gf-color-fill);
-	          }
-	        }
+          &:hover {
+            background-color: var(--gf-color-fill);
+          }
+        }
 
         .item-color {
-          width: 8px;
-          height: 8px;
+          width: 10px;
+          height: 10px;
           border-radius: 2px;
           flex-shrink: 0;
-          box-shadow: inset 0 0 0 1px var(--gf-color-border-muted);
+          box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
         }
 
         .item-label {
-          font-size: 11px;
+          font-size: 12px;
+          line-height: 1.5714285714285714;
           flex: 1;
           min-width: 0;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          color: var(--gf-color-text);
 
           &.wrap {
             white-space: normal;
@@ -168,7 +175,7 @@
       border-radius: 3px;
 
       &:hover {
-        background: var(--gf-color-fill-quaternary);
+        background: var(--gf-color-fill-secondary);
       }
     }
   }

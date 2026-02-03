@@ -1,7 +1,12 @@
-<!-- 组件说明：小型加载指示器，可附带文字 -->
+<!-- 组件说明：小型加载指示器，可附带文字 (AntD-inspired) -->
 <template>
-  <div :class="bem()">
-    <span :class="bem('dot')"></span>
+  <div :class="[bem(), bem({ [`size-${size}`]: true })]">
+    <span :class="bem('dot')">
+      <i :class="bem('dot-item')"></i>
+      <i :class="bem('dot-item')"></i>
+      <i :class="bem('dot-item')"></i>
+      <i :class="bem('dot-item')"></i>
+    </span>
     <span v-if="text" :class="bem('text')">{{ text }}</span>
   </div>
 </template>
@@ -11,10 +16,18 @@
 
   defineOptions({ name: 'GfLoading' });
 
-  defineProps<{
-    /** 加载提示文字 */
-    text?: string;
-  }>();
+  withDefaults(
+    defineProps<{
+      /** 加载提示文字 */
+      text?: string;
+      /** 尺寸 */
+      size?: 'small' | 'default' | 'large';
+    }>(),
+    {
+      text: '',
+      size: 'default',
+    }
+  );
 
   const [_, bem] = createNamespace('loading');
 </script>
@@ -27,23 +40,82 @@
     color: var(--gf-color-primary);
 
     &__dot {
-      width: 18px;
-      height: 18px;
-      border: 2px solid currentColor;
-      border-right-color: transparent;
+      position: relative;
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      animation: gf-loading-rotate 1.2s linear infinite;
+    }
+
+    &__dot-item {
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      background: currentColor;
       border-radius: 50%;
-      animation: loading-spin 0.8s linear infinite;
+      opacity: 0.3;
+      animation: gf-loading-dot 1s ease-in-out infinite alternate;
+
+      &:nth-child(1) {
+        top: 0;
+        left: 0;
+      }
+
+      &:nth-child(2) {
+        top: 0;
+        right: 0;
+        animation-delay: 0.4s;
+      }
+
+      &:nth-child(3) {
+        bottom: 0;
+        right: 0;
+        animation-delay: 0.8s;
+      }
+
+      &:nth-child(4) {
+        bottom: 0;
+        left: 0;
+        animation-delay: 1.2s;
+      }
     }
 
     &__text {
-      font-size: var(--gf-font-size-md);
-      color: var(--gf-text-secondary);
+      font-size: var(--gf-font-size-sm);
+      color: var(--gf-color-primary);
+    }
+
+    // Size variants
+    &--size-small &__dot {
+      width: 14px;
+      height: 14px;
+    }
+
+    &--size-small &__dot-item {
+      width: 6px;
+      height: 6px;
+    }
+
+    &--size-large &__dot {
+      width: 32px;
+      height: 32px;
+    }
+
+    &--size-large &__dot-item {
+      width: 14px;
+      height: 14px;
     }
   }
 
-  @keyframes loading-spin {
+  @keyframes gf-loading-rotate {
     to {
-      transform: rotate(360deg);
+      transform: rotate(405deg);
+    }
+  }
+
+  @keyframes gf-loading-dot {
+    to {
+      opacity: 1;
     }
   }
 </style>

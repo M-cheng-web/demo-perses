@@ -133,27 +133,28 @@
     &__series-cell {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       width: 100%;
       min-width: 0;
     }
 
     &__color {
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 2px;
       flex-shrink: 0;
-      box-shadow: inset 0 0 0 1px var(--gf-color-border-muted);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
     }
 
     &__label {
       flex: 1;
-      color: @text-color;
+      color: var(--gf-color-text);
       min-width: 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: 12px;
+      font-size: 13px;
+      line-height: 1.5714285714285714;
     }
   }
 </style>

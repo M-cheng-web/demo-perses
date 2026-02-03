@@ -211,11 +211,30 @@
     gap: 12px;
     max-height: 60vh;
     overflow-y: auto;
+
+    /* Scrollbar styling */
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--gf-color-fill-secondary);
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--gf-color-fill);
+    }
   }
 
   .dp-query-patterns-modal__card {
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--gf-motion-normal) var(--gf-easing);
     height: 100%;
   }
 

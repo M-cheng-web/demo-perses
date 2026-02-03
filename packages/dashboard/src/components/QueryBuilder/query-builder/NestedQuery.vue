@@ -215,15 +215,21 @@
     background: var(--gf-color-surface);
     border-left: 2px solid var(--gf-color-primary-border-strong);
     border-radius: var(--gf-radius-md);
+    transition: box-shadow var(--gf-motion-fast) var(--gf-easing);
+
+    &:hover {
+      box-shadow: var(--gf-shadow-1);
+    }
   }
 
   .nested-query-header {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    padding: 10px 12px;
     background: var(--gf-color-surface-muted);
     border-bottom: 1px solid var(--gf-color-border-muted);
     gap: 8px;
+    border-radius: var(--gf-radius-md) var(--gf-radius-md) 0 0;
   }
 
   .header-label {
@@ -231,6 +237,7 @@
     font-weight: 500;
     color: var(--gf-color-text-secondary);
     white-space: nowrap;
+    line-height: 1.5714285714285714;
   }
 
   .nested-query-body {
@@ -250,5 +257,6 @@
     margin-bottom: 8px;
     color: var(--gf-color-text);
     font-size: 13px;
+    line-height: 1.5714285714285714;
   }
 </style>

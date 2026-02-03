@@ -73,9 +73,9 @@
 
 <style scoped lang="less">
   .dp-compact-legend {
-    max-height: 120px;
+    max-height: 80px;
     overflow-y: auto;
-    padding: 4px 0;
+    padding: 2px 0;
 
     &--position-right {
       max-height: none;
@@ -104,55 +104,55 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding: 2px 7px;
-      background-color: var(--gf-color-fill);
-      border: 1px solid transparent;
-      border-radius: 3px;
+      padding: 2px 6px;
+      background-color: transparent;
+      border: none;
+      border-radius: var(--gf-radius-xs);
       cursor: pointer;
-      transition: all 0.12s ease;
+      transition: all var(--gf-motion-fast) var(--gf-easing);
       user-select: none;
-      max-width: 280px;
+      max-width: 200px;
       font-size: 11px;
+      line-height: 1.4;
 
       &:hover {
-        background-color: var(--gf-color-primary-soft);
-        border-color: var(--gf-color-primary-border);
+        background-color: var(--gf-color-fill);
       }
 
       &.dp-compact-legend__item--selected {
-        background-color: var(--gf-color-primary-soft-hover);
-        border-color: var(--gf-color-primary-border-strong);
+        background-color: var(--gf-color-primary-soft);
       }
 
       &.dp-compact-legend__item--dimmed {
         opacity: 0.25;
+        transition: opacity var(--gf-motion-fast) var(--gf-easing);
 
         &:hover {
-          opacity: 0.5;
+          opacity: 0.6;
         }
       }
 
-	      &.dp-compact-legend__item--global {
-	        font-weight: 500;
-	        background-color: transparent;
-	        border: 1px solid @border-color;
-	        margin-right: 2px;
-	        padding: 2px 6px;
-	        --gf-checkbox-font-size: 11px;
+      &.dp-compact-legend__item--global {
+        font-weight: 500;
+        background-color: transparent;
+        border: 1px solid var(--gf-color-border-muted);
+        margin-right: 2px;
+        padding: 2px 6px;
+        --gf-checkbox-font-size: 11px;
+        --gf-checkbox-size: 12px;
 
-	        &:hover {
-	          background-color: var(--gf-color-primary-soft);
-	          border-color: var(--gf-color-primary);
-	        }
-	      }
-	    }
+        &:hover {
+          background-color: var(--gf-color-fill);
+          border-color: var(--gf-color-border);
+        }
+      }
+    }
 
     &__color {
       width: 8px;
       height: 8px;
-      border-radius: 2px;
+      border-radius: 1px;
       flex-shrink: 0;
-      box-shadow: inset 0 0 0 1px var(--gf-color-border-muted);
     }
 
     &__label {
@@ -161,6 +161,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: var(--gf-color-text-secondary);
 
       &.dp-compact-legend__label--wrap {
         white-space: normal;
@@ -168,23 +169,23 @@
       }
     }
 
-    /* 滚动条样式 */
+    /* Scrollbar styling */
     &::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
+      width: 4px;
+      height: 4px;
     }
 
     &::-webkit-scrollbar-track {
       background: transparent;
-      border-radius: 3px;
+      border-radius: 2px;
     }
 
     &::-webkit-scrollbar-thumb {
       background: var(--gf-color-fill-tertiary);
-      border-radius: 3px;
+      border-radius: 2px;
 
       &:hover {
-        background: var(--gf-color-fill-quaternary);
+        background: var(--gf-color-fill-secondary);
       }
     }
   }

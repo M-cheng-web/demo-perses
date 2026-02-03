@@ -346,13 +346,13 @@
     &__step {
       display: flex;
       gap: 0;
-      padding: 8px;
+      padding: 10px;
       background: var(--gf-color-surface);
-      border-radius: var(--gf-radius-xs);
+      border-radius: var(--gf-radius-sm);
       border: 1px solid transparent;
-      transition: all 0.15s;
+      transition: all var(--gf-motion-fast) var(--gf-easing);
       cursor: pointer;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
 
       &:last-child {
         margin-bottom: 0;
@@ -435,24 +435,25 @@
       font-weight: 500;
       color: var(--gf-color-text);
       font-size: 12px;
+      line-height: 1.5714285714285714;
     }
 
     &__step-query {
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     &__promql-box {
       background: var(--gf-color-surface-muted);
       border: 1px solid var(--gf-color-border-muted);
-      border-radius: var(--gf-radius-xs);
-      padding: 6px 8px;
+      border-radius: var(--gf-radius-sm);
+      padding: 8px 10px;
       border-left: 2px solid var(--gf-color-primary);
     }
 
     &__promql-code {
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
-      font-size: 11px;
-      line-height: 1.5;
+      font-size: 12px;
+      line-height: 1.5714285714285714;
       color: var(--gf-color-text);
       word-break: break-all;
       white-space: pre-wrap;
@@ -460,8 +461,8 @@
 
     &__step-description {
       color: var(--gf-color-text-secondary);
-      font-size: 11px;
-      line-height: 1.5;
+      font-size: 12px;
+      line-height: 1.5714285714285714;
 
       p {
         margin: 0 0 4px 0;

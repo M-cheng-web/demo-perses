@@ -192,30 +192,29 @@
 </script>
 
 <style scoped lang="less">
-  @import '/#/assets/styles/variables.less';
-
   .dp-query-hints {
     width: 100%;
-    border: 1px solid @border-color;
-    border-radius: 4px;
+    border: 1px solid var(--gf-color-border-muted);
+    border-radius: var(--gf-radius-md);
     overflow: hidden;
-    background: @background-light;
-    border-left: 3px solid @warning-color; // 提示区块使用警告色强调（统一 token）
+    background: var(--gf-color-surface);
+    border-left: 3px solid var(--gf-color-warning);
+    transition: border-color var(--gf-motion-fast) var(--gf-easing);
 
     &__header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 12px;
-      border-bottom: 1px solid @border-color;
-      background: @background-base;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--gf-color-border-muted);
+      background: var(--gf-color-surface-muted);
     }
 
     &__title {
       font-weight: 600;
-      font-size: 11px;
-      color: @text-color;
-      line-height: 1.5;
+      font-size: 12px;
+      color: var(--gf-color-text);
+      line-height: 1.5714285714285714;
     }
 
     &__content {
@@ -231,21 +230,23 @@
 
     &__hint-content {
       font-size: 12px;
+      line-height: 1.5714285714285714;
 
       p {
         margin: 4px 0;
-        line-height: 1.4;
+        line-height: 1.5714285714285714;
       }
     }
 
     &__suggestion {
       background: var(--gf-color-warning-soft);
-      padding: 6px 8px;
-      border-radius: 2px;
+      padding: 8px 10px;
+      border-radius: var(--gf-radius-sm);
       margin: 6px 0;
-      border-left: 2px solid @warning-color;
-      font-size: 11px;
-      color: @text-color-secondary;
+      border-left: 2px solid var(--gf-color-warning);
+      font-size: 12px;
+      color: var(--gf-color-text-secondary);
+      line-height: 1.5714285714285714;
     }
   }
 </style>

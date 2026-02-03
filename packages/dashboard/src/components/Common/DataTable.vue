@@ -17,8 +17,8 @@
             :class="[bem('cell'), bem('cell', { [`col-${column.key}`]: true }), bem('cell', { sortable: column.sortable })]"
             :style="{
               width: column.width || undefined,
-              minWidth: column.minWidth || 'auto',
-              flex: column.width ? '0 0 auto' : '1 1 0',
+              minWidth: column.minWidth || '60px',
+              flex: column.width ? `0 0 ${column.width}` : '1 1 0%',
             }"
             @click="column.sortable ? handleSort(column.key) : null"
           >
@@ -65,8 +65,8 @@
             :class="[bem('cell'), bem('cell', { [`col-${column.key}`]: true })]"
             :style="{
               width: column.width || undefined,
-              minWidth: column.minWidth || 'auto',
-              flex: column.width ? '0 0 auto' : '1 1 0',
+              minWidth: column.minWidth || '60px',
+              flex: column.width ? `0 0 ${column.width}` : '1 1 0%',
             }"
           >
             <div :class="[bem('cell-content'), bem('cell-content', { ellipsis: column.ellipsis !== false })]">
@@ -201,47 +201,54 @@
 <style scoped lang="less">
   .dp-data-table {
     width: 100%;
-    font-size: 12px;
+    font-size: 13px;
+    height: 100%;
     max-height: 300px;
-    overflow-y: auto;
-    border-radius: var(--gf-radius-md);
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--gf-radius-lg);
+    border: 1px solid var(--gf-color-border-muted);
+    overflow: hidden;
 
     &__container {
       width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     &__header {
-      position: sticky;
-      top: 0;
-      background: @background-base;
-      z-index: 1;
-      border-bottom: 1px solid @border-color;
+      flex-shrink: 0;
+      background: var(--gf-color-surface-muted);
+      border-bottom: 1px solid var(--gf-color-border-muted);
 
       .dp-data-table__row {
         display: flex;
         align-items: center;
-        height: 28px;
-        padding: 0 12px;
+        height: 32px;
+        padding: 0 8px;
       }
 
       .dp-data-table__cell {
-        font-size: 14px;
+        font-size: 12px;
         font-weight: 500;
-        color: @text-color;
+        color: var(--gf-color-text);
         white-space: nowrap;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 2px;
         position: relative;
-        padding-right: 12px;
+        padding-right: 8px;
+        line-height: 1.5714285714285714;
 
         &:not(.dp-data-table__cell--checkbox):not(:last-child)::after {
           content: '';
           position: absolute;
-          right: 6px;
+          right: 4px;
           top: 50%;
           transform: translateY(-50%);
-          height: 70%;
+          height: 50%;
           width: 1px;
           background-color: var(--gf-color-border-muted);
         }
@@ -249,10 +256,10 @@
         &.dp-data-table__cell--sortable {
           cursor: pointer;
           user-select: none;
-          transition: color 0.2s ease;
+          transition: color var(--gf-motion-fast) var(--gf-easing);
 
           &:hover {
-            color: @primary-color;
+            color: var(--gf-color-primary);
 
             .dp-data-table__sort-icon {
               opacity: 1;
@@ -261,8 +268,8 @@
         }
 
         &.dp-data-table__cell--checkbox {
-          width: 32px;
-          flex-shrink: 0;
+          width: 28px;
+          flex: 0 0 28px;
           padding-right: 0;
         }
       }
@@ -276,45 +283,51 @@
       }
 
       .dp-data-table__sort-icon {
-        display: flex;
+        display: inline-flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        font-size: 9px;
-        transition: opacity 0.2s ease;
+        transition: opacity var(--gf-motion-fast) var(--gf-easing);
         flex-shrink: 0;
+        margin-left: 2px;
+        gap: 0;
 
         :deep(.anticon) {
-          line-height: 0.8;
+          font-size: 8px;
+          line-height: 1;
           display: block;
-          transition: all 0.2s ease;
+          transition: all var(--gf-motion-fast) var(--gf-easing);
+          margin: -1px 0;
 
           &.active {
-            color: @primary-color;
+            color: var(--gf-color-primary);
             opacity: 1;
           }
 
           &.inactive {
-            color: @text-color-secondary;
-            opacity: 0.3;
+            color: var(--gf-color-text-tertiary);
+            opacity: 0.35;
           }
         }
       }
     }
 
     &__body {
+      flex: 1;
+      overflow-y: auto;
+
       .dp-data-table__row:nth-child(even):not(.dp-data-table__row--selected) {
-        background-color: var(--gf-color-zebra);
+        background-color: var(--gf-color-fill-tertiary);
       }
 
       .dp-data-table__row {
         display: flex;
         align-items: center;
-        height: 28px;
-        padding: 0 12px;
+        height: 32px;
+        padding: 0 8px;
         border-bottom: 1px solid var(--gf-color-border-muted);
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all var(--gf-motion-fast) var(--gf-easing);
 
         &:last-child {
           border-bottom: none;
@@ -334,21 +347,22 @@
 
         &.dp-data-table__row--dimmed {
           opacity: 0.35;
+          transition: opacity var(--gf-motion-fast) var(--gf-easing);
 
           &:hover {
-            opacity: 0.6;
+            opacity: 0.65;
           }
         }
 
         .dp-data-table__cell {
-          color: @text-color;
+          color: var(--gf-color-text);
           display: flex;
           align-items: center;
-          padding-right: 12px;
+          padding-right: 8px;
 
           &.dp-data-table__cell--checkbox {
-            width: 32px;
-            flex-shrink: 0;
+            width: 28px;
+            flex: 0 0 28px;
             padding-right: 0;
           }
 
@@ -364,24 +378,24 @@
           }
         }
       }
-    }
 
-    /* 滚动条样式 */
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
+      /* Body scrollbar styling */
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
 
-    &::-webkit-scrollbar-track {
-      background: transparent;
-      border-radius: 3px;
-    }
+      &::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 3px;
+      }
 
-    &::-webkit-scrollbar-thumb {
-      background: var(--gf-color-fill-tertiary);
-      border-radius: 3px;
+      &::-webkit-scrollbar-thumb {
+        background: var(--gf-color-fill-secondary);
+        border-radius: 3px;
 
-      &:hover {
-        background: var(--gf-color-fill-quaternary);
+        &:hover {
+          background: var(--gf-color-fill);
+        }
       }
     }
   }

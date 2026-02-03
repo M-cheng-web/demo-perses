@@ -1368,7 +1368,7 @@
 
   .fade-collapse-enter-active,
   .fade-collapse-leave-active {
-    transition: all 0.2s ease;
+    transition: all var(--gf-motion-normal) var(--gf-easing);
   }
 
   .fade-collapse-enter-from,

@@ -424,11 +424,11 @@
     position: sticky;
     top: 0;
     z-index: 30;
-    background-color: color-mix(in srgb, @background-base, transparent 8%);
-    border-bottom: 1px solid @border-color;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+    background-color: color-mix(in srgb, var(--gf-color-surface), transparent 8%);
+    border-bottom: 1px solid var(--gf-color-border-muted);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     isolation: isolate;
 
     &::after {
@@ -439,7 +439,7 @@
       bottom: -1px;
       height: 1px;
       background: linear-gradient(to right, transparent, var(--gf-color-primary-border-strong), transparent);
-      opacity: 0.65;
+      opacity: 0.5;
       pointer-events: none;
     }
 
@@ -447,7 +447,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 14px;
+      padding: 10px 16px;
+      min-height: 48px;
       background-color: transparent;
       transition: background-color var(--gf-motion-normal) var(--gf-easing);
 
@@ -458,15 +459,16 @@
 
     &__title {
       margin: 0;
-      font-size: 15px;
-      font-weight: 650;
-      letter-spacing: 0.2px;
-      color: @text-color;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--gf-color-text);
       flex: 1;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      line-height: 1.5714285714285714;
     }
 
     &__actions {
@@ -478,15 +480,16 @@
 
     &__json-loading {
       padding: 24px;
-      font-size: 13px;
-      color: color-mix(in srgb, @text-color, transparent 40%);
+      font-size: 14px;
+      color: var(--gf-color-text-tertiary);
+      line-height: 1.5714285714285714;
     }
 
     &__divider {
       width: 100%;
       height: 1px;
       background: var(--gf-color-border-muted);
-      margin: 2px 0;
+      margin: 8px 0;
       align-self: stretch;
     }
 
@@ -507,66 +510,74 @@
       .dp-dashboard-toolbar__sidebar {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 16px;
       }
 
       .dp-dashboard-toolbar__sidebar-title {
         display: flex;
         flex-direction: column;
-        gap: 6px;
-        padding: 6px 2px;
+        gap: 8px;
+        padding: 8px 4px;
       }
 
       .dp-dashboard-toolbar__sidebar-name {
         font-size: 16px;
-        font-weight: 700;
-        letter-spacing: 0.2px;
-        color: @text-color;
-        line-height: 1.25;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        color: var(--gf-color-text);
+        line-height: 1.5;
       }
 
       .dp-dashboard-toolbar__sidebar-subtitle {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
-        color: color-mix(in srgb, @text-color, transparent 35%);
-        font-size: 12px;
-        line-height: 1.4;
+        gap: 8px;
+        color: var(--gf-color-text-secondary);
+        font-size: 14px;
+        line-height: 1.5714285714285714;
       }
 
       .dp-dashboard-toolbar__card {
         width: 100%;
+
+        :deep(.gf-card__body) {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
       }
 
       .dp-dashboard-toolbar__row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 10px;
+        gap: 12px;
       }
 
       .dp-dashboard-toolbar__field {
         width: 100%;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
       }
 
       .dp-dashboard-toolbar__label {
         flex: 0 0 auto;
-        width: 42px;
-        font-size: 12px;
-        color: color-mix(in srgb, @text-color, transparent 30%);
+        width: 56px;
+        font-size: 14px;
+        color: var(--gf-color-text-secondary);
+        line-height: 1.5714285714285714;
       }
 
       .dp-dashboard-toolbar__var-label {
         flex: 0 0 auto;
-        width: 96px;
-        font-size: 12px;
-        color: color-mix(in srgb, @text-color, transparent 30%);
+        width: 100px;
+        font-size: 14px;
+        color: var(--gf-color-text-secondary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        line-height: 1.5714285714285714;
       }
 
       .dp-dashboard-toolbar__var-control {
@@ -575,40 +586,63 @@
       }
 
       .dp-dashboard-toolbar__var-help-list {
-        margin-top: 10px;
-        padding-top: 10px;
+        margin-top: 12px;
+        padding-top: 12px;
         border-top: 1px dashed var(--gf-color-border-muted);
       }
 
       .dp-dashboard-toolbar__var-help-title {
-        font-size: 12px;
-        line-height: 1.45;
-        color: color-mix(in srgb, @text-color, transparent 28%);
-        margin-bottom: 6px;
+        font-size: 14px;
+        line-height: 1.5714285714285714;
+        color: var(--gf-color-text-secondary);
+        margin-bottom: 8px;
+        font-weight: 500;
       }
 
       .dp-dashboard-toolbar__var-help-item {
-        margin-bottom: 8px;
+        margin-bottom: 12px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
       }
 
       .dp-dashboard-toolbar__var-help-name {
-        font-size: 12px;
-        line-height: 1.45;
-        color: color-mix(in srgb, @text-color, transparent 20%);
-        margin-bottom: 2px;
+        font-size: 14px;
+        line-height: 1.5714285714285714;
+        color: var(--gf-color-text);
+        margin-bottom: 4px;
+
+        code {
+          font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+          font-size: 13px;
+          padding: 2px 6px;
+          background: var(--gf-color-fill-tertiary);
+          border-radius: var(--gf-radius-xs);
+          color: var(--gf-color-primary);
+        }
       }
 
       .dp-dashboard-toolbar__var-help-line {
-        font-size: 12px;
-        line-height: 1.45;
-        color: color-mix(in srgb, @text-color, transparent 45%);
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--gf-color-text-tertiary);
+        padding-left: 8px;
       }
 
       .dp-dashboard-toolbar__hint {
         margin-top: 8px;
-        font-size: 12px;
-        line-height: 1.5;
-        color: color-mix(in srgb, @text-color, transparent 40%);
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--gf-color-text-tertiary);
+
+        code {
+          font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+          font-size: 12px;
+          padding: 1px 4px;
+          background: var(--gf-color-fill-tertiary);
+          border-radius: var(--gf-radius-xs);
+        }
       }
     }
   }

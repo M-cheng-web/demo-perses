@@ -1,10 +1,10 @@
-<!-- 组件说明：下拉选择器，支持单选/多选、搜索、清空 -->
+<!-- 组件说明：下拉选择器，支持单选/多选、搜索、清空 (AntD-inspired) -->
 <template>
   <div
     :class="[
       bem(),
       bem({ [`size-${size}`]: true }),
-      { 'is-open': open, 'is-disabled': disabled, 'is-clearable': showClear, 'is-multiple': isMultiple },
+      { 'is-open': open, 'is-disabled': disabled, 'is-clearable': showClear, 'is-multiple': isMultiple, 'is-focused': isFocused },
     ]"
     ref="rootRef"
     :style="rootStyle"
@@ -12,111 +12,128 @@
     <div
       ref="controlRef"
       :class="[
-        bem('control'),
-        variant === 'text' ? bem('control--text') : 'gf-control',
-        variant === 'text' ? undefined : controlSizeClass,
-        { 'gf-control--disabled': disabled },
+        bem('selector'),
+        variant === 'text' ? bem('selector--text') : '',
+        { 'is-disabled': disabled },
       ]"
       tabindex="0"
       @click="handleTriggerClick"
       @pointerdown="handlePointerDownInside"
       @focusin="handleFocusIn"
+      @focusout="handleFocusOut"
       @keydown="handleKeydown"
     >
-      <div v-if="isMultiple" :class="bem('tags')">
-        <Tag
+      <div v-if="isMultiple" :class="bem('selection')">
+        <span
           v-for="(item, idx) in selectedOptions"
           :key="item.value"
           v-show="idx < visibleTagCount"
           :data-gf-value="String(item.value)"
-          :class="bem('tag')"
-          :size="size === 'small' ? 'small' : 'middle'"
-          variant="neutral"
-          radius="sm"
-          closable
-          @close="() => removeValue(item.value)"
+          :class="[bem('item'), 'gf-select-item']"
         >
-          {{ formatTagLabel(item.label) }}
-        </Tag>
-        <Tag
+          <span :class="bem('item-content')">{{ formatTagLabel(item.label) }}</span>
+          <span :class="bem('item-remove')" @click.stop="() => removeValue(item.value)">
+            <CloseOutlined />
+          </span>
+        </span>
+        <span
           v-if="collapsedTagCount > 0"
-          :class="[bem('tag'), bem('tag-summary')]"
-          :size="size === 'small' ? 'small' : 'middle'"
-          variant="neutral"
-          radius="sm"
+          :class="[bem('item'), bem('item-rest')]"
         >
           +{{ collapsedTagCount }}
-        </Tag>
+        </span>
+        <span :class="bem('search-mirror')" ref="searchMirrorRef">{{ search }}&nbsp;</span>
         <input
           v-if="showSearch"
           ref="searchInputRef"
           v-model="search"
-          :class="bem('search-input')"
+          :class="bem('search')"
           type="text"
           :placeholder="selectedOptions.length === 0 ? placeholder : ''"
+          :style="searchInputStyle"
           @click.stop="handleSearchClick"
           @keydown.stop="handleSearchKeydown"
         />
       </div>
       <template v-else>
-        <template v-if="selectedOptions[0]">
-          <slot name="value" :option="selectedOptions[0]" :value="selectedOptions[0].value" :label="selectedOptions[0].label" :open="open">
-            <span :class="bem('value')">{{ selectedOptions[0].label }}</span>
-          </slot>
-        </template>
-        <span v-else :class="bem('placeholder')">{{ placeholder }}</span>
+        <span :class="bem('selection')">
+          <template v-if="selectedOptions[0]">
+            <slot name="value" :option="selectedOptions[0]" :value="selectedOptions[0].value" :label="selectedOptions[0].label" :open="open">
+              <span :class="bem('selection-item')">{{ selectedOptions[0].label }}</span>
+            </slot>
+          </template>
+          <span v-else :class="bem('placeholder')">{{ placeholder }}</span>
+          <input
+            v-if="showSearch && !isMultiple"
+            ref="searchInputRef"
+            v-model="search"
+            :class="bem('search')"
+            type="text"
+            :style="{ opacity: open ? 1 : 0, width: open ? '100%' : 0 }"
+            @click.stop
+            @keydown.stop="handleSearchKeydown"
+          />
+        </span>
       </template>
-      <span :class="bem('suffix')">
-        <button v-if="showClear" type="button" :class="bem('clear')" tabindex="-1" aria-label="清空" @click.stop="clearValue">
-          <CloseOutlined />
-        </button>
-        <span :class="bem('arrow')" aria-hidden="true">
+      <span :class="bem('arrow')">
+        <span :class="[bem('arrow-icon'), { 'is-open': open }]">
           <DownOutlined />
         </span>
+        <Transition name="gf-zoom-in">
+          <span v-if="showClear" :class="bem('clear')" @click.stop="clearValue">
+            <CloseCircleFilled />
+          </span>
+        </Transition>
       </span>
     </div>
 
     <Teleport :to="portalTarget">
-      <transition name="fade">
+      <Transition name="gf-slide-up">
         <div v-if="open" :class="[bem('dropdown'), themeClass]" :data-gf-theme="colorScheme" :style="dropdownStyle" ref="dropdownRef">
           <div v-if="showSearch && !isMultiple" :class="bem('dropdown-search')" @click.stop>
             <input
-              ref="searchInputRef"
+              ref="dropdownSearchRef"
               v-model="search"
               :class="bem('dropdown-search-input')"
               type="text"
-              :placeholder="selectedOptions[0] ? '搜索...' : placeholder"
+              :placeholder="'搜索...'"
               @keydown.stop="handleSearchKeydown"
             />
           </div>
-          <div :class="bem('options')" :style="optionsStyle">
+          <div :class="bem('dropdown-content')" :style="optionsStyle">
             <div
               v-for="(option, idx) in filteredOptions"
               :key="option.value"
-              :class="[bem('option'), { 'is-selected': isSelected(option.value), 'is-active': idx === activeIndex, 'is-disabled': option.disabled }]"
+              :class="[
+                bem('option'),
+                { 'is-selected': isSelected(option.value), 'is-active': idx === activeIndex, 'is-disabled': option.disabled }
+              ]"
               @click="selectOption(option)"
               @mouseenter="setActiveIndex(idx)"
             >
-              <span :class="bem('option-label')">{{ option.label }}</span>
-              <span :class="[bem('check'), { 'is-visible': isSelected(option.value) }]" aria-hidden="true">
-                <CheckOutlined />
-              </span>
+              <span :class="bem('option-content')">{{ option.label }}</span>
+              <Transition name="gf-zoom-in">
+                <span v-if="isSelected(option.value)" :class="bem('option-state')">
+                  <CheckOutlined />
+                </span>
+              </Transition>
             </div>
-            <div v-if="filteredOptions.length === 0" :class="bem('empty')">{{ emptyText }}</div>
+            <div v-if="filteredOptions.length === 0" :class="bem('empty')">
+              <span>{{ emptyText }}</span>
+            </div>
           </div>
         </div>
-      </transition>
+      </Transition>
     </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-  import { CheckOutlined, CloseOutlined, DownOutlined } from '@ant-design/icons-vue';
+  import { CheckOutlined, CloseOutlined, CloseCircleFilled, DownOutlined } from '@ant-design/icons-vue';
   import { createNamespace, debounceCancellable } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
-  import Tag from '../base/Tag.vue';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfSelect' });
@@ -195,7 +212,7 @@
       maxTagCount: undefined,
       maxTagTextLength: undefined,
       width: undefined,
-      dropdownMaxHeight: 240,
+      dropdownMaxHeight: 256,
       variant: 'default',
     }
   );
@@ -204,6 +221,7 @@
     (e: 'update:value', value: any): void;
     (e: 'change', value: any): void;
     (e: 'dropdown-visible-change', visible: boolean): void;
+    (e: 'search', value: string): void;
   }>();
 
   const [_, bem] = createNamespace('select');
@@ -218,24 +236,28 @@
   const controlRef = ref<HTMLElement>();
   const dropdownRef = ref<HTMLElement>();
   const searchInputRef = ref<HTMLInputElement>();
+  const dropdownSearchRef = ref<HTMLInputElement>();
+  const searchMirrorRef = ref<HTMLElement>();
   const open = ref(false);
   const search = ref('');
   const activeIndex = ref(0);
   const responsiveTagCount = ref<number>(Number.POSITIVE_INFINITY);
+  const isFocused = ref(false);
   let openedByFocusIn = false;
   let pointerDownInside = false;
   const clearPointerDownInside = debounceCancellable(() => {
     pointerDownInside = false;
   }, 0);
-  const controlSizeClass = computed(() => {
-    if (props.size === 'small') return 'gf-control--size-small';
-    if (props.size === 'large') return 'gf-control--size-large';
-    return undefined;
-  });
 
   const isMultiple = computed(() => props.mode === 'multiple' || props.mode === 'tags');
   const isTags = computed(() => props.mode === 'tags');
-  const showClear = computed(() => props.allowClear && hasValue.value);
+  const showClear = computed(() => props.allowClear && hasValue.value && !props.disabled);
+
+  const searchInputStyle = computed(() => {
+    if (!searchMirrorRef.value) return { width: '4px' };
+    const mirrorWidth = searchMirrorRef.value.offsetWidth;
+    return { width: `${Math.max(4, mirrorWidth)}px` };
+  });
 
   const rootStyle = computed<Record<string, string> | undefined>(() => {
     if (props.width === undefined || props.width === null || props.width === '') return undefined;
@@ -301,7 +323,7 @@
   const emptyText = computed(() => {
     if (typeof props.notFoundContent === 'string' && props.notFoundContent.length > 0) return props.notFoundContent;
     if (props.loading) return '加载中...';
-    return '无可选项';
+    return '暂无数据';
   });
 
   const setActiveIndex = (idx: number) => {
@@ -310,7 +332,11 @@
 
   const focusSearch = async () => {
     await nextTick();
-    searchInputRef.value?.focus?.();
+    if (isMultiple.value) {
+      searchInputRef.value?.focus?.();
+    } else {
+      dropdownSearchRef.value?.focus?.();
+    }
   };
 
   const findFirstEnabledIndex = () => {
@@ -341,10 +367,20 @@
 
   const handleFocusIn = (evt: FocusEvent) => {
     if (props.disabled) return;
+    isFocused.value = true;
     const target = evt.target as HTMLElement | null;
     if (target?.closest?.('.gf-select__clear')) return;
-    if (target?.closest?.('.gf-tag__close')) return;
+    if (target?.closest?.('.gf-select__item-remove')) return;
     void openDropdown(pointerDownInside ? 'focusin-pointer' : 'focusin');
+  };
+
+  const handleFocusOut = (evt: FocusEvent) => {
+    const relatedTarget = evt.relatedTarget as HTMLElement | null;
+    // Check if focus is moving to dropdown or staying within component
+    if (rootRef.value?.contains(relatedTarget) || dropdownRef.value?.contains(relatedTarget)) {
+      return;
+    }
+    isFocused.value = false;
   };
 
   const handleTriggerClick = () => {
@@ -364,11 +400,13 @@
     if (!open.value) return;
     open.value = false;
     openedByFocusIn = false;
+    search.value = '';
     // Treat "dropdown closed" as finishing interaction (AntD-ish blur validation).
     formItem?.onFieldBlur();
   };
 
   watch(open, (v) => emit('dropdown-visible-change', v));
+  watch(search, (v) => emit('search', v));
 
   const handleSearchClick = () => {
     if (props.disabled) return;
@@ -487,6 +525,11 @@
       if (!values.includes(raw)) updateValue([...values, raw]);
       search.value = '';
     }
+
+    // Pass arrow keys to main keydown handler
+    if (evt.key === 'ArrowDown' || evt.key === 'ArrowUp' || evt.key === 'Enter') {
+      handleKeydown(evt);
+    }
   };
 
   const dropdownStyle = ref<Record<string, string>>({});
@@ -498,11 +541,9 @@
   const tagWidthCache = new Map<string, number>();
 
   const estimateTagWidth = (tagEl: HTMLElement) => {
-    // 一个非常粗略的估算：用于无法测量宽度（display:none）时的兜底
-    // 注意：tag 内部还包含关闭按钮，因此用 textContent 只能近似估计。
     const text = (tagEl.textContent ?? '').trim();
-    const perChar = 7; // 经验值：中文/英文平均宽度
-    const base = 34; // padding/border/close button 的保守预留
+    const perChar = 7;
+    const base = 34;
     const estimated = text.length * perChar + base;
     return clamp(estimated, 36, 260);
   };
@@ -532,18 +573,13 @@
     const control = controlRef.value;
     if (!control) return;
 
-    // 这里采用一个相对保守的估算：
-    // - 控制区右侧有 suffix（清空按钮 + 箭头），需要预留空间
-    // - 多选 tag 容器会包含一个搜索 input（如果开启），也需要预留
-    //
-    // 该逻辑的目标是“足够好用”，而不是像 antd 一样做极端精确的像素级对齐。
     await nextTick();
 
-    const tagsWrap = control.querySelector(`.${bem('tags')}`) as HTMLElement | null;
+    const tagsWrap = control.querySelector(`.${bem('selection')}`) as HTMLElement | null;
     if (!tagsWrap) return;
 
-    const allTags = Array.from(tagsWrap.querySelectorAll(`.${bem('tag')}`)).filter(
-      (el) => !(el as HTMLElement).classList.contains(bem('tag-summary'))
+    const allTags = Array.from(tagsWrap.querySelectorAll(`.${bem('item')}`)).filter(
+      (el) => !(el as HTMLElement).classList.contains(bem('item-rest'))
     ) as HTMLElement[];
     const total = allTags.length;
     if (!total) {
@@ -552,19 +588,13 @@
     }
 
     const wrapWidth = tagsWrap.clientWidth;
-    // 这里取的是 tags 容器自身的宽度（flex: 1 的区域），它已经不包含右侧 suffix 区域，
-    // 因此不需要再额外扣除 clear/arrow 的宽度，否则会过于保守。
     const suffixWidth = 0;
-    const inputReserve = props.showSearch ? 50 : 0; // 预留一点给输入框/光标
-    const paddingReserve = 12; // 左右 padding/gap 的保守预留
-
-    // “+N” 汇总 tag 的预留宽度（保守值，避免频繁抖动）
+    const inputReserve = props.showSearch ? 50 : 0;
+    const paddingReserve = 12;
     const summaryReserve = 44;
 
-    // 可用于 tag 的宽度
     const available = Math.max(0, wrapWidth - suffixWidth - inputReserve - paddingReserve);
 
-    // 先假设不需要 summary，尝试放下全部
     let used = 0;
     let fit = 0;
     for (let i = 0; i < allTags.length; i++) {
@@ -587,7 +617,6 @@
       return;
     }
 
-    // 需要 summary 时，重新计算：预留 summaryReserve
     used = 0;
     fit = 0;
     const availableWithSummary = Math.max(0, available - summaryReserve);
@@ -616,13 +645,13 @@
     const menu = dropdownRef.value;
     const menuWidth = menu?.offsetWidth || rect.width;
     const menuHeight = menu?.offsetHeight || 0;
-    const padding = 8;
+    const padding = 4;
     let left = rect.left;
-    let top = rect.bottom + 6;
+    let top = rect.bottom + 4;
 
     left = clamp(left, padding, window.innerWidth - menuWidth - padding);
     if (top + menuHeight > window.innerHeight - padding) {
-      top = rect.top - menuHeight - 6;
+      top = rect.top - menuHeight - 4;
       if (top < padding) top = padding;
     }
 
@@ -718,220 +747,288 @@
     min-width: 0;
     flex: 1 1 auto;
 
-    &__control {
-      display: inline-flex;
+    &__selector {
+      position: relative;
+      display: flex;
       align-items: center;
       width: 100%;
-      gap: 6px;
+      min-height: var(--gf-control-height-md);
+      padding: 0 11px;
+      padding-right: 30px;
+      border-radius: var(--gf-radius-sm);
+      border: 1px solid var(--gf-control-border-color, var(--gf-border));
+      background: var(--gf-control-bg, var(--gf-color-surface));
       cursor: pointer;
+      transition:
+        border-color var(--gf-motion-fast) var(--gf-easing),
+        box-shadow var(--gf-motion-fast) var(--gf-easing),
+        background var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover:not(.is-disabled) {
+        border-color: var(--gf-color-primary);
+      }
+
+      &.is-disabled {
+        background: var(--gf-color-fill);
+        cursor: not-allowed;
+      }
     }
 
-    &__control--text {
+    &.is-focused:not(.is-disabled) &__selector,
+    &.is-open:not(.is-disabled) &__selector {
+      border-color: var(--gf-color-primary);
+      box-shadow: 0 0 0 2px var(--gf-color-primary-soft);
+    }
+
+    &__selector--text {
       border: none;
       background: transparent;
       padding: 0;
       min-height: auto;
-      box-shadow: none;
+      box-shadow: none !important;
     }
 
-    /*
-     * 说明：保持单选/多选在“已选择”状态下的控件高度一致
-     * - 多选的 tag 容器通常会比纯文本更高
-     * - 因此这里会稍微减小 vertical padding，让整体落在统一的 control height token 内
-     */
-    &.is-multiple &__control.gf-control {
-      padding-top: 2px;
-      padding-bottom: 2px;
+    // Multi-select with tags
+    &.is-multiple &__selector {
+      padding: 1px 30px 1px 4px;
+      flex-wrap: wrap;
+      gap: 2px;
+      min-height: var(--gf-control-height-md);
     }
 
-    &.is-multiple&--size-small &__control.gf-control {
-      padding-top: 2px;
-      padding-bottom: 2px;
-    }
-
-    &.is-multiple&--size-large &__control.gf-control {
-      padding-top: 4px;
-      padding-bottom: 4px;
-    }
-
-    &__value {
-      color: var(--gf-text);
-      line-height: 1.35;
-      display: inline-flex;
+    &__selection {
+      display: flex;
+      flex-wrap: wrap;
+      flex: 1;
+      min-width: 0;
       align-items: center;
+      gap: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    &__selection-item {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--gf-text);
+      line-height: 1.5714285714285714;
     }
 
     &__placeholder {
-      color: var(--gf-text-secondary);
-      line-height: 1.35;
+      color: var(--gf-color-text-tertiary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    // Tag item (multi-select)
+    &__item {
       display: inline-flex;
       align-items: center;
+      height: 22px;
+      padding: 0 4px 0 8px;
+      margin: 2px 0;
+      max-width: 100%;
+      background: var(--gf-color-fill-secondary);
+      border-radius: var(--gf-radius-xs);
+      font-size: var(--gf-font-size-sm);
+      line-height: 20px;
+      transition: background var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        background: var(--gf-color-fill-tertiary);
+      }
     }
 
-    &__arrow {
-      color: var(--gf-text-secondary);
-      display: grid;
-      place-items: center;
+    &__item-content {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-right: 2px;
     }
 
-    &__clear {
-      border: none;
-      background: transparent;
-      color: var(--gf-text-secondary);
-      width: 18px;
-      height: 18px;
-      display: grid;
-      place-items: center;
-      border-radius: 999px;
-      cursor: pointer;
-      transition: all 0.2s var(--gf-easing);
-    }
-
-    &__suffix {
-      margin-left: auto;
+    &__item-remove {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 18px;
-      height: 18px;
-      position: relative;
-      flex: 0 0 18px;
-      font-size: 12px;
+      width: 14px;
+      height: 14px;
+      margin-left: 2px;
+      font-size: 10px;
+      color: var(--gf-color-text-tertiary);
+      cursor: pointer;
+      border-radius: 50%;
+      transition:
+        color var(--gf-motion-fast) var(--gf-easing),
+        background var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        color: var(--gf-color-text);
+        background: var(--gf-color-fill-tertiary);
+      }
     }
 
+    &__item-rest {
+      padding: 0 8px;
+      background: var(--gf-color-fill);
+    }
+
+    &__search-mirror {
+      position: absolute;
+      left: 0;
+      top: 0;
+      visibility: hidden;
+      white-space: pre;
+      pointer-events: none;
+    }
+
+    &__search {
+      flex: 1;
+      min-width: 4px;
+      max-width: 100%;
+      margin: 2px 0;
+      padding: 0;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: inherit;
+      line-height: 20px;
+      color: var(--gf-text);
+
+      &::placeholder {
+        color: var(--gf-color-text-tertiary);
+      }
+    }
+
+    // Arrow & Clear
     &__arrow {
       position: absolute;
-      inset: 0;
-      opacity: 1;
-      transition: opacity var(--gf-motion-fast) var(--gf-easing);
+      right: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gf-color-text-tertiary);
+      font-size: 12px;
       pointer-events: none;
+    }
+
+    &__arrow-icon {
+      display: flex;
+      transition: transform var(--gf-motion-fast) var(--gf-easing);
+
+      &.is-open {
+        transform: rotate(180deg);
+      }
     }
 
     &__clear {
       position: absolute;
-      inset: 0;
-      opacity: 0;
-      pointer-events: none;
-      transition:
-        opacity var(--gf-motion-fast) var(--gf-easing),
-        background var(--gf-motion-fast) var(--gf-easing),
-        color var(--gf-motion-fast) var(--gf-easing);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gf-color-text-tertiary);
+      cursor: pointer;
+      pointer-events: auto;
+      transition: color var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
-        color: var(--gf-primary-strong);
-        background: var(--gf-primary-soft);
+        color: var(--gf-color-text-secondary);
       }
+    }
+
+    &.is-clearable:not(.is-disabled):hover &__arrow-icon {
+      opacity: 0;
+    }
+
+    &.is-clearable:not(.is-disabled) &__clear {
+      opacity: 0;
     }
 
     &.is-clearable:not(.is-disabled):hover &__clear {
       opacity: 1;
-      pointer-events: auto;
     }
 
-    &.is-clearable:not(.is-disabled):hover &__arrow {
-      opacity: 0;
-    }
-
-    &__tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      flex: 1;
-      min-width: 0;
-      align-items: center;
-    }
-
-    &__tag {
-      max-width: 100%;
-    }
-
-    &__search-input {
-      flex: 1;
-      border: none;
-      outline: none;
-      min-width: 80px;
-      font-size: var(--gf-font-size-sm);
-      background: transparent;
-      padding: 0;
-      line-height: 1.35;
-      height: 18px;
-    }
-
+    // Dropdown
     &__dropdown {
       position: fixed;
       z-index: var(--gf-z-popover);
-      background: var(--gf-surface);
-      border: 1px solid var(--gf-border);
+      background: var(--gf-color-surface);
       border-radius: var(--gf-radius-md);
       box-shadow: var(--gf-shadow-2);
       overflow: hidden;
     }
 
     &__dropdown-search {
-      padding: 6px;
-      border-bottom: 1px solid var(--gf-color-border-muted);
-      background: var(--gf-color-surface);
+      padding: 8px 12px 4px;
     }
 
     &__dropdown-search-input {
       width: 100%;
+      padding: 4px 11px;
       border: 1px solid var(--gf-border);
       border-radius: var(--gf-radius-sm);
       background: var(--gf-color-surface);
       color: var(--gf-text);
-      padding: 6px 10px;
       font-size: var(--gf-font-size-sm);
-      line-height: 1.35;
+      line-height: 1.5714285714285714;
       outline: none;
+      transition:
+        border-color var(--gf-motion-fast) var(--gf-easing),
+        box-shadow var(--gf-motion-fast) var(--gf-easing);
 
-      &:focus,
-      &:focus-visible {
-        border-color: var(--gf-color-focus-border);
-        box-shadow: var(--gf-focus-ring);
+      &:focus {
+        border-color: var(--gf-color-primary);
+        box-shadow: 0 0 0 2px var(--gf-color-primary-soft);
+      }
+
+      &::placeholder {
+        color: var(--gf-color-text-tertiary);
       }
     }
 
-    &__options {
-      max-height: 240px;
+    &__dropdown-content {
+      padding: 4px;
       overflow: auto;
-      padding: 6px;
     }
 
     &__option {
-      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 5px 12px;
       border-radius: var(--gf-radius-sm);
       cursor: pointer;
       color: var(--gf-text);
-      min-height: var(--gf-control-height-md);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition:
-        background var(--gf-motion-fast) var(--gf-easing),
-        color var(--gf-motion-fast) var(--gf-easing);
+      font-size: var(--gf-font-size-sm);
+      line-height: 1.5714285714285714;
+      transition: background var(--gf-motion-fast) var(--gf-easing);
 
-      &:hover {
-        background: var(--gf-color-primary-soft);
-        color: var(--gf-color-primary);
-      }
-
+      &:hover,
       &.is-active {
         background: var(--gf-color-fill);
       }
 
       &.is-selected {
-        background: var(--gf-primary-soft);
-        color: var(--gf-primary-strong);
-        box-shadow: inset 0 0 0 1px var(--gf-border-strong);
+        color: var(--gf-text);
+        font-weight: 600;
+        background: var(--gf-color-primary-soft);
       }
 
       &.is-disabled {
-        opacity: 0.5;
+        color: var(--gf-color-text-disabled);
         cursor: not-allowed;
+
+        &:hover {
+          background: transparent;
+        }
       }
     }
 
-    &__option-label {
+    &__option-content {
       flex: 1;
       min-width: 0;
       overflow: hidden;
@@ -939,40 +1036,90 @@
       white-space: nowrap;
     }
 
-    &__check {
-      width: 16px;
-      height: 16px;
-      display: grid;
-      place-items: center;
-      color: var(--gf-primary-strong);
+    &__option-state {
+      margin-left: 8px;
+      color: var(--gf-color-primary);
       font-size: 12px;
-      opacity: 0;
-      transition: opacity var(--gf-motion-fast) var(--gf-easing);
-
-      &.is-visible {
-        opacity: 1;
-      }
     }
 
     &__empty {
-      padding: 12px;
+      padding: 8px 12px;
       text-align: center;
-      color: var(--gf-text-secondary);
-    }
-
-    &--size-small &__option {
-      min-height: var(--gf-control-height-sm);
+      color: var(--gf-color-text-tertiary);
       font-size: var(--gf-font-size-sm);
     }
 
-    &--size-large &__option {
-      min-height: var(--gf-control-height-lg);
-      font-size: var(--gf-font-size-lg);
+    // Size variants
+    &--size-small {
+      .gf-select__selector {
+        min-height: var(--gf-control-height-sm);
+        padding: 0 7px;
+        padding-right: 26px;
+      }
+
+      .gf-select__option {
+        min-height: 24px;
+        padding: 1px 8px;
+        font-size: var(--gf-font-size-sm);
+      }
+
+      .gf-select__item {
+        height: 18px;
+        line-height: 16px;
+        font-size: 11px;
+      }
+    }
+
+    &--size-large {
+      .gf-select__selector {
+        min-height: var(--gf-control-height-lg);
+        padding: 0 11px;
+        padding-right: 34px;
+        font-size: var(--gf-font-size-md);
+      }
+
+      .gf-select__option {
+        min-height: 40px;
+        font-size: var(--gf-font-size-md);
+      }
+
+      .gf-select__item {
+        height: 26px;
+        line-height: 24px;
+      }
     }
 
     &.is-disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+      .gf-select__placeholder {
+        color: var(--gf-color-text-disabled);
+      }
     }
+  }
+
+  // Transition animations
+  .gf-slide-up-enter-active,
+  .gf-slide-up-leave-active {
+    transition:
+      opacity var(--gf-motion-fast) var(--gf-easing),
+      transform var(--gf-motion-fast) var(--gf-easing);
+  }
+
+  .gf-slide-up-enter-from,
+  .gf-slide-up-leave-to {
+    opacity: 0;
+    transform: translateY(-4px) scaleY(0.98);
+  }
+
+  .gf-zoom-in-enter-active,
+  .gf-zoom-in-leave-active {
+    transition:
+      opacity var(--gf-motion-fast) var(--gf-easing),
+      transform var(--gf-motion-fast) var(--gf-easing);
+  }
+
+  .gf-zoom-in-enter-from,
+  .gf-zoom-in-leave-to {
+    opacity: 0;
+    transform: scale(0.8);
   }
 </style>

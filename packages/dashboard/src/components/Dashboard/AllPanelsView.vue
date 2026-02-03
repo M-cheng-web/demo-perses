@@ -183,6 +183,7 @@
     &__item {
       width: 100%;
       box-sizing: border-box;
+      transition: transform var(--gf-motion-fast) var(--gf-easing);
     }
 
     &__panel-error {
@@ -191,12 +192,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 12px;
+      padding: 16px;
     }
 
     &__panel-skeleton {
       height: 100%;
-      padding: 12px;
+      padding: 16px;
     }
   }
 </style>

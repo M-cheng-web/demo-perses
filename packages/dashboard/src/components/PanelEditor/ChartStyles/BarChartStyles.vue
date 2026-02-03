@@ -210,6 +210,25 @@
     height: 100%;
     overflow-y: auto;
 
+    /* Scrollbar styling */
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--gf-color-fill-secondary);
+      border-radius: 3px;
+
+      &:hover {
+        background: var(--gf-color-fill);
+      }
+    }
+
     &__grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -223,21 +242,27 @@
     }
 
     &__section {
-      border: 1px solid @border-color;
-      border-radius: 4px;
+      border: 1px solid var(--gf-color-border-muted);
+      border-radius: var(--gf-radius-md);
       overflow: hidden;
-      background: @background-light;
+      background: var(--gf-color-surface);
+      transition: border-color var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        border-color: var(--gf-color-border);
+      }
     }
 
     &__section-header {
       padding: 12px 16px;
-      border-bottom: 1px solid @border-color;
+      border-bottom: 1px solid var(--gf-color-border-muted);
       font-weight: 600;
       font-size: 12px;
       letter-spacing: 0.5px;
-      color: @text-color-secondary;
+      color: var(--gf-color-text-secondary);
       text-transform: uppercase;
-      background: @background-base;
+      background: var(--gf-color-surface-muted);
+      line-height: 1.5714285714285714;
     }
 
     &__section-content {
@@ -256,10 +281,11 @@
 
     &__label {
       font-size: 13px;
-      color: @text-color;
+      color: var(--gf-color-text);
       flex-shrink: 0;
       min-width: 90px;
       font-weight: 500;
+      line-height: 1.5714285714285714;
     }
   }
 </style>

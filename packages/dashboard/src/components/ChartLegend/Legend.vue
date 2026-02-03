@@ -92,43 +92,50 @@
 
 <style scoped lang="less">
   .dp-chart-legend {
-    background-color: @background-base;
-    transition: all 0.2s ease;
-    margin-top: @spacing-sm;
+    background-color: transparent;
+    transition: all var(--gf-motion-fast) var(--gf-easing);
+    margin-top: 8px;
 
     &.dp-chart-legend--bottom {
       width: 100%;
+      padding-top: 8px;
+      border-top: 1px solid var(--gf-color-border-muted);
     }
 
     &.dp-chart-legend--right {
       height: 100%;
       border-top: none;
-      border-left: 1px solid @border-color;
+      border-left: 1px solid var(--gf-color-border-muted);
       flex-shrink: 0;
       width: 200px;
       max-width: 200px;
       margin-top: 0;
-      padding-left: @spacing-sm;
+      padding-left: 12px;
     }
 
     &.dp-chart-legend--top {
       width: 100%;
       border-top: none;
-      border-bottom: 1px solid @border-color;
+      border-bottom: 1px solid var(--gf-color-border-muted);
+      padding-bottom: 8px;
+      margin-top: 0;
+      margin-bottom: 8px;
     }
 
     &.dp-chart-legend--left {
       height: 100%;
       border-top: none;
-      border-right: 1px solid @border-color;
+      border-right: 1px solid var(--gf-color-border-muted);
+      padding-right: 12px;
+      margin-top: 0;
     }
 
     &.dp-chart-legend--small {
-      font-size: 11px;
+      font-size: 12px;
     }
 
     &.dp-chart-legend--medium {
-      font-size: 12px;
+      font-size: 13px;
     }
 
     &.dp-chart-legend--large {
@@ -136,11 +143,11 @@
     }
 
     &.dp-chart-legend--mode-compact {
-      // padding: @spacing-xs @spacing-sm;
+      // Compact mode styles
     }
 
     &.dp-chart-legend--mode-list {
-      // padding: @spacing-sm;
+      // List mode styles
     }
   }
 </style>

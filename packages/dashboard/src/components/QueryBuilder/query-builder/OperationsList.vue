@@ -598,7 +598,7 @@
       width: 16px;
       color: var(--gf-color-text-disabled);
       cursor: grab;
-      transition: color 0.2s;
+      transition: color var(--gf-motion-fast) var(--gf-easing);
       margin-right: 4px;
       font-size: 12px;
 
@@ -623,7 +623,8 @@
       padding: 0 4px;
       font-size: 12px;
       height: auto;
-      line-height: 1.5;
+      line-height: 1.5714285714285714;
+      transition: color var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
         color: var(--gf-color-primary);
@@ -640,7 +641,7 @@
     &__card-body {
       display: table;
       width: 100%;
-      padding: 6px;
+      padding: 8px;
     }
 
     &__param-row {
@@ -648,19 +649,20 @@
       vertical-align: middle;
 
       &--rest {
-        margin-top: 2px;
+        margin-top: 4px;
       }
     }
 
     &__param-name {
       display: table-cell;
-      padding: 4px 6px 4px 0;
+      padding: 4px 8px 4px 0;
       font-size: 12px;
       font-weight: 500;
       color: var(--gf-color-text-secondary);
       vertical-align: middle;
       min-width: 70px;
       white-space: nowrap;
+      line-height: 1.5714285714285714;
     }
 
     &__param-value {
@@ -672,7 +674,7 @@
     &__param-with-action {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     }
 
     /* 操作箭头 */

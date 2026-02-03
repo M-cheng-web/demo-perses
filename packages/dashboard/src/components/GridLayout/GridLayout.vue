@@ -265,12 +265,35 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 12px;
+      padding: 16px;
     }
 
     &__panel-skeleton {
       height: 100%;
-      padding: 12px;
+      padding: 16px;
+    }
+
+    // Grid item hover effect
+    :deep(.vue-grid-item) {
+      transition: box-shadow var(--gf-motion-normal) var(--gf-easing);
+
+      &:hover {
+        z-index: 10;
+      }
+
+      &.vue-draggable-dragging,
+      &.vue-resizable-resizing {
+        z-index: 100;
+        box-shadow: var(--gf-shadow-3);
+      }
+    }
+
+    // Placeholder styling
+    :deep(.vue-grid-placeholder) {
+      background: var(--gf-color-primary-soft);
+      border: 2px dashed var(--gf-color-primary-border);
+      border-radius: var(--gf-radius-md);
+      opacity: 0.6;
     }
   }
 </style>

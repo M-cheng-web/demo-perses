@@ -235,24 +235,28 @@
     &__list {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
     &__item {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       align-items: center;
-      padding: 4px;
+      padding: 8px 10px;
       background: var(--gf-color-surface-muted);
-      border-radius: var(--gf-radius-xs);
+      border: 1px solid var(--gf-color-border-muted);
+      border-radius: var(--gf-radius-md);
+      transition: all var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
         background: var(--gf-color-fill);
+        border-color: var(--gf-color-border);
       }
     }
 
     &__add-btn {
       width: fit-content !important;
+      margin-top: 4px;
     }
   }
 </style>

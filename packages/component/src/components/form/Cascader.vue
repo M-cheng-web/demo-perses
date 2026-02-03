@@ -1,4 +1,4 @@
-<!-- 组件说明：级联选择器（多级面板），用于逐级选择路径 -->
+<!-- 组件说明：级联选择器（多级面板），用于逐级选择路径 (AntD-inspired) -->
 <template>
 	  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-open': open, 'is-disabled': disabled }]" ref="rootRef">
     <div v-if="$slots.default" ref="triggerRef" :class="bem('trigger')" tabindex="0" @click="toggle" @keydown="handleKeydown">
@@ -8,18 +8,20 @@
     <div
       v-else
       ref="triggerRef"
-      :class="[bem('control'), 'gf-control', controlSizeClass, { 'gf-control--disabled': disabled }]"
+      :class="[bem('control'), 'gf-control', controlSizeClass, { 'gf-control--disabled': disabled, 'is-focus': open }]"
       tabindex="0"
       @click="toggle"
       @keydown="handleKeydown"
     >
       <span v-if="selectedLabel" :class="bem('value')">{{ selectedLabel }}</span>
       <span v-else :class="bem('placeholder')">{{ placeholder }}</span>
-      <span :class="bem('arrow')">▾</span>
+      <span :class="[bem('arrow'), { 'is-open': open }]">
+        <DownOutlined />
+      </span>
     </div>
 
 	    <Teleport :to="portalTarget">
-	      <transition name="fade">
+	      <Transition name="gf-slide-up">
 	        <div
 	          v-if="open"
 	          :class="[bem('dropdown'), bem({ [`size-${size}`]: true }), themeClass]"
@@ -38,6 +40,7 @@
                     'is-active': activeValues[depth] === option.value,
                     'is-selected-leaf': isSelectedLeaf(depth, option.value),
                     'has-children': !!option.children?.length,
+                    'is-disabled': option.disabled,
                   },
                 ]"
                 @mouseenter="handleHover(depth, option)"
@@ -47,18 +50,21 @@
                 <span v-if="option.children?.length" :class="bem('option-arrow')" aria-hidden="true">
                   <RightOutlined />
                 </span>
+                <span v-else-if="isSelectedLeaf(depth, option.value)" :class="bem('option-check')">
+                  <CheckOutlined />
+                </span>
               </div>
             </div>
           </div>
         </div>
-      </transition>
+      </Transition>
     </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-  import { RightOutlined } from '@ant-design/icons-vue';
+  import { RightOutlined, DownOutlined, CheckOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
@@ -289,9 +295,10 @@
 </script>
 
 <style scoped lang="less">
-	  .gf-cascader {
+  .gf-cascader {
     position: relative;
     width: 100%;
+    display: inline-block;
 
     &__trigger {
       display: inline-flex;
@@ -305,34 +312,49 @@
       width: 100%;
       gap: 6px;
       cursor: pointer;
+
+      &.is-focus {
+        border-color: var(--gf-color-primary);
+        box-shadow: 0 0 0 2px var(--gf-color-primary-soft);
+      }
     }
 
     &__placeholder {
-      color: var(--gf-text-secondary);
-      line-height: 1.35;
-      display: inline-flex;
-      align-items: center;
+      flex: 1;
+      min-width: 0;
+      color: var(--gf-color-text-tertiary);
+      line-height: 1.5714285714285714;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     &__value {
-      color: var(--gf-text);
-      line-height: 1.35;
-      display: inline-flex;
-      align-items: center;
+      flex: 1;
+      min-width: 0;
+      color: var(--gf-color-text);
+      line-height: 1.5714285714285714;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     &__arrow {
-      margin-left: auto;
-      color: var(--gf-text-secondary);
-      font-size: 10px;
+      flex-shrink: 0;
+      color: var(--gf-color-text-tertiary);
+      font-size: 12px;
+      transition: transform var(--gf-motion-fast) var(--gf-easing);
+
+      &.is-open {
+        transform: rotate(180deg);
+      }
     }
 
-	    &__dropdown {
-	      position: fixed;
-	      z-index: var(--gf-z-popover);
-	      background: var(--gf-surface);
-	      border: 1px solid var(--gf-border);
-      border-radius: var(--gf-radius-md);
+    &__dropdown {
+      position: fixed;
+      z-index: var(--gf-z-popover);
+      background: var(--gf-color-surface);
+      border-radius: var(--gf-radius-lg);
       box-shadow: var(--gf-shadow-2);
       overflow: hidden;
     }
@@ -343,43 +365,48 @@
     }
 
     &__menu {
-      min-width: 200px;
+      min-width: 180px;
       max-height: 320px;
       overflow: auto;
-      padding: 6px;
-      border-right: 1px solid var(--gf-color-border-muted);
+      padding: 4px;
+      border-right: 1px solid var(--gf-color-border);
 
       &:last-child {
         border-right: none;
       }
     }
 
-	    &__option {
-	      padding: 0 10px;
+    &__option {
+      padding: 5px 12px;
       border-radius: var(--gf-radius-sm);
       cursor: pointer;
-      color: var(--gf-text);
-      min-height: var(--gf-control-height-md);
+      color: var(--gf-color-text);
+      min-height: 32px;
       display: flex;
       align-items: center;
       gap: 8px;
-      transition:
-        background var(--gf-motion-fast) var(--gf-easing),
-        color var(--gf-motion-fast) var(--gf-easing);
+      font-size: var(--gf-font-size-sm);
+      line-height: 1.5714285714285714;
+      transition: background var(--gf-motion-fast) var(--gf-easing);
 
-      &:hover {
-        background: var(--gf-primary-soft);
-        color: var(--gf-primary-strong);
+      &:hover:not(.is-disabled) {
+        background: var(--gf-color-fill);
       }
 
       &.is-active {
         background: var(--gf-color-fill);
+        font-weight: 500;
       }
 
       &.is-selected-leaf {
-        background: var(--gf-primary-soft);
-        color: var(--gf-primary-strong);
-        box-shadow: inset 0 0 0 1px var(--gf-border-strong);
+        background: var(--gf-color-primary-soft);
+        color: var(--gf-color-primary);
+        font-weight: 500;
+      }
+
+      &.is-disabled {
+        color: var(--gf-color-text-tertiary);
+        cursor: not-allowed;
       }
     }
 
@@ -391,29 +418,52 @@
       white-space: nowrap;
     }
 
-	    &__option-arrow {
-      width: 16px;
-      height: 16px;
-      display: grid;
-      place-items: center;
-      font-size: 11px;
-      color: var(--gf-text-secondary);
-	    }
-
-	    &__dropdown.gf-cascader--size-small .gf-cascader__option {
-	      min-height: var(--gf-control-height-sm);
-	      font-size: var(--gf-font-size-sm);
-	      padding: 6px 10px;
-	    }
-
-	    &__dropdown.gf-cascader--size-large .gf-cascader__option {
-	      min-height: var(--gf-control-height-lg);
-	      font-size: var(--gf-font-size-lg);
-	    }
-
-	    &.is-disabled {
-	      opacity: 0.6;
-	      cursor: not-allowed;
+    &__option-arrow {
+      flex-shrink: 0;
+      font-size: 10px;
+      color: var(--gf-color-text-tertiary);
     }
+
+    &__option-check {
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--gf-color-primary);
+    }
+
+    &__dropdown.gf-cascader--size-small .gf-cascader__option {
+      min-height: 24px;
+      font-size: var(--gf-font-size-xs);
+      padding: 4px 8px;
+    }
+
+    &__dropdown.gf-cascader--size-large .gf-cascader__option {
+      min-height: 40px;
+      font-size: var(--gf-font-size-md);
+      padding: 8px 12px;
+    }
+
+    &.is-disabled {
+      cursor: not-allowed;
+
+      .gf-cascader__control {
+        background: var(--gf-color-fill);
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  // Animation
+  .gf-slide-up-enter-active,
+  .gf-slide-up-leave-active {
+    transition:
+      opacity var(--gf-motion-fast) var(--gf-easing),
+      transform var(--gf-motion-fast) var(--gf-easing);
+    transform-origin: top center;
+  }
+
+  .gf-slide-up-enter-from,
+  .gf-slide-up-leave-to {
+    opacity: 0;
+    transform: scaleY(0.8);
   }
 </style>

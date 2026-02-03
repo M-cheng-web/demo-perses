@@ -1,57 +1,71 @@
-<!-- 组件说明：轻量表格，支持排序、分页、加载遮罩与自定义单元格 -->
+<!-- 组件说明：轻量表格，支持排序、分页、加载遮罩与自定义单元格 (AntD-inspired) -->
 <template>
-  <div :class="[bem(), bem({ [`size-${size}`]: true })]">
-    <div v-if="loading" :class="bem('overlay')">
-      <Spin />
-    </div>
-    <div :class="bem('wrap')" :style="wrapStyle">
-      <div :class="bem('table')">
-        <div :class="bem('header')" :style="{ gridTemplateColumns }">
-          <div
-            v-for="col in columns"
-            :key="col.key || col.dataIndex"
-            :class="[bem('cell'), bem('cell', 'th'), { sortable: !!col.sorter }]"
-            @click="handleSort(col)"
-          >
-            <span>{{ col.title }}</span>
-            <span v-if="col.sorter" :class="bem('sort')">
-              <span :class="{ active: sortState?.key === (col.key || col.dataIndex) && sortState?.order === 'ascend' }">▲</span>
-              <span :class="{ active: sortState?.key === (col.key || col.dataIndex) && sortState?.order === 'descend' }">▼</span>
-            </span>
-          </div>
-        </div>
-
-        <div :class="bem('body')">
-          <div v-for="(row, rowIndex) in pagedData" :key="resolveRowKey(row, rowIndex)" :class="bem('row')" :style="{ gridTemplateColumns }">
-            <div v-for="col in columns" :key="col.key || col.dataIndex" :class="bem('cell')">
-              <slot name="bodyCell" :column="col" :text="row[col.dataIndex || '']" :record="row" :index="rowIndex">
-                {{ row[col.dataIndex || ''] }}
-              </slot>
-            </div>
-          </div>
-
-          <div v-if="!pagedData.length" :class="bem('empty')">暂无数据</div>
+  <div :class="[bem(), bem({ [`size-${size}`]: true, bordered })]">
+    <Spin :spinning="loading" :tip="loadingTip">
+      <div :class="bem('container')">
+        <div :class="bem('content')" :style="wrapStyle">
+          <table :class="bem('table')">
+            <thead :class="bem('thead')">
+              <tr>
+                <th
+                  v-for="col in columns"
+                  :key="col.key || col.dataIndex"
+                  :class="[bem('cell'), bem('cell-header'), { 'is-sortable': !!col.sorter }]"
+                  :style="{ width: col.width ? `${col.width}px` : undefined }"
+                  @click="handleSort(col)"
+                >
+                  <div :class="bem('cell-content')">
+                    <span>{{ col.title }}</span>
+                    <span v-if="col.sorter" :class="bem('sorter')">
+                      <CaretUpOutlined :class="{ 'is-active': sortState?.key === (col.key || col.dataIndex) && sortState?.order === 'ascend' }" />
+                      <CaretDownOutlined :class="{ 'is-active': sortState?.key === (col.key || col.dataIndex) && sortState?.order === 'descend' }" />
+                    </span>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody :class="bem('tbody')">
+              <tr v-for="(row, rowIndex) in pagedData" :key="resolveRowKey(row, rowIndex)" :class="bem('row')">
+                <td v-for="col in columns" :key="col.key || col.dataIndex" :class="bem('cell')">
+                  <slot name="bodyCell" :column="col" :text="row[col.dataIndex || '']" :record="row" :index="rowIndex">
+                    {{ row[col.dataIndex || ''] }}
+                  </slot>
+                </td>
+              </tr>
+              <tr v-if="!pagedData.length">
+                <td :colspan="columns.length" :class="bem('empty')">
+                  <Empty :description="emptyText" image="simple" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
-    </div>
+    </Spin>
     <div v-if="mergedPagination !== false && !(mergedPagination.hideOnSinglePage && pageCount <= 1)" :class="bem('pagination')">
-      <span class="total" v-if="mergedPagination.showTotal">{{ mergedPagination.showTotal(filteredData.length) }}</span>
-      <div :class="bem('pager')">
-        <Button size="small" type="ghost" @click="prevPage" :disabled="page === 1">上一页</Button>
-        <span>{{ page }} / {{ pageCount }}</span>
-        <Button size="small" type="ghost" @click="nextPage" :disabled="page === pageCount">下一页</Button>
-      </div>
-      <Select v-if="mergedPagination.showSizeChanger" v-model:value="pageSize" size="small" :options="pageSizeSelectOptions" :show-search="false" />
+      <Pagination
+        :total="filteredData.length"
+        :current="page"
+        :page-size="pageSize"
+        :show-size-changer="mergedPagination.showSizeChanger"
+        :show-quick-jumper="mergedPagination.showQuickJumper"
+        :show-total="mergedPagination.showTotal"
+        :page-size-options="mergedPagination.pageSizeOptions"
+        :size="size === 'small' ? 'small' : 'default'"
+        @update:current="handlePageChange"
+        @update:page-size="handlePageSizeChange"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue';
+  import { CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
-  import Button from '../base/Button.vue';
   import Spin from '../feedback/Spin.vue';
-  import Select from '../form/Select.vue';
+  import Empty from '../base/Empty.vue';
+  import Pagination from '../navigation/Pagination.vue';
 
   interface Column {
     title: string;
@@ -83,13 +97,19 @@
       /** 分页配置，false 关闭 */
       pagination?: PaginationConfig | false;
       /** 表格尺寸 */
-      size?: 'small' | 'middle';
+      size?: 'small' | 'middle' | 'large';
       /** 是否展示加载 */
       loading?: boolean;
+      /** 加载提示文字 */
+      loadingTip?: string;
+      /** 是否显示边框 */
+      bordered?: boolean;
+      /** 空状态文案 */
+      emptyText?: string;
       /** 自定义行 key 生成 */
       rowKey?: (record: any) => string | number;
       /** 滚动配置 */
-      scroll?: { y?: string | number };
+      scroll?: { y?: string | number; x?: string | number };
     }>(),
     {
       columns: () => [],
@@ -97,6 +117,9 @@
       pagination: undefined,
       size: 'middle',
       loading: false,
+      loadingTip: '',
+      bordered: false,
+      emptyText: '暂无数据',
       rowKey: undefined,
       scroll: undefined,
     }
@@ -113,8 +136,9 @@
     return {
       pageSize: 20,
       showSizeChanger: true,
-      showQuickJumper: true,
+      showQuickJumper: false,
       hideOnSinglePage: true,
+      pageSizeOptions: ['10', '20', '50', '100'],
       ...provided,
     };
   });
@@ -122,17 +146,6 @@
   const page = ref(mergedPagination.value !== false && mergedPagination.value.current ? mergedPagination.value.current : 1);
   const pageSize = ref(mergedPagination.value !== false && mergedPagination.value.pageSize ? mergedPagination.value.pageSize : 20);
   const sortState = ref<{ key: string; order: 'ascend' | 'descend' } | null>(null);
-
-  const gridTemplateColumns = computed(() => {
-    if (!props.columns?.length) return '1fr';
-    return props.columns.map((col) => (col.width ? `${col.width}px` : 'minmax(120px, 1fr)')).join(' ');
-  });
-
-  const pageSizeSelectOptions = computed(() => {
-    const raw =
-      mergedPagination.value !== false && mergedPagination.value.pageSizeOptions ? mergedPagination.value.pageSizeOptions : ['10', '20', '50', '100'];
-    return raw.map((opt: string) => ({ label: `${opt}/页`, value: Number(opt) }));
-  });
 
   watch(
     () => props.dataSource,
@@ -181,14 +194,13 @@
     emitChange();
   };
 
-  const prevPage = () => {
-    page.value = Math.max(1, page.value - 1);
+  const handlePageChange = (p: number) => {
+    page.value = p;
     emitChange();
   };
 
-  const nextPage = () => {
-    page.value = Math.min(pageCount.value, page.value + 1);
-    emitChange();
+  const handlePageSizeChange = (size: number) => {
+    pageSize.value = size;
   };
 
   const emitChange = () => {
@@ -203,162 +215,142 @@
   };
 
   const wrapStyle = computed(() => {
+    const style: Record<string, string> = {};
     if (props.scroll?.y) {
       const y = props.scroll.y;
-      const height = typeof y === 'number' ? `${y}px` : y;
-      return { maxHeight: height };
+      style.maxHeight = typeof y === 'number' ? `${y}px` : y;
+      style.overflowY = 'auto';
     }
-    return {};
+    if (props.scroll?.x) {
+      style.overflowX = 'auto';
+    }
+    return style;
   });
 </script>
 
-	<style scoped lang="less">
-	  .gf-table {
-	    --gf-table-wrap-height: auto;
-	    --gf-table-wrap-border: 1px solid var(--gf-color-border);
-	    --gf-table-wrap-border-hover: var(--gf-color-border-strong);
-	    --gf-table-wrap-radius: var(--gf-radius-md);
-	    --gf-table-wrap-bg: var(--gf-color-surface);
-	    --gf-table-wrap-shadow-hover: var(--gf-shadow-1);
-	    --gf-table-header-bg: var(--gf-color-surface-muted);
-	    --gf-table-header-border: 1px solid var(--gf-color-border-muted);
-	    --gf-table-row-hover-bg: var(--gf-color-fill);
-	    --gf-table-row-zebra-bg: var(--gf-color-zebra);
-	    --gf-table-cell-padding: 8px 10px;
-	    --gf-table-cell-font-size: var(--gf-font-size-md);
+<style scoped lang="less">
+  .gf-table {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
 
-	    display: flex;
-	    flex-direction: column;
-	    gap: var(--gf-space-3);
-	    width: 100%;
-	    position: relative;
+    &__container {
+      width: 100%;
+    }
 
-	    &__wrap {
-	      width: 100%;
-	      overflow: auto;
-	      height: var(--gf-table-wrap-height);
-	      border: var(--gf-table-wrap-border);
-	      border-radius: var(--gf-table-wrap-radius);
-	      background: var(--gf-table-wrap-bg);
-	      position: relative;
-	      transition:
-	        border-color var(--gf-motion-normal) var(--gf-easing),
-	        box-shadow var(--gf-motion-normal) var(--gf-easing);
-	    }
-
-	    &__wrap:hover {
-	      border-color: var(--gf-table-wrap-border-hover);
-	      box-shadow: var(--gf-table-wrap-shadow-hover);
-	    }
+    &__content {
+      width: 100%;
+      overflow: auto;
+    }
 
     &__table {
       width: 100%;
-      min-width: 400px;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: auto;
     }
 
-	    &__header {
-	      display: grid;
-	      position: sticky;
-	      top: 0;
-	      z-index: 1;
-	      background: var(--gf-table-header-bg);
-	      border-bottom: var(--gf-table-header-border);
-	    }
-
-    &__body {
-      display: flex;
-      flex-direction: column;
+    &__thead {
+      background: var(--gf-color-fill);
     }
 
-	    &__row {
-	      display: grid;
-	      border-bottom: 1px solid var(--gf-color-border-muted);
-	      transition: background var(--gf-motion-normal) var(--gf-easing);
-
-	      &:nth-child(even) {
-	        background: var(--gf-table-row-zebra-bg);
-	      }
-
-	      &:hover {
-	        background: var(--gf-table-row-hover-bg);
-	      }
-	    }
-
-	    &__cell {
-	      padding: var(--gf-table-cell-padding);
-	      text-align: left;
-	      font-size: var(--gf-table-cell-font-size);
-	      color: var(--gf-text);
-	      min-width: 0;
-	      overflow: hidden;
-	      text-overflow: ellipsis;
+    &__cell {
+      padding: 16px;
+      text-align: left;
+      font-size: var(--gf-font-size-sm);
+      line-height: 1.5714285714285714;
+      color: var(--gf-color-text);
+      border-bottom: 1px solid var(--gf-color-border);
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    &__cell--th {
+    &__cell-header {
       font-weight: 600;
-      user-select: none;
-      white-space: nowrap;
-      transition: background var(--gf-motion-normal) var(--gf-easing);
+      color: var(--gf-color-text);
+      background: var(--gf-color-fill);
+      position: relative;
 
-      &.sortable {
+      &.is-sortable {
         cursor: pointer;
-      }
+        user-select: none;
 
-      &.sortable:hover {
+        &:hover {
+          background: var(--gf-color-fill-secondary);
+        }
+      }
+    }
+
+    &__cell-content {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    &__sorter {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 0;
+      font-size: 11px;
+      color: var(--gf-color-text-tertiary);
+
+      .is-active {
+        color: var(--gf-color-primary);
+      }
+    }
+
+    &__row {
+      transition: background var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
         background: var(--gf-color-fill);
       }
     }
 
-    &__sort {
-      margin-left: 6px;
-      font-size: 11px;
-      color: var(--gf-text-secondary);
-
-      .active {
-        color: var(--gf-primary-strong);
-      }
-    }
-
     &__empty {
+      padding: 32px 16px;
       text-align: center;
-      color: var(--gf-text-secondary);
-      padding: 18px;
-      border-bottom: 1px solid var(--gf-color-border-muted);
     }
 
     &__pagination {
       display: flex;
-      align-items: center;
-      gap: 12px;
       justify-content: flex-end;
-      font-size: 12px;
-      color: var(--gf-text-secondary);
+    }
 
-      .total {
-        margin-right: auto;
+    // Bordered variant
+    &--bordered &__table {
+      border: 1px solid var(--gf-color-border);
+      border-radius: var(--gf-radius-lg);
+      overflow: hidden;
+    }
+
+    &--bordered &__cell {
+      border-right: 1px solid var(--gf-color-border);
+
+      &:last-child {
+        border-right: none;
       }
     }
 
-    &__pager {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+    &--bordered &__thead &__cell:first-child {
+      border-top-left-radius: var(--gf-radius-lg);
     }
 
-	    &--size-small .gf-table__cell {
-	      --gf-table-cell-padding: 6px 8px;
-	      --gf-table-cell-font-size: var(--gf-font-size-sm);
-	    }
+    &--bordered &__thead &__cell:last-child {
+      border-top-right-radius: var(--gf-radius-lg);
+    }
 
-    &__overlay {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      background: var(--gf-color-overlay);
-      z-index: 1;
-      border-radius: var(--gf-radius-md);
+    // Size variants
+    &--size-small &__cell {
+      padding: 8px 8px;
+      font-size: var(--gf-font-size-xs);
+    }
+
+    &--size-large &__cell {
+      padding: 20px 16px;
+      font-size: var(--gf-font-size-md);
     }
   }
 </style>

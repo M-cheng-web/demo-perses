@@ -58,19 +58,42 @@
       position: relative;
       max-height: 150px;
       overflow: auto;
+      border-radius: var(--gf-radius-sm);
+
+      /* Scrollbar styling */
+      &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: var(--gf-color-fill-secondary);
+        border-radius: 3px;
+
+        &:hover {
+          background: var(--gf-color-fill);
+        }
+      }
     }
 
     &__copy-btn {
       position: absolute;
-      top: 4px;
-      right: 4px;
-      padding: 0 4px;
-      height: 20px;
+      top: 6px;
+      right: 6px;
+      padding: 0 6px;
+      height: 22px;
       font-size: 12px;
+      line-height: 1.5714285714285714;
       color: var(--gf-color-text-tertiary);
       background: var(--gf-color-surface-raised);
       border: 1px solid var(--gf-color-border-muted);
       border-radius: var(--gf-radius-xs);
+      transition: all var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
         color: var(--gf-color-primary);
@@ -81,14 +104,14 @@
 
     &__code {
       margin: 0;
-      padding: 6px 8px;
-      padding-right: 60px;
+      padding: 8px 10px;
+      padding-right: 70px;
       background: var(--gf-color-surface-muted);
       border: 1px solid var(--gf-color-border-muted);
-      border-radius: var(--gf-radius-xs);
+      border-radius: var(--gf-radius-sm);
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
-      font-size: 11px;
-      line-height: 1.5;
+      font-size: 12px;
+      line-height: 1.5714285714285714;
       color: var(--gf-color-text);
       white-space: pre-wrap;
       word-break: break-all;

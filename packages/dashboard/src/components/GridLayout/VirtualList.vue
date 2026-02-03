@@ -425,6 +425,26 @@
 <style scoped lang="less">
   .dp-virtual-list {
     width: 100%;
+
+    /* Scrollbar styling for self scroll mode */
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--gf-color-fill-secondary);
+      border-radius: 3px;
+
+      &:hover {
+        background: var(--gf-color-fill);
+      }
+    }
   }
 
   .dp-virtual-list__content {

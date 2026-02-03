@@ -1,30 +1,33 @@
-<!-- 组件说明：分页器（复用 Table 的分页样式/交互） -->
+<!-- 组件说明：分页器（AntD-inspired） -->
 <template>
-  <div v-if="!hidePager" :class="bem()">
+  <div v-if="!hidePager" :class="[bem(), bem({ [`size-${size}`]: true })]">
     <span v-if="showTotal" :class="bem('total')">{{ showTotal(total) }}</span>
-    <div :class="bem('pager')">
-      <Button size="small" type="ghost" @click="prevPage" :disabled="disabled || currentPage <= 1">上一页</Button>
-
-      <div :class="bem('pages')">
-        <template v-for="it in pagerItems" :key="it.key">
-          <span v-if="it.type === 'ellipsis'" :class="bem('ellipsis')">…</span>
-          <Button
-            v-else
-            size="small"
-            :type="it.page === currentPage ? 'primary' : 'ghost'"
-            :disabled="disabled"
-            :class="bem('page')"
-            :aria-current="it.page === currentPage ? 'page' : undefined"
-            @click="() => goPage(it.page)"
-          >
-            {{ it.page }}
-          </Button>
-        </template>
-      </div>
-
-      <span :class="bem('info')">{{ currentPage }} / {{ pageCount }}</span>
-      <Button size="small" type="ghost" @click="nextPage" :disabled="disabled || currentPage >= pageCount">下一页</Button>
-    </div>
+    <ul :class="bem('pager')">
+      <li
+        :class="[bem('item'), bem('item-prev'), { 'is-disabled': disabled || currentPage <= 1 }]"
+        @click="prevPage"
+      >
+        <LeftOutlined />
+      </li>
+      <template v-for="it in pagerItems" :key="it.key">
+        <li v-if="it.type === 'ellipsis'" :class="bem('item-ellipsis')">
+          <EllipsisOutlined />
+        </li>
+        <li
+          v-else
+          :class="[bem('item'), { 'is-active': it.page === currentPage, 'is-disabled': disabled }]"
+          @click="() => goPage(it.page)"
+        >
+          {{ it.page }}
+        </li>
+      </template>
+      <li
+        :class="[bem('item'), bem('item-next'), { 'is-disabled': disabled || currentPage >= pageCount }]"
+        @click="nextPage"
+      >
+        <RightOutlined />
+      </li>
+    </ul>
     <div v-if="showSizeChanger" :class="bem('size')">
       <Select
         v-model:value="innerPageSize"
@@ -34,13 +37,24 @@
         :disabled="disabled"
       />
     </div>
+    <div v-if="showQuickJumper" :class="bem('jumper')">
+      <span>跳至</span>
+      <input
+        type="text"
+        :class="bem('jumper-input')"
+        :value="jumpValue"
+        @change="handleJump"
+        @input="(e) => jumpValue = (e.target as HTMLInputElement).value"
+      />
+      <span>页</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
+  import { LeftOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
-  import Button from '../base/Button.vue';
   import Select from '../form/Select.vue';
 
   export interface PaginationConfig {
@@ -66,6 +80,10 @@
       showTotal?: (total: number) => string;
       hideOnSinglePage?: boolean;
       disabled?: boolean;
+      /** 是否显示快速跳转 */
+      showQuickJumper?: boolean;
+      /** 尺寸 */
+      size?: 'small' | 'default';
     }>(),
     {
       current: 1,
@@ -75,6 +93,8 @@
       showTotal: undefined,
       hideOnSinglePage: true,
       disabled: false,
+      showQuickJumper: false,
+      size: 'default',
     }
   );
 
@@ -170,61 +190,146 @@
       applyChange(nextCurrent, nextSize);
     },
   });
+
+  const jumpValue = ref('');
+
+  const handleJump = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    const val = parseInt(input.value, 10);
+    if (!isNaN(val)) {
+      goPage(val);
+    }
+    jumpValue.value = '';
+  };
 </script>
 
 <style scoped lang="less">
   .gf-pagination {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
-    color: var(--gf-color-text-secondary);
-    font-size: 12px;
+    font-size: var(--gf-font-size-sm);
+    line-height: 1.5714285714285714;
 
     &__total {
-      margin-right: auto;
-      color: var(--gf-color-text-secondary);
+      color: var(--gf-color-text);
     }
 
     &__pager {
       display: flex;
       align-items: center;
-      gap: 8px;
-      user-select: none;
-      min-width: 0;
+      gap: 0;
+      list-style: none;
+      margin: 0;
+      padding: 0;
     }
 
-    &__pages {
+    &__item {
       display: flex;
       align-items: center;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    &__page {
-      min-width: 28px;
-      padding-left: 0;
-      padding-right: 0;
-    }
-
-    &__ellipsis {
-      padding: 0 4px;
-      color: var(--gf-color-text-secondary);
+      justify-content: center;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 6px;
+      margin: 0 4px;
+      border: 1px solid var(--gf-color-border);
+      border-radius: var(--gf-radius-sm);
+      background: var(--gf-color-surface);
+      color: var(--gf-color-text);
+      cursor: pointer;
       user-select: none;
+      transition:
+        border-color var(--gf-motion-fast) var(--gf-easing),
+        color var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover:not(.is-disabled):not(.is-active) {
+        border-color: var(--gf-color-primary);
+        color: var(--gf-color-primary);
+      }
+
+      &.is-active {
+        border-color: var(--gf-color-primary);
+        color: var(--gf-color-primary);
+        font-weight: 500;
+      }
+
+      &.is-disabled {
+        color: var(--gf-color-text-tertiary);
+        cursor: not-allowed;
+        border-color: var(--gf-color-border);
+      }
     }
 
-    &__info {
-      color: var(--gf-color-text-secondary);
-      user-select: none;
-      margin: 0 2px;
-      white-space: nowrap;
-      flex: 0 0 auto;
+    &__item-prev,
+    &__item-next {
+      font-size: 12px;
+    }
+
+    &__item-ellipsis {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 32px;
+      color: var(--gf-color-text-tertiary);
+      font-size: 12px;
+      cursor: default;
     }
 
     &__size {
       flex: 0 0 auto;
-      width: 88px;
+      width: 100px;
+    }
+
+    &__jumper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--gf-color-text);
+    }
+
+    &__jumper-input {
+      width: 50px;
+      height: 32px;
+      padding: 4px 11px;
+      border: 1px solid var(--gf-color-border);
+      border-radius: var(--gf-radius-sm);
+      background: var(--gf-color-surface);
+      color: var(--gf-color-text);
+      font-size: var(--gf-font-size-sm);
+      outline: none;
+      transition:
+        border-color var(--gf-motion-fast) var(--gf-easing),
+        box-shadow var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        border-color: var(--gf-color-primary);
+      }
+
+      &:focus {
+        border-color: var(--gf-color-primary);
+        box-shadow: 0 0 0 2px var(--gf-color-primary-soft);
+      }
+    }
+
+    // Size small
+    &--size-small &__item {
+      min-width: 24px;
+      height: 24px;
+      margin: 0 2px;
+      font-size: var(--gf-font-size-xs);
+    }
+
+    &--size-small &__item-ellipsis {
+      min-width: 24px;
+      height: 24px;
+    }
+
+    &--size-small &__jumper-input {
+      width: 40px;
+      height: 24px;
+      padding: 2px 7px;
     }
   }
 </style>
