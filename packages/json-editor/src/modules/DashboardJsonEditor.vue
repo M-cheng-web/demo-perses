@@ -87,7 +87,7 @@
    * - 外部校验钩子会在每次输入变化时触发（包含 JSON 不合法的情况）。
    */
   import { computed, ref, watch } from 'vue';
-  import type { Dashboard } from '@grafana-fast/types';
+  import type { DashboardContent } from '@grafana-fast/types';
   import { Alert, Button, Flex, Space, Tag, message } from '@grafana-fast/component';
   import type { JsonTextValidator } from '../types';
   import JsonTextArea from '../components/JsonTextArea.vue';
@@ -393,11 +393,11 @@
 
   defineExpose({
     /** 仅用于需要“点击应用”时拿到解析后的 dashboard */
-    getDashboard: (): Dashboard => {
+    getDashboard: (): DashboardContent => {
       const d = diagnostics.value;
       if (!d.json.ok) throw new Error(d.json.error?.message ?? 'JSON 不合法');
       if (!d.looksLikeDashboard) throw new Error('JSON 合法，但不是 Dashboard JSON');
-      return (d.dashboard ?? (d.json.value as Dashboard)) as Dashboard;
+      return (d.dashboard ?? (d.json.value as DashboardContent)) as DashboardContent;
     },
     getDraftText: () => draftText.value,
   });

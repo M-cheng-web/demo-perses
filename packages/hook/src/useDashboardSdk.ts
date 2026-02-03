@@ -10,7 +10,7 @@
  */
 import { createApp, defineComponent, h, onMounted, onUnmounted, ref, toRaw, watch, type App, type Ref } from 'vue';
 import { createPinia } from '@grafana-fast/store';
-import type { Dashboard, Panel, PanelGroup, PanelLayout, ID, TimeRange, VariablesState } from '@grafana-fast/types';
+import type { DashboardContent, Panel, PanelGroup, PanelLayout, ID, TimeRange, VariablesState } from '@grafana-fast/types';
 import {
   DashboardView,
   disposePiniaQueryScheduler,
@@ -137,7 +137,14 @@ export type DashboardSdkViewMode = 'grouped' | 'allPanels';
 export type DashboardSdkBootStage = 'idle' | 'fetching' | 'parsing' | 'initializing' | 'ready' | 'error';
 
 export interface DashboardSdkDashboardSummary {
-  id: ID;
+  /**
+   * DashboardId（资源标识）
+   *
+   * 说明：
+   * - 该 id 不属于 Dashboard JSON（DashboardContent）的一部分
+   * - 它来自宿主传入/后端定位（用于 load/save/delete）
+   */
+  id: ID | null;
   name: string;
   groupCount: number;
   panelCount: number;
@@ -256,12 +263,12 @@ export interface DashboardSdkActions {
   mountDashboard: () => void;
   /** 手动卸载 Dashboard（用于释放资源/重置；高级用法/调试用途） */
   unmountDashboard: () => void;
-  /** 按 id 加载 dashboard（不做历史 schema 迁移，依赖后端/宿主保证结构正确） */
+  /** 按 dashboardId（资源标识）加载 dashboard 内容（不做历史 schema 迁移，依赖后端/宿主保证结构正确） */
   loadDashboard: (id: ID) => Promise<void>;
   /** 保存当前 dashboard（落库或写回后端/本地实现） */
   saveDashboard: () => Promise<void>;
   /** 直接替换当前 dashboard（导入/回放/压测） */
-  setDashboard: (dashboard: Dashboard, options?: { markAsSynced?: boolean }) => void;
+  setDashboard: (dashboard: DashboardContent, options?: { markAsSynced?: boolean }) => void;
   /** 新增面板组 */
   addPanelGroup: (group: Partial<PanelGroup>) => unknown;
   /** 更新面板组（标题/描述/折叠等） */
@@ -357,7 +364,7 @@ export interface UseDashboardSdkResult {
   /** 获取最新的 public state 快照（可被外部安全修改，不会影响内部）。 */
   getState: () => DashboardSdkStateSnapshot;
   /** 获取当前 dashboard JSON 的深拷贝（可能很大，建议按需调用）。 */
-  getDashboardSnapshot: () => Dashboard | null;
+  getDashboardSnapshot: () => DashboardContent | null;
   /** 获取当前 variables 运行时状态快照（可被外部安全修改，不会影响内部）。 */
   getVariablesSnapshot: () => VariablesState;
   /** 获取指定面板组的深拷贝快照。 */
@@ -439,7 +446,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     let panelCount = 0;
     for (const g of groups) panelCount += g.panels?.length ?? 0;
     return {
-      id: dash.id,
+      id: (dashboardStore as any).dashboardId ?? null,
       name: dash.name,
       groupCount: groups.length,
       panelCount,
@@ -478,7 +485,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     };
   };
 
-  const getDashboardSnapshot = (): Dashboard | null => {
+  const getDashboardSnapshot = (): DashboardContent | null => {
     const snap = dashboardStore.getPersistableDashboardSnapshot?.() ?? dashboardStore.currentDashboard;
     if (!snap) return null;
     return deepCloneStructured(toRaw(snap));
@@ -524,7 +531,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const isSameDashboardSummary = (a: DashboardSdkDashboardSummary | null, b: DashboardSdkDashboardSummary | null) => {
     if (a == null && b == null) return true;
     if (a == null || b == null) return false;
-    return String(a.id) === String(b.id) && a.name === b.name && a.groupCount === b.groupCount && a.panelCount === b.panelCount;
+    return String(a.id ?? '') === String(b.id ?? '') && a.name === b.name && a.groupCount === b.groupCount && a.panelCount === b.panelCount;
   };
 
   const computeChangedKeys = (prev: DashboardSdkStateSnapshot | null, next: DashboardSdkStateSnapshot): Array<keyof DashboardSdkStateSnapshot> => {
@@ -742,11 +749,11 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
         throw error;
       }
     },
-    setDashboard: (dashboard: Dashboard, opts?: { markAsSynced?: boolean }) => {
+    setDashboard: (dashboard: DashboardContent, opts?: { markAsSynced?: boolean }) => {
       const next = deepCloneStructured(dashboard);
 
       // 优先使用 store 提供的 replaceDashboard：把一致性约束收敛在 store 层（更可靠）。
-      const replace = (dashboardStore as any).replaceDashboard as undefined | ((d: Dashboard, o?: any) => void);
+      const replace = (dashboardStore as any).replaceDashboard as undefined | ((d: DashboardContent, o?: any) => void);
       if (typeof replace === 'function') {
         replace(next, { markAsSynced: opts?.markAsSynced !== false });
       } else {

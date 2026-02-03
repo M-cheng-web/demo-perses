@@ -18,7 +18,7 @@
  */
 
 import type { JsonTextValidator } from '@grafana-fast/json-editor';
-import type { Dashboard, DashboardVariable } from '@grafana-fast/types';
+import type { DashboardContent, DashboardVariable } from '@grafana-fast/types';
 import { isPlainObject } from '@grafana-fast/utils';
 import { isBuiltInPanelType, listBuiltInPanelTypes } from '/#/panels/builtInPanels';
 
@@ -111,9 +111,9 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
   if (parsedValue == null) return [];
   if (!isPlainObject(parsedValue)) return ['Dashboard JSON 必须是对象'];
 
-  // 注意：这里不能直接 `as Dashboard`，因为 typescript 会认为类型“重叠不足”并报错；
+  // 注意：这里不能直接 `as DashboardContent`，因为 typescript 会认为类型“重叠不足”并报错；
   // 我们只在校验逻辑里“按需读取字段”，因此通过 unknown 过一层即可。
-  const dashboard = parsedValue as unknown as Dashboard;
+  const dashboard = parsedValue as unknown as DashboardContent;
   const errors: string[] = [];
 
   // 基础字段校验：避免导入后出现“看似成功，但运行时异常/状态不一致”

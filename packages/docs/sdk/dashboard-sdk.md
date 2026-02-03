@@ -4,6 +4,8 @@
 
 更完整的接入方式与最佳实践请参考：`/sdk/dashboard-sdk-usage`。
 
+关于“dashboardId（资源标识）与 Dashboard JSON（内容）如何拆分、以及新/老用户/导入 JSON 的完整流程”，请参考：`/sdk/dashboard-sdk-plan-a`。
+
 ## 快速示例
 
 ```vue

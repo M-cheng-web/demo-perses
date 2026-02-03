@@ -25,6 +25,7 @@
 
       <div v-if="state.dashboard" class="dp-dashboard-view__stats">
         <Tag size="small" color="var(--gf-color-primary)">面板组 {{ state.dashboard.groupCount }}</Tag>
+        <Tag size="small" variant="neutral">dashboardId: {{ state.dashboard.id ?? '-' }}</Tag>
         <Tag size="small" :color="state.mounted ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
           {{ state.mounted ? '已挂载' : '未挂载' }}
         </Tag>
@@ -84,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onUnmounted, ref, watch } from 'vue';
+  import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
   import { useRouter } from 'vue-router';
   import { Button, List, Modal, Segmented, Tag } from '@grafana-fast/component';
   import { useDashboardSdk, DashboardApi } from '@grafana-fast/hooks';
@@ -101,7 +102,9 @@
     getState,
     actions: dashboardActions,
   } = useDashboardSdk(dashboardRef, {
-    dashboardId: 'default',
+    // 方案A演示：dashboardId（资源标识）可能来自宿主业务接口，因此这里禁用 autoLoad，
+    // 等“宿主先拿到 dashboardId”后再显式调用 actions.loadDashboard(dashboardId)。
+    autoLoad: false,
     apiConfig: {
       baseUrl: 'https://api.example.com',
       endpoints: {
@@ -178,9 +181,41 @@
     },
   });
 
+  // 模拟“宿主业务接口”获取 dashboardId（资源标识）的真实流程：
+  // - 业务侧可能先请求 project/user/space 等上下文
+  // - 再根据业务返回结果决定最终 dashboardId
+  const resolvedDashboardId = ref<string | null>(null);
+  const isResolvingDashboardId = ref(false);
+  const mockBusinessFetchDashboardId = async (): Promise<string> => {
+    // 模拟网络延迟
+    await new Promise<void>((r) => window.setTimeout(r, 600));
+    // 这里返回一个稳定值，避免每次刷新都是“全新 dashboard”影响演示
+    return 'biz-dashboard-001';
+  };
+
+  const resolveAndLoadDashboard = async () => {
+    if (isResolvingDashboardId.value) return;
+    isResolvingDashboardId.value = true;
+    try {
+      const id = await mockBusinessFetchDashboardId();
+      resolvedDashboardId.value = id;
+      await dashboardActions.loadDashboard(id);
+    } finally {
+      isResolvingDashboardId.value = false;
+    }
+  };
+
+  onMounted(() => {
+    void resolveAndLoadDashboard();
+  });
+
   const reloadDashboard = async () => {
     try {
-      await dashboardActions.loadDashboard('default');
+      if (resolvedDashboardId.value) {
+        await dashboardActions.loadDashboard(resolvedDashboardId.value);
+      } else {
+        await resolveAndLoadDashboard();
+      }
     } catch {
       // demo page: errors are surfaced via console / onError hook in host apps
     }

@@ -29,7 +29,8 @@ export default defineConfig({
       ],
       '/sdk/': [
         { text: 'Dashboard SDK', link: '/sdk/dashboard-sdk' },
-        { text: 'SDK 使用说明', link: '/sdk/dashboard-sdk-usage' }
+        { text: 'SDK 使用说明', link: '/sdk/dashboard-sdk-usage' },
+        { text: '流程（方案A）', link: '/sdk/dashboard-sdk-plan-a' }
       ],
       '/components/': [{ text: 'Dashboard 组件', link: '/components/dashboard' }]
     },

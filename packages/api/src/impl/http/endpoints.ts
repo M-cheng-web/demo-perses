@@ -26,7 +26,7 @@ export const HttpApiEndpointKey = {
   // --- Dashboard ---
   /** GET /dashboards/:id - 获取单个 Dashboard */
   LoadDashboard: 'LoadDashboard',
-  /** POST /dashboards - 保存 Dashboard */
+  /** PUT /dashboards/:id - 保存 Dashboard 内容（按 id upsert） */
   SaveDashboard: 'SaveDashboard',
   /** DELETE /dashboards/:id - 删除 Dashboard */
   DeleteDashboard: 'DeleteDashboard',
@@ -77,7 +77,7 @@ export type HttpApiEndpointKey = (typeof HttpApiEndpointKey)[keyof typeof HttpAp
 export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
   // --- Dashboard ---
   [HttpApiEndpointKey.LoadDashboard]: '/dashboards/:id',
-  [HttpApiEndpointKey.SaveDashboard]: '/dashboards',
+  [HttpApiEndpointKey.SaveDashboard]: '/dashboards/:id',
   [HttpApiEndpointKey.DeleteDashboard]: '/dashboards/:id',
   [HttpApiEndpointKey.AllDashboards]: '/dashboards',
   [HttpApiEndpointKey.DefaultDashboard]: '/dashboards/default',

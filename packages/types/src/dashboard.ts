@@ -7,9 +7,26 @@ import type { PanelGroup } from './panelGroup';
 import type { TimeRange } from './timeRange';
 
 /**
- * Dashboard 定义
+ * DashboardId（资源标识）
+ *
+ * 说明：
+ * - 这是“Dashboard 资源”的外部标识（通常来自路由/业务接口/后端数据库主键）
+ * - 注意：Dashboard JSON 内容（DashboardContent）**不包含** dashboardId
  */
-export interface Dashboard {
+export type DashboardId = ID;
+
+/**
+ * Dashboard 内容（可导入/导出/持久化的 JSON）
+ *
+ * 设计约束：
+ * - 该结构是“纯内容”，不包含 dashboardId（资源标识）
+ * - dashboardId 应由宿主/后端协议承载（例如 URL path / 请求参数）
+ *
+ * 典型用途：
+ * - 用户导入/导出 JSON 文件
+ * - 后端返回/保存 Dashboard 内容（由 dashboardId 定位）
+ */
+export interface DashboardContent {
   /**
    * Dashboard JSON schema 版本号（保留字段，当前仅做持久化）
    *
@@ -18,8 +35,6 @@ export interface Dashboard {
    * - 该字段会随 Dashboard JSON 一起保存/导出，供未来演进使用
    */
   schemaVersion: number;
-  /** Dashboard ID */
-  id: ID;
   /** Dashboard 名称 */
   name: string;
   /** Dashboard 描述 */
@@ -32,10 +47,6 @@ export interface Dashboard {
   refreshInterval: number;
   /** 变量列表 */
   variables?: DashboardVariable[];
-  /** 创建时间 */
-  createdAt: Timestamp;
-  /** 更新时间 */
-  updatedAt: Timestamp;
 }
 
 /**
@@ -124,8 +135,8 @@ export interface UpdateDashboardParams {
  * Dashboard 列表项
  */
 export interface DashboardListItem {
-  /** Dashboard ID */
-  id: ID;
+  /** Dashboard ID（资源标识，等价于 DashboardId） */
+  id: DashboardId;
   /** Dashboard 名称 */
   name: string;
   /** Dashboard 描述 */

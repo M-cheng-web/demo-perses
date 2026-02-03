@@ -20,6 +20,7 @@ const containerRef = ref<HTMLElement | null>(null);
 
 const { on, getState, getApiConfig, actions } = useDashboardSdk(containerRef, {
   instanceId: 'my-dashboard-1', // 多实例时务必唯一且稳定
+  // dashboardId 是“资源标识”（不在导出的 JSON 里），用于后端定位这份 Dashboard 内容
   dashboardId: 'default',
   apiConfig: {
     baseUrl: 'https://api.example.com',
@@ -49,6 +50,7 @@ actions.setReadOnly(true);
 - `getState()` 返回的是 **快照**，外部修改这个对象不会影响内部。
 - `on('change')` 用于监听变化；`on` 会返回一个 `unsubscribe()`，组件卸载时记得调用。
 - `actions.*` 是**唯一被支持**的“外部修改内部”的方式。
+- 若 `dashboardId` 需要从业务接口异步获取，建议使用 `autoLoad: false`，拿到 id 后再 `actions.loadDashboard(dashboardId)`；详见 `/sdk/dashboard-sdk-plan-a`。
 
 ---
 
@@ -59,8 +61,10 @@ SDK 提供两类读取方式：
 - `getState()`：轻量状态快照（适合频繁读取/渲染 UI）
   - 包含容器尺寸、主题、只读开关、viewMode、timeRange、加载/保存状态等
   - `state.dashboard` 只提供摘要（id/name/groupCount/panelCount）
+    - 其中 `id` 指的是 `dashboardId`（资源标识），不是 Dashboard JSON 的字段
   - 通过 `state.dashboardRevision` 反映 dashboard JSON 是否发生变化（单调递增）
 - `getDashboardSnapshot()`：深拷贝后的 dashboard JSON（可能很大，**不要在每次 change 都调用**）
+  - 返回的是 `DashboardContent`（纯内容），不包含 `dashboardId`
 
 推荐策略：
 
@@ -119,9 +123,9 @@ on('change', ({ changedKeys, state }) => {
 - 生命周期/挂载：
   - `actions.mountDashboard()` / `actions.unmountDashboard()`
 - Dashboard 数据：
-  - `actions.loadDashboard(id)`
+  - `actions.loadDashboard(dashboardId)`
   - `actions.saveDashboard()`
-  - `actions.setDashboard(dashboard, { markAsSynced? })`
+  - `actions.setDashboard(dashboardContent, { markAsSynced? })`
 - 能力开关：
   - `actions.setReadOnly(true/false)`
 - 时间范围：
@@ -145,4 +149,3 @@ on('change', ({ changedKeys, state }) => {
 - **避免重操作写在高频 change 里**：例如每次 change 都 stringify dashboard；用 `dashboardChanged`/`dashboardRevision` 做过滤，必要时再 debounce。
 - **多实例一定要传 `instanceId`**：否则本地持久化/调度器 scope 等可能互相干扰。
 - **订阅要记得清理**：用 `const off = on(...); onUnmounted(off)` 这种写法最简单。
-

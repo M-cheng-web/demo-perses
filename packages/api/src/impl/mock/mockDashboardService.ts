@@ -7,7 +7,7 @@
  * - 未来接后端时，只需要替换 dashboard.load/save 实现，不应影响 UI 调用
  */
 import type { DashboardService } from '../../contracts';
-import type { CorePanelType, Dashboard, DashboardListItem, ID, Panel, PanelGroup, PanelLayout } from '@grafana-fast/types';
+import type { CorePanelType, DashboardContent, DashboardId, DashboardListItem, Panel, PanelGroup, PanelLayout } from '@grafana-fast/types';
 
 function nowTs() {
   return Date.now();
@@ -320,8 +320,7 @@ function createLargeGroup(): PanelGroup {
   };
 }
 
-function createDefaultDashboard(): Dashboard {
-  const now = nowTs();
+function createDefaultDashboardContent(dashboardId: DashboardId): DashboardContent {
   const groupCount = 30;
   const panelsPerGroup = 30;
   const fixedGroups: PanelGroup[] = [createFixedCpuGroup(), createLargeGroup()];
@@ -391,8 +390,7 @@ function createDefaultDashboard(): Dashboard {
 
   return {
     schemaVersion: 1,
-    id: 'default',
-    name: 'Mock Dashboard（30 组 / 每组约 30 panels）',
+    name: `Mock Dashboard（${String(dashboardId)}）`,
     description: 'Mock dashboard (built-in) for focus-layer/pagination/virtualization testing',
     panelGroups: groups,
     timeRange: { from: 'now-1h', to: 'now' },
@@ -454,31 +452,49 @@ function createDefaultDashboard(): Dashboard {
         current: '5m',
       },
     ],
-    createdAt: now,
-    updatedAt: now,
   };
 }
 
-let defaultDashboardCache: Dashboard | null = null;
+type StoredMockDashboard = { content: DashboardContent; createdAt: number; updatedAt: number };
+const dashboards = new Map<DashboardId, StoredMockDashboard>();
+
+function getOrCreate(dashboardId: DashboardId): StoredMockDashboard {
+  const existing = dashboards.get(dashboardId);
+  if (existing) return existing;
+  const now = nowTs();
+  const content = createDefaultDashboardContent(dashboardId);
+  const created: StoredMockDashboard = { content, createdAt: now, updatedAt: now };
+  dashboards.set(dashboardId, created);
+  return created;
+}
 
 export function createMockDashboardService(): DashboardService {
   return {
-    async loadDashboard(id: ID): Promise<Dashboard> {
-      if (id === 'default') return (defaultDashboardCache ??= createDefaultDashboard());
-      return (defaultDashboardCache ??= createDefaultDashboard());
+    async loadDashboard(dashboardId: DashboardId): Promise<DashboardContent> {
+      return getOrCreate(dashboardId).content;
     },
-    async saveDashboard(_dashboard: Dashboard): Promise<void> {
-      // no-op for now (kept stable for future persistence)
+    async saveDashboard(dashboardId: DashboardId, content: DashboardContent): Promise<void> {
+      const entry = getOrCreate(dashboardId);
+      entry.content = content;
+      entry.updatedAt = nowTs();
+      dashboards.set(dashboardId, entry);
     },
-    async deleteDashboard(_id: ID): Promise<void> {
-      // no-op
+    async deleteDashboard(dashboardId: DashboardId): Promise<void> {
+      dashboards.delete(dashboardId);
     },
     async listDashboards(): Promise<DashboardListItem[]> {
-      const d = (defaultDashboardCache ??= createDefaultDashboard());
-      return [{ id: d.id, name: d.name, description: d.description, createdAt: d.createdAt, updatedAt: d.updatedAt }];
+      // Ensure there is always at least one dashboard for demo flows.
+      getOrCreate('default');
+      return Array.from(dashboards.entries()).map(([id, entry]) => ({
+        id,
+        name: entry.content.name,
+        description: entry.content.description,
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt,
+      }));
     },
-    async getDefaultDashboard(): Promise<Dashboard> {
-      return (defaultDashboardCache ??= createDefaultDashboard());
+    async getDefaultDashboard(): Promise<DashboardContent> {
+      return getOrCreate('default').content;
     },
   };
 }

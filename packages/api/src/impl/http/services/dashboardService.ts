@@ -7,7 +7,7 @@
  */
 
 import type { DashboardService } from '../../../contracts/dashboard';
-import type { Dashboard, DashboardListItem, ID } from '@grafana-fast/types';
+import type { DashboardContent, DashboardListItem, DashboardId } from '@grafana-fast/types';
 import type { FetchHttpClient } from '../fetchClient';
 import type { HttpApiEndpointKey } from '../endpoints';
 import { HttpApiEndpointKey as EndpointKey, getEndpointPath } from '../endpoints';
@@ -32,18 +32,18 @@ export function createHttpDashboardService(_deps: HttpDashboardServiceDeps): Das
    * 4) 在这里完成 DTO → @grafana-fast/types 的转换（核心包不关心 DTO）
    */
   return {
-    async loadDashboard(id: ID): Promise<Dashboard> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.LoadDashboard, { id });
-      return _deps.http.get<Dashboard>(path);
+    async loadDashboard(dashboardId: DashboardId): Promise<DashboardContent> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.LoadDashboard, { id: dashboardId });
+      return _deps.http.get<DashboardContent>(path);
     },
 
-    async saveDashboard(dashboard: Dashboard): Promise<void> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.SaveDashboard);
-      await _deps.http.post(path, dashboard);
+    async saveDashboard(dashboardId: DashboardId, content: DashboardContent): Promise<void> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.SaveDashboard, { id: dashboardId });
+      await _deps.http.put(path, content);
     },
 
-    async deleteDashboard(id: ID): Promise<void> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.DeleteDashboard, { id });
+    async deleteDashboard(dashboardId: DashboardId): Promise<void> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.DeleteDashboard, { id: dashboardId });
       await _deps.http.delete(path);
     },
 
@@ -53,9 +53,9 @@ export function createHttpDashboardService(_deps: HttpDashboardServiceDeps): Das
       return normalizeArrayResponse<DashboardListItem>(res);
     },
 
-    async getDefaultDashboard(): Promise<Dashboard> {
+    async getDefaultDashboard(): Promise<DashboardContent> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.DefaultDashboard);
-      return _deps.http.get<Dashboard>(path);
+      return _deps.http.get<DashboardContent>(path);
     },
   };
 }

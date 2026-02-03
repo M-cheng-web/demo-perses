@@ -8,7 +8,7 @@
  * 说明：
  * - 这里的“looksLikeDashboard”只是启发式判断，用于 UI 提示与阻断“非 dashboard JSON”向外更新。
  */
-import type { Dashboard } from '@grafana-fast/types';
+import type { DashboardContent } from '@grafana-fast/types';
 import type { DashboardSummary, JsonTextDiagnostics } from '../types';
 import { analyzeJsonText } from './jsonDiagnostics';
 
@@ -18,7 +18,7 @@ export interface DashboardTextDiagnostics {
   /** 是否看起来像 Dashboard JSON（启发式） */
   looksLikeDashboard: boolean;
   /** 解析后的 dashboard（仅 json.ok && looksLikeDashboard 时存在） */
-  dashboard?: Dashboard;
+  dashboard?: DashboardContent;
   /** 精简摘要（仅 json.ok && looksLikeDashboard 时存在） */
   summary?: DashboardSummary;
   /**
@@ -34,7 +34,7 @@ export interface DashboardTextDiagnostics {
   issues?: string[];
 }
 
-function looksLikeDashboard(value: any): value is Dashboard {
+function looksLikeDashboard(value: any): value is DashboardContent {
   if (!value || typeof value !== 'object') return false;
   if (!('panelGroups' in value)) return false;
   return Array.isArray((value as any).panelGroups);
@@ -46,7 +46,7 @@ function safeStr(v: unknown): string {
   return '';
 }
 
-function collectPanelTypeCounts(dashboard: Dashboard): Record<string, number> {
+function collectPanelTypeCounts(dashboard: DashboardContent): Record<string, number> {
   const counts: Record<string, number> = {};
   const groups = dashboard.panelGroups ?? [];
   for (const g of groups as any[]) {
@@ -60,7 +60,7 @@ function collectPanelTypeCounts(dashboard: Dashboard): Record<string, number> {
   return counts;
 }
 
-function diagnoseStructure(dashboard: Dashboard): string[] {
+function diagnoseStructure(dashboard: DashboardContent): string[] {
   const issues: string[] = [];
   const groups = Array.isArray(dashboard.panelGroups) ? dashboard.panelGroups : [];
 
@@ -151,7 +151,7 @@ export function analyzeDashboardText(text: string): DashboardTextDiagnostics {
     return { json, looksLikeDashboard: false };
   }
 
-  const dashboard = value as Dashboard;
+  const dashboard = value as DashboardContent;
   const panelGroupCount = dashboard.panelGroups?.length ?? 0;
   const panelCount = (dashboard.panelGroups ?? []).reduce((acc, g) => acc + (g.panels?.length ?? 0), 0);
   const variableCount = (dashboard as any).variables?.length ?? 0;

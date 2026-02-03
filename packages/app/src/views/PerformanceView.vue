@@ -26,7 +26,7 @@
   import { useRouter } from 'vue-router';
   import { Button, InputNumber } from '@grafana-fast/component';
   import { useDashboardSdk } from '@grafana-fast/hooks';
-  import type { Dashboard } from '@grafana-fast/types';
+  import type { DashboardContent } from '@grafana-fast/types';
 
   const router = useRouter();
   const dashboardRef = ref<HTMLElement | null>(null);
@@ -36,8 +36,7 @@
     dashboardId: 'default',
   });
 
-  const generateDashboard = (count: number): Dashboard => {
-    const now = Date.now();
+  const generateDashboard = (count: number): DashboardContent => {
     const panels = Array.from({ length: count }).map((_, i) => {
       const id = `p-${i + 1}`;
       return {
@@ -63,7 +62,6 @@
 
     return {
       schemaVersion: 1,
-      id: `perf-${count}`,
       name: `Perf Dashboard (${count})`,
       description: 'Generated dashboard for performance testing',
       panelGroups: [
@@ -83,8 +81,6 @@
       timeRange: { from: 'now-1h', to: 'now' },
       refreshInterval: 0,
       variables: [],
-      createdAt: now,
-      updatedAt: now,
     };
   };
 

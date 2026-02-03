@@ -49,15 +49,11 @@
 
       <!-- 面板组列表 -->
       <div ref="contentEl" :class="[bem('content'), { 'is-locked': isFocusLayerActive }]" :style="contentStyle">
-        <Empty v-if="!currentDashboard" description="暂无仪表盘数据">
-          <div :class="bem('empty-hint')">点击右侧“设置”按钮，在工具栏中选择“导入 JSON”初始化仪表盘。</div>
-        </Empty>
-
-        <Empty v-else-if="!panelGroups.length" :description="emptyText">
+        <Empty v-if="currentDashboard && !panelGroups.length" :description="emptyText">
           <div :class="bem('empty-hint')">点击右侧“设置”按钮，在工具栏中创建面板组或导入 JSON。</div>
         </Empty>
 
-        <template v-else>
+        <template v-else-if="currentDashboard">
           <AllPanelsView v-if="isAllPanelsView" :panel-groups="panelGroups" />
           <PanelGroupList
             v-else
@@ -131,11 +127,15 @@
       <input ref="jsonFileInputRef" type="file" accept=".json" style="display: none" @change="handleJsonFileChange" />
 
       <!-- 全局 Loading Mask：boot 阶段锁住交互（禁止滚动/折叠/点击） -->
-      <div v-if="isBooting" :class="bem('boot-mask')" @wheel.prevent @touchmove.prevent @pointerdown.prevent @keydown.prevent>
+      <div v-if="statusKind != null" :class="bem('boot-mask')" @wheel="handleStatusMaskWheel" @touchmove="handleStatusMaskTouchMove">
         <div :class="bem('boot-card')">
-          <Loading :text="bootTitle" />
-          <div :class="bem('boot-detail')">{{ bootDetail }}</div>
-          <div v-if="isLargeDashboard" :class="bem('boot-hint')">检测到数据量较大，首次加载可能需要更久，请耐心等待</div>
+          <div :class="bem('status-head')">
+            <Loading v-if="statusKind === 'loading'" :text="''" />
+            <component v-else :is="statusIcon" :class="[bem('status-icon'), { 'is-error': statusKind === 'error' }]" />
+            <div :class="[bem('status-title'), { 'is-error': statusKind === 'error' }]">{{ statusTitle }}</div>
+          </div>
+          <div :class="bem('boot-detail')">{{ statusDetail }}</div>
+          <div v-if="statusHint" :class="bem('boot-hint')">{{ statusHint }}</div>
         </div>
       </div>
     </div>
@@ -146,7 +146,7 @@
   import { ref, watch, onMounted, onUnmounted, computed, provide, inject, h, nextTick } from 'vue';
   import { getActivePinia, storeToRefs, type Pinia } from '@grafana-fast/store';
   import { Button, ConfigProvider, Drawer, Empty, Loading, Modal, Space, message } from '@grafana-fast/component';
-  import { SettingOutlined } from '@ant-design/icons-vue';
+  import { ClockCircleOutlined, CloseCircleOutlined, SettingOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useEditorStore, useTimeRangeStore, useTooltipStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
   import { DASHBOARD_EMPTY_TEXT } from '/#/components/Dashboard/utils';
@@ -166,7 +166,7 @@
   import { setPiniaApiClient } from '/#/runtime/piniaAttachments';
   import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
   import { DashboardJsonEditor } from '@grafana-fast/json-editor';
-  import type { Dashboard } from '@grafana-fast/types';
+  import type { DashboardContent } from '@grafana-fast/types';
   import { usePanelGroupPagination } from '/#/composables/usePanelGroupPagination';
 
   const [_, bem] = createNamespace('dashboard');
@@ -222,6 +222,7 @@
   const tooltipStore = useTooltipStore();
   const {
     currentDashboard,
+    dashboardId,
     panelGroups,
     editingGroupId,
     viewMode,
@@ -793,6 +794,7 @@
     const parts: string[] = [];
     const src = bootStats.value.source === 'import' ? '导入' : '加载';
     parts.push(`来源：${src}`);
+    if (dashboardId.value) parts.push(`dashboardId：${String(dashboardId.value)}`);
     if (typeof bootStats.value.groupCount === 'number') parts.push(`面板组：${bootStats.value.groupCount}`);
     if (typeof bootStats.value.panelCount === 'number') parts.push(`面板：${bootStats.value.panelCount}`);
     if (typeof bootStats.value.jsonBytes === 'number') {
@@ -801,6 +803,73 @@
     }
     return parts.join(' / ');
   });
+
+  type DashboardStatusKind = 'waiting' | 'loading' | 'error';
+  const statusKind = computed<DashboardStatusKind | null>(() => {
+    if (isBooting.value) return 'loading';
+    if (currentDashboard.value) return null;
+    if (bootStage.value === 'error') return 'error';
+    // currentDashboard 为空且不在 boot：典型为宿主正在远程获取 dashboardId
+    return 'waiting';
+  });
+
+  const statusTitle = computed(() => {
+    switch (statusKind.value) {
+      case 'loading':
+        return bootTitle.value;
+      case 'error':
+        if (bootStats.value.source === 'import') return '导入失败';
+        if (bootStats.value.source === 'remote') return '加载失败';
+        return '初始化失败';
+      case 'waiting':
+        return '正在准备仪表盘...';
+      default:
+        return '';
+    }
+  });
+
+  const statusDetail = computed(() => {
+    switch (statusKind.value) {
+      case 'loading':
+        return bootDetail.value;
+      case 'error': {
+        const idText = dashboardId.value ? `dashboardId：${String(dashboardId.value)}` : '';
+        const errText = lastError.value ? `错误：${String(lastError.value)}` : '错误：未知错误';
+        const hint = '可稍后重试或导入 JSON';
+        return idText ? `${idText} / ${errText}（${hint}）` : `${errText}（${hint}）`;
+      }
+      case 'waiting':
+        return '等待宿主获取 dashboardId 并调用 loadDashboard(dashboardId) 后加载远端 JSON...';
+      default:
+        return '';
+    }
+  });
+
+  const statusHint = computed(() => {
+    if (statusKind.value === 'loading' && isLargeDashboard.value) {
+      return '检测到数据量较大，首次加载可能需要更久，请耐心等待';
+    }
+    return '';
+  });
+
+  const statusIcon = computed(() => {
+    switch (statusKind.value) {
+      case 'error':
+        return CloseCircleOutlined;
+      case 'waiting':
+        return ClockCircleOutlined;
+      default:
+        return ClockCircleOutlined;
+    }
+  });
+
+  const handleStatusMaskWheel = (event: WheelEvent) => {
+    event.preventDefault();
+  };
+
+  const handleStatusMaskTouchMove = (event: TouchEvent) => {
+    event.preventDefault();
+  };
 
   // ---------------------------
   // JSON 弹窗（对 SDK/外部更友好）
@@ -813,7 +882,7 @@
   const isGeneratingJson = ref(false);
   let generateJsonSeq = 0;
 
-  const dashboardJsonEditorRef = ref<null | { getDraftText: () => string; getDashboard: () => Dashboard }>(null);
+  const dashboardJsonEditorRef = ref<null | { getDraftText: () => string; getDashboard: () => DashboardContent }>(null);
   const jsonFileInputRef = ref<HTMLInputElement>();
 
   const lockScrollEl = computed(() => contentEl.value ?? rootEl.value ?? null);
@@ -823,7 +892,7 @@
     isJsonValid.value = ok;
   };
 
-  const generateDashboardJsonText = async (dash: Dashboard) => {
+  const generateDashboardJsonText = async (dash: DashboardContent) => {
     const seq = ++generateJsonSeq;
     isGeneratingJson.value = true;
     // 避免“点击打开 → 先 stringify 大对象 → UI 卡死一段时间后才出现 modal”
@@ -1032,6 +1101,10 @@
       color: var(--gf-color-text-secondary);
     }
 
+    &__empty-actions {
+      margin-top: var(--gf-space-3);
+    }
+
     &__settings {
       position: absolute;
       right: 0;
@@ -1114,6 +1187,33 @@
       font-size: 12px;
       color: var(--gf-color-warning-text, var(--gf-color-text-secondary));
       line-height: 1.45;
+    }
+
+    &__status-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--gf-color-primary);
+    }
+
+    &__status-icon {
+      font-size: 20px;
+      line-height: 1;
+      color: currentColor;
+
+      &.is-error {
+        color: var(--gf-color-danger, #ff4d4f);
+      }
+    }
+
+    &__status-title {
+      font-size: var(--gf-font-size-sm);
+      font-weight: 650;
+      color: currentColor;
+
+      &.is-error {
+        color: var(--gf-color-danger, #ff4d4f);
+      }
     }
   }
 </style>
