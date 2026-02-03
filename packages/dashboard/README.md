@@ -35,32 +35,10 @@ sdk.actions.toolbar.viewJson();
 - 自动处理 pinia 隔离、多实例销毁清理
 - 对外提供“命令式 actions + 事件订阅 on/off + getState/getDashboardSnapshot 快照读取”的稳定 API 面
 
-## 直接使用组件：DashboardView
-
-```vue
-<template>
-  <DashboardView
-    :instanceId="'my-dashboard-1'"
-    theme="light"
-    :portalTarget="portalTarget"
-  />
-</template>
-
-<script setup lang="ts">
-  import { ref, onMounted } from 'vue';
-  import { DashboardView } from '@grafana-fast/dashboard';
-
-  // 可选：把 Teleport 浮层挂到指定容器（增强隔离/便于销毁）
-  const portalTarget = ref<HTMLElement | null>(null);
-  onMounted(() => (portalTarget.value = document.body));
-<\/script>
-```
-
 说明：
 
-- `instanceId` 必须唯一（同页多实例隔离依赖它）
-- `theme` 支持 `light/dark`
-- `portalTarget` 用于控制 Modal/Drawer/Dropdown/Select 等 Teleport 浮层的挂载点（默认 `body`）
+- 当前版本 **不支持** 直接挂载 `DashboardView` 组件；请统一使用 `useDashboardSdk(ref, options)`。
+- 若误用 `DashboardView`，运行时会给出警告并拒绝加载（渲染错误提示），以避免宿主“半接入半可用”的不一致状态。
 
 ## 更多集成说明
 

@@ -2,7 +2,7 @@
  * @grafana-fast/dashboard 包入口
  *
  * 对外暴露内容包括：
- * - DashboardView：Dashboard 根组件（宿主应用可直接挂载）
+ * - DashboardView：Dashboard 根组件（SDK-only：禁止宿主直接挂载）
  * - runtime：运行时注入 key、piniaAttachments 等（用于多实例隔离）
  * - stores：dashboard/timeRange/editor/tooltip 等 store（供 hooks 与宿主高级用法）
  * - types：透出 @grafana-fast/types（方便宿主应用一站式引用类型）
@@ -11,11 +11,10 @@
  * - 内部使用 `/#/` alias 组织源码路径；对外发布的 dist 不应依赖该 alias
  */
 import '/#/assets/styles/global.less';
-import type { App } from 'vue';
-import DashboardView from '/#/components/Dashboard/Dashboard.vue';
+import DashboardView from '/#/components/Dashboard/DashboardView.vue';
 
 /**
- * Dashboard 根组件（可直接在宿主应用中使用）
+ * Dashboard 根组件（SDK-only：仅供 useDashboardSdk 内部挂载）
  */
 export { DashboardView };
 
@@ -48,14 +47,3 @@ export * from '/#/utils/strictJsonValidators';
  * 透出公共类型（为了让宿主应用更方便地引用 dashboard JSON/types）
  */
 export * from '@grafana-fast/types';
-
-/**
- * Vue 插件安装入口（可选）
- * - 注册全局组件 GrafanaFastDashboard
- */
-export const install = (app: App) => {
-  app.component('GrafanaFastDashboard', DashboardView);
-  return app;
-};
-
-export default DashboardView;

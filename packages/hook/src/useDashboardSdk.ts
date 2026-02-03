@@ -383,6 +383,9 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
 
   // SDK 始终使用隔离的 pinia，防止宿主通过 store 引用直接篡改内部状态。
   const pinia = createPinia();
+  // 重要：标记该 pinia 为 “SDK 挂载专用”。
+  // DashboardView（对外导出的组件）会在未检测到该标记时拒绝加载（防止直接用组件方式集成）。
+  (pinia as any).__gfDashboardSdkMount = true;
 
   const emitError = (error: unknown) => {
     emitter.emit('error', { error });

@@ -32,6 +32,11 @@
             <div :class="bem('label')">范围</div>
             <TimeRangePicker v-model:value="draftTimeRange" :disabled="isBooting" />
           </div>
+          <div :class="bem('field')">
+            <div :class="bem('label')">自动刷新</div>
+            <Select v-model:value="draftRefreshInterval" size="small" :disabled="isBooting" :options="refreshIntervalOptions" />
+          </div>
+          <div :class="bem('hint')">提示：自动刷新仅影响当前页面运行时；保存/导出时会写入 Dashboard JSON 的 refreshInterval。</div>
         </Card>
 
         <Card size="small" title="变量" :class="bem('card')">
@@ -165,7 +170,7 @@
   const draftVariableValues = ref<Record<string, string | string[]>>({});
 
   const selectedTimeRange = ref('now-1h');
-  const { timeRange } = storeToRefs(timeRangeStore);
+  const { timeRange, refreshInterval } = storeToRefs(timeRangeStore);
 
   // 外部可能通过 SDK/暴露 API 修改 timeRange：这里让 UI 始终反映 store 的真实值
   watch(
@@ -182,12 +187,30 @@
   // ---------------------------
   const draftViewMode = ref<'grouped' | 'allPanels'>('grouped');
   const draftTimeRange = ref('now-1h');
+  const draftRefreshInterval = ref<number>(0);
 
   const isAllPanelsViewDraft = computed(() => draftViewMode.value === 'allPanels');
+
+  const normalizeNonNegativeInt = (value: unknown, fallback: number): number => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(0, Math.floor(n));
+  };
+
+  const refreshIntervalOptions = computed(() => [
+    { label: '关闭', value: 0 },
+    { label: '5s', value: 5_000 },
+    { label: '10s', value: 10_000 },
+    { label: '30s', value: 30_000 },
+    { label: '1m', value: 60_000 },
+    { label: '5m', value: 300_000 },
+    { label: '15m', value: 900_000 },
+  ]);
 
   const resetSidebarDraft = () => {
     draftViewMode.value = isAllPanelsView.value ? 'allPanels' : 'grouped';
     draftTimeRange.value = selectedTimeRange.value || 'now-1h';
+    draftRefreshInterval.value = normalizeNonNegativeInt(refreshInterval.value, 0);
 
     const next: Record<string, string | string[]> = {};
     const values = (variablesStore.state?.values ?? {}) as Record<string, unknown>;
@@ -304,6 +327,7 @@
     if (isBooting.value) return;
     dashboardStore.setViewMode(draftViewMode.value === 'allPanels' ? 'allPanels' : 'grouped');
     timeRangeStore.setTimeRange({ from: draftTimeRange.value, to: 'now' });
+    timeRangeStore.setRefreshInterval(normalizeNonNegativeInt(draftRefreshInterval.value, 0));
 
     const patch: Record<string, string | string[]> = {};
     const currentValues = (variablesStore.state?.values ?? {}) as Record<string, unknown>;
