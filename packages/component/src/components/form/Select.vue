@@ -11,11 +11,7 @@
   >
     <div
       ref="controlRef"
-      :class="[
-        bem('selector'),
-        variant === 'text' ? bem('selector--text') : '',
-        { 'is-disabled': disabled },
-      ]"
+      :class="[bem('selector'), variant === 'text' ? bem('selector--text') : '', { 'is-disabled': disabled }]"
       tabindex="0"
       @click="handleTriggerClick"
       @pointerdown="handlePointerDownInside"
@@ -36,12 +32,7 @@
             <CloseOutlined />
           </span>
         </span>
-        <span
-          v-if="collapsedTagCount > 0"
-          :class="[bem('item'), bem('item-rest')]"
-        >
-          +{{ collapsedTagCount }}
-        </span>
+        <span v-if="collapsedTagCount > 0" :class="[bem('item'), bem('item-rest')]"> +{{ collapsedTagCount }} </span>
         <span :class="bem('search-mirror')" ref="searchMirrorRef">{{ search }}&nbsp;</span>
         <input
           v-if="showSearch"
@@ -104,10 +95,7 @@
             <div
               v-for="(option, idx) in filteredOptions"
               :key="option.value"
-              :class="[
-                bem('option'),
-                { 'is-selected': isSelected(option.value), 'is-active': idx === activeIndex, 'is-disabled': option.disabled }
-              ]"
+              :class="[bem('option'), { 'is-selected': isSelected(option.value), 'is-active': idx === activeIndex, 'is-disabled': option.disabled }]"
               @click="selectOption(option)"
               @mouseenter="setActiveIndex(idx)"
             >
@@ -131,6 +119,7 @@
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { CheckOutlined, CloseOutlined, CloseCircleFilled, DownOutlined } from '@ant-design/icons-vue';
+  import { subscribeWindowEvent, subscribeWindowResize, type Unsubscribe } from '@grafana-fast/utils';
   import { createNamespace, debounceCancellable } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
@@ -248,6 +237,10 @@
   const clearPointerDownInside = debounceCancellable(() => {
     pointerDownInside = false;
   }, 0);
+
+  let unsubscribeOutside: Unsubscribe | null = null;
+  let unsubscribeResize: Unsubscribe | null = null;
+  let unsubscribeScroll: Unsubscribe | null = null;
 
   const isMultiple = computed(() => props.mode === 'multiple' || props.mode === 'tags');
   const isTags = computed(() => props.mode === 'tags');
@@ -670,8 +663,8 @@
   };
 
   onMounted(() => {
-    window.addEventListener('click', handleClickOutside);
-    window.addEventListener('resize', syncDropdownPosition);
+    unsubscribeOutside = subscribeWindowEvent('click', handleClickOutside);
+    unsubscribeResize = subscribeWindowResize(() => void syncDropdownPosition());
 
     if (typeof window !== 'undefined' && 'ResizeObserver' in window) {
       resizeObserver = new ResizeObserver(() => {
@@ -684,9 +677,12 @@
   });
 
   onBeforeUnmount(() => {
-    window.removeEventListener('click', handleClickOutside);
-    window.removeEventListener('resize', syncDropdownPosition);
-    window.removeEventListener('scroll', scheduleSyncDropdownPosition, true);
+    unsubscribeOutside?.();
+    unsubscribeOutside = null;
+    unsubscribeResize?.();
+    unsubscribeResize = null;
+    unsubscribeScroll?.();
+    unsubscribeScroll = null;
     if (resizeObserver) resizeObserver.disconnect();
     resizeObserver = null;
     if (rafId != null) cancelAnimationFrame(rafId);
@@ -699,9 +695,11 @@
     (val) => {
       if (val) {
         syncDropdownPosition();
-        window.addEventListener('scroll', scheduleSyncDropdownPosition, true);
+        unsubscribeScroll?.();
+        unsubscribeScroll = subscribeWindowEvent('scroll', () => scheduleSyncDropdownPosition(), { capture: true, passive: true });
       } else {
-        window.removeEventListener('scroll', scheduleSyncDropdownPosition, true);
+        unsubscribeScroll?.();
+        unsubscribeScroll = null;
       }
     }
   );

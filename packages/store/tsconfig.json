@@ -6,6 +6,7 @@
       "@grafana-fast/store": ["./src/index.ts"]
     },
     "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
     "declaration": true,
     "declarationMap": true,
     "allowImportingTsExtensions": false,

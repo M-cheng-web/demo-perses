@@ -2,7 +2,7 @@
 
 > 目标读者：项目 Owner/核心开发者  
 > 目标：在保持 Grafana 核心 Dashboard 能力的基础上，通过“可嵌入（SDK） + 可移植 JSON + 性能/调试体验”在多个领域超越 Grafana。  
-> 范围：基于当前仓库 `demo-perses`（pnpm monorepo）代码现状的评审与可执行计划。  
+> 范围：基于当前仓库 `demo-perses`（pnpm monorepo）代码现状的评审与可执行计划。
 
 ---
 
@@ -73,31 +73,31 @@ Grafana 是“完整产品”（含服务端、权限、数据源管理、告警
 
 ### 3.2 需要尽快处理的技术债（否则会阻碍迭代速度）
 
-1) **类型系统被 `any` 稀释（尤其在 QueryBuilder/编辑器）**  
-现状：`packages/dashboard/src/components/...` 中存在较多 `any`，会导致：
+1. **类型系统被 `any` 稀释（尤其在 QueryBuilder/编辑器）**  
+   现状：`packages/dashboard/src/components/...` 中存在较多 `any`，会导致：
    - 面板/查询/变量结构升级时，IDE 不能帮你找引用
    - 插件化后，schema 变化会变得不可控
 
-建议：  
-   - 把 `any` 收敛到“边界层”（例如解析外部 JSON、HTTP DTO），核心模型使用 `@grafana-fast/types`
-   - 对 PanelOptions、TransformationOptions 引入更明确的类型（哪怕先是 discriminated union）
+建议：
 
-2) **面板编辑器“类型映射”容易分散（已收敛）**  
-现状（已改造）：面板类型相关的映射已集中到单一来源：
+- 把 `any` 收敛到“边界层”（例如解析外部 JSON、HTTP DTO），核心模型使用 `@grafana-fast/types`
+- 对 PanelOptions、TransformationOptions 引入更明确的类型（哪怕先是 discriminated union）
+
+2. **面板编辑器“类型映射”容易分散（已收敛）**  
+   现状（已改造）：面板类型相关的映射已集中到单一来源：
    - `packages/dashboard/src/panels/builtInPanels.ts`：type -> component / styleComponent / defaultOptions
    - PanelEditor/PanelContent/Strict 校验都依赖该映射，避免“新增一个面板要改很多处”的问题
 
 后续（可选）：如果未来需要插件化，再把 `builtInPanels.ts` 演进为 registry（而不是先引入一整套宿主可注入体系）。
 
-3) **Dashboard JSON 与运行时 store 的一致性（已补齐 serialize）**  
-现状（已改造）：
+3. **Dashboard JSON 与运行时 store 的一致性（已补齐 serialize）**  
+   现状（已改造）：
    - timeRange/refreshInterval/variables 属于运行时全局状态，统一由 store 承载
    - 保存/导出使用“可持久化快照”（serialize）把运行时状态合并回 Dashboard JSON，避免“看似保存成功但再导入不可复现”
 
 后续注意：如果再引入新的运行时字段（例如 viewport、adhoc filters），需要同步补齐 serialize 逻辑与回归样例。
 
-4) **文档/代码不一致点会反噬信任**
-典型例子：
+4. **文档/代码不一致点会反噬信任** 典型例子：
    - `schemaVersion` 字段在 types 里存在，但是否提供 migration 需要在文档中明确“当前不做/后置”
    - `tsconfig.base.json` 的路径别名必须与实际 packages 保持一致（例如不再提供 `@grafana-fast/panels` 时应移除配置）
 
@@ -111,18 +111,18 @@ Grafana 是“完整产品”（含服务端、权限、数据源管理、告警
 
 建议把能力拆成三层（并在代码结构中显式体现）：
 
-1) **Core（稳定内核）**
+1. **Core（稳定内核）**
    - Dashboard JSON schema + schemaVersion（migration 后置/可选）
    - Query execution contracts（CanonicalQuery / QueryResult）
    - QueryScheduler/Runner（调度、缓存、取消、debug）
    - Transformations pipeline（可序列化；UI 配置入口后置）
 
-2) **Plugins（可替换扩展）**
+2. **Plugins（可替换扩展）**
    - Panel plugins（渲染 + editor schema + default options + migrations）
    - Datasource plugins（capabilities + QueryBuilder adapter）
    - Transformation plugins（worker 化执行也可以在这里演进）
 
-3) **Host Integration（宿主集成层）**
+3. **Host Integration（宿主集成层）**
    - 鉴权与请求策略（headers/token/签名）
    - 用户权限、审计、保存策略、资产中心（folders/tags/search）
    - 埋点与 A/B
@@ -150,6 +150,7 @@ Grafana 是“完整产品”（含服务端、权限、数据源管理、告警
 如果你的定位是 embedded SDK，那么“Grafana 核心”更像下面这些（按优先级）：
 
 P0（必须有，否则很难说“具备 Grafana 核心能力”）
+
 - Dashboard：加载/保存/导入/导出（JSON 一致性）
 - Panel：增删改、布局拖拽缩放、全屏查看
 - Query：最少 1 个主流数据源（当前是 Prometheus-like）
@@ -159,12 +160,14 @@ P0（必须有，否则很难说“具备 Grafana 核心能力”）
 - Inspect（最少做一个 Query Inspector）：看请求、看耗时、看错误、看缓存命中
 
 P1（能显著逼近 Grafana 日常体验）
+
 - Field config / overrides（阈值、单位、颜色映射、displayName）
 - 更多 transformation（join/merge/reduce/pivot/rename/labels-to-fields）
 - 面板交互：hover 联动、点击跳转（links/drilldown）
 - Dashboard 资产治理：lint、重复 query 检测、变量命名规范
 
 P2（产品级能力，通常需要后端/平台配合）
+
 - folder/tag/search、版本历史、回滚、差异对比
 - RBAC/权限、分享策略、审计日志
 - annotations、alerts（真正做全套会很重，建议先做“事件标记/注释”）
@@ -174,16 +177,19 @@ P2（产品级能力，通常需要后端/平台配合）
 建议选 3 个可形成护城河的方向（并把资源集中）：
 
 方向 A：Embedded-first（多实例强隔离 + 微前端友好）
+
 - 同页多 dashboard：状态/快捷键/tooltip/scheduler 全隔离
 - 零全局副作用：CSS、事件监听、缓存/定时器都可释放
 - Host 可控：网络/鉴权/主题/埋点完全由宿主管
 
 方向 B：性能 + 调试体验（Grafana 的典型弱点）
+
 - “可视区域刷新 + 队列调度”已经有雏形
 - 下一步做成可视化 Query Inspector（debug snapshot + timeline）
 - 提供“为什么慢/为什么没数据”的可解释性（甚至 AI 辅助）
 
 方向 C：JSON 可移植 + 治理（企业真正愿意买单的点）
+
 - schemaVersion + migrations（必须落地）
 - 导出永远稳定、可重放
 - lint + 标准化：命名、变量一致性、重复 query 合并建议
@@ -206,6 +212,7 @@ P2（产品级能力，通常需要后端/平台配合）
 - 增加 4 类最小回归脚本（见第 4.2）
 
 验收标准：
+
 - 导出 JSON -> 导入 -> 渲染结果一致（timeRange/variables/transformations 都一致）
 - 新增一个 panel type 时，不需要在 3 个地方各写一份映射
 
@@ -220,6 +227,7 @@ P2（产品级能力，通常需要后端/平台配合）
 - 支持一键复制诊断信息（给用户/运维排障）
 
 验收标准：
+
 - 100 panels 场景下，用户能解释“现在为什么慢/谁在排队/谁失败”
 
 ### Sprint 3（后置/可选）：可扩展能力（Transformations 等）
@@ -231,6 +239,7 @@ P2（产品级能力，通常需要后端/平台配合）
 - 引入 worker 化执行的预留（先不做，留接口）
 
 验收标准：
+
 - 复杂 panel（table/stat）不靠面板堆代码，而靠 transformation chain 组合实现
 - transformation 缺失时不崩溃、不丢配置（类似 UnsupportedPanel 的语义）
 
@@ -240,19 +249,19 @@ P2（产品级能力，通常需要后端/平台配合）
 
 Grafana 的护城河是生态和深度。你要赢，必须 **避开正面战场**，打你更容易赢的战场：
 
-1) **把自己当成 SDK，而不是产品**
+1. **把自己当成 SDK，而不是产品**
    - 你不需要复刻 Grafana 的组织/权限/分享/告警全家桶
    - 你要做的是“让任何产品都能拥有 Grafana 级 dashboard 能力”
 
-2) **把“调试/可解释性”做成产品卖点**
+2. **把“调试/可解释性”做成产品卖点**
    - 大多数团队不是缺图表，而是缺“为什么不对/为什么慢”的解释
    - Query Inspector + Diagnostics +（可选）AI Debug 是你最容易形成差异化的组合
 
-3) **把 JSON 的稳定性当成资产**
+3. **把 JSON 的稳定性当成资产**
    - 企业里 dashboard 是资产：迁移、升级、治理比“多一个图表类型”更值钱
    - 你的 schemaVersion + migration + lint/治理 是长期价值
 
-4) **垂直领域“快赢”（超过 Grafana 的现实路径）**
+4. **垂直领域“快赢”（超过 Grafana 的现实路径）**
    - Grafana 很强，但做“某一领域的极致体验”往往慢
    - 你可以选择 1~2 个领域做“模板/面板/QueryPatterns/最佳实践”打包
      - 例如：NGINX、K8s、DB、业务链路等

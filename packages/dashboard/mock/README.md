@@ -1,6 +1,7 @@
 # Dashboard 导入测试 JSON（fixtures）
 
 此目录用于存放“导入 JSON”功能的测试用 Dashboard 文件，便于验证：
+
 - 大 JSON 导入时的全局 loading mask（锁交互/禁止滚动/禁止折叠）
 - VirtualList 的分页加载、触底加载与窗口化渲染
 - 极端布局（全部垂直/超大高度/多面板组）
@@ -21,12 +22,11 @@
   - 3 个面板组，每组 120 个 panels（验证多组的独立 VirtualList 行为）
 - `dashboard-import-heavy-240.json`
   - 240 个 panels（每个 panel 配置更“重”，用于压测导入 JSON 体积/解析耗时）
-- `dashboard-import-heavy-240-5mb.json`
-  - 240 个 panels（heavy / 约 6MB）：用于模拟“明显需要等待提示”的导入场景
-- `dashboard-import-heavy-240-10mb.json`
-  - 240 个 panels（heavy / 约 10MB）：用于模拟弱网/低端机长等待导入场景
-- `dashboard-import-heavy-1000-10mb.json`
-  - 1000 个 panels（heavy / 约 18MB）：极限场景，用于验证“滚到第 1000 条再回到第 1 条”时的虚拟渲染与性能
+- （可选）超大 fixtures（默认不生成）
+  - `dashboard-import-heavy-240-5mb.json`
+  - `dashboard-import-heavy-240-10mb.json`
+  - `dashboard-import-heavy-1000-10mb.json`
+  - 说明：这些文件体积很大（5~20MB），默认不纳入 git；需要时请按下方“生成方式”启用。
 
 ## 生成方式（可重复生成）
 
@@ -37,3 +37,9 @@ node packages/dashboard/mock/generate-fixtures.mjs
 ```
 
 它会覆盖（重写）上述 json 文件，确保内容 deterministic（可复现）。
+
+如需生成“超大 fixtures”（5~20MB），执行：
+
+```bash
+GF_GENERATE_HUGE_FIXTURES=1 node packages/dashboard/mock/generate-fixtures.mjs
+```

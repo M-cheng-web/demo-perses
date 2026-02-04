@@ -1,21 +1,9 @@
 <!-- 组件说明：绝对时间范围选择器（轻量版），用于 Dashboard 工具栏 -->
 <template>
   <div :class="bem()">
-    <input
-      :class="bem('input')"
-      type="datetime-local"
-      :value="fromModel"
-      @change="(e: any) => setFrom(e.target?.value)"
-      @blur="handleBlur"
-    />
+    <input :class="bem('input')" type="datetime-local" :value="fromModel" @change="(e: any) => setFrom(e.target?.value)" @blur="handleBlur" />
     <span :class="bem('sep')">—</span>
-    <input
-      :class="bem('input')"
-      type="datetime-local"
-      :value="toModel"
-      @change="(e: any) => setTo(e.target?.value)"
-      @blur="handleBlur"
-    />
+    <input :class="bem('input')" type="datetime-local" :value="toModel" @change="(e: any) => setTo(e.target?.value)" @blur="handleBlur" />
   </div>
 </template>
 

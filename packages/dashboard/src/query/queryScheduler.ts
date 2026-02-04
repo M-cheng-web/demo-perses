@@ -63,27 +63,6 @@ interface RefreshTask {
   enqueuedAt: number;
 }
 
-export interface QuerySchedulerDebugTask {
-  panelId: string;
-  priority: number;
-  reason: RefreshReason;
-  ageMs: number;
-}
-
-export interface QuerySchedulerDebugSnapshot {
-  updatedAt: number;
-  conditionGeneration: number;
-  queueGeneration: number;
-  registeredPanels: number;
-  visiblePanels: number;
-  pendingTasks: number;
-  inflightPanels: number;
-  maxPanelConcurrency: number;
-  runnerMaxConcurrency: number;
-  runnerCacheTtlMs: number;
-  topPending: QuerySchedulerDebugTask[];
-}
-
 /**
  * 创建一个 QueryScheduler 实例
  *
@@ -152,50 +131,6 @@ export function createQueryScheduler(pinia?: Pinia) {
   let conditionGeneration = 0;
   const pending = new Map<string, RefreshTask>();
 
-  const debug = ref<QuerySchedulerDebugSnapshot>({
-    updatedAt: Date.now(),
-    conditionGeneration: 0,
-    queueGeneration: 0,
-    registeredPanels: 0,
-    visiblePanels: 0,
-    pendingTasks: 0,
-    inflightPanels: 0,
-    maxPanelConcurrency,
-    runnerMaxConcurrency: 6,
-    runnerCacheTtlMs: 5_000,
-    topPending: [],
-  });
-
-  const updateDebug = () => {
-    const now = Date.now();
-    const tasks = Array.from(pending.values())
-      .sort((a, b) => {
-        if (a.priority !== b.priority) return b.priority - a.priority;
-        return a.enqueuedAt - b.enqueuedAt;
-      })
-      .slice(0, 12)
-      .map((t) => ({
-        panelId: t.panelId,
-        priority: t.priority,
-        reason: t.reason,
-        ageMs: now - t.enqueuedAt,
-      }));
-
-    debug.value = {
-      updatedAt: now,
-      conditionGeneration,
-      queueGeneration,
-      registeredPanels: registrations.size,
-      visiblePanels: visiblePanels.size,
-      pendingTasks: pending.size,
-      inflightPanels: panelInflight,
-      maxPanelConcurrency,
-      runnerMaxConcurrency: 6,
-      runnerCacheTtlMs: 5_000,
-      topPending: tasks,
-    };
-  };
-
   const bumpQueueGeneration = () => {
     queueGeneration++;
     // Pending tasks are canceled; clear loading for those panels (unless already in-flight).
@@ -208,7 +143,6 @@ export function createQueryScheduler(pinia?: Pinia) {
     for (const reg of registrations.values()) {
       reg.abort?.abort();
     }
-    updateDebug();
   };
 
   const bumpConditionGeneration = () => {
@@ -238,7 +172,6 @@ export function createQueryScheduler(pinia?: Pinia) {
       if (!next) break;
       pending.delete(next.panelId);
       panelInflight++;
-      updateDebug();
 
       void (async () => {
         const reg = registrations.get(next.panelId);
@@ -251,7 +184,6 @@ export function createQueryScheduler(pinia?: Pinia) {
         await runPanel(reg);
       })().finally(() => {
         panelInflight--;
-        updateDebug();
         drain();
       });
     }
@@ -278,11 +210,9 @@ export function createQueryScheduler(pinia?: Pinia) {
       existing.priority = Math.max(existing.priority, priority);
       existing.generation = queueGeneration;
       existing.reason = reason;
-      updateDebug();
       return;
     }
     pending.set(panelId, { panelId, priority, generation: queueGeneration, reason, enqueuedAt: now });
-    updateDebug();
     drain();
   };
 
@@ -368,7 +298,6 @@ export function createQueryScheduler(pinia?: Pinia) {
     for (const id of ids) {
       enqueue(id, reason, priority);
     }
-    updateDebug();
   };
 
   // 时间范围变化 -> 刷新全部面板
@@ -414,7 +343,6 @@ export function createQueryScheduler(pinia?: Pinia) {
       if (isPanelVisible(panelId) && existing.lastLoadedConditionGen !== conditionGeneration) {
         enqueue(panelId, 'became-visible', 25);
       }
-      updateDebug();
 
       onBeforeUnmount(() => {
         existing.mounts = Math.max(0, existing.mounts - 1);
@@ -423,7 +351,6 @@ export function createQueryScheduler(pinia?: Pinia) {
         // Avoid wasting work for a panel that is currently unmounted.
         pending.delete(panelId);
         if (!existing.inflight) existing.state.loading.value = false;
-        updateDebug();
       });
 
       return existing.state;
@@ -456,7 +383,6 @@ export function createQueryScheduler(pinia?: Pinia) {
     if (isPanelVisible(panelId) && reg.lastLoadedConditionGen !== conditionGeneration) {
       enqueue(panelId, 'became-visible', 25);
     }
-    updateDebug();
 
     onBeforeUnmount(() => {
       reg.mounts = Math.max(0, reg.mounts - 1);
@@ -464,7 +390,6 @@ export function createQueryScheduler(pinia?: Pinia) {
       reg.stopQueryWatch = undefined;
       pending.delete(panelId);
       if (!reg.inflight) reg.state.loading.value = false;
-      updateDebug();
     });
 
     return state;
@@ -545,15 +470,6 @@ export function createQueryScheduler(pinia?: Pinia) {
           enqueue(id, 'became-visible', 25);
         }
       }
-      updateDebug();
     },
-    /**
-     * 调度器调试信息（给回归验证/可观测性 UI 使用）
-     */
-    debug,
-    /**
-     * 获取当前调试快照（非响应式，适合一次性读取）
-     */
-    getDebugSnapshot: () => debug.value,
   };
 }

@@ -3,39 +3,23 @@
   <div v-if="!hidePager" :class="[bem(), bem({ [`size-${size}`]: true })]">
     <span v-if="showTotal" :class="bem('total')">{{ showTotal(total) }}</span>
     <ul :class="bem('pager')">
-      <li
-        :class="[bem('item'), bem('item-prev'), { 'is-disabled': disabled || currentPage <= 1 }]"
-        @click="prevPage"
-      >
+      <li :class="[bem('item'), bem('item-prev'), { 'is-disabled': disabled || currentPage <= 1 }]" @click="prevPage">
         <LeftOutlined />
       </li>
       <template v-for="it in pagerItems" :key="it.key">
         <li v-if="it.type === 'ellipsis'" :class="bem('item-ellipsis')">
           <EllipsisOutlined />
         </li>
-        <li
-          v-else
-          :class="[bem('item'), { 'is-active': it.page === currentPage, 'is-disabled': disabled }]"
-          @click="() => goPage(it.page)"
-        >
+        <li v-else :class="[bem('item'), { 'is-active': it.page === currentPage, 'is-disabled': disabled }]" @click="() => goPage(it.page)">
           {{ it.page }}
         </li>
       </template>
-      <li
-        :class="[bem('item'), bem('item-next'), { 'is-disabled': disabled || currentPage >= pageCount }]"
-        @click="nextPage"
-      >
+      <li :class="[bem('item'), bem('item-next'), { 'is-disabled': disabled || currentPage >= pageCount }]" @click="nextPage">
         <RightOutlined />
       </li>
     </ul>
     <div v-if="showSizeChanger" :class="bem('size')">
-      <Select
-        v-model:value="innerPageSize"
-        size="small"
-        :options="pageSizeSelectOptions"
-        :show-search="false"
-        :disabled="disabled"
-      />
+      <Select v-model:value="innerPageSize" size="small" :options="pageSizeSelectOptions" :show-search="false" :disabled="disabled" />
     </div>
     <div v-if="showQuickJumper" :class="bem('jumper')">
       <span>跳至</span>
@@ -44,7 +28,7 @@
         :class="bem('jumper-input')"
         :value="jumpValue"
         @change="handleJump"
-        @input="(e) => jumpValue = (e.target as HTMLInputElement).value"
+        @input="(e) => (jumpValue = (e.target as HTMLInputElement).value)"
       />
       <span>页</span>
     </div>

@@ -61,7 +61,6 @@
         <div class="dp-dashboard-view__group">
           <div class="dp-dashboard-view__group-title">Debug</div>
           <div class="dp-dashboard-view__group-actions">
-            <Button size="small" type="ghost" @click="schedulerOpen = true">调度器监控</Button>
             <Button size="small" type="ghost" @click="debugOpen = true">调试信息</Button>
           </div>
         </div>
@@ -73,19 +72,11 @@
     <Modal v-model:open="debugOpen" title="调试信息" :width="560" @cancel="debugOpen = false">
       <List :items="debugItems" variant="lines" :split="false" />
     </Modal>
-
-    <Modal v-model:open="schedulerOpen" title="调度器监控（可视优先刷新）" :width="720" @cancel="schedulerOpen = false">
-      <div class="dp-dashboard-view__scheduler-actions">
-        <Button type="ghost" @click="refreshVisibleNow">刷新可视区域</Button>
-        <Button type="ghost" @click="clearQueryCacheNow">清空查询缓存</Button>
-      </div>
-      <List :items="schedulerItems" variant="lines" :split="false" />
-    </Modal>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+  import { computed, onMounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { Button, List, Modal, Segmented, Tag } from '@grafana-fast/component';
   import { useDashboardSdk, DashboardApi } from '@grafana-fast/hooks';
@@ -94,7 +85,6 @@
   const router = useRouter();
   const dashboardRef = ref<HTMLElement | null>(null);
   const debugOpen = ref(false);
-  const schedulerOpen = ref(false);
 
   const {
     on,
@@ -129,45 +119,6 @@
     { key: 'ready', label: 'SDK Ready', value: state.value.ready ? '是' : '否' },
     { key: 'theme', label: '主题', value: state.value.theme },
   ]);
-
-  const schedulerSnapshot = ref(dashboardActions.getQuerySchedulerSnapshot());
-  const refreshSchedulerSnapshot = () => {
-    schedulerSnapshot.value = dashboardActions.getQuerySchedulerSnapshot();
-  };
-
-  let schedulerTimer: number | null = null;
-  watch(schedulerOpen, (open) => {
-    if (!open) {
-      if (schedulerTimer != null) window.clearInterval(schedulerTimer);
-      schedulerTimer = null;
-      return;
-    }
-    refreshSchedulerSnapshot();
-    schedulerTimer = window.setInterval(refreshSchedulerSnapshot, 500);
-  });
-  onUnmounted(() => {
-    if (schedulerTimer != null) window.clearInterval(schedulerTimer);
-    schedulerTimer = null;
-  });
-
-  const schedulerItems = computed(() => {
-    const snap = schedulerSnapshot.value;
-    const top = (snap?.topPending ?? []) as Array<{ panelId: string; priority: number; reason: string; ageMs: number }>;
-    return [
-      { key: 'visiblePanels', label: '可视 panels（viewport + 0.5 屏）', value: String(snap?.visiblePanels ?? '-') },
-      { key: 'registeredPanels', label: '已注册 panels', value: String(snap?.registeredPanels ?? '-') },
-      { key: 'pendingTasks', label: '待执行任务', value: String(snap?.pendingTasks ?? '-') },
-      { key: 'inflight', label: '执行中 panels', value: String(snap?.inflightPanels ?? '-') },
-      { key: 'maxPanelConcurrency', label: '面板并发上限', value: String(snap?.maxPanelConcurrency ?? '-') },
-      { key: 'conditionGeneration', label: '全局条件代际（time/var）', value: String(snap?.conditionGeneration ?? '-') },
-      { key: 'queueGeneration', label: '队列代际（取消/切换）', value: String(snap?.queueGeneration ?? '-') },
-      {
-        key: 'topPending',
-        label: '队列头部（最多 12 条）',
-        value: top.length ? top.map((t) => `${t.panelId} | p=${t.priority} | ${t.reason} | ${Math.round(t.ageMs)}ms`).join('\n') : '(空)',
-      },
-    ];
-  });
 
   const themeOptions = [
     { label: 'Light', value: 'light' },
@@ -223,8 +174,6 @@
   const handleRefresh = () => dashboardActions.refreshTimeRange();
   const mountDashboard = () => actions.mountDashboard();
   const unmountDashboard = () => actions.unmountDashboard();
-  const refreshVisibleNow = () => dashboardActions.refreshVisiblePanels();
-  const clearQueryCacheNow = () => dashboardActions.invalidateQueryCache();
   const setQuickRange = () =>
     dashboardActions.setTimeRange({
       from: 'now-5m',
@@ -366,14 +315,6 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
-    }
-
-    &__scheduler-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 8px;
-      padding-bottom: 8px;
     }
 
     &__canvas {

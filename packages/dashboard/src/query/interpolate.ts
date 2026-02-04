@@ -40,12 +40,7 @@ function formatValue(value: VariableValue, options: Required<Pick<InterpolateExp
   return String(value);
 }
 
-function replaceVarToken(
-  full: string,
-  name: string,
-  values: Record<string, VariableValue>,
-  options: Required<InterpolateExprOptions>
-): string {
+function replaceVarToken(full: string, name: string, values: Record<string, VariableValue>, options: Required<InterpolateExprOptions>): string {
   // 保留 Grafana 的内置宏/变量（避免误伤，例如 $__interval）
   if (name.startsWith('__')) return full;
 
@@ -70,4 +65,3 @@ export function interpolateExpr(expr: string, values: Record<string, VariableVal
   // $var：避免匹配 ${...} / [[...]]（已先处理），并限制变量名规则
   return replaced2.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (full, name: string) => replaceVarToken(full, name, values, opts));
 }
-

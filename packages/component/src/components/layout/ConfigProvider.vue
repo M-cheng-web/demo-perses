@@ -1,6 +1,6 @@
 <!-- 组件说明：全局配置提供者，用于挂载主题等上下文 -->
 <template>
-  <div :class="[bem(), themeClass]" :data-gf-theme="colorScheme">
+  <div ref="providerRootEl" :class="[bem(), themeClass]" :data-gf-theme="colorScheme">
     <slot></slot>
   </div>
 </template>
@@ -41,6 +41,8 @@
   const colorScheme = computed(() => props.theme);
   const themeClass = computed(() => (props.theme === 'dark' ? 'gf-theme-dark' : 'gf-theme-light'));
 
+  const providerRootEl = ref<HTMLElement | null>(null);
+
   provide(GF_THEME_CONTEXT_KEY, {
     theme: computed(() => props.theme),
     colorScheme,
@@ -51,6 +53,7 @@
   // Portal root for Teleport-based components
   // ------------------------------------------------------------
   const portalRootEl = ref<HTMLElement | null>(null);
+  const ACTIVE_PORTAL_ROOT_KEY = '__gfActivePortalRoot';
 
   const resolveMountEl = (target: string | HTMLElement | null | undefined): HTMLElement | null => {
     if (typeof document === 'undefined') return null;
@@ -76,6 +79,33 @@
     if (el.parentElement !== mountEl) mountEl.appendChild(el);
   };
 
+  const markActivePortalRoot = () => {
+    const el = portalRootEl.value;
+    if (!el) return;
+    (globalThis as any)[ACTIVE_PORTAL_ROOT_KEY] = el;
+  };
+
+  const bindActiveListeners = () => {
+    const providerEl = providerRootEl.value;
+    const portalEl = portalRootEl.value;
+    if (!providerEl && !portalEl) return;
+
+    // Capture phase ensures we mark the active root early.
+    providerEl?.addEventListener('pointerdown', markActivePortalRoot, { capture: true });
+    providerEl?.addEventListener('focusin', markActivePortalRoot, { capture: true });
+    portalEl?.addEventListener('pointerdown', markActivePortalRoot, { capture: true });
+    portalEl?.addEventListener('focusin', markActivePortalRoot, { capture: true });
+  };
+
+  const unbindActiveListeners = () => {
+    const providerEl = providerRootEl.value;
+    const portalEl = portalRootEl.value;
+    providerEl?.removeEventListener('pointerdown', markActivePortalRoot, { capture: true } as any);
+    providerEl?.removeEventListener('focusin', markActivePortalRoot, { capture: true } as any);
+    portalEl?.removeEventListener('pointerdown', markActivePortalRoot, { capture: true } as any);
+    portalEl?.removeEventListener('focusin', markActivePortalRoot, { capture: true } as any);
+  };
+
   const syncPortalTheme = () => {
     const el = portalRootEl.value;
     if (!el) return;
@@ -92,6 +122,9 @@
   onMounted(() => {
     syncPortalMount();
     syncPortalTheme();
+    bindActiveListeners();
+    // Make this instance the default until user interacts with another one.
+    markActivePortalRoot();
   });
 
   watch(
@@ -102,6 +135,7 @@
   watch([themeClass, colorScheme], () => syncPortalTheme());
 
   onBeforeUnmount(() => {
+    unbindActiveListeners();
     portalRootEl.value?.remove();
     portalRootEl.value = null;
   });

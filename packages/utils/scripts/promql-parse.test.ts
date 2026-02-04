@@ -11,10 +11,10 @@ import { parsePromqlToVisualQuery } from '../src/promql/parsePromqlToVisualQuery
 function test(name: string, fn: () => void) {
   try {
     fn();
-    // eslint-disable-next-line no-console（测试脚本允许输出）
+    // eslint-disable-next-line no-console -- test script output is allowed
     console.log(`✓ ${name}`);
   } catch (err) {
-    // eslint-disable-next-line no-console（测试脚本允许输出）
+    // eslint-disable-next-line no-console -- test script output is allowed
     console.error(`✗ ${name}`);
     throw err;
   }
@@ -50,7 +50,10 @@ test('extracts selector from complex expression (selector-only)', () => {
   if (!r.ok) return;
   assert.equal(r.confidence, 'exact');
   assert.equal(r.value.metric, 'up');
-  assert.deepEqual(r.value.labels.map((l) => l.label), ['job']);
+  assert.deepEqual(
+    r.value.labels.map((l) => l.label),
+    ['job']
+  );
   assert.deepEqual(
     r.value.operations.map((o) => o.id),
     ['rate']
@@ -59,9 +62,7 @@ test('extracts selector from complex expression (selector-only)', () => {
 });
 
 test('parses nested operations + binary scalar (exact)', () => {
-  const r = parsePromqlToVisualQuery(
-    'acos(hour(histogram_quantile(0.9, avg(sum(changes(cpu_usage{instance=\"server-1\"}[$__interval])))))) + 4'
-  );
+  const r = parsePromqlToVisualQuery('acos(hour(histogram_quantile(0.9, avg(sum(changes(cpu_usage{instance=\"server-1\"}[$__interval])))))) + 4');
   assert.equal(r.ok, true);
   if (!r.ok) return;
   assert.equal(r.confidence, 'exact');
@@ -84,7 +85,10 @@ test('filters unknown single-arg wrappers (partial)', () => {
   if (!r.ok) return;
   assert.equal(r.confidence, 'partial');
   assert.equal(r.value.metric, 'up');
-  assert.deepEqual(r.value.operations.map((o) => o.id), ['rate']);
+  assert.deepEqual(
+    r.value.operations.map((o) => o.id),
+    ['rate']
+  );
   assert.ok(Array.isArray(r.warnings) && r.warnings.length > 0);
   assert.equal(r.warnings[0]?.code, 'UNKNOWN_WRAPPER');
 });

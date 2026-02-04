@@ -7,18 +7,35 @@ export interface MessageOptions {
   type?: MessageType;
   duration?: number;
   key?: string;
+  /**
+   * Optional mount container override.
+   * - Useful for multi-instance embedded scenarios.
+   * - When omitted, message will try to mount into the "active" portal root.
+   */
+  container?: string | HTMLElement;
 }
 
 type MessageInput = MessageOptions | string;
 
 const resolveMountEl = () => {
-  // Prefer portal root so message can inherit theme tokens in embedded scenarios.
+  // Prefer an "active" portal root (set by ConfigProvider) so messages appear
+  // in the instance the user is currently interacting with.
+  const active = (globalThis as any).__gfActivePortalRoot as HTMLElement | undefined;
+  if (active && typeof active === 'object' && active instanceof HTMLElement && active.isConnected) {
+    return active;
+  }
+
+  // Fallback: last portal root so message can inherit theme tokens in embedded scenarios.
   const roots = Array.from(document.querySelectorAll<HTMLElement>('.gf-portal-root'));
   return roots[roots.length - 1] ?? document.body;
 };
 
-const ensureContainer = () => {
-  const mountEl = resolveMountEl();
+const ensureContainer = (override?: string | HTMLElement) => {
+  const mountEl = override
+    ? typeof override === 'string'
+      ? (document.querySelector<HTMLElement>(override) ?? resolveMountEl())
+      : override
+    : resolveMountEl();
   let el = document.querySelector<HTMLElement>('.gf-message-container');
   if (!el) {
     el = document.createElement('div');
@@ -91,8 +108,8 @@ const updateItem = (item: HTMLElement, content: string, type: MessageType) => {
 
 const show = (input: MessageInput, preset?: MessageType, presetDuration?: number) => {
   const opts = resolveOptions(input, preset, presetDuration);
-  const { content, type = 'info', duration = 2200, key } = opts;
-  const container = ensureContainer();
+  const { content, type = 'info', duration = 2200, key, container: mountOverride } = opts;
+  const container = ensureContainer(mountOverride);
 
   if (key && instances.has(key)) {
     const existing = instances.get(key)!;

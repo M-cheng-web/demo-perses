@@ -4,11 +4,11 @@
 
 ```vue
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useDashboardSdk } from '@grafana-fast/hooks';
+  import { ref } from 'vue';
+  import { useDashboardSdk } from '@grafana-fast/hooks';
 
-const hostRef = ref<HTMLElement | null>(null);
-useDashboardSdk(hostRef, { dashboardId: 'default' });
+  const hostRef = ref<HTMLElement | null>(null);
+  useDashboardSdk(hostRef, { dashboardId: 'default' });
 </script>
 
 <template>

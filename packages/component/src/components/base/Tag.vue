@@ -1,13 +1,6 @@
 <!-- 组件说明：用于展示状态/标记的小标签，可自定义颜色 (AntD-inspired) -->
 <template>
-  <span
-    :class="[
-      bem(),
-      bem({ [`size-${size}`]: true, bordered: bordered }),
-      `gf-tag--${actualColor}`
-    ]"
-    :style="customColorStyle"
-  >
+  <span :class="[bem(), bem({ [`size-${size}`]: true, bordered: bordered }), `gf-tag--${actualColor}`]" :style="customColorStyle">
     <span v-if="$slots.icon || icon" :class="bem('icon')">
       <slot name="icon">
         <component :is="icon" v-if="icon" />
@@ -29,9 +22,42 @@
 
   defineOptions({ name: 'GfTag' });
 
-  type PresetColor = 'default' | 'success' | 'processing' | 'error' | 'warning' | 'magenta' | 'red' | 'volcano' | 'orange' | 'gold' | 'lime' | 'green' | 'cyan' | 'blue' | 'geekblue' | 'purple';
+  type PresetColor =
+    | 'default'
+    | 'success'
+    | 'processing'
+    | 'error'
+    | 'warning'
+    | 'magenta'
+    | 'red'
+    | 'volcano'
+    | 'orange'
+    | 'gold'
+    | 'lime'
+    | 'green'
+    | 'cyan'
+    | 'blue'
+    | 'geekblue'
+    | 'purple';
 
-  const presetColors: PresetColor[] = ['default', 'success', 'processing', 'error', 'warning', 'magenta', 'red', 'volcano', 'orange', 'gold', 'lime', 'green', 'cyan', 'blue', 'geekblue', 'purple'];
+  const presetColors: PresetColor[] = [
+    'default',
+    'success',
+    'processing',
+    'error',
+    'warning',
+    'magenta',
+    'red',
+    'volcano',
+    'orange',
+    'gold',
+    'lime',
+    'green',
+    'cyan',
+    'blue',
+    'geekblue',
+    'purple',
+  ];
 
   const props = withDefaults(
     defineProps<{

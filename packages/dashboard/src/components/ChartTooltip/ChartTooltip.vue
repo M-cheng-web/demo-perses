@@ -13,14 +13,7 @@
       <div :class="bem('header')">
         <span :class="bem('time')">{{ formattedTime }}</span>
         <div :class="bem('actions')">
-          <Button
-            v-if="isPinned"
-            icon-only
-            type="text"
-            size="small"
-            :class="[bem('action-btn'), bem('unpin-btn')]"
-            @click="handleUnpin"
-          >
+          <Button v-if="isPinned" icon-only type="text" size="small" :class="[bem('action-btn'), bem('unpin-btn')]" @click="handleUnpin">
             <template #icon>
               <PushpinFilled />
             </template>
@@ -426,44 +419,44 @@
       flex-shrink: 0;
     }
 
-	    &__actions {
-	      display: flex;
-	      align-items: center;
-	      gap: 8px;
-	      min-width: 0;
-	    }
+    &__actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
 
-	    &__hint {
-	      font-size: 11px;
+    &__hint {
+      font-size: 11px;
       color: rgba(255, 255, 255, 0.56);
       white-space: nowrap;
     }
 
-	    &__action-btn.gf-button {
-	      --gf-btn-color: var(--gf-color-tooltip-text);
-	      --gf-btn-bg-hover: rgba(255, 255, 255, 0.1);
-	      --gf-btn-bg-active: rgba(255, 255, 255, 0.14);
-	      --gf-btn-shadow-hover: none;
-	    }
+    &__action-btn.gf-button {
+      --gf-btn-color: var(--gf-color-tooltip-text);
+      --gf-btn-bg-hover: rgba(255, 255, 255, 0.1);
+      --gf-btn-bg-active: rgba(255, 255, 255, 0.14);
+      --gf-btn-shadow-hover: none;
+    }
 
-	    &__action-btn.gf-button:hover:not(.is-disabled) {
-	      --gf-btn-color: var(--gf-color-primary-secondary);
-	    }
+    &__action-btn.gf-button:hover:not(.is-disabled) {
+      --gf-btn-color: var(--gf-color-primary-secondary);
+    }
 
-	    &__action-btn.gf-button--type-text.gf-button--size-small:not(.gf-button--icon-only) {
-	      padding: 0 4px;
-	      height: 20px;
-	      min-height: 20px;
-	      font-size: 11px;
-	    }
+    &__action-btn.gf-button--type-text.gf-button--size-small:not(.gf-button--icon-only) {
+      padding: 0 4px;
+      height: 20px;
+      min-height: 20px;
+      font-size: 11px;
+    }
 
-	    &__unpin-btn.gf-button--size-small.gf-button--icon-only {
-	      --gf-btn-icon-only-size: 20px;
-	    }
+    &__unpin-btn.gf-button--size-small.gf-button--icon-only {
+      --gf-btn-icon-only-size: 20px;
+    }
 
-	    &__content {
-	      padding: 8px 12px;
-	      max-height: 400px;
+    &__content {
+      padding: 8px 12px;
+      max-height: 400px;
       overflow-y: auto;
 
       &::-webkit-scrollbar {

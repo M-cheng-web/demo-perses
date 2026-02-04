@@ -1,11 +1,7 @@
 <!-- 组件说明：卡片容器，支持标题、额外区域、悬浮阴影与边框控制 (AntD-inspired) -->
 <template>
   <div
-    :class="[
-      bem(),
-      bem({ [`size-${size}`]: true }),
-      { 'is-hoverable': hoverable, 'is-borderless': bordered === false, 'is-loading': loading }
-    ]"
+    :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-hoverable': hoverable, 'is-borderless': bordered === false, 'is-loading': loading }]"
     @click="emit('click')"
   >
     <div v-if="title || $slots.title || $slots.extra" :class="bem('header')">
@@ -89,7 +85,10 @@
       cursor: pointer;
 
       &:hover {
-        box-shadow: 0 1px 2px -2px rgba(0, 0, 0, 0.16), 0 3px 6px 0 rgba(0, 0, 0, 0.12), 0 5px 12px 4px rgba(0, 0, 0, 0.09);
+        box-shadow:
+          0 1px 2px -2px rgba(0, 0, 0, 0.16),
+          0 3px 6px 0 rgba(0, 0, 0, 0.12),
+          0 5px 12px 4px rgba(0, 0, 0, 0.09);
       }
     }
 
@@ -166,12 +165,7 @@
     &__loading-block {
       height: 16px;
       margin-bottom: 16px;
-      background: linear-gradient(
-        90deg,
-        var(--gf-color-fill-secondary) 25%,
-        var(--gf-color-fill-tertiary) 37%,
-        var(--gf-color-fill-secondary) 63%
-      );
+      background: linear-gradient(90deg, var(--gf-color-fill-secondary) 25%, var(--gf-color-fill-tertiary) 37%, var(--gf-color-fill-secondary) 63%);
       background-size: 400% 100%;
       animation: gf-card-loading 1.4s ease infinite;
       border-radius: var(--gf-radius-xs);

@@ -2,16 +2,10 @@
 <template>
   <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-disabled': disabled, 'is-focused': isFocused }]">
     <div :class="bem('handler-wrap')">
-      <span
-        :class="[bem('handler'), bem('handler-up'), { 'is-disabled': disabled || !canIncrease }]"
-        @click="increase"
-      >
+      <span :class="[bem('handler'), bem('handler-up'), { 'is-disabled': disabled || !canIncrease }]" @click="increase">
         <UpOutlined :class="bem('handler-icon')" />
       </span>
-      <span
-        :class="[bem('handler'), bem('handler-down'), { 'is-disabled': disabled || !canDecrease }]"
-        @click="decrease"
-      >
+      <span :class="[bem('handler'), bem('handler-down'), { 'is-disabled': disabled || !canDecrease }]" @click="decrease">
         <DownOutlined :class="bem('handler-icon')" />
       </span>
     </div>

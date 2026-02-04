@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { ConfigProvider } from '@grafana-fast/component';
+  import { ConfigProvider } from '@grafana-fast/component';
 </script>
 ```
 

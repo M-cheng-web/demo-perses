@@ -95,7 +95,7 @@ type DashboardSdkChangePayload = {
   prevState: DashboardSdkStateSnapshot | null;
   changedKeys: Array<keyof DashboardSdkStateSnapshot>;
   dashboardChanged: boolean;
-}
+};
 ```
 
 使用示例（按变化 key 过滤）：

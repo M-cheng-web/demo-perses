@@ -34,4 +34,3 @@ testTopk();
 testVectorMatching();
 testOuterFnPlusScalar();
 console.log('[promql-ast] ok');
-

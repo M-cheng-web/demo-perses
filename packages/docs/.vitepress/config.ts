@@ -14,7 +14,7 @@ export default defineConfig({
       { text: '指南', link: '/guide/getting-started' },
       { text: 'SDK', link: '/sdk/dashboard-sdk' },
       { text: '组件', link: '/components/dashboard' },
-      { text: '主题', link: '/guide/themes' }
+      { text: '主题', link: '/guide/themes' },
     ],
     sidebar: {
       '/guide/': [
@@ -25,16 +25,16 @@ export default defineConfig({
         { text: '主题与 Tokens', link: '/guide/themes' },
         { text: 'AntD Tokens 注入', link: '/guide/antd-tokens' },
         { text: 'Dashboard JSON', link: '/guide/dashboard-json' },
-        { text: 'Panels 插件化', link: '/guide/panels' }
+        { text: 'Panels 插件化', link: '/guide/panels' },
       ],
       '/sdk/': [
         { text: 'Dashboard SDK', link: '/sdk/dashboard-sdk' },
         { text: 'SDK 使用说明', link: '/sdk/dashboard-sdk-usage' },
-        { text: '流程（方案A）', link: '/sdk/dashboard-sdk-plan-a' }
+        { text: '流程（方案A）', link: '/sdk/dashboard-sdk-plan-a' },
       ],
-      '/components/': [{ text: 'Dashboard 组件', link: '/components/dashboard' }]
+      '/components/': [{ text: 'Dashboard 组件', link: '/components/dashboard' }],
     },
-    socialLinks: [{ icon: 'github', link: 'https://github.com/grafana-fast/monorepo' }]
+    socialLinks: [{ icon: 'github', link: 'https://github.com/grafana-fast/monorepo' }],
   },
-  vite: {}
+  vite: {},
 });

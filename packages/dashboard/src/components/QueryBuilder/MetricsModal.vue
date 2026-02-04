@@ -66,11 +66,11 @@
         <template v-if="column.key === 'name'">
           <code :class="bem('metric-name')">{{ record.name }}</code>
         </template>
-	        <template v-else-if="column.key === 'type'">
-	          <Tag v-if="record.type" size="small" :color="getTypeColor(record.type)">
-	            {{ record.type }}
-	          </Tag>
-	          <span v-else :class="bem('no-type')">未知</span>
+        <template v-else-if="column.key === 'type'">
+          <Tag v-if="record.type" size="small" :color="getTypeColor(record.type)">
+            {{ record.type }}
+          </Tag>
+          <span v-else :class="bem('no-type')">未知</span>
         </template>
         <template v-else-if="column.key === 'help'">
           <span :class="bem('description')">{{ record.help || '-' }}</span>
@@ -348,5 +348,5 @@
     color: var(--gf-color-text-secondary);
   }
 
-	  /* Table/Tag 的基础样式已由组件库提供；避免业务层 deep 覆写 */
-	</style>
+  /* Table/Tag 的基础样式已由组件库提供；避免业务层 deep 覆写 */
+</style>

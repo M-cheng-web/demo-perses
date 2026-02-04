@@ -235,23 +235,23 @@
       --gf-btn-shadow-hover: none;
     }
 
-	    &--size-small {
-	      padding: 5px 8px;
-	      min-height: var(--gf-control-height-sm, 26px);
-	      border-radius: var(--gf-radius-xs);
-	      font-size: var(--gf-font-size-xs);
-	      gap: 5px;
-	    }
+    &--size-small {
+      padding: 5px 8px;
+      min-height: var(--gf-control-height-sm, 26px);
+      border-radius: var(--gf-radius-xs);
+      font-size: var(--gf-font-size-xs);
+      gap: 5px;
+    }
 
-	    &--type-link&--size-small {
-	      padding: 4px 6px;
-	    }
+    &--type-link&--size-small {
+      padding: 4px 6px;
+    }
 
-	    &--size-large {
-	      padding: 8px 12px;
-	      min-height: var(--gf-control-height-lg, 36px);
-	      font-size: var(--gf-font-size-lg);
-	    }
+    &--size-large {
+      padding: 8px 12px;
+      min-height: var(--gf-control-height-lg, 36px);
+      font-size: var(--gf-font-size-lg);
+    }
 
     &--block {
       width: 100%;

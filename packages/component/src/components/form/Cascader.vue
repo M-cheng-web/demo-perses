@@ -1,6 +1,6 @@
 <!-- 组件说明：级联选择器（多级面板），用于逐级选择路径 (AntD-inspired) -->
 <template>
-	  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-open': open, 'is-disabled': disabled }]" ref="rootRef">
+  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-open': open, 'is-disabled': disabled }]" ref="rootRef">
     <div v-if="$slots.default" ref="triggerRef" :class="bem('trigger')" tabindex="0" @click="toggle" @keydown="handleKeydown">
       <slot></slot>
     </div>
@@ -20,19 +20,19 @@
       </span>
     </div>
 
-	    <Teleport :to="portalTarget">
-	      <Transition name="gf-slide-up">
-	        <div
-	          v-if="open"
-	          :class="[bem('dropdown'), bem({ [`size-${size}`]: true }), themeClass]"
-	          :data-gf-theme="colorScheme"
-	          :style="dropdownStyle"
-	          ref="dropdownRef"
-	        >
-	          <div :class="bem('menus')">
-	            <div v-for="(menu, depth) in menus" :key="depth" :class="bem('menu')">
-	              <div
-	                v-for="option in menu"
+    <Teleport :to="portalTarget">
+      <Transition name="gf-slide-up">
+        <div
+          v-if="open"
+          :class="[bem('dropdown'), bem({ [`size-${size}`]: true }), themeClass]"
+          :data-gf-theme="colorScheme"
+          :style="dropdownStyle"
+          ref="dropdownRef"
+        >
+          <div :class="bem('menus')">
+            <div v-for="(menu, depth) in menus" :key="depth" :class="bem('menu')">
+              <div
+                v-for="option in menu"
                 :key="option.value"
                 :class="[
                   bem('option'),
@@ -65,6 +65,7 @@
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { RightOutlined, DownOutlined, CheckOutlined } from '@ant-design/icons-vue';
+  import { subscribeWindowEvent, subscribeWindowResize, type Unsubscribe } from '@grafana-fast/utils';
   import { createNamespace } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
@@ -79,33 +80,33 @@
     disabled?: boolean;
   }
 
-	  const props = withDefaults(
-	    defineProps<{
+  const props = withDefaults(
+    defineProps<{
       /** 选中的路径值数组 */
       value?: any[];
       /** 级联选项 */
       options: CascaderOption[];
       /** 占位提示 */
       placeholder?: string;
-	      /** 尺寸 */
-	      size?: 'small' | 'middle' | 'large';
-	      /**
-	       * 下拉最小宽度（px）
-	       * - 默认：跟随触发器宽度
-	       * - 传入后：minWidth = max(triggerWidth, dropdownMinWidth)
-	       */
-	      dropdownMinWidth?: number;
-	      /** 禁用状态 */
-	      disabled?: boolean;
-	    }>(),
-	    {
-	      options: () => [],
-	      placeholder: '请选择',
-	      size: 'middle',
-	      dropdownMinWidth: undefined,
-	      disabled: false,
-	    }
-	  );
+      /** 尺寸 */
+      size?: 'small' | 'middle' | 'large';
+      /**
+       * 下拉最小宽度（px）
+       * - 默认：跟随触发器宽度
+       * - 传入后：minWidth = max(triggerWidth, dropdownMinWidth)
+       */
+      dropdownMinWidth?: number;
+      /** 禁用状态 */
+      disabled?: boolean;
+    }>(),
+    {
+      options: () => [],
+      placeholder: '请选择',
+      size: 'middle',
+      dropdownMinWidth: undefined,
+      disabled: false,
+    }
+  );
 
   const emit = defineEmits<{
     (e: 'update:value', value: any[]): void;
@@ -124,6 +125,10 @@
   const dropdownRef = ref<HTMLElement>();
   const open = ref(false);
   const dropdownStyle = ref<Record<string, string>>({});
+
+  let unsubscribeOutside: Unsubscribe | null = null;
+  let unsubscribeResize: Unsubscribe | null = null;
+  let unsubscribeScroll: Unsubscribe | null = null;
   const controlSizeClass = computed(() => {
     if (props.size === 'small') return 'gf-control--size-small';
     if (props.size === 'large') return 'gf-control--size-large';
@@ -236,10 +241,10 @@
     });
   };
 
-	  const syncDropdownPosition = async () => {
-	    const trigger = triggerRef.value;
-	    if (!trigger) return;
-	    const rect = trigger.getBoundingClientRect();
+  const syncDropdownPosition = async () => {
+    const trigger = triggerRef.value;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
     await nextTick();
     const menu = dropdownRef.value;
     const menuWidth = menu?.offsetWidth || rect.width;
@@ -254,14 +259,14 @@
       if (top < padding) top = padding;
     }
 
-	    const minWidth = Math.max(rect.width, typeof props.dropdownMinWidth === 'number' ? props.dropdownMinWidth : 0);
+    const minWidth = Math.max(rect.width, typeof props.dropdownMinWidth === 'number' ? props.dropdownMinWidth : 0);
 
-	    dropdownStyle.value = {
-	      minWidth: `${minWidth}px`,
-	      left: `${left}px`,
-	      top: `${top}px`,
-	    };
-	  };
+    dropdownStyle.value = {
+      minWidth: `${minWidth}px`,
+      left: `${left}px`,
+      top: `${top}px`,
+    };
+  };
 
   const handleOutside = (evt: MouseEvent) => {
     if (!rootRef.value) return;
@@ -271,24 +276,27 @@
   };
 
   onMounted(() => {
-    window.addEventListener('click', handleOutside);
-    window.addEventListener('resize', syncDropdownPosition);
+    unsubscribeOutside = subscribeWindowEvent('click', handleOutside);
+    unsubscribeResize = subscribeWindowResize(() => void syncDropdownPosition());
   });
 
   onBeforeUnmount(() => {
-    window.removeEventListener('click', handleOutside);
-    window.removeEventListener('resize', syncDropdownPosition);
-    window.removeEventListener('scroll', scheduleSyncDropdownPosition, true);
+    unsubscribeOutside?.();
+    unsubscribeOutside = null;
+    unsubscribeResize?.();
+    unsubscribeResize = null;
+    unsubscribeScroll?.();
+    unsubscribeScroll = null;
     if (rafId != null) cancelAnimationFrame(rafId);
   });
 
   watch(
     () => open.value,
     (val) => {
+      unsubscribeScroll?.();
+      unsubscribeScroll = null;
       if (val) {
-        window.addEventListener('scroll', scheduleSyncDropdownPosition, true);
-      } else {
-        window.removeEventListener('scroll', scheduleSyncDropdownPosition, true);
+        unsubscribeScroll = subscribeWindowEvent('scroll', () => scheduleSyncDropdownPosition(), { capture: true, passive: true });
       }
     }
   );

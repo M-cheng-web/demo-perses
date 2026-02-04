@@ -44,7 +44,8 @@
         <Card title="输入（PromQL）" size="small" :bordered="true">
           <Space direction="vertical" :size="10" style="width: 100%">
             <div class="dp-promql-showcase__hint">
-              提示：内部会对常见 Grafana 变量做“长度保持”的占位替换（例如 <span class="dp-promql-showcase__mono">$__interval</span>），用于语法解析与 range 对齐；不会改动保存/执行的原始 PromQL。
+              提示：内部会对常见 Grafana 变量做“长度保持”的占位替换（例如 <span class="dp-promql-showcase__mono">$__interval</span>），用于语法解析与
+              range 对齐；不会改动保存/执行的原始 PromQL。
             </div>
             <Textarea v-model:value="expr" :rows="6" placeholder="输入 PromQL..." />
           </Space>
@@ -115,17 +116,23 @@
           <Space direction="vertical" :size="10" style="width: 100%">
             <Space wrap :size="8">
               <Switch v-model:checked="astDebugEnabled" />
-              <div class="dp-promql-showcase__hint">
-                显示 AST（debug）。注意：AST 文本可能很长，默认关闭以避免页面卡顿；需要排查时再打开。
-              </div>
+              <div class="dp-promql-showcase__hint"> 显示 AST（debug）。注意：AST 文本可能很长，默认关闭以避免页面卡顿；需要排查时再打开。 </div>
             </Space>
-            <Alert v-if="!astDebugEnabled" type="info" show-icon message="AST 输出已关闭" description="开启后会在每次解析时生成 debugPrintTree 文本。" />
+            <Alert
+              v-if="!astDebugEnabled"
+              type="info"
+              show-icon
+              message="AST 输出已关闭"
+              description="开启后会在每次解析时生成 debugPrintTree 文本。"
+            />
             <Textarea v-else :rows="18" :value="astTreeText" readonly />
           </Space>
         </Card>
 
         <Card title="批量回归结果（examples）" size="small" :bordered="true">
-          <div class="dp-promql-showcase__hint">Run all 会对每个用例执行：parsePromqlToAst + parsePromqlToVisualQueryAst，并做最小断言（用于回归）。</div>
+          <div class="dp-promql-showcase__hint"
+            >Run all 会对每个用例执行：parsePromqlToAst + parsePromqlToVisualQueryAst，并做最小断言（用于回归）。</div
+          >
           <Divider />
           <Table
             size="small"
@@ -263,8 +270,18 @@
   ];
 
   const examplesEdge: PromqlExample[] = [
-    { key: 'edge.offset', title: 'offset（应告警）', expr: 'cpu_usage offset 5m', expect: { syntaxOk: true, minConfidence: 'partial', warningsContains: ['offset'] } },
-    { key: 'edge.at', title: '@ modifier（应告警）', expr: 'cpu_usage @ 1700000000', expect: { syntaxOk: true, minConfidence: 'partial', warningsContains: ['@'] } },
+    {
+      key: 'edge.offset',
+      title: 'offset（应告警）',
+      expr: 'cpu_usage offset 5m',
+      expect: { syntaxOk: true, minConfidence: 'partial', warningsContains: ['offset'] },
+    },
+    {
+      key: 'edge.at',
+      title: '@ modifier（应告警）',
+      expr: 'cpu_usage @ 1700000000',
+      expect: { syntaxOk: true, minConfidence: 'partial', warningsContains: ['@'] },
+    },
     {
       key: 'edge.matrixTop',
       title: '矩阵表达式顶层（应降级）',

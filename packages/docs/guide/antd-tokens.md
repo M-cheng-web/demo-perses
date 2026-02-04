@@ -21,4 +21,3 @@ const antdTheme = {
 
 - grafana-fast 的组件内部继续只消费 `--gf-*` tokens
 - 宿主应用如果还用到 AntD，则通过 `gfAntdTokensCssVar` 让 AntD 视觉尽量与 grafana-fast 对齐
-

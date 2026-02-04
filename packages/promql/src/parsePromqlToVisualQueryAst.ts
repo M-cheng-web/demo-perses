@@ -56,4 +56,3 @@ export function parsePromqlToVisualQueryAst(expr: string): ParsePromqlToVisualQu
 
   return { ok: false, error: mapped.error || fallback.error, diagnostics: ast.diagnostics };
 }
-

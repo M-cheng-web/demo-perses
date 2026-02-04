@@ -4,8 +4,7 @@
     "baseUrl": "./",
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
     "paths": {
-      "/#/*": ["../dashboard/dist/src/*"],
-      "@grafana-fast/dashboard": ["../dashboard/dist/src/index.d.ts"],
+      "@grafana-fast/dashboard": ["../dashboard/dist/index.d.ts"],
       "@grafana-fast/store": ["../store/dist/index.d.ts"],
       "@grafana-fast/utils": ["../utils/dist/index.d.ts"],
       "@grafana-fast/types": ["../types/dist/index.d.ts"],

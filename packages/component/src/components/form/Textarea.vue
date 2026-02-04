@@ -14,9 +14,7 @@
       @blur="handleBlur"
       @focus="handleFocus"
     ></textarea>
-    <span v-if="showCount && maxLength" :class="bem('count')">
-      {{ innerValue.length }} / {{ maxLength }}
-    </span>
+    <span v-if="showCount && maxLength" :class="bem('count')"> {{ innerValue.length }} / {{ maxLength }} </span>
   </div>
 </template>
 

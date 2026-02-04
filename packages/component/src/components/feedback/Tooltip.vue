@@ -1,6 +1,14 @@
 <!-- 组件说明：悬停提示气泡，跟随触发元素定位 (AntD-inspired) -->
 <template>
-  <span :class="bem()" ref="triggerRef" v-bind="$attrs" @mouseenter="openTooltip" @mouseleave="scheduleClose" @focusin="openTooltip" @focusout="scheduleClose">
+  <span
+    :class="bem()"
+    ref="triggerRef"
+    v-bind="$attrs"
+    @mouseenter="openTooltip"
+    @mouseleave="scheduleClose"
+    @focusin="openTooltip"
+    @focusout="scheduleClose"
+  >
     <slot></slot>
     <Teleport :to="portalTarget">
       <Transition name="gf-zoom-big-fast">

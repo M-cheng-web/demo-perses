@@ -4,6 +4,8 @@
     { "path": "./packages/types" },
     { "path": "./packages/store" },
     { "path": "./packages/component" },
+    { "path": "./packages/json-editor" },
+    { "path": "./packages/dashboard" },
     { "path": "./packages/hook" },
     { "path": "./packages/app" }
   ]

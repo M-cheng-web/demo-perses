@@ -8,9 +8,9 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -18,7 +18,8 @@
   ],
   "scripts": {
     "build": "rollup -c ../../scripts/rollup.config.js",
-    "build:types": "pnpm -C ../types run build && pnpm -C ../component run build:types && vue-tsc --project tsconfig.json --declaration --emitDeclarationOnly --outDir dist"
+    "build:types": "vue-tsc --project tsconfig.json --declaration --emitDeclarationOnly --outDir dist",
+    "type-check": "vue-tsc --noEmit --project tsconfig.json"
   },
   "dependencies": {
     "@grafana-fast/component": "workspace:*",

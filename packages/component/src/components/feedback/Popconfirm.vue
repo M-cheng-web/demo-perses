@@ -32,6 +32,7 @@
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
   import { ExclamationCircleFilled } from '@ant-design/icons-vue';
+  import { subscribeWindowEvent, subscribeWindowResize, type Unsubscribe } from '@grafana-fast/utils';
   import { createNamespace } from '../../utils';
   import Button from '../base/Button.vue';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
@@ -39,7 +40,7 @@
 
   defineOptions({ name: 'GfPopconfirm' });
 
-  const props = withDefaults(
+  withDefaults(
     defineProps<{
       /** 确认提示文案 */
       title?: string;
@@ -79,6 +80,9 @@
   const popupRef = ref<HTMLElement>();
   const open = ref(false);
   const popupStyle = ref<Record<string, string>>({});
+
+  let unsubscribeOutside: Unsubscribe | null = null;
+  let unsubscribeResize: Unsubscribe | null = null;
 
   const toggle = () => {
     open.value = !open.value;
@@ -120,13 +124,15 @@
   };
 
   onMounted(() => {
-    window.addEventListener('click', handleOutside);
-    window.addEventListener('resize', updatePosition);
+    unsubscribeOutside = subscribeWindowEvent('click', handleOutside);
+    unsubscribeResize = subscribeWindowResize(() => void updatePosition());
   });
 
   onBeforeUnmount(() => {
-    window.removeEventListener('click', handleOutside);
-    window.removeEventListener('resize', updatePosition);
+    unsubscribeOutside?.();
+    unsubscribeOutside = null;
+    unsubscribeResize?.();
+    unsubscribeResize = null;
   });
 
   const handleConfirm = () => {

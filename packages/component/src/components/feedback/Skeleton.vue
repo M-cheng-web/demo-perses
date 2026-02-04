@@ -14,11 +14,7 @@
 -->
 <template>
   <slot v-if="!loading"></slot>
-  <div
-    v-else
-    :class="[bem(), { 'is-active': active, 'is-with-avatar': avatar }]"
-    aria-hidden="true"
-  >
+  <div v-else :class="[bem(), { 'is-active': active, 'is-with-avatar': avatar }]" aria-hidden="true">
     <div v-if="avatar" :class="[bem('avatar'), bem('avatar', avatarShape)]"></div>
     <div :class="bem('content')">
       <div v-if="title" :class="bem('title')"></div>
@@ -78,7 +74,7 @@
     }
   );
 
-  const [_, bem] = createNamespace('skeleton');
+  const [_ns, bem] = createNamespace('skeleton');
 
   const px = (v: string | number | undefined): string | undefined => {
     if (v == null) return undefined;
@@ -154,12 +150,7 @@
     &.is-active &__title,
     &.is-active &__paragraph-row,
     &.is-active &__block {
-      background: linear-gradient(
-        90deg,
-        var(--gf-color-fill-secondary) 25%,
-        var(--gf-color-fill-tertiary) 37%,
-        var(--gf-color-fill-secondary) 63%
-      );
+      background: linear-gradient(90deg, var(--gf-color-fill-secondary) 25%, var(--gf-color-fill-tertiary) 37%, var(--gf-color-fill-secondary) 63%);
       background-size: 400% 100%;
       animation: gf-skeleton-shimmer 1.4s ease infinite;
     }
@@ -184,4 +175,3 @@
     }
   }
 </style>
-

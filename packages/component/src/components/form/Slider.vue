@@ -1,10 +1,7 @@
 <!-- 组件说明：滑动输入条，支持最小/最大/步长控制、刻度、提示 (AntD-inspired) -->
 <template>
   <div
-    :class="[
-      bem(),
-      { 'is-disabled': disabled, 'is-dragging': isDragging }
-    ]"
+    :class="[bem(), { 'is-disabled': disabled, 'is-dragging': isDragging }]"
     ref="sliderRef"
     @mousedown="handleMouseDown"
     @touchstart="handleTouchStart"
@@ -51,7 +48,8 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, inject, onMounted, onBeforeUnmount, watch } from 'vue';
+  import { computed, inject, ref, watch } from 'vue';
+  import { subscribeWindowEvent, type Unsubscribe } from '@grafana-fast/utils';
   import { createNamespace } from '../../utils';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
@@ -171,6 +169,9 @@
     showTooltip.value = true;
     updateValueFromPosition(evt.clientX);
 
+    let unsubscribeMove: Unsubscribe | null = null;
+    let unsubscribeUp: Unsubscribe | null = null;
+
     const handleMouseMove = (e: MouseEvent) => {
       updateValueFromPosition(e.clientX);
     };
@@ -179,12 +180,14 @@
       isDragging.value = false;
       showTooltip.value = false;
       emit('afterChange', innerValue.value);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      unsubscribeMove?.();
+      unsubscribeUp?.();
+      unsubscribeMove = null;
+      unsubscribeUp = null;
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    unsubscribeMove = subscribeWindowEvent('mousemove', handleMouseMove);
+    unsubscribeUp = subscribeWindowEvent('mouseup', handleMouseUp);
   };
 
   const handleTouchStart = (evt: TouchEvent) => {
@@ -195,6 +198,9 @@
     const touch = evt.touches[0];
     if (touch) updateValueFromPosition(touch.clientX);
 
+    let unsubscribeMove: Unsubscribe | null = null;
+    let unsubscribeEnd: Unsubscribe | null = null;
+
     const handleTouchMove = (e: TouchEvent) => {
       const t = e.touches[0];
       if (t) updateValueFromPosition(t.clientX);
@@ -204,12 +210,14 @@
       isDragging.value = false;
       showTooltip.value = false;
       emit('afterChange', innerValue.value);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
+      unsubscribeMove?.();
+      unsubscribeEnd?.();
+      unsubscribeMove = null;
+      unsubscribeEnd = null;
     };
 
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('touchend', handleTouchEnd);
+    unsubscribeMove = subscribeWindowEvent('touchmove', handleTouchMove, { passive: false });
+    unsubscribeEnd = subscribeWindowEvent('touchend', handleTouchEnd);
   };
 
   const handleKeyDown = (evt: KeyboardEvent) => {

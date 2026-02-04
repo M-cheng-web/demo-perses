@@ -179,6 +179,11 @@ function mb(bytes) {
 function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
+  // Huge fixtures can bloat the git repo quickly; keep them opt-in.
+  // Usage:
+  //   GF_GENERATE_HUGE_FIXTURES=1 node packages/dashboard/mock/generate-fixtures.mjs
+  const generateHuge = process.env.GF_GENERATE_HUGE_FIXTURES === '1';
+
   const outputs = [];
 
   // small 9
@@ -347,7 +352,7 @@ function main() {
   }
 
   // heavy 240 ~5MB
-  {
+  if (generateHuge) {
     const panels = makePanels({ count: 240, idPrefix: 'panel-import-heavy-5mb', heavy: true, heavyTextRepeat: 350 });
     const layout = makeLayoutPacked({ panels, seed: 0x78787878 });
     const d = makeDashboard({
@@ -370,7 +375,7 @@ function main() {
   }
 
   // heavy 240 ~10MB
-  {
+  if (generateHuge) {
     const panels = makePanels({ count: 240, idPrefix: 'panel-import-heavy-10mb', heavy: true, heavyTextRepeat: 700 });
     const layout = makeLayoutPacked({ panels, seed: 0x79797979 });
     const d = makeDashboard({
@@ -393,7 +398,7 @@ function main() {
   }
 
   // heavy 1000 >10MB (extreme scrolling)
-  {
+  if (generateHuge) {
     // 240@repeat700 ~= 10MB -> scale down repeat for 1000 to keep size around 10~20MB
     const panels = makePanels({ count: 1000, idPrefix: 'panel-import-heavy-1k', heavy: true, heavyTextRepeat: 220 });
     const layout = makeLayoutPacked({ panels, seed: 0x8a8a8a8a });

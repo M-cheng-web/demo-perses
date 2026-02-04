@@ -154,15 +154,15 @@
 
         <!-- 添加操作按钮 -->
         <div :class="bem('add-section')">
-	          <Cascader
-	            v-model:value="selectedNewOperation"
-	            :options="cascaderOptions"
-	            placeholder="选择操作"
-	            size="small"
-	            :dropdownMinWidth="160"
-	            :class="bem('add-cascader')"
-	            @change="handleAddOperation"
-	          >
+          <Cascader
+            v-model:value="selectedNewOperation"
+            :options="cascaderOptions"
+            placeholder="选择操作"
+            size="small"
+            :dropdownMinWidth="160"
+            :class="bem('add-cascader')"
+            @change="handleAddOperation"
+          >
             <Button size="small">
               <PlusOutlined />
               添加操作
@@ -179,6 +179,7 @@
   import { ref, watch, computed, nextTick, onBeforeUnmount } from 'vue';
   import { PlusOutlined, CloseOutlined, InfoCircleOutlined, HolderOutlined, ArrowRightOutlined } from '@ant-design/icons-vue';
   import LabelParamEditor from './LabelParamEditor.vue';
+  import { getOperationCascaderOptions } from './operationsCatalog';
   import { promQueryModeller } from '@grafana-fast/utils';
   import type { PromVisualQuery, QueryBuilderOperation, QueryBuilderOperationParamDef, QueryBuilderOperationParamValue } from '@grafana-fast/utils';
   import { createNamespace, debounceCancellable } from '/#/utils';
@@ -208,8 +209,6 @@
   const flashingOperations = ref<Set<number>>(new Set());
   const draggedIndex = ref<number | null>(null);
 
-  const categories = computed(() => promQueryModeller.getCategories());
-
   // 用 cancellable timer 管理闪烁效果，避免组件卸载后仍触发 setTimeout
   const flashTimers = new Map<number, ReturnType<typeof debounceCancellable<() => void>>>();
 
@@ -231,24 +230,7 @@
     flashTimers.clear();
   });
 
-  // 构建级联选择器选项（过滤掉 hideFromList 的操作）
-  const cascaderOptions = computed(() => {
-    return categories.value
-      .map((category) => {
-        const ops = promQueryModeller.getOperationsForCategory(category);
-        return {
-          value: category,
-          label: category,
-          children: ops
-            .filter((op) => !op.hideFromList) // 隐藏 hideFromList 的操作
-            .map((op) => ({
-              value: op.id,
-              label: op.name,
-            })),
-        };
-      })
-      .filter((category) => category.children.length > 0); // 移除空类别
-  });
+  const cascaderOptions = computed(() => getOperationCascaderOptions());
 
   watch(
     () => props.modelValue,
@@ -698,6 +680,6 @@
       width: auto;
     }
 
-	    /* Cascader 下拉样式统一由组件本身 + props 控制（避免 deep 覆写） */
-	  }
+    /* Cascader 下拉样式统一由组件本身 + props 控制（避免 deep 覆写） */
+  }
 </style>

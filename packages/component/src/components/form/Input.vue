@@ -4,7 +4,7 @@
     :class="[
       bem(),
       bem({ [`size-${size}`]: true }),
-      { 'is-disabled': disabled, 'is-focused': isFocused, 'has-prefix': $slots.prefix, 'has-suffix': $slots.suffix || (allowClear && innerValue) }
+      { 'is-disabled': disabled, 'is-focused': isFocused, 'has-prefix': $slots.prefix, 'has-suffix': $slots.suffix || (allowClear && innerValue) },
     ]"
   >
     <span v-if="$slots.prefix" :class="bem('prefix')">
@@ -28,7 +28,9 @@
     <span v-if="allowClear && innerValue && !disabled" :class="bem('clear')" @click="clearValue">
       <span :class="bem('clear-icon')">
         <svg viewBox="64 64 896 896" width="1em" height="1em" fill="currentColor">
-          <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm165.4 618.2l-66-.3L512 563.4l-99.3 118.4-66.1.3c-4.4 0-8-3.5-8-8 0-1.9.7-3.7 1.9-5.2l130.1-155L googl.6-154.3c-1.2-1.5-1.9-3.3-1.9-5.2 0-4.4 3.6-8 8-8l66.1.3L512 googl.6l99.3-118.4 66-.3c4.4 0 8 3.5 8 8 0 1.9-.7 3.7-1.9 5.2L googl.4 googl l130.1 155c1.2 1.5 1.9 3.3 1.9 5.2 0 4.4-3.6 8-8 8z"/>
+          <path
+            d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm165.4 618.2l-66-.3L512 563.4l-99.3 118.4-66.1.3c-4.4 0-8-3.5-8-8 0-1.9.7-3.7 1.9-5.2l130.1-155L googl.6-154.3c-1.2-1.5-1.9-3.3-1.9-5.2 0-4.4 3.6-8 8-8l66.1.3L512 googl.6l99.3-118.4 66-.3c4.4 0 8 3.5 8 8 0 1.9-.7 3.7-1.9 5.2L googl.4 googl l130.1 155c1.2 1.5 1.9 3.3 1.9 5.2 0 4.4-3.6 8-8 8z"
+          />
         </svg>
       </span>
     </span>
@@ -39,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, inject, ref, watch } from 'vue';
+  import { inject, ref, watch } from 'vue';
   import { createNamespace } from '../../utils';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 

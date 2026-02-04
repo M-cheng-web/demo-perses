@@ -419,7 +419,10 @@ function extractRangeVectorArg(arg: string): { ok: true; innerExpr: string; rang
  * - 支持 number/boolean/string
  * - 支持 restParam
  */
-function parseParamsByDefs(paramArgs: string[], paramDefs: Array<{ type: any; restParam?: boolean; optional?: boolean }>): { ok: true; params: any[] } | { ok: false } {
+function parseParamsByDefs(
+  paramArgs: string[],
+  paramDefs: Array<{ type: any; restParam?: boolean; optional?: boolean }>
+): { ok: true; params: any[] } | { ok: false } {
   const defs = Array.isArray(paramDefs) ? paramDefs : [];
   const out: any[] = [];
 
@@ -474,12 +477,14 @@ function parseParamsByDefs(paramArgs: string[], paramDefs: Array<{ type: any; re
  * 注意：
  * - 如果遇到未知函数，但参数只有 1 个，则当作“未知 wrapper”，可选择过滤并继续向内解析。
  */
-function parseFunctionWrapper(expr: string): { ok: true; op: QueryBuilderOperation; inner: string } | { ok: false; filteredAsUnknown?: boolean; inner?: string; name?: string } {
+function parseFunctionWrapper(
+  expr: string
+): { ok: true; op: QueryBuilderOperation; inner: string } | { ok: false; filteredAsUnknown?: boolean; inner?: string; name?: string } {
   const s = stripOuterParens(expr);
   const id = readIdent(s, 0);
   if (!id.ok) return { ok: false };
   const name = id.value;
-  let i = skipSpaces(s, id.next);
+  const i = skipSpaces(s, id.next);
   if (s[i] !== '(') return { ok: false };
   const close = findMatchingParen(s, i);
   if (close == null) return { ok: false };
@@ -530,7 +535,7 @@ function parseFunctionWrapper(expr: string): { ok: true; op: QueryBuilderOperati
 
   // 一些函数会渲染成 `op(innerExpr, ...)`（例如 label_replace/label_join），优先按这种尝试
   const preferInnerFirst = name === PromOperationId.LabelReplace || name === PromOperationId.LabelJoin;
-  const r = (preferInnerFirst ? parseInnerFirst() ?? parseInnerLast() : parseInnerLast() ?? parseInnerFirst()) as any;
+  const r = (preferInnerFirst ? (parseInnerFirst() ?? parseInnerLast()) : (parseInnerLast() ?? parseInnerFirst())) as any;
   if (!r) return { ok: false };
   return { ok: true, op: r.op, inner: r.inner };
 }
@@ -627,9 +632,7 @@ export function parsePromqlToVisualQuery(expr: string): ParsePromqlToVisualQuery
 
   const currentPath = (): string[] => {
     // 给用户展示的位置路径：外层 → 内层
-    return collectedOuterToInner
-      .map((op) => promQueryModeller.getOperationDef(op.id)?.name || op.id)
-      .filter((v) => String(v).trim().length > 0);
+    return collectedOuterToInner.map((op) => promQueryModeller.getOperationDef(op.id)?.name || op.id).filter((v) => String(v).trim().length > 0);
   };
 
   const warn = (warning: Omit<PromqlParseWarning, 'path'>) => {

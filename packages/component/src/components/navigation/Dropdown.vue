@@ -25,6 +25,7 @@
 
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { subscribeWindowEvent, subscribeWindowResize, type Unsubscribe } from '@grafana-fast/utils';
   import { createNamespace } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
@@ -58,6 +59,9 @@
   const open = ref(false);
   const overlayStyle = ref<Record<string, string>>({});
   let rafId: number | null = null;
+  let unsubscribeOutside: Unsubscribe | null = null;
+  let unsubscribeResize: Unsubscribe | null = null;
+  let unsubscribeScroll: Unsubscribe | null = null;
   let hoverTimer: ReturnType<typeof setTimeout> | null = null;
 
   const scheduleUpdatePosition = () => {
@@ -150,14 +154,17 @@
   };
 
   onMounted(() => {
-    window.addEventListener('click', handleOutside);
-    window.addEventListener('resize', updatePosition);
+    unsubscribeOutside = subscribeWindowEvent('click', handleOutside);
+    unsubscribeResize = subscribeWindowResize(() => void updatePosition());
   });
 
   onBeforeUnmount(() => {
-    window.removeEventListener('click', handleOutside);
-    window.removeEventListener('resize', updatePosition);
-    window.removeEventListener('scroll', scheduleUpdatePosition, true);
+    unsubscribeOutside?.();
+    unsubscribeOutside = null;
+    unsubscribeResize?.();
+    unsubscribeResize = null;
+    unsubscribeScroll?.();
+    unsubscribeScroll = null;
     if (rafId != null) cancelAnimationFrame(rafId);
     if (hoverTimer) clearTimeout(hoverTimer);
   });
@@ -165,10 +172,10 @@
   watch(
     () => open.value,
     (val) => {
+      unsubscribeScroll?.();
+      unsubscribeScroll = null;
       if (val) {
-        window.addEventListener('scroll', scheduleUpdatePosition, true);
-      } else {
-        window.removeEventListener('scroll', scheduleUpdatePosition, true);
+        unsubscribeScroll = subscribeWindowEvent('scroll', () => scheduleUpdatePosition(), { capture: true, passive: true });
       }
     }
   );

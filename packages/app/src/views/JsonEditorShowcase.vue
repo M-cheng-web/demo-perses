@@ -12,10 +12,10 @@
   <ConfigProvider :theme="themeModel">
     <div class="dp-json-editor-showcase">
       <div class="dp-json-editor-showcase__header">
-          <div class="dp-json-editor-showcase__title">
-            <div class="dp-json-editor-showcase__h1">@grafana-fast/json-editor 测试页</div>
+        <div class="dp-json-editor-showcase__title">
+          <div class="dp-json-editor-showcase__h1">@grafana-fast/json-editor 测试页</div>
           <div class="dp-json-editor-showcase__sub">用于验证导入/导出、诊断提示（行列）、结构风险提示、外部校验。</div>
-          </div>
+        </div>
 
         <Flex justify="end" :gap="10" wrap>
           <Segmented v-model:value="themeModel" size="small" :options="themeOptions" />

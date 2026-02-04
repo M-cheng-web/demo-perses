@@ -42,11 +42,12 @@ pnpm build
 GF_USE_DIST=1 pnpm -C packages/app dev
 ```
 
-## 组件按需导入
+## 组件引入
 
-`@grafana-fast/component` 默认入口包含全量 `install` 与全局样式。若你希望更好的 tree-shaking（只打入用到的组件），建议改为：
+`@grafana-fast/component` 默认入口包含全量 `install` 与全局样式，使用方式更简单（但 tree-shaking 效果会弱一些）：
 
 ```ts
-import '@grafana-fast/component/styles';
-import { Button } from '@grafana-fast/component/exports';
+import GrafanaFastUI, { Button } from '@grafana-fast/component';
+
+app.use(GrafanaFastUI);
 ```

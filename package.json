@@ -18,9 +18,13 @@
     "lint": "eslint --cache \"packages/**/*.{ts,tsx,vue,js,cjs,mjs}\" \"scripts/**/*.{ts,js,cjs,mjs}\" \"meta/**/*.{ts,js,cjs,mjs}\"",
     "lint:fix": "eslint --cache --fix \"packages/**/*.{ts,tsx,vue,js,cjs,mjs}\" \"scripts/**/*.{ts,js,cjs,mjs}\" \"meta/**/*.{ts,js,cjs,mjs}\"",
     "format": "prettier --check .",
+    "typecheck": "nr update && pnpm -r --if-present run type-check",
+    "test": "nr update && pnpm -r --if-present run test",
     "update": "esno scripts/update.ts",
     "clean": "esno scripts/clean.ts",
     "types:fix": "esno scripts/sync-dist-meta.ts",
+    "dist:validate": "esno scripts/validate-dist.ts",
+    "ci": "pnpm lint && pnpm format && pnpm build && pnpm typecheck && pnpm test && pnpm dist:validate",
     "publish": "esno scripts/publish.ts"
   },
   "pnpm": {

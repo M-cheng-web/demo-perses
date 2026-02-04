@@ -3,11 +3,11 @@
   <div :class="bem()">
     <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
 
-	    <div :class="bem('wrapper')">
-	      <Table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" size="small" :style="{ '--gf-table-wrap-height': '100%' }">
-	        <template #bodyCell="{ column, text }">
-	          <template v-if="column.key !== 'time'">
-	            {{ formatValue(text, panel.options.format || {}) }}
+    <div :class="bem('wrapper')">
+      <Table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" size="small" :style="{ '--gf-table-wrap-height': '100%' }">
+        <template #bodyCell="{ column, text }">
+          <template v-if="column.key !== 'time'">
+            {{ formatValue(text, panel.options.format || {}) }}
           </template>
           <template v-else>
             {{ text }}

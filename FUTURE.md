@@ -1,7 +1,6 @@
 # FUTURE / 路线图（目标：在体验上超越 Grafana）
 
-> 这份文件不是“需求堆栈”，而是从整个项目架构与业务闭环出发，为 `grafana-fast` 规划的长期路线图。
-> 核心目标：把它做成一个 **Embedded-first（可嵌入优先）**、**SDK-first（宿主集成优先）**，并且在 **性能与调试体验** 上能超过 Grafana 的 Dashboard 引擎。
+> 这份文件不是“需求堆栈”，而是从整个项目架构与业务闭环出发，为 `grafana-fast` 规划的长期路线图。核心目标：把它做成一个 **Embedded-first（可嵌入优先）**、**SDK-first（宿主集成优先）**，并且在 **性能与调试体验** 上能超过 Grafana 的 Dashboard 引擎。
 
 ## 0. 我们到底在做什么（用一句话对齐）
 
@@ -52,21 +51,21 @@
 
 当前的核心闭环已经形成：
 
-1. **Dashboard JSON**（`@grafana-fast/types`）进入系统  
-   - `useDashboardSdk` / `dashboardStore.loadDashboard()` 拉取或导入 JSON  
+1. **Dashboard JSON**（`@grafana-fast/types`）进入系统
+   - `useDashboardSdk` / `dashboardStore.loadDashboard()` 拉取或导入 JSON
    - `validateDashboardStrict` 负责严格校验（`schemaVersion:number`、`panel.type` 必须是内置类型等）
-2. **运行时注入**  
-   - `apiClient`（mock/http）注入到 pinia 实例上  
+2. **运行时注入**
+   - `apiClient`（mock/http）注入到 pinia 实例上
    - 面板类型由内置映射解析；渲染层对不支持类型会兜底 `UnsupportedPanel`（避免崩溃）
-3. **变量系统**（VariablesStore）  
+3. **变量系统**（VariablesStore）
    - 从 dashboard.variables 初始化 `values/options`
    - query-based variable 的 options 由 `api.variable.resolveOptions`（best-effort）
-4. **查询调度与执行**（QueryScheduler + QueryRunner）  
-   - timeRange 变化：刷新全部  
-   - variable 变化：基于表达式依赖分析，仅刷新受影响 panel  
+4. **查询调度与执行**（QueryScheduler + QueryRunner）
+   - timeRange 变化：刷新全部
+   - variable 变化：基于表达式依赖分析，仅刷新受影响 panel
    - `QueryRunner`：并发限制、缓存、取消（AbortSignal）、in-flight 去重
-5. **面板渲染**  
-   - `panel.type` -> 内置面板映射查找对应渲染组件  
+5. **面板渲染**
+   - `panel.type` -> 内置面板映射查找对应渲染组件
    - 不支持：`UnsupportedPanel` 展示类型 + 原始 options（可复制）
 
 这条链路是“超过 Grafana”的基础：因为你掌握了 **宿主/运行时**，可以把隔离、稳定性、可移植性做得比 Grafana 更极致。
@@ -128,6 +127,7 @@ Grafana 在大盘（100+ panels）时也会吃力。你可以通过更彻底的�
   - 固化 Node 版本（建议加入 `.nvmrc` 或 `volta` 配置），避免开发者环境不一致导致构建失败
 
 **验收标准**：
+
 - 能在 CI/本地一键跑通类型检查 + 单测（即使不跑 Vite build，也要有可验证的核心逻辑测试）
 - 关键链路（导入/渲染/查询/编辑/导出）有自动化回归
 
@@ -143,6 +143,7 @@ Grafana 在大盘（100+ panels）时也会吃力。你可以通过更彻底的�
   - 导入后报告：哪些字段不符合约束/被忽略（保证用户知道“导入后会发生什么”）
 
 **验收标准**：
+
 - 同版本 dashboard JSON 可导入并展示；导出再导入结果一致（round-trip 可回归）
 
 ### Milestone C：变量系统升级为“可解释的模型”
@@ -160,6 +161,7 @@ Grafana 在大盘（100+ panels）时也会吃力。你可以通过更彻底的�
   - 不仅按 `expr` 提取变量引用，也要考虑 transformations、legend、panel options 中可能的变量引用（逐步扩展）
 
 **验收标准**：
+
 - variable change 只刷新受影响 panel（已具备雏形），并能在 UI 上解释“为什么刷新这些”
 - query-based variables 能从 datasource 拉取 options（mock 实现先完整，后续接真实实现）
 
@@ -180,6 +182,7 @@ Grafana 在大盘（100+ panels）时也会吃力。你可以通过更彻底的�
   - 错误聚合与诊断建议（例如 PromQL 常见错误）
 
 **验收标准**：
+
 - 100 panels 情况下不会出现“请求风暴”，并且可明确解释当前队列状态
 - 有一套“可视化调试”入口可以定位：哪个 panel 慢、慢在哪、是否被取消
 
@@ -200,6 +203,7 @@ Grafana 在大盘（100+ panels）时也会吃力。你可以通过更彻底的�
   - http / mock 的能力差异可被 UI 自动降级处理
 
 **验收标准**：
+
 - 插件/扩展能力可裁剪、可注入、可回归（不引入宿主心智负担）
 - transformations 能显著提升 stat/gauge/table 表现力（接近并可部分超越 Grafana）
 
@@ -273,7 +277,7 @@ AI 不是“加个聊天框”就超越 Grafana。AI 真正能让你赢的是：
 
 AI 一旦进入“可观测数据域”，会马上遇到企业级合规与安全要求。建议提前定好硬规则：
 
-- 默认关闭（off by default），并且清晰告知“会发送什么”  
+- 默认关闭（off by default），并且清晰告知“会发送什么”
 - 支持 BYO key / 自建代理（企业内部统一审计与脱敏）
 - 数据最小化：默认只发送 **schema/结构/错误信息**，不发送原始时序数据
 - Prompt injection 防护：任何来自 datasource/label 的文本都需要被当作“不可信输入”处理
@@ -293,10 +297,10 @@ AI 一旦进入“可观测数据域”，会马上遇到企业级合规与安�
 
 不要试图在“面板种类数量”上短期超过 Grafana；而是用你的架构优势去赢：
 
-1) **把 JSON 可移植做到极致**（稳定导入/导出 + 严格校验 + schemaVersion 预留）  
-2) **把查询与变量的调试体验做到极致**（插值预览 + 查询 timeline + 依赖可视化）  
-3) **把可嵌入与多实例隔离做到极致**（宿主可控、无全局副作用、性能可治理）  
-4) 在可回归前提下逐步扩展 transformations/datasources（必要时再引入插件化）
+1. **把 JSON 可移植做到极致**（稳定导入/导出 + 严格校验 + schemaVersion 预留）
+2. **把查询与变量的调试体验做到极致**（插值预览 + 查询 timeline + 依赖可视化）
+3. **把可嵌入与多实例隔离做到极致**（宿主可控、无全局副作用、性能可治理）
+4. 在可回归前提下逐步扩展 transformations/datasources（必要时再引入插件化）
 
 ---
 
@@ -305,6 +309,6 @@ AI 一旦进入“可观测数据域”，会马上遇到企业级合规与安�
 - 架构概览：`packages/docs/guide/architecture.md`
 - Dashboard JSON：`packages/docs/guide/dashboard-json.md`
 
-
 ## 个人总结
+
 - 加入 AI 能力（可选）

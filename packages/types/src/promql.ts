@@ -16,8 +16,8 @@ export type {
   QueryBuilderOperationDef as OperationDef,
   QueryBuilderOperationParamDef as OperationParamDef,
   PromVisualQuery,
-} from './queryBuilder';
+} from './queryBuilder.js';
 
-export { PromVisualQueryOperationCategory as OperationCategory, QueryEditorMode, PromOperationId } from './queryBuilder';
+export { PromVisualQueryOperationCategory as OperationCategory, QueryEditorMode, PromOperationId } from './queryBuilder.js';
 
-export type { PrometheusQueryResult, PrometheusDataPoint, TimeSeries } from './prometheus';
+export type { PrometheusQueryResult, PrometheusDataPoint, TimeSeries } from './prometheus.js';

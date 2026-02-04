@@ -11,4 +11,3 @@ export interface GfPortalContext {
 }
 
 export const GF_PORTAL_CONTEXT_KEY: InjectionKey<GfPortalContext> = Symbol('GF_PORTAL_CONTEXT_KEY');
-

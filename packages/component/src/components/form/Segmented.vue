@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { subscribeWindowResize, type Unsubscribe } from '@grafana-fast/utils';
   import { createNamespace } from '../../utils';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
@@ -163,13 +164,16 @@
     itemRefs.value[nextIdx]?.focus?.();
   };
 
+  let unsubscribeResize: Unsubscribe | null = null;
+
   onMounted(() => {
     updateThumb();
-    window.addEventListener('resize', updateThumb);
+    unsubscribeResize = subscribeWindowResize(updateThumb);
   });
 
   onBeforeUnmount(() => {
-    window.removeEventListener('resize', updateThumb);
+    unsubscribeResize?.();
+    unsubscribeResize = null;
   });
 
   watch([() => props.value, () => props.options, () => props.size], () => updateThumb(), { deep: true });
@@ -246,7 +250,10 @@
       left: 0;
       border-radius: var(--gf-radius-xs);
       background: var(--gf-color-surface);
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+      box-shadow:
+        0 1px 2px 0 rgba(0, 0, 0, 0.03),
+        0 1px 6px -1px rgba(0, 0, 0, 0.02),
+        0 2px 4px 0 rgba(0, 0, 0, 0.02);
       transition:
         transform 200ms cubic-bezier(0.645, 0.045, 0.355, 1),
         width 200ms cubic-bezier(0.645, 0.045, 0.355, 1);

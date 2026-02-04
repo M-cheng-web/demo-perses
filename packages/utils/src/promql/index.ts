@@ -36,3 +36,4 @@ export type { ParsePromqlToVisualQueryResult, PromqlParseConfidence, PromqlParse
 // 工具函数
 export { getAggregationOperations } from './aggregations';
 export { getOperationDefinitions } from './operations';
+export { aggById, aggWithoutId } from './ids';

@@ -8,14 +8,17 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./*": "./dist/*"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc -b -f"
+    "build": "tsc -b -f",
+    "type-check": "tsc --noEmit -p tsconfig.json"
   },
   "peerDependencies": {
     "vue": "^3.5.0"

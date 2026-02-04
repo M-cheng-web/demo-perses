@@ -44,6 +44,8 @@ async function validateDist(distDir: string) {
     if (typeof rel !== 'string') continue;
     // External targets (e.g. "node:*") are allowed, we only verify local paths.
     if (!rel.startsWith('./') && !rel.startsWith('../')) continue;
+    // Pattern exports (e.g. "./*": "./*") can't be checked as a concrete path here.
+    if (rel.includes('*')) continue;
     const abs = path.join(distDir, rel);
     if (!(await fs.pathExists(abs))) {
       throw new Error(`package.json#exports 指向的文件不存在：${rel}`);

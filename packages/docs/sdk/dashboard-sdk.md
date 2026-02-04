@@ -10,23 +10,23 @@
 
 ```vue
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useDashboardSdk } from '@grafana-fast/hooks';
+  import { ref } from 'vue';
+  import { useDashboardSdk } from '@grafana-fast/hooks';
 
-const root = ref<HTMLElement | null>(null);
-const { on, getState, getApiConfig } = useDashboardSdk(root, {
-  dashboardId: 'default',
-  apiConfig: {
-    baseUrl: 'https://api.example.com',
-  },
-});
+  const root = ref<HTMLElement | null>(null);
+  const { on, getState, getApiConfig } = useDashboardSdk(root, {
+    dashboardId: 'default',
+    apiConfig: {
+      baseUrl: 'https://api.example.com',
+    },
+  });
 
-const state = ref(getState());
-on('change', ({ state: next }) => {
-  state.value = next;
-});
+  const state = ref(getState());
+  on('change', ({ state: next }) => {
+    state.value = next;
+  });
 
-const api = getApiConfig();
+  const api = getApiConfig();
 </script>
 
 <template>

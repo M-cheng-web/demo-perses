@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
+  import { computed, defineAsyncComponent, onBeforeUnmount, reactive, ref, watch } from 'vue';
   import { storeToRefs } from '@grafana-fast/store';
   import { Drawer, Form, FormItem, Select, Input, Textarea, Row, Col, Flex, message } from '@grafana-fast/component';
   import { Button, Tabs, TabPane, Empty } from '@grafana-fast/component';
@@ -120,10 +120,23 @@
   import { createPrefixedId, debounceCancellable, deepClone, createNamespace } from '/#/utils';
   import { getBuiltInPanelDefaultOptions, getBuiltInPanelStyleComponent, getBuiltInPanelTypeOptions } from '/#/panels/builtInPanels';
   import type { CanonicalQuery, Panel } from '@grafana-fast/types';
-  import { JsonEditorLite, analyzeJsonText } from '@grafana-fast/json-editor';
   import { validatePanelStrict } from '/#/utils/strictJsonValidators';
   import PanelPreview from './PanelPreview.vue';
   import DataQueryTab from './DataQueryTab.vue';
+
+  type JsonEditorModule = typeof import('@grafana-fast/json-editor');
+  let jsonEditorModulePromise: Promise<JsonEditorModule> | null = null;
+
+  const loadJsonEditorModule = async (): Promise<JsonEditorModule> => {
+    jsonEditorModulePromise ??= import('@grafana-fast/json-editor');
+    return jsonEditorModulePromise;
+  };
+
+  const JsonEditorLite = defineAsyncComponent({
+    loader: async () => (await loadJsonEditorModule()).JsonEditorLite,
+    delay: 120,
+    timeout: 30_000,
+  });
 
   const [_, bem] = createNamespace('panel-editor-drawer');
 
@@ -186,17 +199,29 @@
     (tab) => {
       if (tab !== 'json') return;
       jsonDraft.value = JSON.stringify(formData, null, 2);
+      // Prefetch: avoid blocking the first keystroke in JSON editor tab.
+      void loadJsonEditorModule();
     }
   );
 
   // JSON 草稿变更：当草稿成为合法 JSON 时，再写回到 formData（不阻塞用户输入过程）
+  let jsonAnalyzeToken = 0;
   watch(
     () => jsonDraft.value,
     (text) => {
-      const d = analyzeJsonText(text ?? '');
-      if (!d.ok) return;
-      if (!d.value || typeof d.value !== 'object') return;
-      Object.assign(formData, d.value as any);
+      const token = ++jsonAnalyzeToken;
+      void (async () => {
+        try {
+          const { analyzeJsonText } = await loadJsonEditorModule();
+          if (token !== jsonAnalyzeToken) return;
+          const d = analyzeJsonText(text ?? '');
+          if (!d.ok) return;
+          if (!d.value || typeof d.value !== 'object') return;
+          Object.assign(formData, d.value as any);
+        } catch {
+          // ignore: JSON editor is an optional UX enhancer; parsing failure should not break panel editing flow
+        }
+      })();
     }
   );
 

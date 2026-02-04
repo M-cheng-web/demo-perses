@@ -1,5 +1,5 @@
 import type { Tree, TreeCursor } from '@lezer/common';
-import { promQueryModeller, type PromqlParseConfidence, type PromqlParseWarning } from '@grafana-fast/utils';
+import { aggById, aggWithoutId, promQueryModeller, type PromqlParseConfidence, type PromqlParseWarning } from '@grafana-fast/utils';
 import type { PromVisualQuery, PromVisualQueryBinary, QueryBuilderLabelFilter, QueryBuilderOperation, VectorMatching } from '@grafana-fast/types';
 import { PromOperationId } from '@grafana-fast/types';
 
@@ -95,7 +95,7 @@ function mapExprToVisualQuery(expr: TreeCursor, ctx: WarningContext): MappedQuer
   // 先做一层“剥壳”：
   // - 括号
   // - offset / @ modifier（目前 Builder 不支持，先过滤并告警）
-  let current = stripUnsupportedWrappers(expr, ctx);
+  const current = stripUnsupportedWrappers(expr, ctx);
 
   // 处理 binary expr（可能生成 binaryQueries 或 scalar operation）
   if (current.type.name === 'BinaryExpr') {
@@ -409,10 +409,7 @@ function parseVectorMatching(matching: TreeCursor, ctx: WarningContext): VectorM
   return { type, labels };
 }
 
-function parseAggregateExpr(
-  agg: TreeCursor,
-  ctx: WarningContext
-): { ok: true; op: QueryBuilderOperation; inner: TreeCursor } | { ok: false } {
+function parseAggregateExpr(agg: TreeCursor, ctx: WarningContext): { ok: true; op: QueryBuilderOperation; inner: TreeCursor } | { ok: false } {
   const opNodeRaw = getChildren(agg).find((c) => c.type.name === 'AggregateOp');
   const opNode = opNodeRaw ? cloneCursor(opNodeRaw) : undefined;
   if (!opNode) return { ok: false };
@@ -530,10 +527,7 @@ function parseFunctionCall(
   return { ok: true, op: { id: name, params: parsedParams }, inner };
 }
 
-function extractRangeLike(
-  node: TreeCursor,
-  ctx: WarningContext
-): { ok: true; inner: TreeCursor; range: string } | { ok: false } {
+function extractRangeLike(node: TreeCursor, ctx: WarningContext): { ok: true; inner: TreeCursor; range: string } | { ok: false } {
   if (node.type.name === 'MatrixSelector') {
     // 形态：metric[5m]
     const children = getChildren(node);
@@ -575,7 +569,8 @@ function extractSelectorFromRangeLike(
 ): { ok: true; metric: string; labels: QueryBuilderLabelFilter[] } | { ok: false } {
   const extracted = extractRangeLike(node, ctx);
   if (!extracted.ok) return { ok: false };
-  const sel = extracted.inner.type.name === 'VectorSelector' ? parseVectorSelector(extracted.inner, ctx) : extractFirstVectorSelector(extracted.inner, ctx);
+  const sel =
+    extracted.inner.type.name === 'VectorSelector' ? parseVectorSelector(extracted.inner, ctx) : extractFirstVectorSelector(extracted.inner, ctx);
   if (!sel.ok) return { ok: false };
   return { ok: true, metric: sel.metric, labels: sel.labels };
 }
@@ -752,9 +747,7 @@ function cloneCursor(cursor: TreeCursor): TreeCursor {
 }
 
 function warn(ctx: WarningContext, opsOuterToInner: QueryBuilderOperation[], w: Omit<PromqlParseWarning, 'path'>) {
-  const path = opsOuterToInner
-    .map((op) => promQueryModeller.getOperationDef(op.id)?.name || op.id)
-    .filter((v) => String(v).trim().length > 0);
+  const path = opsOuterToInner.map((op) => promQueryModeller.getOperationDef(op.id)?.name || op.id).filter((v) => String(v).trim().length > 0);
   ctx.warnings.push({ ...w, path: path.length ? path : undefined });
 }
 
@@ -763,12 +756,3 @@ function snippetOf(source: string, from: number, to: number, maxLen: number = 12
   if (s.length <= maxLen) return s;
   return `${s.slice(0, maxLen - 1)}…`;
 }
-
-function aggById(baseAggregationId: string) {
-  return `__${baseAggregationId}_by`;
-}
-
-function aggWithoutId(baseAggregationId: string) {
-  return `__${baseAggregationId}_without`;
-}
-

@@ -82,7 +82,7 @@
       />
 
       <!-- 面板编辑器 -->
-      <PanelEditorDrawer />
+      <PanelEditorDrawer v-if="panelEditorDrawerLoaded" />
 
       <!-- 全屏查看面板 -->
       <PanelFullscreenModal ref="fullscreenModalRef" />
@@ -143,8 +143,8 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, onMounted, onUnmounted, computed, provide, inject, h, nextTick } from 'vue';
-  import { getActivePinia, storeToRefs, type Pinia } from '@grafana-fast/store';
+  import { ref, watch, computed, defineAsyncComponent, h } from 'vue';
+  import { storeToRefs } from '@grafana-fast/store';
   import { Button, ConfigProvider, Drawer, Empty, Loading, Modal, Space, message } from '@grafana-fast/component';
   import { ClockCircleOutlined, CloseCircleOutlined, SettingOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useEditorStore, useTimeRangeStore, useTooltipStore } from '/#/stores';
@@ -154,20 +154,28 @@
   import PanelGroupList from '/#/components/PanelGroup/PanelGroupList.vue';
   import PanelGroupFocusLayer from '/#/components/PanelGroup/PanelGroupFocusLayer.vue';
   import AllPanelsView from './AllPanelsView.vue';
-  import PanelEditorDrawer from '/#/components/PanelEditor/PanelEditorDrawer.vue';
   import PanelFullscreenModal from '/#/components/Panel/PanelFullscreenModal.vue';
   import GlobalChartTooltip from '/#/components/ChartTooltip/GlobalChartTooltip.vue';
   import PanelGroupDialog from '/#/components/PanelGroup/PanelGroupDialog.vue';
   import type { PanelGroup } from '@grafana-fast/types';
   import type { GrafanaFastApiClient } from '@grafana-fast/api';
-  import { createMockApiClient } from '@grafana-fast/api';
-  import { GF_API_KEY, GF_RUNTIME_KEY } from '/#/runtime/keys';
-  import { subscribeWindowResize } from '/#/runtime/windowEvents';
-  import { setPiniaApiClient } from '/#/runtime/piniaAttachments';
   import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
-  import { DashboardJsonEditor } from '@grafana-fast/json-editor';
-  import type { DashboardContent } from '@grafana-fast/types';
   import { usePanelGroupPagination } from '/#/composables/usePanelGroupPagination';
+  import { useDashboardJsonModal } from './useDashboardJsonModal';
+  import { useDashboardRuntimeBindings } from './useDashboardRuntimeBindings';
+  import { useDashboardSettingsUi } from './useDashboardSettingsUi';
+
+  const DashboardJsonEditor = defineAsyncComponent({
+    loader: async () => (await import('@grafana-fast/json-editor')).DashboardJsonEditor,
+    delay: 120,
+    timeout: 30_000,
+  });
+
+  const PanelEditorDrawer = defineAsyncComponent({
+    loader: async () => (await import('/#/components/PanelEditor/PanelEditorDrawer.vue')).default,
+    delay: 120,
+    timeout: 30_000,
+  });
 
   const [_, bem] = createNamespace('dashboard');
 
@@ -220,6 +228,7 @@
   const editorStore = useEditorStore();
   const timeRangeStore = useTimeRangeStore();
   const tooltipStore = useTooltipStore();
+  const { isDrawerOpen } = storeToRefs(editorStore);
   const {
     currentDashboard,
     dashboardId,
@@ -240,8 +249,7 @@
   const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
   const rootEl = ref<HTMLElement | null>(null);
   const contentEl = ref<HTMLElement | null>(null);
-  const toolbarRef = ref<any>(null);
-  const settingsOpen = ref(false);
+  const toolbarRef = ref<{ resetSidebarDraft?: () => void; applySidebarDraft?: () => void } | null>(null);
   const settingsEl = ref<HTMLElement | null>(null);
 
   const emptyText = computed(() => DASHBOARD_EMPTY_TEXT);
@@ -258,113 +266,45 @@
     return Math.max(0, Math.floor(raw));
   });
 
-  // ---------------------------
-  // 设置按钮位置（按 dashboard 实例隔离）
-  // ---------------------------
-  const SETTINGS_POS_KEY_PREFIX = 'gf-dashboard-settings-pos:';
-  const settingsPos = ref<{ x: number; y: number } | null>(null);
-  const isSettingsDragging = ref(false);
-  const suppressSettingsClick = ref(false);
-  let settingsDragPointerId: number | null = null;
-  let settingsDragMoved = false;
-  let settingsDragStartClientX = 0;
-  let settingsDragStartClientY = 0;
-  let settingsDragStartX = 0;
-  let settingsDragStartY = 0;
-
-  const settingsStorageKey = computed(() => `${SETTINGS_POS_KEY_PREFIX}${instanceId.value}`);
-
-  // “半隐藏”交互：
-  // - 默认位置（未被拖动/未持久化）半隐藏在右侧
-  // - 用户拖动后，如果贴到右侧边缘，也自动半隐藏（减少遮挡内容）
-  const SETTINGS_PEEK_EDGE_PX = 10;
-  const SETTINGS_SNAP_EDGE_PX = 10;
-
-  const getSettingsButtonSize = (): { w: number; h: number } => {
-    const rect = settingsEl.value?.getBoundingClientRect();
-    const w = rect?.width ?? 34;
-    const h = rect?.height ?? 34;
-    return { w: Math.max(1, Math.floor(w)), h: Math.max(1, Math.floor(h)) };
-  };
-
-  const clampSettingsPos = (pos: { x: number; y: number }): { x: number; y: number } => {
-    const root = rootEl.value;
-    if (!root) return { x: Math.floor(pos.x), y: Math.floor(pos.y) };
-    const { w, h } = getSettingsButtonSize();
-    const maxX = Math.max(0, Math.floor(root.clientWidth - w));
-    const maxY = Math.max(0, Math.floor(root.clientHeight - h));
-    const x = Math.min(maxX, Math.max(0, Math.floor(pos.x)));
-    const y = Math.min(maxY, Math.max(0, Math.floor(pos.y)));
-    return { x, y };
-  };
-
-  const clampSettingsPosInPlace = () => {
-    if (!settingsPos.value) return;
-    settingsPos.value = clampSettingsPos(settingsPos.value);
-  };
-
-  const isSettingsNearRightEdge = (pos: { x: number; y: number }): boolean => {
-    const root = rootEl.value;
-    if (!root) return false;
-    const { w } = getSettingsButtonSize();
-    const maxX = Math.max(0, Math.floor(root.clientWidth - w));
-    // maxX=0 表示容器太窄/按钮太宽：此时不做“半隐藏”（避免按钮完全不可见）
-    if (maxX <= 0) return false;
-    const x = Math.floor(Number(pos.x ?? 0));
-    return x >= maxX - SETTINGS_PEEK_EDGE_PX;
-  };
-
-  const isSettingsPeek = computed(() => {
-    if (isSettingsDragging.value) return false;
-    // 未被拖动/未持久化：默认半隐藏在右侧
-    if (!settingsPos.value) return true;
-    // 已拖动：贴到右侧也半隐藏
-    return isSettingsNearRightEdge(settingsPos.value);
+  const {
+    settingsOpen,
+    settingsStyle,
+    isSettingsDragging,
+    isSettingsPeek,
+    clampSettingsPosInPlace,
+    openSettings,
+    closeSettings,
+    toggleSettings,
+    handleSettingsCancel,
+    handleSettingsConfirm,
+    handleSettingsClick,
+    handleSettingsPointerDown,
+  } = useDashboardSettingsUi({
+    instanceId,
+    rootEl,
+    settingsEl,
+    isBooting: computed(() => isBooting.value),
+    toolbarRef,
   });
 
-  const snapSettingsPos = (pos: { x: number; y: number }): { x: number; y: number } => {
-    const root = rootEl.value;
-    if (!root) return clampSettingsPos(pos);
-    const clamped = clampSettingsPos(pos);
-    const { w } = getSettingsButtonSize();
-    const maxX = Math.max(0, Math.floor(root.clientWidth - w));
-    if (maxX > 0 && clamped.x >= maxX - SETTINGS_SNAP_EDGE_PX) {
-      return { x: maxX, y: clamped.y };
-    }
-    return clamped;
-  };
-
-  const loadSettingsPos = () => {
-    try {
-      const raw = localStorage.getItem(settingsStorageKey.value);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { x?: unknown; y?: unknown };
-      const x = Number(parsed?.x);
-      const y = Number(parsed?.y);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-      settingsPos.value = clampSettingsPos({ x, y });
-    } catch {
-      // 忽略：localStorage 不可用/超额等不应影响主流程
-    }
-  };
-
-  const saveSettingsPos = () => {
-    try {
-      if (!settingsPos.value) return;
-      localStorage.setItem(settingsStorageKey.value, JSON.stringify(settingsPos.value));
-    } catch {
-      // 忽略：localStorage 不可用/超额等不应影响主流程
-    }
-  };
-
-  const settingsStyle = computed(() => {
-    if (!settingsPos.value) return undefined;
-    return {
-      left: `${settingsPos.value.x}px`,
-      top: `${settingsPos.value.y}px`,
-      right: 'auto',
-    } as Record<string, string>;
+  const { rootStyle } = useDashboardRuntimeBindings({
+    instanceId,
+    rootEl,
+    scrollEl: contentEl,
+    tooltipStore,
+    apiClient: props.apiClient,
+    onHostResize: clampSettingsPosInPlace,
   });
+
+  // PanelEditorDrawer is heavy (query builder + editor helpers). Load it only after first open.
+  const panelEditorDrawerLoaded = ref(false);
+  watch(
+    () => isDrawerOpen.value,
+    (open) => {
+      if (open) panelEditorDrawerLoaded.value = true;
+    },
+    { immediate: true }
+  );
 
   // ---------------------------
   // 分页状态（按面板组隔离）
@@ -423,68 +363,6 @@
 
   const isFocusLayerActive = computed(() => !isAllPanelsView.value && focusedGroupId.value != null);
 
-  // ---------------------------
-  // 宿主容器高度同步
-  // ---------------------------
-  // 目标：Dashboard 自己感知“被挂载的容器”的可用高度，并把自己 height 锁定为该高度，
-  // 这样宿主只需要控制挂载容器的尺寸即可（无需 dashboard 内部写死固定高度）。
-  const hostHeightPx = ref<number | null>(null);
-  let hostResizeObserver: ResizeObserver | null = null;
-  let observedHostEl: HTMLElement | null = null;
-  let unsubscribeWindowResize: null | (() => void) = null;
-
-  const resolveHostEl = (): HTMLElement | null => rootEl.value?.parentElement ?? null;
-
-  const updateHostHeight = () => {
-    const host = resolveHostEl();
-    if (!host) {
-      hostHeightPx.value = null;
-      return;
-    }
-    const next = Math.floor(host.clientHeight);
-    hostHeightPx.value = next > 0 ? next : null;
-    clampSettingsPosInPlace();
-  };
-
-  const detachHostObserver = () => {
-    if (hostResizeObserver) {
-      hostResizeObserver.disconnect();
-    }
-    observedHostEl = null;
-    unsubscribeWindowResize?.();
-    unsubscribeWindowResize = null;
-  };
-
-  const attachHostObserver = () => {
-    const host = resolveHostEl();
-    if (!host || observedHostEl === host) {
-      updateHostHeight();
-      return;
-    }
-
-    detachHostObserver();
-    observedHostEl = host;
-
-    if (typeof ResizeObserver !== 'undefined') {
-      hostResizeObserver = hostResizeObserver ?? new ResizeObserver(() => updateHostHeight());
-      hostResizeObserver.observe(host);
-    } else {
-      // 极端兜底：老环境无 ResizeObserver
-      unsubscribeWindowResize = subscribeWindowResize(updateHostHeight);
-    }
-
-    updateHostHeight();
-  };
-
-  const rootStyle = computed(() => {
-    const style: Record<string, string> = {};
-    if (hostHeightPx.value && hostHeightPx.value > 0) {
-      style.height = `${hostHeightPx.value}px`;
-      style['--dp-dashboard-host-height'] = `${hostHeightPx.value}px`;
-    }
-    return style;
-  });
-
   const contentStyle = computed(() => {
     // 聚焦层打开时禁止外层滚动：用户只通过聚焦层的内容区滚动
     if (!isFocusLayerActive.value) return undefined;
@@ -533,128 +411,6 @@
     focusedGroupId.value = null;
     focusStartOffsetY.value = 0;
   };
-
-  const openSettings = () => {
-    if (isBooting.value) return;
-    settingsOpen.value = true;
-  };
-
-  const closeSettings = () => {
-    settingsOpen.value = false;
-  };
-
-  const toggleSettings = () => {
-    if (isBooting.value) return;
-    settingsOpen.value = !settingsOpen.value;
-  };
-
-  const handleSettingsCancel = () => {
-    toolbarRef.value?.resetSidebarDraft?.();
-  };
-
-  const handleSettingsConfirm = () => {
-    toolbarRef.value?.applySidebarDraft?.();
-  };
-
-  watch(
-    () => settingsOpen.value,
-    async (open) => {
-      if (!open) return;
-      await nextTick();
-      toolbarRef.value?.resetSidebarDraft?.();
-    }
-  );
-
-  const handleSettingsClick = () => {
-    if (suppressSettingsClick.value) {
-      suppressSettingsClick.value = false;
-      return;
-    }
-    openSettings();
-  };
-
-  const getCurrentSettingsPosFromDom = (): { x: number; y: number } => {
-    const root = rootEl.value;
-    const el = settingsEl.value;
-    if (!root || !el) return { x: 0, y: 0 };
-    const rootRect = root.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-    return clampSettingsPos({ x: elRect.left - rootRect.left, y: elRect.top - rootRect.top });
-  };
-
-  const endSettingsDrag = () => {
-    window.removeEventListener('pointermove', handleSettingsPointerMove);
-    window.removeEventListener('pointerup', handleSettingsPointerUp);
-    window.removeEventListener('pointercancel', handleSettingsPointerUp);
-    isSettingsDragging.value = false;
-    settingsDragPointerId = null;
-  };
-
-  const handleSettingsPointerDown = (event: PointerEvent) => {
-    if (isBooting.value) return;
-    if (settingsDragPointerId != null) return;
-    settingsDragPointerId = event.pointerId;
-    settingsDragMoved = false;
-    suppressSettingsClick.value = false;
-
-    const initial = settingsPos.value ?? getCurrentSettingsPosFromDom();
-    settingsPos.value = initial;
-    settingsDragStartX = initial.x;
-    settingsDragStartY = initial.y;
-    settingsDragStartClientX = event.clientX;
-    settingsDragStartClientY = event.clientY;
-    isSettingsDragging.value = true;
-
-    window.addEventListener('pointermove', handleSettingsPointerMove, { passive: false } as AddEventListenerOptions);
-    window.addEventListener('pointerup', handleSettingsPointerUp, { passive: true } as AddEventListenerOptions);
-    window.addEventListener('pointercancel', handleSettingsPointerUp, { passive: true } as AddEventListenerOptions);
-
-    try {
-      (event.currentTarget as HTMLElement | null)?.setPointerCapture?.(event.pointerId);
-    } catch {
-      // 忽略：部分浏览器/节点可能不支持 setPointerCapture
-    }
-  };
-
-  const handleSettingsPointerMove = (event: PointerEvent) => {
-    if (settingsDragPointerId == null) return;
-    if (event.pointerId !== settingsDragPointerId) return;
-    const dx = event.clientX - settingsDragStartClientX;
-    const dy = event.clientY - settingsDragStartClientY;
-    if (!settingsDragMoved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) settingsDragMoved = true;
-    if (!settingsDragMoved) return;
-    event.preventDefault();
-    settingsPos.value = clampSettingsPos({ x: settingsDragStartX + dx, y: settingsDragStartY + dy });
-  };
-
-  const handleSettingsPointerUp = (event: PointerEvent) => {
-    if (settingsDragPointerId == null) return;
-    if (event.pointerId !== settingsDragPointerId) return;
-
-    if (settingsDragMoved) {
-      suppressSettingsClick.value = true;
-      if (settingsPos.value) settingsPos.value = snapSettingsPos(settingsPos.value);
-      saveSettingsPos();
-    }
-    endSettingsDrag();
-  };
-
-  // 提供“运行时依赖”（按实例隔离）
-  const apiClient = computed(() => props.apiClient ?? createMockApiClient());
-  provide(GF_API_KEY, apiClient.value);
-  provide(GF_RUNTIME_KEY, { id: instanceId.value, rootEl, scrollEl: contentEl });
-
-  // 注意：inject() 必须在 setup 阶段调用（不能放在 onMounted 内部）。
-  const injectedPinia = inject<Pinia | undefined>('pinia', undefined);
-
-  // 同时挂到当前 pinia：让 store（非组件）也能访问“按实例隔离”的运行时依赖。
-  onMounted(() => {
-    // 优先使用注入的 pinia：适配同页多个 Vue app 的多实例隔离场景。
-    const active = injectedPinia ?? getActivePinia();
-    if (active) {
-      setPiniaApiClient(active, apiClient.value);
-    }
-  });
 
   const handleAddPanelGroup = () => {
     if (!canEditDashboard.value) return;
@@ -726,56 +482,6 @@
 
     message.error(err);
   });
-
-  /**
-   * 全局鼠标移动监听
-   * 实时更新鼠标位置到 tooltipStore
-   */
-  const handleGlobalMouseMove = (event: MouseEvent) => {
-    tooltipStore.updateGlobalMousePosition({
-      x: event.clientX,
-      y: event.clientY,
-      pageX: event.pageX,
-      pageY: event.pageY,
-    });
-  };
-
-  const bindPointerTracking = (el: HTMLElement | null) => {
-    if (!el) return;
-    el.addEventListener('mousemove', handleGlobalMouseMove, { passive: true });
-  };
-
-  const unbindPointerTracking = (el: HTMLElement | null) => {
-    if (!el) return;
-    el.removeEventListener('mousemove', handleGlobalMouseMove);
-  };
-
-  // 生命周期钩子
-  onMounted(() => {
-    bindPointerTracking(rootEl.value);
-    attachHostObserver();
-    // 延后一帧：确保 root/host 尺寸已稳定（便于恢复并 clamp 拖拽位置）
-    void nextTick(() => {
-      loadSettingsPos();
-      clampSettingsPosInPlace();
-    });
-  });
-
-  onUnmounted(() => {
-    unbindPointerTracking(rootEl.value);
-    detachHostObserver();
-  });
-
-  // root 节点变化（很少见）：重新绑定鼠标追踪与宿主高度监听
-  watch(
-    rootEl,
-    (el, prev) => {
-      unbindPointerTracking(prev ?? null);
-      bindPointerTracking(el ?? null);
-      attachHostObserver();
-    },
-    { immediate: false }
-  );
 
   const bootTitle = computed(() => {
     switch (bootStage.value) {
@@ -871,132 +577,31 @@
     event.preventDefault();
   };
 
-  // ---------------------------
-  // JSON 弹窗（对 SDK/外部更友好）
-  // ---------------------------
-  const MAX_EDITABLE_DASHBOARD_JSON_CHARS = 120_000;
-  const jsonModalVisible = ref(false);
-  const jsonModalMode = ref<'view' | 'edit'>('view');
-  const dashboardJson = ref('');
-  const isJsonValid = ref(true);
-  const isGeneratingJson = ref(false);
-  let generateJsonSeq = 0;
-
-  const dashboardJsonEditorRef = ref<null | { getDraftText: () => string; getDashboard: () => DashboardContent }>(null);
-  const jsonFileInputRef = ref<HTMLInputElement>();
-
-  const lockScrollEl = computed(() => contentEl.value ?? rootEl.value ?? null);
-  const lockScrollEnabled = computed(() => lockScrollEl.value != null);
-
-  const handleJsonValidate = (ok: boolean) => {
-    isJsonValid.value = ok;
-  };
-
-  const generateDashboardJsonText = async (dash: DashboardContent) => {
-    const seq = ++generateJsonSeq;
-    isGeneratingJson.value = true;
-    // 避免“点击打开 → 先 stringify 大对象 → UI 卡死一段时间后才出现 modal”
-    await nextTick();
-
-    // 让出一帧，确保 modal/loading 文案已渲染
-    await new Promise<void>((r) => window.setTimeout(r, 0));
-    if (seq !== generateJsonSeq) return;
-    if (!jsonModalVisible.value) return;
-
-    try {
-      // 大盘 JSON 生成成本很高：用更紧凑的缩进以降低体积与 stringify 压力
-      const indent = isLargeDashboard.value ? 1 : 2;
-      const text = JSON.stringify(dash, null, indent);
-      if (seq !== generateJsonSeq) return;
-      if (!jsonModalVisible.value) return;
-      dashboardJson.value = text;
-    } finally {
-      if (seq !== generateJsonSeq) return;
-      isGeneratingJson.value = false;
-    }
-  };
-
-  watch(
-    () => jsonModalVisible.value,
-    (open) => {
-      if (open) return;
-      // 取消任何进行中的“生成 dashboard JSON 文本”任务
-      generateJsonSeq++;
-      isGeneratingJson.value = false;
-    }
-  );
-
-  const openJsonModal = (mode: 'view' | 'edit' = 'view') => {
-    if (isBooting.value) return;
-    const dash = dashboardStore.getPersistableDashboardSnapshot();
-    if (!dash) return;
-    jsonModalMode.value = isReadOnly.value && mode === 'edit' ? 'view' : mode;
-    jsonModalVisible.value = true;
-    void generateDashboardJsonText(dash);
-  };
-
-  const closeJsonModal = () => {
-    jsonModalVisible.value = false;
-  };
-
-  const handleJsonFileChange = (event: Event) => {
-    if (isReadOnly.value) {
-      const target = event.target as HTMLInputElement;
-      target.value = '';
-      message.warning('当前为只读模式，无法导入/应用 JSON');
-      return;
-    }
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const json = String(reader.result ?? '');
-      // 导入文件时不需要生成：取消可能存在的“生成当前 dashboard JSON”任务
-      generateJsonSeq++;
-      isGeneratingJson.value = false;
-      dashboardJson.value = json;
-      jsonModalMode.value = 'edit';
-      jsonModalVisible.value = true;
-      message.success('已加载 JSON，请检查并点击“应用”');
-    };
-    reader.readAsText(file);
-
-    // 清空 input 值，以便可以重复导入同一个文件
-    target.value = '';
-  };
-
-  const handleImportJson = () => {
-    if (isBooting.value) return;
-    if (isReadOnly.value) {
-      message.warning('当前为只读模式，无法导入/应用 JSON');
-      return;
-    }
-    jsonFileInputRef.value?.click();
-  };
-
-  const handleApplyJson = () => {
-    try {
-      if (isBooting.value) return;
-      if (isReadOnly.value) {
-        message.warning('当前为只读模式，无法应用 JSON');
-        return;
-      }
-      const dashboard = dashboardJsonEditorRef.value?.getDashboard();
-      if (!dashboard) {
-        message.error('无法应用：Dashboard JSON 不合法');
-        return;
-      }
-      const rawText = dashboardJsonEditorRef.value?.getDraftText?.() ?? dashboardJson.value;
-      void dashboardStore.applyDashboardFromJson(dashboard, rawText);
-      jsonModalVisible.value = false;
-      message.success('应用成功');
-    } catch (error) {
-      console.error('应用失败：JSON 格式错误', error);
-      message.error((error as Error)?.message ?? '应用失败');
-    }
-  };
+  const {
+    MAX_EDITABLE_DASHBOARD_JSON_CHARS,
+    jsonModalVisible,
+    jsonModalMode,
+    dashboardJson,
+    isJsonValid,
+    isGeneratingJson,
+    dashboardJsonEditorRef,
+    jsonFileInputRef,
+    lockScrollEl,
+    lockScrollEnabled,
+    openJsonModal,
+    closeJsonModal,
+    handleJsonValidate,
+    handleJsonFileChange,
+    handleImportJson,
+    handleApplyJson,
+  } = useDashboardJsonModal({
+    isBooting,
+    isReadOnly,
+    isLargeDashboard,
+    rootEl,
+    contentEl,
+    dashboardStore,
+  });
 
   const toolbarApi = {
     // JSON 弹窗（SDK/外部可直接唤起，不依赖右侧设置抽屉）

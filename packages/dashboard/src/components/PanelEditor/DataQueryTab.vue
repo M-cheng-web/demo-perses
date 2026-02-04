@@ -48,41 +48,48 @@
               <Tag v-if="draft.hide" color="orange">已隐藏</Tag>
             </div>
             <div :class="bem('query-actions')">
-	              <div :class="bem('action-buttons')">
-	                <Tooltip :title="draft.hide ? '已隐藏，点击显示' : '可见，点击隐藏'">
-	                  <Button
-	                    icon-only
-	                    type="text"
-	                    size="small"
-	                    :class="bem('icon-btn')"
-	                    :icon="h(draft.hide ? EyeInvisibleOutlined : EyeOutlined)"
-	                    @click="toggleQueryVisibility(index)"
-	                  />
-	                </Tooltip>
+              <div :class="bem('action-buttons')">
+                <Tooltip :title="draft.hide ? '已隐藏，点击显示' : '可见，点击隐藏'">
+                  <Button
+                    icon-only
+                    type="text"
+                    size="small"
+                    :class="bem('icon-btn')"
+                    :icon="h(draft.hide ? EyeInvisibleOutlined : EyeOutlined)"
+                    @click="toggleQueryVisibility(index)"
+                  />
+                </Tooltip>
 
-	                <Tooltip :title="draft.collapsed ? '展开' : '折叠'">
-	                  <Button
-	                    icon-only
-	                    type="text"
-	                    size="small"
-	                    :class="bem('icon-btn')"
-	                    :icon="h(draft.collapsed ? DownOutlined : UpOutlined)"
-	                    @click="togglePanelCollapsed(index)"
-	                  />
-	                </Tooltip>
+                <Tooltip :title="draft.collapsed ? '展开' : '折叠'">
+                  <Button
+                    icon-only
+                    type="text"
+                    size="small"
+                    :class="bem('icon-btn')"
+                    :icon="h(draft.collapsed ? DownOutlined : UpOutlined)"
+                    @click="togglePanelCollapsed(index)"
+                  />
+                </Tooltip>
 
-	                <Tooltip v-if="queryMode === 'builder' && draft.builder.status === 'ok'" title="模版填充">
-	                  <Button icon-only type="text" size="small" :class="bem('icon-btn')" :icon="h(ThunderboltOutlined)" @click="openQueryPatterns(index)" />
-	                </Tooltip>
+                <Tooltip v-if="queryMode === 'builder' && draft.builder.status === 'ok'" title="模版填充">
+                  <Button
+                    icon-only
+                    type="text"
+                    size="small"
+                    :class="bem('icon-btn')"
+                    :icon="h(ThunderboltOutlined)"
+                    @click="openQueryPatterns(index)"
+                  />
+                </Tooltip>
 
-	                <Popconfirm v-if="queryDrafts.length > 1" title="确认删除该查询？" @confirm="removeQuery(index)">
-	                  <Tooltip title="删除查询">
-	                    <Button icon-only danger type="text" size="small" :class="bem('icon-btn')" :icon="h(DeleteOutlined)" />
-	                  </Tooltip>
-	                </Popconfirm>
-	              </div>
-	            </div>
-	          </div>
+                <Popconfirm v-if="queryDrafts.length > 1" title="确认删除该查询？" @confirm="removeQuery(index)">
+                  <Tooltip title="删除查询">
+                    <Button icon-only danger type="text" size="small" :class="bem('icon-btn')" :icon="h(DeleteOutlined)" />
+                  </Tooltip>
+                </Popconfirm>
+              </div>
+            </div>
+          </div>
 
           <!-- 查询内容区 -->
           <Transition name="fade-collapse">
@@ -116,7 +123,11 @@
                     v-if="draft.builder.status !== 'ok'"
                     :type="draft.builder.issueType === 'syntax' ? 'error' : 'warning'"
                     show-icon
-                    :message="draft.builder.issueType === 'syntax' ? `PromQL 语法错误（${draft.refId}）` : `该 PromQL 无法完整转换为 Builder（${draft.refId}）`"
+                    :message="
+                      draft.builder.issueType === 'syntax'
+                        ? `PromQL 语法错误（${draft.refId}）`
+                        : `该 PromQL 无法完整转换为 Builder（${draft.refId}）`
+                    "
                     :description="
                       [
                         draft.builder.message || '请在 Code 模式编辑该表达式；保存/执行仍将使用 Code 的 PromQL。',
@@ -146,103 +157,106 @@
                     <div
                       :class="[
                         bem('builder-sections'),
-                        { [bem('builder-sections--readonly')]: draft.builder.confidence && draft.builder.confidence !== 'exact' && !draft.builder.acceptedPartial },
+                        {
+                          [bem('builder-sections--readonly')]:
+                            draft.builder.confidence && draft.builder.confidence !== 'exact' && !draft.builder.acceptedPartial,
+                        },
                       ]"
                     >
                       <div :class="[bem('section'), bem('section--metric')]">
-                      <div :class="bem('section-header')">
-                        <span :class="bem('section-title')">指标</span>
-                      </div>
-                      <div :class="bem('section-content')">
-                        <MetricSelector :class="bem('metric-selector')" v-model="draft.builder.visualQuery.metric" :datasource="datasource" />
-                      </div>
+                        <div :class="bem('section-header')">
+                          <span :class="bem('section-title')">指标</span>
+                        </div>
+                        <div :class="bem('section-content')">
+                          <MetricSelector :class="bem('metric-selector')" v-model="draft.builder.visualQuery.metric" :datasource="datasource" />
+                        </div>
                       </div>
 
-                    <!-- 标签过滤器 -->
+                      <!-- 标签过滤器 -->
                       <div :class="[bem('section'), bem('section--filters')]">
-                      <div :class="bem('section-header')">
-                        <span :class="bem('section-title')">标签过滤</span>
-                      </div>
-                      <div :class="bem('section-content')">
-                        <LabelFilters
-                          :class="bem('label-filters')"
-                          v-model="draft.builder.visualQuery.labels"
-                          :metric="draft.builder.visualQuery.metric"
-                          :datasource="datasource"
-                        />
-                      </div>
+                        <div :class="bem('section-header')">
+                          <span :class="bem('section-title')">标签过滤</span>
+                        </div>
+                        <div :class="bem('section-content')">
+                          <LabelFilters
+                            :class="bem('label-filters')"
+                            v-model="draft.builder.visualQuery.labels"
+                            :metric="draft.builder.visualQuery.metric"
+                            :datasource="datasource"
+                          />
+                        </div>
                       </div>
 
-                    <!-- 操作列表 -->
+                      <!-- 操作列表 -->
                       <div :class="[bem('section'), bem('section--operations')]">
-                      <div :class="bem('section-header')">
-                        <span :class="bem('section-title')">操作</span>
-                      </div>
-                      <div :class="bem('section-content')">
-                        <OperationsList
-                          :class="bem('operations-list')"
-                          v-model="draft.builder.visualQuery.operations"
-                          :currentQuery="draft.builder.visualQuery"
-                          :datasource="datasource"
-                          :highlighted-index="highlightedOpIndex"
-                          @query-update="handleBuilderQueryUpdate(index, $event)"
-                        />
-                      </div>
+                        <div :class="bem('section-header')">
+                          <span :class="bem('section-title')">操作</span>
+                        </div>
+                        <div :class="bem('section-content')">
+                          <OperationsList
+                            :class="bem('operations-list')"
+                            v-model="draft.builder.visualQuery.operations"
+                            :currentQuery="draft.builder.visualQuery"
+                            :datasource="datasource"
+                            :highlighted-index="highlightedOpIndex"
+                            @query-update="handleBuilderQueryUpdate(index, $event)"
+                          />
+                        </div>
                       </div>
 
-                    <!-- 二元查询 -->
+                      <!-- 二元查询 -->
                       <div
-                      v-if="draft.builder.visualQuery.binaryQueries && draft.builder.visualQuery.binaryQueries.length > 0"
-                      :class="[bem('section'), bem('section--binary')]"
-                    >
-                      <div :class="bem('section-header')">
-                        <span :class="bem('section-title')">二元查询</span>
-                      </div>
-                      <div :class="bem('section-content')">
-                        <NestedQueryList
-                          :class="bem('nested-query-list')"
-                          :query="draft.builder.visualQuery"
-                          :datasource="datasource"
-                          @update="handleNestedQueryUpdate(index, $event)"
-                        />
-                      </div>
+                        v-if="draft.builder.visualQuery.binaryQueries && draft.builder.visualQuery.binaryQueries.length > 0"
+                        :class="[bem('section'), bem('section--binary')]"
+                      >
+                        <div :class="bem('section-header')">
+                          <span :class="bem('section-title')">二元查询</span>
+                        </div>
+                        <div :class="bem('section-content')">
+                          <NestedQueryList
+                            :class="bem('nested-query-list')"
+                            :query="draft.builder.visualQuery"
+                            :datasource="datasource"
+                            @update="handleNestedQueryUpdate(index, $event)"
+                          />
+                        </div>
                       </div>
 
-                    <!-- 查询提示 -->
-                    <QueryHints
-                      v-if="draft.builder.visualQuery.metric"
-                      :query="draft.builder.visualQuery"
-                      :datasource="datasource"
-                      @apply-fix="handleApplyFix(index, $event)"
-                    />
+                      <!-- 查询提示 -->
+                      <QueryHints
+                        v-if="draft.builder.visualQuery.metric"
+                        :query="draft.builder.visualQuery"
+                        :datasource="datasource"
+                        @apply-fix="handleApplyFix(index, $event)"
+                      />
 
-                    <!-- 查询预览 -->
-                    <div :class="bem('section')">
-                      <div :class="bem('section-header')">
-                        <span :class="bem('section-title')">查询预览</span>
+                      <!-- 查询预览 -->
+                      <div :class="bem('section')">
+                        <div :class="bem('section-header')">
+                          <span :class="bem('section-title')">查询预览</span>
+                        </div>
+                        <div :class="bem('section-content')">
+                          <QueryPreview :class="bem('query-preview')" :promql="getPromQLForDraft(draft)" />
+                        </div>
                       </div>
-                      <div :class="bem('section-content')">
-                        <QueryPreview :class="bem('query-preview')" :promql="getPromQLForDraft(draft)" />
-                      </div>
-                    </div>
 
-                    <!-- 查询解释 -->
-                    <div v-if="showExplain && draft.builder.visualQuery.metric" :class="bem('section')">
-                      <div :class="bem('section-header')">
-                        <span :class="bem('section-title')">查询解释</span>
+                      <!-- 查询解释 -->
+                      <div v-if="showExplain && draft.builder.visualQuery.metric" :class="bem('section')">
+                        <div :class="bem('section-header')">
+                          <span :class="bem('section-title')">查询解释</span>
+                        </div>
+                        <div :class="bem('section-content')">
+                          <QueryExplain :class="bem('query-explain')" :query="draft.builder.visualQuery" @highlight="handleHighlightOperation" />
+                        </div>
                       </div>
-                      <div :class="bem('section-content')">
-                        <QueryExplain :class="bem('query-explain')" :query="draft.builder.visualQuery" @highlight="handleHighlightOperation" />
-                      </div>
-                    </div>
 
-                    <Alert
-                      v-if="draft.builder.parseWarnings && draft.builder.parseWarnings.length > 0"
-                      type="warning"
-                      show-icon
-                      message="部分 PromQL 片段未能反解析为 Builder，已过滤"
-                      :description="formatParseWarnings(draft.builder.parseWarnings)"
-                    />
+                      <Alert
+                        v-if="draft.builder.parseWarnings && draft.builder.parseWarnings.length > 0"
+                        type="warning"
+                        show-icon
+                        message="部分 PromQL 片段未能反解析为 Builder，已过滤"
+                        :description="formatParseWarnings(draft.builder.parseWarnings)"
+                      />
                     </div>
                   </template>
                 </Space>
@@ -288,7 +302,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, h, onBeforeUnmount, ref, watch } from 'vue';
+  import { computed, h, onBeforeUnmount, ref } from 'vue';
   import {
     Alert,
     Button,
@@ -323,11 +337,16 @@
   import QueryPreview from '/#/components/QueryBuilder/QueryPreview.vue';
   import QueryExplain from '/#/components/QueryBuilder/query-builder/QueryExplain.vue';
   import QueryPatternsModal from '/#/components/QueryBuilder/QueryPatternsModal.vue';
-  import { parsePromqlToVisualQuery, promQueryModeller } from '@grafana-fast/utils';
-  import { createNamespace, createPrefixedId, debounceCancellable, deepClone } from '/#/utils';
-  import type { CanonicalQuery, Datasource, DatasourceRef, DatasourceType, PromVisualQuery } from '@grafana-fast/types';
-  import type { PromqlParseConfidence, PromqlParseWarning } from '@grafana-fast/utils';
+  import { createNamespace, debounceCancellable } from '/#/utils';
+  import type { CanonicalQuery, Datasource, PromVisualQuery } from '@grafana-fast/types';
   import { useVariablesStore } from '/#/stores';
+
+  import { formatDiagnostics, formatParseWarnings, getPromQLForDraft } from './dataQueryTab/helpers';
+  import type { QueryMode } from './dataQueryTab/types';
+  import { useQueryDrafts } from './dataQueryTab/useQueryDrafts';
+  import { useQueryEmit } from './dataQueryTab/useQueryEmit';
+  import { useQueryModeSync } from './dataQueryTab/useQueryModeSync';
+  import { useQueryValidation } from './dataQueryTab/useQueryValidation';
 
   const [_, bem] = createNamespace('data-query-tab');
 
@@ -355,43 +374,7 @@
     execute: [];
   }>();
 
-  type BuilderStatus = 'ok' | 'unsupported';
-
-  interface QueryDraft {
-    id: string;
-    refId: string;
-    hide: boolean;
-    collapsed: boolean;
-    code: {
-      expr: string;
-      legendFormat: string;
-      minStep: number;
-    };
-    builder: {
-      status: BuilderStatus;
-      /**
-       * 用于区分“语法错误”还是“语义映射不支持”
-       * - syntax: PromQL 本身不合法
-       * - unsupported: PromQL 合法，但暂时无法映射成 Builder（或仅能 partial）
-       */
-      issueType?: 'syntax' | 'unsupported';
-      message?: string;
-      parseWarnings?: PromqlParseWarning[];
-      confidence?: PromqlParseConfidence;
-      /**
-       * 当 confidence !== 'exact' 时，Builder 默认只允许预览；
-       * 需要用户点击“接受转换”后，才允许编辑并覆盖 code.expr（避免隐式语义变化）。
-       */
-      acceptedPartial?: boolean;
-      /**
-       * 语法诊断（带范围），仅编辑器使用；没有依赖强类型，避免类型耦合。
-       */
-      diagnostics?: any[];
-      visualQuery: PromVisualQuery;
-    };
-  }
-
-  const queryMode = ref<'builder' | 'code'>('builder');
+  const queryMode = ref<QueryMode>('builder');
   const showExplain = ref(false);
   const patternsModalOpen = ref(false);
   const currentPatternQueryIndex = ref<number>(0);
@@ -405,293 +388,39 @@
     clearHighlightedOp.cancel();
   });
 
-  const queryDrafts = ref<QueryDraft[]>([]);
-  const lastEmittedSignature = ref<string>('');
-  let promqlAstModulePromise: Promise<any> | null = null;
-
-  // 将 PromQL 反解析 warnings（结构化）格式化成可读的中文提示文本（用于 Builder 底部 Alert 展示）
-  function formatParseWarnings(warnings?: PromqlParseWarning[]): string {
-    if (!warnings || warnings.length === 0) return '';
-    return warnings
-      .map((w) => {
-        const where = w.path && w.path.length > 0 ? `位置：${w.path.join(' → ')}` : '位置：root';
-        const snippet = w.snippet ? `片段：${w.snippet}` : '';
-        return [w.message, where, snippet].filter(Boolean).join(' | ');
-      })
-      .join('；');
-  }
-
-  // 说明：按需加载 PromQL AST 模块（编辑器专用），避免把解析重依赖拉进运行时链路
-  const loadPromqlAstModule = async () => {
-    if (!promqlAstModulePromise) {
-      // 注意：这是编辑器专用模块（包含 AST + Code<->Builder 转换）
-      promqlAstModulePromise = import('@grafana-fast/promql');
-    }
-    return promqlAstModulePromise;
-  };
-
-  function signatureFromCanonical(queries: CanonicalQuery[] | undefined): string {
-    const list = Array.isArray(queries) ? queries : [];
-    try {
-      return JSON.stringify(
-        list.map((q) => ({
-          id: q.id,
-          refId: q.refId,
-          expr: q.expr,
-          legendFormat: q.legendFormat,
-          minStep: q.minStep,
-          hide: q.hide,
-          format: q.format,
-          instant: q.instant,
-          datasourceRef: q.datasourceRef,
-          visualQuery: (q as any).visualQuery ?? null,
-        }))
-      );
-    } catch {
-      // 兜底：如果无法 stringify，则强制认为“发生变化”，从而触发 reset
-      return `__unstringifiable__:${Date.now()}`;
-    }
-  }
-
-  function emptyVisualQuery(): PromVisualQuery {
-    return { metric: '', labels: [], operations: [] };
-  }
-
-  function indexToRefId(index: number): string {
-    let n = index;
-    let out = '';
-    while (n >= 0) {
-      out = String.fromCharCode(65 + (n % 26)) + out;
-      n = Math.floor(n / 26) - 1;
-    }
-    return out;
-  }
-
-  function nextRefId(used: Set<string>): string {
-    for (let i = 0; i < 10_000; i++) {
-      const id = indexToRefId(i);
-      if (!used.has(id)) return id;
-    }
-    return `${indexToRefId(0)}_${Math.random().toString(16).slice(2, 6)}`;
-  }
-
-  function normalizeDatasourceType(type: unknown): DatasourceType {
-    const t = String(type ?? '').trim();
-    if (t === 'prometheus' || t === 'influxdb' || t === 'elasticsearch') return t;
-    return 'prometheus';
-  }
-
-  function getDatasourceRef(): DatasourceRef {
-    const uid = props.datasource?.id ? String(props.datasource.id) : 'prometheus-mock';
-    const type = normalizeDatasourceType(props.datasource?.type);
-    return { type, uid };
-  }
-
-  function renderPromql(query: PromVisualQuery): string {
-    try {
-      return promQueryModeller.renderQuery(query);
-    } catch (error) {
-      console.error('Failed to render PromQL:', error);
-      return '';
-    }
-  }
-
-  function getPromQLForDraft(draft: QueryDraft): string {
-    // 关键：partial 未接受时，不允许“隐式覆盖原 PromQL”，仍以 code.expr 为准（避免语义变化）
-    if (draft.builder.status === 'ok') {
-      const okToUseBuilder = draft.builder.confidence === 'exact' || !!draft.builder.acceptedPartial;
-      if (okToUseBuilder) return renderPromql(draft.builder.visualQuery);
-    }
-    return draft.code.expr || '';
-  }
-
-  function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): QueryDraft {
-    const refId = (q.refId || fallbackRefId).trim() || fallbackRefId;
-    const id = q.id || createPrefixedId('q');
-
-    const persisted = (q as any).visualQuery as PromVisualQuery | undefined;
-    if (persisted && typeof persisted === 'object') {
-      return {
-        id,
-        refId,
-        hide: !!q.hide,
-        collapsed: false,
-        code: {
-          expr: String(q.expr ?? ''),
-          legendFormat: String(q.legendFormat ?? ''),
-          minStep: typeof q.minStep === 'number' && q.minStep > 0 ? q.minStep : 15,
-        },
-        builder: { status: 'ok', visualQuery: deepClone(persisted), parseWarnings: [], confidence: 'exact', acceptedPartial: true },
-      };
-    }
-
-    const parsed = parsePromqlToVisualQuery(String(q.expr ?? ''));
-    if (parsed.ok && (parsed.confidence === 'exact' || parsed.confidence === 'partial')) {
-      return {
-        id,
-        refId,
-        hide: !!q.hide,
-        collapsed: false,
-        code: {
-          expr: String(q.expr ?? ''),
-          legendFormat: String(q.legendFormat ?? ''),
-          minStep: typeof q.minStep === 'number' && q.minStep > 0 ? q.minStep : 15,
-        },
-        builder: {
-          status: 'ok',
-          visualQuery: deepClone(parsed.value),
-          parseWarnings: parsed.warnings ? [...parsed.warnings] : [],
-          confidence: parsed.confidence,
-          acceptedPartial: parsed.confidence === 'exact',
-        },
-      };
-    }
-
-    if (parsed.ok && parsed.confidence === 'selector-only') {
-      return {
-        id,
-        refId,
-        hide: !!q.hide,
-        collapsed: false,
-        code: {
-          expr: String(q.expr ?? ''),
-          legendFormat: String(q.legendFormat ?? ''),
-          minStep: typeof q.minStep === 'number' && q.minStep > 0 ? q.minStep : 15,
-        },
-        builder: {
-          status: 'unsupported',
-          message: parsed.warnings?.[0]?.message ?? '该表达式过于复杂，Builder 仅能提取部分信息；请使用 Code 模式编辑。',
-          parseWarnings: parsed.warnings ? [...parsed.warnings] : [],
-          visualQuery: deepClone(parsed.value),
-          confidence: parsed.confidence,
-          acceptedPartial: false,
-          issueType: 'unsupported',
-        },
-      };
-    }
-
-    return {
-      id,
-      refId,
-      hide: !!q.hide,
-      collapsed: false,
-      code: {
-        expr: String(q.expr ?? ''),
-        legendFormat: String(q.legendFormat ?? ''),
-        minStep: typeof q.minStep === 'number' && q.minStep > 0 ? q.minStep : 15,
-      },
-      builder: {
-        status: 'unsupported',
-        message: '该 PromQL 暂无法转换为 Builder（best-effort 解析失败），请使用 Code 模式编辑。',
-        parseWarnings: [],
-        visualQuery: emptyVisualQuery(),
-        acceptedPartial: false,
-        issueType: 'unsupported',
-      },
-    };
-  }
-
-  function normalizeDrafts(drafts: QueryDraft[]): QueryDraft[] {
-    const used = new Set<string>();
-    const out: QueryDraft[] = [];
-    for (let i = 0; i < drafts.length; i++) {
-      const d = drafts[i]!;
-      let refId = String(d.refId ?? '').trim();
-      if (!refId || used.has(refId)) refId = nextRefId(used);
-      used.add(refId);
-      out.push({ ...d, refId });
-    }
-    return out;
-  }
-
-  function resetFromProps(nextQueries?: CanonicalQuery[]) {
-    const input = Array.isArray(nextQueries) ? nextQueries : Array.isArray(props.queries) ? props.queries : [];
-    if (!input.length) {
-      queryDrafts.value = [
-        {
-          id: createPrefixedId('q'),
-          refId: 'A',
-          hide: false,
-          collapsed: false,
-          code: { expr: '', legendFormat: '', minStep: 15 },
-          builder: { status: 'ok', visualQuery: emptyVisualQuery(), parseWarnings: [] },
-        },
-      ];
-      return;
-    }
-
-    queryDrafts.value = normalizeDrafts(input.map((q, i) => buildDraftFromCanonical(q, indexToRefId(i))));
-  }
-
-  watch(
-    () => props.queries,
-    (next) => {
-      const sig = signatureFromCanonical(next);
-      // 忽略由我们自身 emit('update:queries', ...) 引起的 props 回写更新
-      if (sig === lastEmittedSignature.value) return;
-      resetFromProps(next as any);
-    },
-    { deep: true, immediate: true }
-  );
-
-  watch(
-    () => props.sessionKey,
-    () => {
-      // sessionKey 变化时强制重置（例如切换面板）
-      lastEmittedSignature.value = '';
-      resetFromProps(props.queries);
-    }
-  );
-
-  const emitQueriesDebounced = debounceCancellable(() => {
-    const next = convertDraftsToCanonical('save');
-    const sig = signatureFromCanonical(next);
-    // 重要：避免“内部状态变化（例如解析 warnings）”导致重复 emit
-    if (sig === lastEmittedSignature.value) return;
-    lastEmittedSignature.value = sig;
-    emit('update:queries', next);
-  }, 200);
-
-  watch(
+  const {
     queryDrafts,
-    () => {
-      emitQueriesDebounced();
-    },
-    { deep: true }
-  );
+    resetFromProps,
+    togglePanelCollapsed,
+    toggleQueryVisibility,
+    markCodeEdited,
+    addQuery,
+    removeQuery,
+    applyPatternToCurrentDraft,
+    updateNestedQuery,
+    updateBuilderQuery,
+    acceptPartialConversion,
+  } = useQueryDrafts();
 
-  watch(
-    () => queryMode.value,
-    (mode) => {
-      // 切换模式只做模型同步，不应触发执行查询
-      if (mode === 'code') syncAllBuilderToCode();
-      if (mode === 'builder') void syncAllCodeToBuilder();
-    }
-  );
+  useQueryModeSync({ queryMode, queryDrafts });
 
-  const togglePanelCollapsed = (index: number) => {
-    const d = queryDrafts.value[index];
-    if (!d) return;
-    d.collapsed = !d.collapsed;
-  };
+  const { validateDrafts, convertDraftsToCanonical } = useQueryValidation({
+    queryMode,
+    queryDrafts,
+    getDatasource: () => props.datasource,
+  });
 
-  const toggleQueryVisibility = (index: number) => {
-    const d = queryDrafts.value[index];
-    if (!d) return;
-    d.hide = !d.hide;
-  };
+  const { markEmitted } = useQueryEmit({
+    getQueriesProp: () => props.queries,
+    getSessionKey: () => props.sessionKey,
+    queryDrafts,
+    resetFromProps,
+    convertDraftsToCanonical,
+    emitUpdateQueries: (queries) => emit('update:queries', queries),
+  });
 
   const handleCodeExprInput = (index: number) => {
-    const d = queryDrafts.value[index];
-    if (!d) return;
-    d.builder.status = 'unsupported';
-    d.builder.issueType = 'unsupported';
-    d.builder.message = '已在 Code 模式编辑 PromQL，Builder 需要重新解析（切换到 Builder 会自动尝试）。';
-    d.builder.parseWarnings = [];
-    d.builder.diagnostics = [];
-    d.builder.confidence = undefined;
-    d.builder.acceptedPartial = false;
-    d.builder.visualQuery = emptyVisualQuery();
+    markCodeEdited(index);
   };
 
   const handleCodeExprChange = (_index: number) => {
@@ -718,7 +447,7 @@
       const cur = String(d.code.expr ?? '');
       const sep = cur && !/\s$/.test(cur) ? ' ' : '';
       d.code.expr = `${cur}${sep}${token}`;
-      handleCodeExprInput(index);
+      markCodeEdited(index);
     }
 
     const ok = await copyToClipboard(token);
@@ -730,43 +459,13 @@
     }
   };
 
-  const addQuery = () => {
-    const used = new Set(queryDrafts.value.map((d) => d.refId));
-    const refId = nextRefId(used);
-    queryDrafts.value.push({
-      id: createPrefixedId('q'),
-      refId,
-      hide: false,
-      collapsed: false,
-      code: { expr: '', legendFormat: '', minStep: 15 },
-      builder: { status: 'ok', visualQuery: emptyVisualQuery(), parseWarnings: [] },
-    });
-  };
-
-  const removeQuery = (index: number) => {
-    queryDrafts.value.splice(index, 1);
-  };
-
   const openQueryPatterns = (index: number) => {
     currentPatternQueryIndex.value = index;
     patternsModalOpen.value = true;
   };
 
   const handlePatternSelect = (query: PromVisualQuery) => {
-    const draft = queryDrafts.value[currentPatternQueryIndex.value];
-    if (draft) {
-      draft.builder.status = 'ok';
-      draft.builder.message = undefined;
-      draft.builder.parseWarnings = [];
-      draft.builder.visualQuery = deepClone({
-        metric: query.metric ?? '',
-        labels: deepClone(query.labels ?? []),
-        operations: deepClone(query.operations ?? []),
-        binaryQueries: deepClone(query.binaryQueries ?? []),
-      });
-      // 同步 code.expr（便于 JSON/导出），但不触发执行查询
-      draft.code.expr = renderPromql(draft.builder.visualQuery);
-    }
+    applyPatternToCurrentDraft(currentPatternQueryIndex.value, query);
     patternsModalOpen.value = false;
   };
 
@@ -781,181 +480,11 @@
   };
 
   const handleNestedQueryUpdate = (index: number, updatedQuery: PromVisualQuery) => {
-    const draft = queryDrafts.value[index];
-    if (!draft) return;
-    draft.builder.status = 'ok';
-    draft.builder.message = undefined;
-    draft.builder.parseWarnings = [];
-    draft.builder.diagnostics = [];
-    draft.builder.issueType = undefined;
-    draft.builder.confidence = 'exact';
-    draft.builder.acceptedPartial = true;
-    draft.builder.visualQuery = deepClone(updatedQuery);
+    updateNestedQuery(index, updatedQuery);
   };
 
   const handleBuilderQueryUpdate = (index: number, updatedQuery: PromVisualQuery) => {
-    const draft = queryDrafts.value[index];
-    if (!draft) return;
-    // partial 未接受时禁止编辑（理论上 UI 已拦截，这里再做一次防御）
-    if (draft.builder.confidence && draft.builder.confidence !== 'exact' && !draft.builder.acceptedPartial) {
-      return;
-    }
-    draft.builder.status = 'ok';
-    draft.builder.message = undefined;
-    draft.builder.parseWarnings = [];
-    draft.builder.diagnostics = [];
-    draft.builder.issueType = undefined;
-    draft.builder.confidence = 'exact';
-    draft.builder.acceptedPartial = true;
-    draft.builder.visualQuery = deepClone(updatedQuery);
-    // 同步 code.expr（不触发执行）
-    draft.code.expr = renderPromql(draft.builder.visualQuery);
-  };
-
-  const syncAllBuilderToCode = () => {
-    for (const d of queryDrafts.value) {
-      if (d.builder.status !== 'ok') continue;
-      d.code.expr = renderPromql(d.builder.visualQuery);
-    }
-  };
-
-  const syncAllCodeToBuilder = () => {
-    // 说明：这是一个异步流程（按需加载 AST 模块），但调用方不需要 await
-    const tasks = queryDrafts.value.map(async (d) => {
-      if (d.builder.status === 'ok') return;
-
-      // 优先使用 AST 入口：语法层更可靠（能区分 syntax error vs unsupported）
-      try {
-        const mod = await loadPromqlAstModule();
-        const res = mod.parsePromqlToVisualQueryAst(d.code.expr);
-        if (res.ok) {
-          d.builder.status = 'ok';
-          d.builder.issueType = undefined;
-          d.builder.message = undefined;
-          d.builder.visualQuery = deepClone(res.value);
-          d.builder.parseWarnings = res.warnings ? [...res.warnings] : [];
-          d.builder.diagnostics = res.diagnostics ? [...res.diagnostics] : [];
-          d.builder.confidence = res.confidence;
-          // partial 默认只预览，避免隐式覆盖
-          d.builder.acceptedPartial = res.confidence === 'exact';
-          return;
-        }
-
-        d.builder.status = 'unsupported';
-        d.builder.issueType = res.diagnostics && res.diagnostics.length > 0 ? 'syntax' : 'unsupported';
-        d.builder.message = res.error || '该 PromQL 暂无法转换为 Builder';
-        d.builder.parseWarnings = [];
-        d.builder.diagnostics = res.diagnostics ? [...res.diagnostics] : [];
-        d.builder.confidence = undefined;
-        d.builder.acceptedPartial = false;
-        d.builder.visualQuery = emptyVisualQuery();
-        return;
-      } catch (error) {
-        // 降级：AST 模块加载失败时，回退到 utils best-effort 解析（保证可用）
-        const parsed = parsePromqlToVisualQuery(d.code.expr);
-        if (parsed.ok && (parsed.confidence === 'exact' || parsed.confidence === 'partial')) {
-          d.builder.status = 'ok';
-          d.builder.issueType = undefined;
-          d.builder.message = undefined;
-          d.builder.visualQuery = deepClone(parsed.value);
-          d.builder.parseWarnings = parsed.warnings ? [...parsed.warnings] : [];
-          d.builder.diagnostics = [];
-          d.builder.confidence = parsed.confidence;
-          d.builder.acceptedPartial = parsed.confidence === 'exact';
-          return;
-        }
-        if (parsed.ok && parsed.confidence === 'selector-only') {
-          d.builder.status = 'unsupported';
-          d.builder.issueType = 'unsupported';
-          d.builder.message = parsed.warnings?.[0]?.message ?? '该表达式过于复杂，Builder 仅能提取部分信息；请使用 Code 模式编辑。';
-          d.builder.visualQuery = deepClone(parsed.value);
-          d.builder.parseWarnings = parsed.warnings ? [...parsed.warnings] : [];
-          d.builder.diagnostics = [];
-          d.builder.confidence = parsed.confidence;
-          d.builder.acceptedPartial = false;
-          return;
-        }
-        d.builder.status = 'unsupported';
-        d.builder.issueType = 'unsupported';
-        d.builder.message = '该 PromQL 暂无法转换为 Builder（best-effort 解析失败），请使用 Code 模式编辑。';
-        d.builder.parseWarnings = [];
-        d.builder.diagnostics = [];
-        d.builder.confidence = undefined;
-        d.builder.acceptedPartial = false;
-        d.builder.visualQuery = emptyVisualQuery();
-        console.warn('PromQL AST 模块加载失败，已降级到 best-effort parser：', error);
-      }
-    });
-
-    return Promise.all(tasks);
-  };
-
-  // 用户明确确认：接受 partial 转换（将覆盖 code.expr 为 Builder 生成的 PromQL）
-  const acceptPartialConversion = (index: number) => {
-    const d = queryDrafts.value[index];
-    if (!d) return;
-    if (d.builder.status !== 'ok') return;
-    if (!d.builder.confidence || d.builder.confidence === 'exact') return;
-
-    d.builder.acceptedPartial = true;
-    // 明确覆盖：把 Builder 渲染的 PromQL 写回 code.expr（这一步就是“接受过滤/简化”）
-    d.code.expr = renderPromql(d.builder.visualQuery);
-  };
-
-  const formatDiagnostics = (diagnostics?: any[]): string => {
-    if (!diagnostics || diagnostics.length === 0) return '';
-    return diagnostics
-      .map((d) => {
-        const r = d?.range;
-        const range = r && typeof r.from === 'number' && typeof r.to === 'number' ? `位置：${r.from}-${r.to}` : '';
-        const msg = d?.message ? String(d.message) : 'PromQL 语法错误';
-        return [msg, range].filter(Boolean).join(' | ');
-      })
-      .join('；');
-  };
-
-  const validateDrafts = (purpose: 'save' | 'execute') => {
-    const errors: Array<{ refId: string; message: string }> = [];
-    for (const d of queryDrafts.value) {
-      const shouldValidate = purpose === 'save' ? true : !d.hide;
-      if (!shouldValidate) continue;
-      const canUseBuilder = queryMode.value === 'builder' && d.builder.status === 'ok' && (d.builder.confidence === 'exact' || !!d.builder.acceptedPartial);
-      const expr = canUseBuilder ? renderPromql(d.builder.visualQuery) : d.code.expr;
-      if (!expr || !String(expr).trim()) {
-        errors.push({ refId: d.refId || 'query', message: '表达式不能为空' });
-      }
-    }
-    return { ok: errors.length === 0, errors };
-  };
-
-  const convertDraftsToCanonical = (purpose: 'save' | 'execute'): CanonicalQuery[] => {
-    const datasourceRef = getDatasourceRef();
-    return queryDrafts.value.map((d) => {
-      const canUseBuilder = queryMode.value === 'builder' && d.builder.status === 'ok' && (d.builder.confidence === 'exact' || !!d.builder.acceptedPartial);
-      const expr = canUseBuilder ? renderPromql(d.builder.visualQuery) : d.code.expr;
-      const out: CanonicalQuery = {
-        id: d.id,
-        refId: d.refId,
-        datasourceRef,
-        expr: expr || '',
-        legendFormat: d.code.legendFormat || '',
-        minStep: d.code.minStep || 15,
-        format: 'time_series',
-        instant: false,
-        hide: d.hide,
-      };
-
-      // 只在“exact 或已接受 partial”时持久化 visualQuery，避免把“未确认的过滤结果”写入面板配置
-      if (d.builder.status === 'ok' && (d.builder.confidence === 'exact' || !!d.builder.acceptedPartial)) {
-        (out as any).visualQuery = deepClone(d.builder.visualQuery);
-      } else if (purpose === 'save') {
-        const parsed = parsePromqlToVisualQuery(expr || '');
-        if (parsed.ok && parsed.confidence === 'exact') {
-          (out as any).visualQuery = deepClone(parsed.value);
-        }
-      }
-      return out;
-    });
+    updateBuilderQuery(index, updatedQuery);
   };
 
   const handleExecuteQuery = () => {
@@ -972,8 +501,9 @@
       }
       return;
     }
+
     const next = convertDraftsToCanonical('execute');
-    lastEmittedSignature.value = signatureFromCanonical(next);
+    markEmitted(next);
     emit('update:queries', next);
     emit('execute');
   };
@@ -1183,23 +713,23 @@
       flex-wrap: wrap;
     }
 
-	    &__action-buttons {
-	      display: inline-flex;
-	      align-items: center;
-	      gap: 6px;
-	      flex-wrap: wrap;
-	    }
+    &__action-buttons {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
 
-	    &__icon-btn.gf-button--type-text.gf-button--icon-only:not(.gf-button--danger) {
-	      --gf-btn-color: var(--gf-color-text-tertiary);
-	      --gf-btn-bg-hover: var(--gf-color-fill-secondary);
-	      --gf-btn-bg-active: var(--gf-color-fill-tertiary);
-	      --gf-btn-shadow-hover: none;
-	    }
+    &__icon-btn.gf-button--type-text.gf-button--icon-only:not(.gf-button--danger) {
+      --gf-btn-color: var(--gf-color-text-tertiary);
+      --gf-btn-bg-hover: var(--gf-color-fill-secondary);
+      --gf-btn-bg-active: var(--gf-color-fill-tertiary);
+      --gf-btn-shadow-hover: none;
+    }
 
-	    &__icon-btn.gf-button--type-text.gf-button--icon-only:not(.gf-button--danger):hover:not(.is-disabled) {
-	      --gf-btn-color: var(--gf-color-primary);
-	    }
+    &__icon-btn.gf-button--type-text.gf-button--icon-only:not(.gf-button--danger):hover:not(.is-disabled) {
+      --gf-btn-color: var(--gf-color-primary);
+    }
 
     &__query-content {
       padding: 12px;
@@ -1332,17 +862,17 @@
       padding: 12px;
     }
 
-	    &__mode-tabs {
-	      min-width: 180px;
-	      --gf-tabs-border: 1px solid var(--gf-color-border-muted);
-	      --gf-tabs-radius: var(--gf-radius-sm);
-	      --gf-tabs-bg: var(--gf-color-surface);
-	      --gf-tabs-nav-padding: 2px;
-	      --gf-tabs-nav-border: none;
-	      --gf-tabs-content-display: none;
-	      --gf-tabs-tab-min-width: 86px;
-	      --gf-tabs-tab-padding: 5px 10px;
-	    }
+    &__mode-tabs {
+      min-width: 180px;
+      --gf-tabs-border: 1px solid var(--gf-color-border-muted);
+      --gf-tabs-radius: var(--gf-radius-sm);
+      --gf-tabs-bg: var(--gf-color-surface);
+      --gf-tabs-nav-padding: 2px;
+      --gf-tabs-nav-border: none;
+      --gf-tabs-content-display: none;
+      --gf-tabs-tab-min-width: 86px;
+      --gf-tabs-tab-padding: 5px 10px;
+    }
 
     &__code-grid {
       display: grid;

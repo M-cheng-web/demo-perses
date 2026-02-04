@@ -39,7 +39,7 @@ function getDefaultTimeRange(): { start: number; end: number; interval: number; 
   return { start, end, interval, count };
 }
 
-const DEFAULT_DATA_POOL: Record<string, () => TimeSeriesData[]> = {
+const DEFAULT_DATA_POOL = {
   cpu_usage: () => {
     const { start, interval, count } = getDefaultTimeRange();
     return [
@@ -99,7 +99,7 @@ const DEFAULT_DATA_POOL: Record<string, () => TimeSeriesData[]> = {
       },
     ];
   },
-};
+} satisfies Record<string, () => TimeSeriesData[]>;
 
 export function getDefaultDataByExpr(expr: string): TimeSeriesData[] {
   const normalized = String(expr ?? '').trim();
@@ -107,7 +107,7 @@ export function getDefaultDataByExpr(expr: string): TimeSeriesData[] {
   if (normalized.includes('avg(') && normalized.includes('cpu_usage')) return DEFAULT_DATA_POOL.avg_cpu_usage();
   if (normalized.includes('max(') && normalized.includes('cpu_usage')) return DEFAULT_DATA_POOL.max_cpu_usage();
 
-  const key = Object.keys(DEFAULT_DATA_POOL).find((k) => normalized.includes(k));
+  const key = (Object.keys(DEFAULT_DATA_POOL) as Array<keyof typeof DEFAULT_DATA_POOL>).find((k) => normalized.includes(String(k)));
   const generator = key ? DEFAULT_DATA_POOL[key] : undefined;
   if (!generator) return [];
   return generator();

@@ -8,9 +8,9 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -19,7 +19,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build --config vite.config.ts",
-    "build:types": "pnpm -C ../types run build && pnpm -C ../utils run build && pnpm -C ../promql run build && pnpm -C ../store run build:types && pnpm -C ../component run build:types && vue-tsc --project tsconfig.build-types.json --declaration --emitDeclarationOnly --outDir dist",
+    "build:types": "vue-tsc --project tsconfig.build-types.json --declaration --emitDeclarationOnly --outDir dist && esno ../../scripts/rewrite-dashboard-dts-aliases.ts",
+    "type-check": "vue-tsc --noEmit --project tsconfig.json",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -7,27 +7,27 @@
  */
 
 // 基础通用类型：ID/Timestamp 等
-export * from './common';
+export * from './common.js';
 // 时间范围（TimeRange）与相关工具类型
-export * from './timeRange';
+export * from './timeRange.js';
 // 查询结果/数据点结构（用于 queryRunner/面板渲染）
-export * from './query';
+export * from './query.js';
 // 查询模型：CanonicalQuery / VisualQuery 等（存储/传输层与 UI 层的桥梁）
-export * from './queryModel';
+export * from './queryModel.js';
 // 图表通用配置：axis/legend/format/threshold 等
-export * from './chart';
+export * from './chart.js';
 // 面板定义：Panel/PanelOptions/CorePanelType
-export * from './panel';
+export * from './panel.js';
 // 布局：PanelLayout 等
-export * from './layout';
+export * from './layout.js';
 // 面板组：PanelGroup 等
-export * from './panelGroup';
+export * from './panelGroup.js';
 // Dashboard：顶层结构 + variables 等
-export * from './dashboard';
+export * from './dashboard.js';
 // Datasource 定义（引用/配置/类型）
-export * from './datasource';
+export * from './datasource.js';
 // QueryBuilder 结构（可视化构建 query 的中间模型）
-export * from './queryBuilder';
+export * from './queryBuilder.js';
 // 从 prometheus 导出，但排除 DataPoint (使用 query.ts 中的 DataPoint)
 export type {
   PrometheusQueryResult,
@@ -42,7 +42,7 @@ export type {
   PrometheusDatasource,
   QueryHintType,
   QueryHint,
-} from './prometheus';
+} from './prometheus.js';
 // 导出 legend 中的类型，但排除与 chart 冲突的类型
-export type { LegendMode, LegendSize, LegendValue, LegendItem, LegendSelection } from './legend';
-export type { LegendOptions as LegendComponentOptions, LegendPosition as LegendComponentPosition } from './legend';
+export type { LegendMode, LegendSize, LegendValue, LegendItem, LegendSelection } from './legend.js';
+export type { LegendOptions as LegendComponentOptions, LegendPosition as LegendComponentPosition } from './legend.js';

@@ -25,6 +25,7 @@ export * from './object';
 export * from './url';
 export * from './dom/cssVar';
 export * from './dom/scrollLock';
+export * from './events/windowEvents';
 
 // ----------------------------
 // Storage

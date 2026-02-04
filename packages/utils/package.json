@@ -8,9 +8,9 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -18,6 +18,8 @@
   ],
   "scripts": {
     "build": "rollup -c ../../scripts/rollup.config.js",
+    "type-check": "tsc --noEmit -p tsconfig.json",
+    "test": "pnpm run test:promql && pnpm run test:promql-parse",
     "test:promql": "esno scripts/promql-render.test.ts",
     "test:promql-parse": "esno scripts/promql-parse.test.ts"
   },

@@ -13,14 +13,7 @@
       <div :class="bem('header')">
         <span :class="bem('time')">{{ formattedTime }}</span>
         <div :class="bem('actions')">
-          <Button
-            v-if="isPinned"
-            icon-only
-            type="text"
-            size="small"
-            :class="[bem('action-btn'), bem('unpin-btn')]"
-            @click="handleUnpin"
-          >
+          <Button v-if="isPinned" icon-only type="text" size="small" :class="[bem('action-btn'), bem('unpin-btn')]" @click="handleUnpin">
             <template #icon>
               <PushpinFilled />
             </template>
@@ -204,7 +197,9 @@
     &.dp-chart-tooltip--pinned {
       pointer-events: auto;
       background-color: var(--gf-color-tooltip-bg);
-      box-shadow: var(--gf-shadow-3), 0 0 0 2px var(--gf-color-primary-border);
+      box-shadow:
+        var(--gf-shadow-3),
+        0 0 0 2px var(--gf-color-primary-border);
     }
 
     &__header {

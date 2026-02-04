@@ -25,6 +25,15 @@ export interface QueryRunnerOptions {
    * - 对 “now” 类相对时间的 dashboard，建议 TTL 较短（避免误用过期数据）
    */
   cacheTtlMs?: number;
+  /**
+   * 缓存最大条目数（默认 500）
+   *
+   * 说明：
+   * - QueryRunner 的 cache 是一个 Map；如果不做上限，长时间运行（尤其是自动刷新/频繁切换 timeRange）
+   *   会出现“只增不减”的内存风险。
+   * - 该上限同时约束 result 与 in-flight promise 条目；超过上限会按 LRU（最久未使用）淘汰。
+   */
+  maxCacheEntries?: number;
 }
 
 interface CacheEntry {
@@ -47,13 +56,44 @@ export class QueryRunner {
   private cache = new Map<string, CacheEntry>();
   private inflight = 0;
   private queue: Array<() => void> = [];
+  private lastPruneAt = 0;
 
   constructor(api: GrafanaFastApiClient, options: QueryRunnerOptions = {}) {
     this.api = api;
     this.options = {
       maxConcurrency: options.maxConcurrency ?? 6,
       cacheTtlMs: options.cacheTtlMs ?? 5_000,
+      maxCacheEntries: options.maxCacheEntries ?? 500,
     };
+  }
+
+  private touchCacheKey(key: string, entry: CacheEntry) {
+    // Move to the back (most recently used) without changing TTL timestamp.
+    this.cache.delete(key);
+    this.cache.set(key, entry);
+  }
+
+  private pruneCache(now: number) {
+    // Don't prune too frequently; keep it cheap.
+    if (now - this.lastPruneAt < 2_000) return;
+    this.lastPruneAt = now;
+
+    // 1) TTL prune (only for settled results; keep in-flight promises)
+    if (this.options.cacheTtlMs > 0) {
+      for (const [key, entry] of this.cache) {
+        if (entry.promise) continue;
+        if (now - entry.timestamp <= this.options.cacheTtlMs) continue;
+        this.cache.delete(key);
+      }
+    }
+
+    // 2) Size prune (LRU via Map insertion order)
+    const max = this.options.maxCacheEntries;
+    while (this.cache.size > max) {
+      const oldestKey = this.cache.keys().next().value as string | undefined;
+      if (!oldestKey) break;
+      this.cache.delete(oldestKey);
+    }
   }
 
   private createAbortError(): Error {
@@ -124,12 +164,19 @@ export class QueryRunner {
       const expr = q.expr;
       const cacheKey = this.buildCacheKey(q, context, expr);
       const now = Date.now();
+      this.pruneCache(now);
 
       const cached = this.cache.get(cacheKey);
       if (cached) {
         const fresh = this.options.cacheTtlMs > 0 && now - cached.timestamp <= this.options.cacheTtlMs;
-        if (fresh && cached.result) return cached.result;
-        if (cached.promise) return cached.promise;
+        if (fresh && cached.result) {
+          this.touchCacheKey(cacheKey, cached);
+          return cached.result;
+        }
+        if (cached.promise) {
+          this.touchCacheKey(cacheKey, cached);
+          return cached.promise;
+        }
       }
 
       const promise = this.runWithConcurrency(async () => {
@@ -139,10 +186,12 @@ export class QueryRunner {
       }, options.signal);
 
       this.cache.set(cacheKey, { timestamp: now, promise });
+      this.pruneCache(now);
 
       try {
         const result = await promise;
         this.cache.set(cacheKey, { timestamp: Date.now(), result });
+        this.pruneCache(Date.now());
         return result;
       } catch (err) {
         if (this.isAbortError(err)) {
@@ -159,6 +208,7 @@ export class QueryRunner {
           error: (err as any)?.message ?? stableStringify(err),
         };
         this.cache.set(cacheKey, { timestamp: Date.now(), result: errorResult });
+        this.pruneCache(Date.now());
         return errorResult;
       }
     });

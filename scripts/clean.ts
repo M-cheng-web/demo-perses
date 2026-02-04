@@ -10,6 +10,7 @@ const targets = [
   // TypeScript incremental artifacts (composite projects):
   // - dist 目录被清理后，如果 tsbuildinfo 仍在，某些情况下会导致 d.ts 未重新生成（增量状态不一致）
   ...metaPackages.map((pkg) => `packages/${pkg.name}/*.tsbuildinfo`),
+  ...metaPackages.map((pkg) => `packages/${pkg.name}/node_modules/.tmp/*.tsbuildinfo`),
   'packages/docs/.vitepress/dist',
   'packages/docs/.vitepress/cache',
 ];

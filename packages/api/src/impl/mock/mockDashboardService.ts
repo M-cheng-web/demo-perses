@@ -53,7 +53,7 @@ function buildPanelOptions(type: CorePanelType, rng: () => number): Panel['optio
       };
     case 'table':
       return {
-        format: { unit: 'short', decimals: 2 },
+        format: { unit: 'none', decimals: 2 },
         specific: { showPagination: false, pageSize: 10, sortable: true },
       };
     case 'gauge':

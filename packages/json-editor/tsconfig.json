@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": "./",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
     "paths": {
       "@grafana-fast/types": ["../types/dist/index.d.ts"],
       "@grafana-fast/types/*": ["../types/dist/*"],
