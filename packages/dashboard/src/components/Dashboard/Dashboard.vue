@@ -351,12 +351,42 @@
     }
   };
 
-  // PanelEditorDrawer is heavy (query builder + editor helpers). Load it only after first open.
+  // PanelEditorDrawer is heavy (query builder + editor helpers).
+  // Strategy:
+  // - Do not block the first render/booting stage
+  // - Once dashboard is ready (booting finished), mount it in the background (idle/next tick)
+  // - Also ensure it's mounted if something tries to open it
   const panelEditorDrawerLoaded = ref(false);
+
+  const requestLoadPanelEditorDrawer = () => {
+    if (panelEditorDrawerLoaded.value) return;
+    panelEditorDrawerLoaded.value = true;
+  };
+
+  const scheduleLoadPanelEditorDrawer = () => {
+    if (panelEditorDrawerLoaded.value) return;
+    // Defer to idle time so the main dashboard UI can paint first.
+    const w = window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number };
+    if (typeof w?.requestIdleCallback === 'function') {
+      w.requestIdleCallback(() => requestLoadPanelEditorDrawer(), { timeout: 800 });
+      return;
+    }
+    window.setTimeout(() => requestLoadPanelEditorDrawer(), 0);
+  };
+
   watch(
     () => isDrawerOpen.value,
     (open) => {
-      if (open) panelEditorDrawerLoaded.value = true;
+      if (open) requestLoadPanelEditorDrawer();
+    },
+    { immediate: true }
+  );
+
+  watch(
+    () => isBooting.value,
+    (booting) => {
+      if (booting) return;
+      scheduleLoadPanelEditorDrawer();
     },
     { immediate: true }
   );

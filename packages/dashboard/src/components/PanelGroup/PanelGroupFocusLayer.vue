@@ -333,8 +333,13 @@
   // 聚焦的组变化：按“重新打开”处理（确保 startOffsetY 与内容正确刷新）
   watch(
     () => props.pagedGroup?.group?.id,
-    () => {
+    (nextId, prevId) => {
       if (!props.open) return;
+      // 初次打开时，pagedGroup 可能从 null -> 有值；这里不重复触发 openSequence，
+      // 否则会导致内容二次 mount（用户感知为“闪一下 / 加载两次”）。
+      if (prevId == null) return;
+      if (nextId == null) return;
+      if (String(nextId) === String(prevId)) return;
       void openSequence();
     }
   );

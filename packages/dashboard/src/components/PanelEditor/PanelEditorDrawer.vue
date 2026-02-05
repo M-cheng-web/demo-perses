@@ -251,7 +251,11 @@
           scheduleExecuteQueries();
         }
       }
-    }
+    },
+    // 重要：PanelEditorDrawer 由 Dashboard 按“首次打开再加载”延迟挂载；
+    // 若组件挂载时 isDrawerOpen 已经是 true（首次点击编辑），必须立刻同步到 isOpen，
+    // 否则会出现“第一次点编辑没反应，退出/再进编辑后才生效”的现象。
+    { immediate: true }
   );
 
   // 监听面板类型变化，自动切换到对应的默认配置

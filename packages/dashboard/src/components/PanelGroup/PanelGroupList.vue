@@ -4,15 +4,16 @@
   用途：
   - 循环渲染 dashboard 的 panelGroups
   - list view 始终只展示标题（不在列表内展开渲染 panels）
-  - 通过 vue-grid-layout-v3 支持“随时拖拽排序”（不依赖全局编辑模式）
+  - 通过 vue-grid-layout-v3 支持拖拽排序（拖拽过程用“列表行子组件”隔离，dragend 时落盘）
   - 点击整行（header）打开聚焦层（FocusLayer），不改变底层滚动位置
   - 右侧提供：编辑面板组 / 删除面板组（创建面板组移动到全局设置）
   - 打开态的高频操作放到 FocusLayer header
 -->
 <template>
-  <div :class="[bem(), { 'is-dragging': isDragging }]">
+  <div :class="bem()">
     <grid-layout
-      v-model:layout="layoutModel"
+      ref="gridLayoutRef"
+      :layout="layoutModel"
       :col-num="1"
       :row-height="GROUP_ROW_HEIGHT"
       :is-draggable="canManageGroups"
@@ -20,6 +21,7 @@
       :vertical-compact="true"
       :use-css-transforms="true"
       :margin="[0, 0]"
+      @update:layout="handleLayoutModelUpdate"
       @layout-updated="handleLayoutUpdated"
     >
       <grid-item
@@ -31,57 +33,34 @@
         :h="layoutItem.h"
         :i="layoutItem.i"
         :drag-ignore-from="dragIgnoreFrom"
-        @move="handleGroupMove"
         @moved="handleGroupMoved"
       >
-        <div
+        <PanelGroupListRow
           :ref="groupRootRef(group.id)"
-          :class="[bem('group'), { 'is-focus-source': focusedGroupKey != null && String(group.id) === focusedGroupKey }]"
-        >
-          <Panel
-            :title="group.title || '未命名面板组'"
-            :description="group.description"
-            size="large"
-            header-variant="list-row"
-            :collapsible="!isBooting"
-            :collapsed="true"
-            :bordered="false"
-            :ghost="true"
-            :hoverable="false"
-            :body-padding="false"
-            @update:collapsed="(collapsed: boolean) => handleCollapsedChange(group.id, collapsed)"
-            @title-click="() => handleTitleClick(group.id)"
-          >
-            <template v-if="canManageGroups" #right>
-              <div :class="bem('actions')">
-                <Tooltip title="编辑面板组">
-                  <Button icon-only type="text" size="middle" :icon="h(EditOutlined)" @click="() => handleEditGroup(group)" />
-                </Tooltip>
-                <Popconfirm title="确定要删除这个面板组吗？" ok-text="确定" cancel-text="取消" @confirm="() => handleDeleteGroup(group.id)">
-                  <Tooltip title="删除面板组">
-                    <Button icon-only type="text" size="middle" :icon="h(DeleteOutlined)" :class="bem('delete-btn')" />
-                  </Tooltip>
-                </Popconfirm>
-              </div>
-            </template>
-          </Panel>
-        </div>
+          :group="group"
+          :can-manage-groups="canManageGroups"
+          :is-booting="isBooting"
+          :is-focus-source="focusedGroupKey != null && String(group.id) === focusedGroupKey"
+          :is-dragging="isDragging"
+          @open="openGroup"
+          @edit="handleEditGroup"
+          @delete="handleDeleteGroup"
+        />
       </grid-item>
     </grid-layout>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed, h, ref, watch } from 'vue';
+  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import type { ComponentPublicInstance } from 'vue';
   import type { PanelGroup } from '@grafana-fast/types';
   import { storeToRefs } from '@grafana-fast/store';
-  import { Button, Panel, Popconfirm, Tooltip } from '@grafana-fast/component';
-  import { DeleteOutlined, EditOutlined } from '@ant-design/icons-vue';
-  import { GridLayout, GridItem } from 'vue-grid-layout-v3';
+  import { GridItem, GridLayout } from 'vue-grid-layout-v3';
   import { createNamespace } from '/#/utils';
   import { useDashboardStore } from '/#/stores';
   import { useDashboardRuntime } from '/#/runtime/useInjected';
+  import PanelGroupListRow from './PanelGroupListRow.vue';
 
   const [_, bem] = createNamespace('panel-group-list');
 
@@ -101,20 +80,24 @@
   const runtime = useDashboardRuntime();
   const canManageGroups = computed(() => !isBooting.value && !isReadOnly.value);
 
-  const groupRootElById = new Map<string, HTMLElement>();
+  const panelGroups = computed(() => (Array.isArray(props.panelGroups) ? props.panelGroups : []));
   const focusedGroupKey = computed(() => (props.focusedGroupId == null ? null : String(props.focusedGroupId)));
 
   type GroupLayoutItem = { x: number; y: number; w: number; h: number; i: string };
 
+  // 面板组 header（focus layer / list）保持一致：Panel size=large 的 header 高度是 44px
+  // rowHeight 需要对齐实际 header 高度，否则会出现裁剪或拖拽定位偏差。
   const GROUP_ROW_HEIGHT = 44;
   const dragIgnoreFrom = '.gf-panel__title, .gf-panel__info, button, a, input, textarea';
 
   const layoutModel = ref<GroupLayoutItem[]>([]);
-  const layoutKey = computed(() => (props.panelGroups ?? []).map((g) => String(g.id)).join('|'));
+  let pendingLayoutModel: GroupLayoutItem[] | null = null;
+  let layoutUpdateRafId: number | null = null;
+  const layoutKey = computed(() => panelGroups.value.map((g) => String(g.id)).join('|'));
 
   const groupById = computed(() => {
     const map = new Map<string, PanelGroup>();
-    for (const g of props.panelGroups ?? []) map.set(String(g.id), g);
+    for (const g of panelGroups.value) map.set(String(g.id), g);
     return map;
   });
 
@@ -125,21 +108,34 @@
   });
 
   const syncLayoutFromGroups = () => {
-    const groups = Array.isArray(props.panelGroups) ? props.panelGroups : [];
-    layoutModel.value = groups.map((g, idx) => ({ x: 0, y: idx, w: 1, h: 1, i: String(g.id) }));
+    layoutModel.value = panelGroups.value.map((g, idx) => ({ x: 0, y: idx, w: 1, h: 1, i: String(g.id) }));
   };
 
   watch(layoutKey, syncLayoutFromGroups, { immediate: true });
 
-  const groupRootRef = (groupId: PanelGroup['id']) => (el: Element | ComponentPublicInstance | null) => {
+  // ---------------------------
+  // DOM refs (for FocusLayer startOffsetY)
+  // ---------------------------
+  const groupRootElById = new Map<string, HTMLElement>();
+
+  type GroupRootRefFn = (el: Element | ComponentPublicInstance | null) => void;
+  const groupRootRefFnById = new Map<string, GroupRootRefFn>();
+  const groupRootRef = (groupId: PanelGroup['id']): GroupRootRefFn => {
     const key = String(groupId);
-    const maybeEl = (el as any)?.$el instanceof HTMLElement ? (el as any).$el : el;
-    const node = maybeEl instanceof HTMLElement ? maybeEl : null;
-    if (!node) {
-      groupRootElById.delete(key);
-      return;
-    }
-    groupRootElById.set(key, node);
+    const existing = groupRootRefFnById.get(key);
+    if (existing) return existing;
+
+    const fn: GroupRootRefFn = (el) => {
+      const maybeEl = (el as any)?.$el instanceof HTMLElement ? (el as any).$el : el;
+      const node = maybeEl instanceof HTMLElement ? maybeEl : null;
+      if (!node) {
+        groupRootElById.delete(key);
+        return;
+      }
+      groupRootElById.set(key, node);
+    };
+    groupRootRefFnById.set(key, fn);
+    return fn;
   };
 
   const getHeaderOffsetY = (groupId: PanelGroup['id']): number => {
@@ -154,10 +150,79 @@
     return Math.max(0, Math.min(max, Math.floor(raw)));
   };
 
+  // ---------------------------
+  // Layout model updates (drag performance)
+  // ---------------------------
+  const applyLayoutModelUpdate = (nextLayout: GroupLayoutItem[]) => {
+    const currentById = new Map<string, GroupLayoutItem>();
+    layoutModel.value.forEach((it) => currentById.set(String(it.i), it));
+
+    const nextRefs: GroupLayoutItem[] = [];
+    for (const next of nextLayout) {
+      const id = String(next.i);
+      const existing = currentById.get(id);
+      if (existing) {
+        Object.assign(existing, next);
+        nextRefs.push(existing);
+      } else {
+        nextRefs.push({ ...next });
+      }
+    }
+    layoutModel.value = nextRefs;
+  };
+
+  const flushPendingLayoutUpdate = () => {
+    if (layoutUpdateRafId != null) {
+      window.cancelAnimationFrame(layoutUpdateRafId);
+      layoutUpdateRafId = null;
+    }
+    if (!pendingLayoutModel) return;
+    const layout = pendingLayoutModel;
+    pendingLayoutModel = null;
+    applyLayoutModelUpdate(layout);
+  };
+
+  const scheduleLayoutModelUpdate = (nextLayout: GroupLayoutItem[]) => {
+    pendingLayoutModel = nextLayout;
+    if (layoutUpdateRafId != null) return;
+    layoutUpdateRafId = window.requestAnimationFrame(() => {
+      layoutUpdateRafId = null;
+      if (!pendingLayoutModel) return;
+      const layout = pendingLayoutModel;
+      pendingLayoutModel = null;
+      applyLayoutModelUpdate(layout);
+    });
+  };
+
+  const handleLayoutModelUpdate = (nextLayout: GroupLayoutItem[]) => {
+    // vue-grid-layout-v3 在拖拽过程中会高频 emit(update:layout)（每次都会 clone layout）
+    // 直接 v-model 赋值会导致大量新对象/数组分配 & 触发列表高频 patch（拖动卡顿明显）。
+    // 这里改为：按 rAF 合并更新 + in-place 同步（复用 layout item 引用），降低主线程压力。
+    scheduleLayoutModelUpdate(nextLayout);
+  };
+
+  // ---------------------------
+  // Drag & drop
+  // ---------------------------
   const lastDragEndAt = ref(0);
-  const DRAG_CLICK_SUPPRESS_MS = 180;
+  const DRAG_CLICK_SUPPRESS_MS = 100;
 
   const isDragging = ref(false);
+  const gridLayoutRef = ref<any>(null);
+
+  const handleGridDragEvent = (payload: unknown) => {
+    if (!canManageGroups.value) return;
+    if (!Array.isArray(payload) || payload.length === 0) return;
+    const eventName = String(payload[0]);
+    if (eventName === 'dragstart') {
+      isDragging.value = true;
+      return;
+    }
+    if (eventName === 'dragend') {
+      lastDragEndAt.value = Date.now();
+      isDragging.value = false;
+    }
+  };
 
   const openGroup = (groupId: PanelGroup['id']) => {
     if (isBooting.value) return;
@@ -166,20 +231,9 @@
     emit('open-group', { groupId, headerOffsetY: getHeaderOffsetY(groupId) });
   };
 
-  const handleTitleClick = (groupId: PanelGroup['id']) => {
-    openGroup(groupId);
-  };
-
   const handleEditGroup = (group: PanelGroup) => {
     if (!canManageGroups.value) return;
     emit('edit-group', group);
-  };
-
-  const handleCollapsedChange = (groupId: PanelGroup['id'], collapsed: boolean) => {
-    if (isBooting.value) return;
-    // list view 中始终折叠：点击 header 触发 “展开请求” 时打开 focus layer
-    if (collapsed) return;
-    openGroup(groupId);
   };
 
   const handleDeleteGroup = (groupId: PanelGroup['id']) => {
@@ -188,25 +242,36 @@
   };
 
   const handleLayoutUpdated = () => {
-    // 由 moved 事件做最终落盘，这里保留空实现用于未来扩展（例如 debug）
-  };
-
-  const handleGroupMove = () => {
-    if (!canManageGroups.value) return;
-    if (!isDragging.value) isDragging.value = true;
+    // 由 dragend 做最终落盘；这里保留空实现用于未来扩展（例如 debug）
   };
 
   const handleGroupMoved = () => {
     if (!canManageGroups.value) return;
+    flushPendingLayoutUpdate();
     // drag end: commit order to store
     lastDragEndAt.value = Date.now();
     isDragging.value = false;
+    const currentOrder = panelGroups.value.map((g) => String(g.id));
     const nextOrder = [...layoutModel.value]
       .slice()
       .sort((a, b) => a.y - b.y || a.x - b.x)
       .map((it) => it.i);
+    if (nextOrder.join('|') === currentOrder.join('|')) return;
     dashboardStore.reorderPanelGroups(nextOrder);
   };
+
+  onMounted(() => {
+    const emitter = gridLayoutRef.value?.emitter;
+    if (!emitter?.on) return;
+    emitter.on('dragEvent', handleGridDragEvent);
+  });
+
+  onBeforeUnmount(() => {
+    const emitter = gridLayoutRef.value?.emitter;
+    if (emitter?.off) emitter.off('dragEvent', handleGridDragEvent);
+    isDragging.value = false;
+    flushPendingLayoutUpdate();
+  });
 </script>
 
 <style scoped lang="less">
@@ -215,113 +280,6 @@
     flex-direction: column;
     gap: 0;
     padding: 8px 0;
-
-    &.is-dragging {
-      // 拖拽时禁用 hover 视觉反馈（box-shadow/gradient）与操作按钮渐变，减少 repaint
-      :deep(.gf-panel--header-variant-list-row .gf-panel__header) {
-        transition: none !important;
-      }
-
-      :deep(.gf-panel--header-variant-list-row .gf-panel__header:hover) {
-        border-color: var(--gf-color-border) !important;
-        box-shadow: var(--gf-shadow-1) !important;
-        background: linear-gradient(135deg, var(--gf-color-surface) 0%, var(--gf-color-surface-raised) 100%) !important;
-      }
-
-      :deep(.gf-panel:hover) .dp-panel-group-list__actions {
-        opacity: 0 !important;
-        pointer-events: none !important;
-      }
-    }
-
-    &__group {
-      border-radius: var(--gf-radius-lg);
-      // 拖拽时禁用 transition，避免卡顿
-      transition: none;
-      animation: gf-fade-slide-in 0.35s var(--gf-easing) backwards;
-      // 使用 CSS 变量实现 stagger 动画
-      animation-delay: calc(var(--gf-stagger-index, 0) * 30ms);
-    }
-
-    // 手动设置前 15 个的 stagger index
-    &__group:nth-child(1) {
-      --gf-stagger-index: 0;
-    }
-    &__group:nth-child(2) {
-      --gf-stagger-index: 1;
-    }
-    &__group:nth-child(3) {
-      --gf-stagger-index: 2;
-    }
-    &__group:nth-child(4) {
-      --gf-stagger-index: 3;
-    }
-    &__group:nth-child(5) {
-      --gf-stagger-index: 4;
-    }
-    &__group:nth-child(6) {
-      --gf-stagger-index: 5;
-    }
-    &__group:nth-child(7) {
-      --gf-stagger-index: 6;
-    }
-    &__group:nth-child(8) {
-      --gf-stagger-index: 7;
-    }
-    &__group:nth-child(9) {
-      --gf-stagger-index: 8;
-    }
-    &__group:nth-child(10) {
-      --gf-stagger-index: 9;
-    }
-    &__group:nth-child(11) {
-      --gf-stagger-index: 10;
-    }
-    &__group:nth-child(12) {
-      --gf-stagger-index: 11;
-    }
-    &__group:nth-child(13) {
-      --gf-stagger-index: 12;
-    }
-    &__group:nth-child(14) {
-      --gf-stagger-index: 13;
-    }
-    &__group:nth-child(15) {
-      --gf-stagger-index: 14;
-    }
-
-    &__actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity var(--gf-motion-fast) var(--gf-easing);
-    }
-
-    // Show actions on hover
-    :deep(.gf-panel:hover) .dp-panel-group-list__actions {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    &__group.is-focus-source {
-      :deep(.gf-panel__header) {
-        opacity: 0;
-      }
-    }
-
-    &__delete-btn {
-      --gf-btn-color: var(--gf-color-danger);
-      --gf-btn-bg: transparent;
-      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-danger), transparent 90%);
-      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-danger), transparent 85%);
-      --gf-btn-shadow-hover: none;
-
-      &:hover {
-        --gf-btn-color: var(--gf-color-danger-hover);
-      }
-    }
 
     // Grid item styling - 拖拽优化
     :deep(.vue-grid-item) {
@@ -337,7 +295,7 @@
         z-index: 100;
         outline: 2px solid var(--gf-color-primary);
         outline-offset: -1px;
-        border-radius: var(--gf-radius-lg);
+        border-radius: 0;
         opacity: 0.95;
         // 禁用任何 transition
         transition: none !important;
@@ -346,52 +304,6 @@
           transition: none !important;
         }
       }
-    }
-
-    // Panel header styling in list view - 优化视觉效果
-    :deep(.gf-panel--header-variant-list-row) {
-      .gf-panel__header {
-        padding: 0 20px;
-        height: 52px;
-        border-radius: var(--gf-radius-lg);
-        background: linear-gradient(135deg, var(--gf-color-surface) 0%, var(--gf-color-surface-raised) 100%);
-        border: 1px solid var(--gf-color-border);
-        box-shadow: var(--gf-shadow-1);
-        transition:
-          border-color var(--gf-motion-fast) var(--gf-easing),
-          box-shadow var(--gf-motion-fast) var(--gf-easing),
-          background var(--gf-motion-fast) var(--gf-easing);
-
-        &:hover {
-          border-color: var(--gf-color-primary-border);
-          box-shadow: var(--gf-shadow-2);
-          background: linear-gradient(135deg, var(--gf-color-surface-raised) 0%, var(--gf-color-bg-elevated) 100%);
-        }
-      }
-
-      .gf-panel__title {
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--gf-color-text-heading);
-        letter-spacing: 0.01em;
-      }
-
-      .gf-panel__collapse-icon {
-        color: var(--gf-color-primary);
-        transition: transform var(--gf-motion-normal) var(--gf-easing);
-      }
-    }
-  }
-
-  // 入场动画
-  @keyframes gf-fade-slide-in {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
     }
   }
 </style>
