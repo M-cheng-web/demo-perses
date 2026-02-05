@@ -3,7 +3,6 @@
  *
  * Keep this file focused on Vue components only so it can be reused by:
  * - `src/index.ts` (plugin install + full exports)
- * - `src/exports.ts` (tree-shakable subpath exports)
  */
 // 基础组件
 export { default as Button } from './components/base/Button.vue';

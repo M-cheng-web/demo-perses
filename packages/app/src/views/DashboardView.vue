@@ -29,9 +29,13 @@
         <Tag size="small" :color="state.mounted ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
           {{ state.mounted ? '已挂载' : '未挂载' }}
         </Tag>
+        <Tag size="small" :color="state.ready ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
+          {{ state.ready ? 'Ready' : 'Not Ready' }}
+        </Tag>
         <Tag size="small" variant="neutral">Theme: {{ themeModel }}</Tag>
+        <Tag size="small" variant="neutral">Boot: {{ state.bootStage }}</Tag>
+        <Tag size="small" variant="neutral">View: {{ state.viewMode }}</Tag>
         <Tag size="small" variant="neutral">容器: {{ state.containerSize.width }} × {{ state.containerSize.height }}</Tag>
-        <span class="dp-dashboard-view__mono" :title="api.baseUrl">{{ api.baseUrl }}</span>
       </div>
 
       <div v-if="state.dashboard" class="dp-dashboard-view__command-grid">
@@ -41,20 +45,7 @@
             <Button size="small" type="primary" @click="reloadDashboard">重新加载</Button>
             <Button size="small" type="ghost" @click="handleRefresh">刷新时间范围</Button>
             <Button size="small" type="ghost" @click="setQuickRange">最近 5 分钟</Button>
-            <Button size="small" type="ghost" @click="mountDashboard">挂载</Button>
-            <Button size="small" type="ghost" @click="unmountDashboard">卸载</Button>
-          </div>
-        </div>
-
-        <div class="dp-dashboard-view__group">
-          <div class="dp-dashboard-view__group-title">Toolbar</div>
-          <div class="dp-dashboard-view__group-actions">
-            <Button size="small" type="ghost" @click="actions.toolbar.viewJson">查看 JSON</Button>
-            <Button size="small" type="ghost" @click="actions.toolbar.exportJson">导出 JSON</Button>
-            <Button size="small" type="ghost" @click="actions.toolbar.importJson">导入 JSON</Button>
-            <Button size="small" type="ghost" @click="actions.toolbar.refresh">刷新</Button>
-            <Button size="small" type="ghost" @click="() => actions.toolbar.setTimeRangePreset('now-5m')">最近 5 分钟</Button>
-            <Button size="small" type="ghost" @click="actions.toolbar.togglePanelsView">切换视图</Button>
+            <Button size="small" type="ghost" @click="toggleReadOnly">{{ state.readOnly ? '切换为可编辑' : '切换为只读' }}</Button>
           </div>
         </div>
 
@@ -79,7 +70,7 @@
   import { computed, onMounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { Button, List, Modal, Segmented, Tag } from '@grafana-fast/component';
-  import { useDashboardSdk, DashboardApi } from '@grafana-fast/hooks';
+  import { useDashboardSdk } from '@grafana-fast/hooks';
   import type { DashboardTheme } from '@grafana-fast/dashboard';
 
   const router = useRouter();
@@ -88,23 +79,17 @@
 
   const {
     on,
-    getApiConfig,
     getState,
     actions: dashboardActions,
   } = useDashboardSdk(dashboardRef, {
     // 方案A演示：dashboardId（资源标识）可能来自宿主业务接口，因此这里禁用 autoLoad，
     // 等“宿主先拿到 dashboardId”后再显式调用 actions.loadDashboard(dashboardId)。
     autoLoad: false,
-    apiConfig: {
-      baseUrl: 'https://api.example.com',
-      endpoints: {
-        [DashboardApi.ExecuteQueries]: '/custom/execute',
-      },
-    },
+    enableMock: true,
+    defaultApiMode: 'mock',
+    createMockApiClient: async () => (await import('@grafana-fast/api')).createMockApiClient(),
   });
 
-  const api = getApiConfig();
-  const actions = dashboardActions;
   const state = ref(getState());
   on('change', (payload) => {
     state.value = payload.state;
@@ -112,12 +97,15 @@
 
   const debugItems = computed(() => [
     { key: 'size', label: '容器尺寸', value: `${state.value.containerSize.width} × ${state.value.containerSize.height}` },
-    { key: 'baseUrl', label: '当前 BaseUrl', value: api.baseUrl },
-    { key: 'load', label: '加载接口', value: api.endpoints[DashboardApi.LoadDashboard] },
-    { key: 'query', label: '查询接口', value: api.endpoints[DashboardApi.ExecuteQueries] },
     { key: 'mounted', label: '挂载状态', value: state.value.mounted ? '已挂载' : '未挂载' },
     { key: 'ready', label: 'SDK Ready', value: state.value.ready ? '是' : '否' },
+    { key: 'bootStage', label: 'Boot Stage', value: state.value.bootStage },
+    { key: 'viewMode', label: 'View Mode', value: state.value.viewMode },
     { key: 'theme', label: '主题', value: state.value.theme },
+    { key: 'readOnly', label: 'Read Only', value: state.value.readOnly ? 'true' : 'false' },
+    { key: 'variablesRevision', label: 'Variables Rev', value: String(state.value.variablesRevision) },
+    { key: 'dashboardRevision', label: 'Dashboard Rev', value: String(state.value.dashboardRevision) },
+    { key: 'lastError', label: 'Last Error', value: state.value.lastError ?? '-' },
   ]);
 
   const themeOptions = [
@@ -172,8 +160,7 @@
     }
   };
   const handleRefresh = () => dashboardActions.refreshTimeRange();
-  const mountDashboard = () => actions.mountDashboard();
-  const unmountDashboard = () => actions.unmountDashboard();
+  const toggleReadOnly = () => dashboardActions.setReadOnly(!state.value.readOnly);
   const setQuickRange = () =>
     dashboardActions.setTimeRange({
       from: 'now-5m',

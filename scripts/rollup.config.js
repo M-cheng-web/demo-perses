@@ -9,6 +9,16 @@ const entry = path.join(pkgRoot, 'src/index.ts');
 const dist = path.join(pkgRoot, 'dist');
 const pkgName = path.basename(pkgRoot);
 
+const inputByPkg = {
+  api: {
+    index: path.join(pkgRoot, 'src/index.ts'),
+    mock: path.join(pkgRoot, 'src/mock.ts'),
+  },
+};
+
+const input = inputByPkg[pkgName] ?? entry;
+const isMultiEntry = typeof input === 'object';
+
 const externalsByPkg = {
   utils: ['@grafana-fast/types'],
   api: ['@grafana-fast/types', '@grafana-fast/utils'],
@@ -68,11 +78,16 @@ function vueSfcMinimal() {
 
 export default [
   {
-    input: entry,
-    output: [
-      { file: path.join(dist, 'index.mjs'), format: 'es' },
-      { file: path.join(dist, 'index.cjs'), format: 'cjs' },
-    ],
+    input,
+    output: isMultiEntry
+      ? [
+          { dir: dist, format: 'es', entryFileNames: '[name].mjs' },
+          { dir: dist, format: 'cjs', entryFileNames: '[name].cjs' },
+        ]
+      : [
+          { file: path.join(dist, 'index.mjs'), format: 'es' },
+          { file: path.join(dist, 'index.cjs'), format: 'cjs' },
+        ],
     plugins: [
       // 仅在 json-editor 中启用 .vue 编译，避免影响其他纯 TS 包的构建速度/复杂度
       ...(pkgName === 'json-editor' ? [vueSfcMinimal()] : []),
@@ -85,8 +100,8 @@ export default [
     ? []
     : [
         {
-          input: entry,
-          output: { file: path.join(dist, 'index.d.ts'), format: 'es' },
+          input,
+          output: isMultiEntry ? { dir: dist, format: 'es', entryFileNames: '[name].d.ts' } : { file: path.join(dist, 'index.d.ts'), format: 'es' },
           plugins: [dts()],
           external: [...external, /\.css$/, /\.less$/],
         },

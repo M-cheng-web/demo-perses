@@ -1,8 +1,7 @@
-import type { ApiImplementationKind, GrafanaFastApiClient } from '@grafana-fast/api';
-import type { DashboardTheme, DashboardThemePreference, MousePosition } from '@grafana-fast/dashboard';
-import type { DashboardContent, ID, Panel, PanelGroup, PanelLayout, TimeRange, VariablesState } from '@grafana-fast/types';
+import type { GrafanaFastApiClient } from '@grafana-fast/api';
+import type { DashboardTheme, DashboardThemePreference } from '@grafana-fast/dashboard';
+import type { ID, TimeRange } from '@grafana-fast/types';
 import type { Unsubscribe } from '../emitter';
-import type { DashboardApi } from './api';
 
 export interface DashboardSdkOptions {
   /** 指定加载的 dashboard id，默认加载 default */
@@ -19,24 +18,43 @@ export interface DashboardSdkOptions {
   instanceId?: string;
   /** 是否自动加载 dashboard 数据，默认为 true */
   autoLoad?: boolean;
-  /** 自定义 API 根路径（baseUrl）以及接口路径配置 */
-  apiConfig?: DashboardSdkApiConfig;
   /**
-   * 选择 API 的实现方式（实现层），默认使用 `mock`
-   *
-   * 说明：
-   * - 在后端接口未就绪前，默认走 mock 数据，保证前端开发不被阻塞
-   * - `http` 预留入口：即便内部实现不同，调用层的方法名保持稳定
-   */
-  apiKind?: ApiImplementationKind;
-  /**
-   * 直接传入一个完整的 apiClient（优先级高于 apiKind + apiConfig）
+   * 运行时 API client（远程模式）
    *
    * 适用场景：
    * - 宿主应用已自行管理鉴权/请求/环境切换
    * - 需要在运行时切换不同数据源或不同后端实例
+   *
+   * 注意：
+   * - 远程模式下必须提供该字段，否则 load/save/query 会失败
    */
   apiClient?: GrafanaFastApiClient;
+  /**
+   * 是否启用“本地 mock”能力开关（默认 false）
+   *
+   * 说明：
+   * - 仅用于本地开发/演示：在 Dashboard 的“全局设置”里出现 mock/remote 切换
+   * - 生产环境建议关闭（避免误用 mock）
+   */
+  enableMock?: boolean;
+  /**
+   * 创建 mock apiClient 的工厂函数（仅在 enableMock=true 时生效）
+   *
+   * 重要：
+   * - 该函数由宿主提供，SDK/hook 包内部不直接 import mock 实现
+   * - 这样生产构建不会默认把 mock 数据打入 bundle
+   */
+  createMockApiClient?: () => GrafanaFastApiClient | Promise<GrafanaFastApiClient>;
+  /**
+   * 默认使用的 API 模式
+   * - remote：使用 apiClient
+   * - mock：使用 createMockApiClient
+   *
+   * 未提供时的策略：
+   * - 优先 remote（如果 apiClient 存在）
+   * - 否则退化为 mock（如果 enableMock + createMockApiClient 存在）
+   */
+  defaultApiMode?: 'remote' | 'mock';
   /** SDK 准备好后触发 */
   onReady?: () => void;
   /** SDK 释放前触发 */
@@ -107,7 +125,7 @@ export interface DashboardSdkDashboardSummary {
  *
  * 设计目标（强隔离 + 可观测）：
  * - **强隔离**：永远不要返回内部 store/ref/reactive 对象的引用（避免外部直接改内部）
- * - **轻量**：大对象（dashboard JSON）不放在 state 里；通过 `getDashboardSnapshot()` 按需拉取
+ * - **轻量**：state 只包含“稳定 + 高频需要”的字段，不提供 JSON/面板等大对象快照读取
  * - **可观测**：配合 `on('change')` 事件，宿主可建立自己的镜像 state（但镜像仍是宿主侧的数据）
  */
 export interface DashboardSdkStateSnapshot {
@@ -135,7 +153,6 @@ export interface DashboardSdkStateSnapshot {
    *
    * 用途：
    * - 让宿主侧无需 deep-watch variables/options 大对象，就能知道“变量值是否变化”
-   * - 宿主若确需全量变量状态，可在检测到该值变化后再调用 `getVariablesSnapshot()`
    */
   variablesRevision: number;
   /**
@@ -143,21 +160,8 @@ export interface DashboardSdkStateSnapshot {
    *
    * 用途：
    * - 让宿主侧无需 deep-watch 大对象，就能知道 dashboard JSON 是否发生变化
-   * - 宿主若确需全量 JSON，可在检测到该值变化后再调用 `getDashboardSnapshot()`
    */
   dashboardRevision: number;
-}
-
-export interface DashboardSdkApiConfig {
-  /** API 根路径，例如 `/api`，用于拼接 endpoints */
-  baseUrl?: string;
-  /** 自定义 endpoints 覆盖（未提供的项会使用 DEFAULT_DASHBOARD_ENDPOINTS） */
-  endpoints?: Partial<Record<DashboardApi, string>>;
-}
-
-export interface ResolvedDashboardSdkApiConfig {
-  baseUrl: string;
-  endpoints: Record<DashboardApi, string>;
 }
 
 export interface DashboardSdkChangePayload {
@@ -183,46 +187,16 @@ export interface DashboardSdkEventMap {
 export type DashboardSdkEventName = keyof DashboardSdkEventMap;
 
 export interface DashboardSdkActions {
-  /** 手动挂载 Dashboard（一般由 SDK 自动触发；高级用法/调试用途） */
-  mountDashboard: () => void;
-  /** 手动卸载 Dashboard（用于释放资源/重置；高级用法/调试用途） */
-  unmountDashboard: () => void;
   /** 按 dashboardId（资源标识）加载 dashboard 内容（不做历史 schema 迁移，依赖后端/宿主保证结构正确） */
   loadDashboard: (id: ID) => Promise<void>;
   /** 保存当前 dashboard（落库或写回后端/本地实现） */
   saveDashboard: () => Promise<void>;
-  /** 直接替换当前 dashboard（导入/回放/压测） */
-  setDashboard: (dashboard: DashboardContent, options?: { markAsSynced?: boolean }) => void;
-  /** 新增面板组 */
-  addPanelGroup: (group: Partial<PanelGroup>) => unknown;
-  /** 更新面板组（标题/描述/折叠等） */
-  updatePanelGroup: (id: ID, updates: Partial<PanelGroup>) => unknown;
-  /** 删除面板组 */
-  deletePanelGroup: (id: ID) => unknown;
-  /** 更新面板组布局（拖拽/缩放后同步） */
-  updatePanelGroupLayout: (groupId: ID, layout: PanelLayout[]) => unknown;
-  /** 复制面板（用于快速创建相似面板） */
-  duplicatePanel: (groupId: ID, panelId: ID) => unknown;
-  /** 切换面板全屏查看（viewPanel） */
-  togglePanelView: (groupId: ID, panelId: ID) => unknown;
-  /** 通过 id 获取面板组快照（用于只读查询；不会泄漏内部引用） */
-  getPanelGroupById: (id: ID) => PanelGroup | null;
-  /** 通过 groupId + panelId 获取面板快照（用于只读查询；不会泄漏内部引用） */
-  getPanelById: (groupId: ID, panelId: ID) => Panel | null;
   /** 设置时间范围（会触发相关面板刷新） */
   setTimeRange: (range: TimeRange) => unknown;
   /** 设置刷新间隔（ms，0 表示关闭自动刷新） */
   setRefreshInterval: (interval: number) => unknown;
   /** 主动触发一次刷新（按当前 timeRange/变量执行） */
   refreshTimeRange: () => unknown;
-  /** 注册图表到全局 Tooltip（用于跨图表联动/固定 tooltip） */
-  registerChart: (...args: any[]) => unknown;
-  /** 更新已注册图表的信息（容器尺寸、offset 等） */
-  updateChartRegistration: (...args: any[]) => unknown;
-  /** 取消注册图表 */
-  unregisterChart: (...args: any[]) => unknown;
-  /** 手动写入全局鼠标位置（通常由 chart 事件驱动） */
-  setGlobalMousePosition: (pos: MousePosition) => unknown;
   /** 设置主题偏好并应用（light/dark/system） */
   setTheme: (theme: DashboardTheme) => DashboardTheme;
   /** 设置主题偏好（light/dark/system）并持久化 */
@@ -241,34 +215,6 @@ export interface DashboardSdkActions {
   setVariableValues: (values: Record<string, string | string[]>) => void;
   /** 刷新变量 options（query 型变量） */
   refreshVariableOptions: () => void;
-  /** 刷新当前可视区域（viewport + overscan） */
-  refreshVisiblePanels: () => void;
-  /** 清空查询缓存（下次刷新会强制重新拉取） */
-  invalidateQueryCache: () => void;
-
-  /** 打开 Dashboard 右侧“设置/工具栏”侧边栏 */
-  openSettings: () => void;
-  /** 关闭 Dashboard 右侧“设置/工具栏”侧边栏 */
-  closeSettings: () => void;
-  /** 切换 Dashboard 右侧“设置/工具栏”侧边栏 */
-  toggleSettings: () => void;
-  /**
-   * 通过 DashboardToolbar 暴露的 UI API（用于宿主侧“外部控制”）
-   * - 注意：这些操作依赖 Dashboard 组件实例已挂载
-   */
-  toolbar: {
-    openJsonModal: (mode?: 'view' | 'edit') => void;
-    closeJsonModal: () => void;
-    refresh: () => void;
-    save: () => void;
-    togglePanelsView: () => void;
-    addPanelGroup: () => void;
-    exportJson: () => void;
-    importJson: () => void;
-    viewJson: () => void;
-    applyJson: () => void;
-    setTimeRangePreset: (preset: string) => void;
-  };
 }
 
 export interface UseDashboardSdkResult {
@@ -284,16 +230,6 @@ export interface UseDashboardSdkResult {
 
   /** 获取最新的 public state 快照（可被外部安全修改，不会影响内部）。 */
   getState: () => DashboardSdkStateSnapshot;
-  /** 获取当前 dashboard JSON 的深拷贝（可能很大，建议按需调用）。 */
-  getDashboardSnapshot: () => DashboardContent | null;
-  /** 获取当前 variables 运行时状态快照（可被外部安全修改，不会影响内部）。 */
-  getVariablesSnapshot: () => VariablesState;
-  /** 获取指定面板组的深拷贝快照。 */
-  getPanelGroupSnapshot: (id: ID) => PanelGroup | null;
-  /** 获取指定面板的深拷贝快照。 */
-  getPanelSnapshot: (groupId: ID, panelId: ID) => Panel | null;
-  /** 获取解析后的 API 配置（baseUrl + endpoints 完整 URL）。 */
-  getApiConfig: () => ResolvedDashboardSdkApiConfig;
 
   /** 命令式操作集合（宿主修改内部的唯一支持方式）。 */
   actions: DashboardSdkActions;

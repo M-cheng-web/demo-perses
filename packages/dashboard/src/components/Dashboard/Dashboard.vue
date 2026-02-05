@@ -40,10 +40,14 @@
         <DashboardToolbar
           ref="toolbarRef"
           variant="sidebar"
+          :api-mode="props.apiMode"
+          :api-mode-options="props.apiModeOptions"
+          :api-mode-switching="props.apiModeSwitching"
           @create-group="handleCreateGroup"
           @view-json="() => openJsonModal('view')"
           @import-json="handleImportJson"
           @export-json="toolbarApi.exportJson"
+          @api-mode-change="handleApiModeChange"
         />
       </Drawer>
 
@@ -195,7 +199,10 @@
       portalTarget?: string | HTMLElement | null;
       /**
        * 可选：运行时注入的 apiClient（接口契约 + 实现）
-       * 未提供时默认使用 mock 实现
+       *
+       * 说明：
+       * - 推荐由 SDK（useDashboardSdk）通过 piniaAttachments 注入（SSOT）
+       * - 若缺失，load/save/query 等会在运行时抛错（不再默认回退 mock）
        */
       apiClient?: GrafanaFastApiClient;
       /**
@@ -215,12 +222,33 @@
        * @default 200
        */
       panelGroupFocusMotionMs?: number;
+      /**
+       * （可选）当前 API 模式：remote/mock
+       * - 仅用于“本地开发/演示”时在全局设置中切换
+       */
+      apiMode?: 'remote' | 'mock';
+      /**
+       * （可选）API 模式可选项
+       * - 未提供则不展示“数据源模式”卡片
+       */
+      apiModeOptions?: Array<{ label: string; value: 'remote' | 'mock'; disabled?: boolean }>;
+      /** 切换中：用于禁用控件，避免重复触发 */
+      apiModeSwitching?: boolean;
+      /**
+       * （可选）请求切换 API 模式
+       * - 由 SDK/宿主实现（通常会重绑 apiClient 并触发 remount）
+       */
+      onRequestApiModeChange?: (mode: 'remote' | 'mock') => void | Promise<void>;
     }>(),
     {
       theme: 'light',
       portalTarget: null,
       apiClient: undefined,
       panelGroupFocusMotionMs: 200,
+      apiMode: undefined,
+      apiModeOptions: undefined,
+      apiModeSwitching: false,
+      onRequestApiModeChange: undefined,
     }
   );
 
@@ -295,6 +323,24 @@
     apiClient: props.apiClient,
     onHostResize: clampSettingsPosInPlace,
   });
+
+  const handleApiModeChange = (mode: 'remote' | 'mock') => {
+    if (props.apiModeSwitching) return;
+    const handler = props.onRequestApiModeChange;
+    if (!handler) return;
+    try {
+      const ret = handler(mode);
+      if (ret && typeof (ret as any).then === 'function') {
+        void (ret as Promise<void>).catch((error) => {
+          const msg = error instanceof Error ? error.message : '切换数据源模式失败';
+          message.error(msg);
+        });
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '切换数据源模式失败';
+      message.error(msg);
+    }
+  };
 
   // PanelEditorDrawer is heavy (query builder + editor helpers). Load it only after first open.
   const panelEditorDrawerLoaded = ref(false);

@@ -17,6 +17,10 @@
     :api-client="props.apiClient"
     :instance-id="props.instanceId"
     :panel-group-focus-motion-ms="props.panelGroupFocusMotionMs"
+    :api-mode="props.apiMode"
+    :api-mode-options="props.apiModeOptions"
+    :api-mode-switching="props.apiModeSwitching"
+    :on-request-api-mode-change="props.onRequestApiModeChange"
   />
 
   <div v-else class="dp-dashboard-sdk-only">
@@ -47,12 +51,29 @@
       apiClient?: GrafanaFastApiClient;
       instanceId: string;
       panelGroupFocusMotionMs?: number;
+      /**
+       * （可选）API 模式：remote/mock
+       * - 由 SDK/宿主决定是否开启（用于本地开发/演示切换）
+       */
+      apiMode?: 'remote' | 'mock';
+      /**
+       * （可选）API 模式可选项
+       * - 未提供则 Dashboard 的全局设置中不会出现“数据源模式”卡片
+       */
+      apiModeOptions?: Array<{ label: string; value: 'remote' | 'mock'; disabled?: boolean }>;
+      /** 切换中：禁用控件，避免重复触发 */
+      apiModeSwitching?: boolean;
+      /**
+       * （可选）请求切换 API 模式
+       * - 由 SDK/宿主实现（通常会重绑 apiClient 并触发 remount）
+       */
+      onRequestApiModeChange?: (mode: 'remote' | 'mock') => void | Promise<void>;
     }>(),
     {
       theme: 'light',
       portalTarget: null,
-      apiClient: undefined,
       panelGroupFocusMotionMs: 200,
+      apiModeSwitching: false,
     }
   );
 

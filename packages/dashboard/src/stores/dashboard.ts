@@ -3,7 +3,7 @@
  */
 
 import { defineStore } from '@grafana-fast/store';
-import { toRaw } from 'vue';
+import { markRaw, toRaw } from 'vue';
 import type { DashboardContent, DashboardId, PanelGroup, Panel, ID, DashboardVariable, VariableOption } from '@grafana-fast/types';
 import { deepCloneStructured } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
@@ -69,13 +69,20 @@ export const useDashboardStore = defineStore('dashboard', {
      * 获取所有面板组
      */
     panelGroups(): PanelGroup[] {
-      return this.currentDashboard?.panelGroups || [];
+      // currentDashboard 可能被 markRaw（避免大对象深度响应式开销），
+      // 因此这里显式依赖 revision，保证任何内容变更都能触发 UI 更新。
+      void this.dashboardContentRevision;
+      const groups = this.currentDashboard?.panelGroups ?? [];
+      // 返回一个浅拷贝，确保作为 props 传递时能触发子组件更新（避免引用不变导致的 patch 跳过）。
+      return Array.isArray(groups) ? groups.slice() : [];
     },
 
     /**
      * 根据 ID 获取面板组
      */
     getPanelGroupById: (state) => (id: ID) => {
+      // 依赖 revision：确保在 markRaw dashboard 下，深层变更也能驱动响应式更新。
+      void state.dashboardContentRevision;
       return state.currentDashboard?.panelGroups.find((g) => g.id === id);
     },
 
@@ -83,6 +90,8 @@ export const useDashboardStore = defineStore('dashboard', {
      * 根据 ID 获取面板
      */
     getPanelById: (state) => (groupId: ID, panelId: ID) => {
+      // 依赖 revision：确保在 markRaw dashboard 下，深层变更也能驱动响应式更新。
+      void state.dashboardContentRevision;
       const group = state.currentDashboard?.panelGroups.find((g) => g.id === groupId);
       return group?.panels.find((p) => p.id === panelId);
     },
@@ -107,6 +116,8 @@ export const useDashboardStore = defineStore('dashboard', {
      * 是否为“大数据 Dashboard”（用于提示用户耐心等待）
      */
     isLargeDashboard(): boolean {
+      // 依赖 revision：面板/布局变更后，提示信息也能跟随更新。
+      void this.dashboardContentRevision;
       const panels = this.bootStats.panelCount ?? this.currentDashboard?.panelGroups?.reduce((n, g) => n + (g.panels?.length ?? 0), 0) ?? 0;
       const bytes = this.bootStats.jsonBytes ?? 0;
       return panels >= BIG_DASHBOARD_PANEL_THRESHOLD || bytes >= BIG_DASHBOARD_JSON_BYTES_THRESHOLD;
@@ -226,7 +237,8 @@ export const useDashboardStore = defineStore('dashboard', {
       this.cancelPendingSync();
 
       const next = sanitizeDashboardContent(dashboard);
-      this.currentDashboard = next;
+      // 大对象：使用 markRaw 避免深度响应式转换的隐形成本（大盘更明显）
+      this.currentDashboard = markRaw(next);
 
       // 同步运行时 store（timeRange/variables）
       this._syncRuntimeStoresFromDashboard(next);
@@ -250,7 +262,7 @@ export const useDashboardStore = defineStore('dashboard', {
       const markAsSynced = options?.markAsSynced !== false;
       if (markAsSynced) {
         // 注意：syncedDashboard 代表“已确认态”，应使用可持久化快照（保证与运行时一致）
-        this.syncedDashboard = deepCloneStructured(this.getPersistableDashboardSnapshot() ?? next);
+        this.syncedDashboard = markRaw(deepCloneStructured(this.getPersistableDashboardSnapshot() ?? next));
         this.hasUnsyncedChanges = false;
       } else {
         this.hasUnsyncedChanges = true;
@@ -289,7 +301,7 @@ export const useDashboardStore = defineStore('dashboard', {
       }
       // Pinia/Vue state 读取到的是 reactive Proxy；structuredClone 无法克隆 Proxy。
       // 这里先 toRaw 再 clone，避免 DataCloneError。
-      this.syncedDashboard = deepCloneStructured(toRaw(this.currentDashboard));
+      this.syncedDashboard = markRaw(deepCloneStructured(toRaw(this.currentDashboard)));
       this.hasUnsyncedChanges = false;
     },
 
@@ -297,7 +309,7 @@ export const useDashboardStore = defineStore('dashboard', {
       if (!this.syncedDashboard) return;
       // 同上：先 toRaw 再 clone，避免 structuredClone 克隆 Proxy 报错
       const next = deepCloneStructured(toRaw(this.syncedDashboard));
-      this.currentDashboard = next;
+      this.currentDashboard = markRaw(next);
       // 回滚后同步运行时 store，避免 timeRange/variables 仍停留在“回滚前”的值
       this._syncRuntimeStoresFromDashboard(next);
       // 回滚后，清理可能指向“已失效对象”的 UI 状态，避免残留交互异常
@@ -388,7 +400,7 @@ export const useDashboardStore = defineStore('dashboard', {
         // 忽略过期完成：例如请求进行中发生了 load/import/replace，不能用老结果覆盖状态。
         if (this._syncInFlightSeq !== token) return;
 
-        this.syncedDashboard = deepCloneStructured(payload);
+        this.syncedDashboard = markRaw(deepCloneStructured(payload));
         this.hasUnsyncedChanges = false;
       } catch (error) {
         if (this._syncInFlightSeq !== token) return;
@@ -471,7 +483,7 @@ export const useDashboardStore = defineStore('dashboard', {
         // 按当前策略：不做历史 schema 兼容/迁移；API 返回什么就用什么（外部应保证是当前结构）。
         // 大 JSON 下用 structuredClone 降低 stringify/parse 的主线程压力。
         const next = sanitizeDashboardContent(dashboard);
-        this.currentDashboard = next;
+        this.currentDashboard = markRaw(next);
         this._syncRuntimeStoresFromDashboard(next);
         this.markSyncedFromCurrent();
         this._bumpDashboardContentRevision();
@@ -508,7 +520,7 @@ export const useDashboardStore = defineStore('dashboard', {
         this.bootStats.panelCount = panelCount;
 
         const next = sanitizeDashboardContent(dashboard);
-        this.currentDashboard = next;
+        this.currentDashboard = markRaw(next);
         this._syncRuntimeStoresFromDashboard(next);
         // Import/apply 属于“用户主动修改”：但此时还未被远端确认，不能直接覆盖 syncedDashboard，
         // 否则后续保存失败将无法回滚到远端快照。
@@ -517,7 +529,7 @@ export const useDashboardStore = defineStore('dashboard', {
         // - 若已存在 syncedDashboard（通常来自 loadDashboard）：保持不变，等待 save/sync 成功后再更新
         // - 若不存在 syncedDashboard：退化为“以当前为已确认态”，避免后续回滚无源
         if (!this.syncedDashboard) {
-          this.syncedDashboard = deepCloneStructured(next);
+          this.syncedDashboard = markRaw(deepCloneStructured(next));
           this.hasUnsyncedChanges = false;
         } else {
           this.hasUnsyncedChanges = true;

@@ -12,11 +12,6 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
-    "./exports": {
-      "types": "./dist/exports.d.ts",
-      "import": "./dist/exports.mjs",
-      "require": "./dist/exports.cjs"
-    },
     "./styles": {
       "types": "./dist/styles.d.ts",
       "import": "./dist/styles.mjs",

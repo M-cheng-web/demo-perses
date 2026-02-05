@@ -8,28 +8,25 @@
  * 说明：
  * - 这是对外导出的核心 API 文件之一，因此注释会相对更完整
  */
-import { createApp, defineComponent, h, onMounted, onUnmounted, ref, toRaw, watch, type App, type Ref } from 'vue';
+import { computed, createApp, defineComponent, h, onMounted, onUnmounted, ref, toRaw, watch, type App, type Ref } from 'vue';
 import { createPinia } from '@grafana-fast/store';
-import type { DashboardContent, ID, Panel, PanelGroup, PanelLayout, TimeRange, VariablesState } from '@grafana-fast/types';
+import type { ID, TimeRange } from '@grafana-fast/types';
 import {
   DashboardView,
   disposePiniaQueryScheduler,
-  getPiniaQueryScheduler,
   getStoredThemePreference,
   setDashboardThemePreference,
   setPiniaApiClient,
   useDashboardStore,
   useTimeRangeStore,
-  useTooltipStore,
   useVariablesStore,
   type DashboardTheme,
   type DashboardThemePreference,
 } from '@grafana-fast/dashboard';
-import { createHttpApiClient, createMockApiClient, type GrafanaFastApiClient } from '@grafana-fast/api';
+import type { GrafanaFastApiClient } from '@grafana-fast/api';
 import { createPrefixedId, deepCloneStructured } from '@grafana-fast/utils';
 
 import { createEmitter } from './emitter';
-import { resolveDashboardSdkApiConfig } from './sdk/apiConfig';
 import { computeDashboardSdkChangedKeys } from './sdk/state';
 import type {
   DashboardSdkActions,
@@ -45,7 +42,6 @@ import type {
 export { DashboardApi, DEFAULT_DASHBOARD_ENDPOINTS } from './sdk/api';
 export type {
   DashboardSdkActions,
-  DashboardSdkApiConfig,
   DashboardSdkBootStage,
   DashboardSdkChangePayload,
   DashboardSdkDashboardSummary,
@@ -54,7 +50,6 @@ export type {
   DashboardSdkOptions,
   DashboardSdkStateSnapshot,
   DashboardSdkViewMode,
-  ResolvedDashboardSdkApiConfig,
   UseDashboardSdkResult,
 } from './sdk/types';
 
@@ -79,16 +74,63 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     options.onError?.(error);
   };
 
-  // 解析 apiClient：默认使用 mock（后端接口未就绪时不阻塞前端）
-  const resolvedApiClient: GrafanaFastApiClient =
-    options.apiClient ?? (options.apiKind === 'http' ? createHttpApiClient({ apiConfig: options.apiConfig }) : createMockApiClient());
+  // ---------------------------
+  // API client（remote/mock 切换）
+  // ---------------------------
+  const remoteApiClient = options.apiClient;
+  const isMockEnabled = options.enableMock === true && typeof options.createMockApiClient === 'function';
+  const apiSwitching = ref(false);
+  const apiMode = ref<'remote' | 'mock'>(
+    (() => {
+      const preferred = options.defaultApiMode;
+      if (preferred === 'mock') return isMockEnabled ? 'mock' : remoteApiClient ? 'remote' : 'remote';
+      if (preferred === 'remote') return remoteApiClient ? 'remote' : isMockEnabled ? 'mock' : 'remote';
+      // Default strategy: remote first, then mock.
+      return remoteApiClient ? 'remote' : isMockEnabled ? 'mock' : 'remote';
+    })()
+  );
 
-  // 把 runtime 依赖挂到 pinia 实例上，让 dashboard 内部 store 可以在“无全局单例”的情况下获取到 apiClient
-  setPiniaApiClient(pinia, resolvedApiClient);
+  let mockApiClientCache: GrafanaFastApiClient | null = null;
+  const activeApiClient = ref<GrafanaFastApiClient | undefined>(remoteApiClient);
+
+  const resolveApiClientForMode = async (mode: 'remote' | 'mock'): Promise<GrafanaFastApiClient> => {
+    if (mode === 'remote') {
+      if (!remoteApiClient) {
+        throw new Error('[grafana-fast] Remote mode requires `apiClient`.');
+      }
+      return remoteApiClient;
+    }
+    if (!isMockEnabled || !options.createMockApiClient) {
+      throw new Error('[grafana-fast] Mock mode is disabled. Set `enableMock=true` and provide `createMockApiClient()`.');
+    }
+    if (mockApiClientCache) return mockApiClientCache;
+    mockApiClientCache = await options.createMockApiClient();
+    return mockApiClientCache;
+  };
+
+  const applyApiMode = async (mode: 'remote' | 'mock', opts: { remount?: boolean } = {}) => {
+    const client = await resolveApiClientForMode(mode);
+    activeApiClient.value = client;
+    apiMode.value = mode;
+    // Attach runtime deps to pinia so dashboard stores/scheduler can access it.
+    setPiniaApiClient(pinia, client);
+
+    if (opts.remount !== false) {
+      try {
+        disposePiniaQueryScheduler(pinia);
+      } catch {
+        // ignore
+      }
+      if (isDashboardMounted.value) {
+        unmountDashboard();
+        mountDashboard();
+      }
+    }
+    scheduleChange();
+  };
 
   const dashboardStore = useDashboardStore(pinia);
   const timeRangeStore = useTimeRangeStore(pinia);
-  const tooltipStore = useTooltipStore(pinia);
   const variablesStore = useVariablesStore(pinia);
 
   const containerSize = ref({ width: 0, height: 0 });
@@ -98,14 +140,12 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const theme = ref<DashboardTheme>('light');
   const themePersist = options.persistThemePreference === true;
   const themeApplyToDocument = options.applyThemeToDocument === true;
-  const instanceId = options.instanceId ?? `sdk-${resolvedApiClient.kind}-${createPrefixedId('dash')}`;
+  const instanceId = options.instanceId ?? `sdk-${createPrefixedId('dash')}`;
   const dashboardViewRef = ref<any>(null);
   const isDashboardMounted = ref(false);
 
   // 在首次渲染前应用 readOnly（仅写入 store；不走 props-driven 同步）。
   dashboardStore.setReadOnly(options.readOnly === true);
-
-  const resolvedApiConfig = resolveDashboardSdkApiConfig(options.apiConfig);
 
   const getDashboardSummary = (): DashboardSdkDashboardSummary | null => {
     const dash = dashboardStore.currentDashboard;
@@ -153,32 +193,6 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     };
   };
 
-  const getDashboardSnapshot = (): DashboardContent | null => {
-    const snap = dashboardStore.getPersistableDashboardSnapshot?.() ?? dashboardStore.currentDashboard;
-    if (!snap) return null;
-    return deepCloneStructured(toRaw(snap));
-  };
-
-  const getVariablesSnapshot = (): VariablesState => {
-    try {
-      return deepCloneStructured(toRaw(variablesStore.state)) as VariablesState;
-    } catch {
-      return { values: {}, options: {}, lastUpdatedAt: Date.now() };
-    }
-  };
-
-  const getPanelGroupSnapshot = (id: ID): PanelGroup | null => {
-    const group = dashboardStore.getPanelGroupById(id) as PanelGroup | undefined;
-    if (!group) return null;
-    return deepCloneStructured(toRaw(group));
-  };
-
-  const getPanelSnapshot = (groupId: ID, panelId: ID): Panel | null => {
-    const panel = dashboardStore.getPanelById(groupId, panelId) as Panel | undefined;
-    if (!panel) return null;
-    return deepCloneStructured(toRaw(panel));
-  };
-
   let changeEmitQueued = false;
   let lastEmittedState: DashboardSdkStateSnapshot | null = null;
 
@@ -202,6 +216,28 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     });
   };
 
+  const apiModeOptions = computed(() => {
+    if (options.enableMock !== true) return undefined;
+    return [
+      { label: '远程', value: 'remote', disabled: !remoteApiClient },
+      { label: '本地 Mock', value: 'mock', disabled: !isMockEnabled },
+    ] as Array<{ label: string; value: 'remote' | 'mock'; disabled?: boolean }>;
+  });
+
+  const requestApiModeChange = async (mode: 'remote' | 'mock') => {
+    if (mode === apiMode.value) return;
+    if (apiSwitching.value) return;
+    apiSwitching.value = true;
+    try {
+      await applyApiMode(mode);
+    } catch (error) {
+      emitError(error);
+      throw error;
+    } finally {
+      apiSwitching.value = false;
+    }
+  };
+
   const DashboardSdkRoot = defineComponent({
     name: 'DashboardSdkRoot',
     setup() {
@@ -210,8 +246,12 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
           ref: dashboardViewRef,
           theme: theme.value,
           portalTarget: options.portalTarget ?? null,
-          apiClient: resolvedApiClient,
+          apiClient: activeApiClient.value,
           instanceId,
+          apiMode: apiMode.value,
+          apiModeOptions: apiModeOptions.value,
+          apiModeSwitching: apiSwitching.value,
+          onRequestApiModeChange: requestApiModeChange,
         });
     },
   });
@@ -285,6 +325,18 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       // 默认不修改宿主 document；如需全站主题接管，可通过 applyThemeToDocument 开启
       theme.value = setDashboardThemePreference(themePreference.value, { persist: themePersist, apply: themeApplyToDocument });
 
+      // Ensure the initial apiClient is attached to pinia before mounting/auto-load.
+      if (remoteApiClient || isMockEnabled) {
+        apiSwitching.value = true;
+        try {
+          await applyApiMode(apiMode.value, { remount: false });
+        } catch (error) {
+          emitError(error);
+        } finally {
+          apiSwitching.value = false;
+        }
+      }
+
       mountDashboard();
       if (options.autoLoad !== false && !dashboardStore.currentDashboard) {
         await dashboardStore.loadDashboard(options.dashboardId ?? 'default');
@@ -345,8 +397,6 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   );
 
   const actions: DashboardSdkActions = {
-    mountDashboard: () => mountDashboard(),
-    unmountDashboard: () => unmountDashboard(),
     // Dashboard 数据加载/保存
     loadDashboard: async (id: ID) => {
       try {
@@ -366,48 +416,10 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
         throw error;
       }
     },
-    setDashboard: (dashboard: DashboardContent, opts?: { markAsSynced?: boolean }) => {
-      const next = deepCloneStructured(dashboard);
-
-      // 优先使用 store 提供的 replaceDashboard：把一致性约束收敛在 store 层（更可靠）。
-      const replace = (dashboardStore as any).replaceDashboard as undefined | ((d: DashboardContent, o?: any) => void);
-      if (typeof replace === 'function') {
-        replace(next, { markAsSynced: opts?.markAsSynced !== false });
-      } else {
-        // 兜底：兼容旧版本 store（尽力重置关键 UI 状态）。
-        (dashboardStore as any).cancelPendingSync?.();
-        dashboardStore.currentDashboard = next;
-        (dashboardStore as any).editingGroupId = null;
-        (dashboardStore as any).viewPanelId = null;
-        dashboardStore.viewMode = 'grouped' as any;
-        if (opts?.markAsSynced !== false) {
-          (dashboardStore as any).markSyncedFromCurrent?.();
-        } else {
-          dashboardStore.hasUnsyncedChanges = true;
-        }
-      }
-
-      scheduleChange();
-    },
-    // 面板组管理
-    addPanelGroup: (group: Partial<PanelGroup>) => dashboardStore.addPanelGroup(group),
-    updatePanelGroup: (id: ID, updates: Partial<PanelGroup>) => dashboardStore.updatePanelGroup(id, updates),
-    deletePanelGroup: (id: ID) => dashboardStore.deletePanelGroup(id),
-    updatePanelGroupLayout: (groupId: ID, layout: PanelLayout[]) => dashboardStore.updatePanelGroupLayout(groupId, layout),
-    // 面板管理
-    duplicatePanel: (groupId: ID, panelId: ID) => dashboardStore.duplicatePanel(groupId, panelId),
-    togglePanelView: (groupId: ID, panelId: ID) => dashboardStore.togglePanelView(groupId, panelId),
-    getPanelGroupById: (id: ID) => getPanelGroupSnapshot(id),
-    getPanelById: (groupId: ID, panelId: ID) => getPanelSnapshot(groupId, panelId),
     // 时间范围
     setTimeRange: (range: TimeRange) => timeRangeStore.setTimeRange(deepCloneStructured(range)),
     setRefreshInterval: (interval: number) => timeRangeStore.setRefreshInterval(interval),
     refreshTimeRange: () => timeRangeStore.refresh(),
-    // Tooltip 联动
-    registerChart: tooltipStore.registerChart,
-    updateChartRegistration: tooltipStore.updateChartRegistration,
-    unregisterChart: tooltipStore.unregisterChart,
-    setGlobalMousePosition: tooltipStore.updateGlobalMousePosition,
 
     getTheme: () => theme.value,
     setTheme: (next: DashboardTheme) => {
@@ -458,51 +470,12 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
         emitError(error);
       }
     },
-
-    refreshVisiblePanels: () => {
-      try {
-        const scheduler = getPiniaQueryScheduler(pinia) as any;
-        scheduler?.refreshVisible?.();
-      } catch (error) {
-        emitError(error);
-      }
-    },
-    invalidateQueryCache: () => {
-      try {
-        const scheduler = getPiniaQueryScheduler(pinia) as any;
-        scheduler?.invalidateAll?.();
-      } catch (error) {
-        emitError(error);
-      }
-    },
-
-    openSettings: () => dashboardViewRef.value?.openSettings?.(),
-    closeSettings: () => dashboardViewRef.value?.closeSettings?.(),
-    toggleSettings: () => dashboardViewRef.value?.toggleSettings?.(),
-    toolbar: {
-      openJsonModal: (mode: 'view' | 'edit' = 'view') => dashboardViewRef.value?.toolbar?.openJsonModal?.(mode),
-      closeJsonModal: () => dashboardViewRef.value?.toolbar?.closeJsonModal?.(),
-      refresh: () => dashboardViewRef.value?.toolbar?.refresh?.(),
-      save: () => dashboardViewRef.value?.toolbar?.save?.(),
-      togglePanelsView: () => dashboardViewRef.value?.toolbar?.togglePanelsView?.(),
-      addPanelGroup: () => dashboardViewRef.value?.toolbar?.addPanelGroup?.(),
-      exportJson: () => dashboardViewRef.value?.toolbar?.exportJson?.(),
-      importJson: () => dashboardViewRef.value?.toolbar?.importJson?.(),
-      viewJson: () => dashboardViewRef.value?.toolbar?.viewJson?.(),
-      applyJson: () => dashboardViewRef.value?.toolbar?.applyJson?.(),
-      setTimeRangePreset: (preset: string) => dashboardViewRef.value?.toolbar?.setTimeRangePreset?.(preset),
-    },
   };
 
   return {
     on: emitter.on,
     off: emitter.off,
     getState,
-    getDashboardSnapshot,
-    getVariablesSnapshot,
-    getPanelGroupSnapshot,
-    getPanelSnapshot,
-    getApiConfig: () => deepCloneStructured(resolvedApiConfig),
     actions,
   };
 }

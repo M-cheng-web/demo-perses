@@ -44,7 +44,6 @@
 ## 返回值
 
 - `getState()`：获取当前**轻量快照**（不会泄漏内部引用，外部修改不会影响内部）。
-- `getDashboardSnapshot()`：获取当前 dashboard JSON 的**深拷贝**（可能较大，按需调用）。
 - `on/off`：事件总线订阅（例如 `change` / `error`）。
 - `getApiConfig()`：获取解析后的 API 配置（baseUrl + endpoints 完整 URL）。
 - `actions`：封装的命令式操作集合（加载/保存、增删改面板组、时间范围、主题、只读开关等）。

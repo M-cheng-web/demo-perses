@@ -1,9 +1,8 @@
 import { computed, inject, onMounted, onUnmounted, provide, ref, watch, type ComputedRef, type Ref } from 'vue';
 import { getActivePinia, type Pinia } from '@grafana-fast/store';
 import type { GrafanaFastApiClient } from '@grafana-fast/api';
-import { createMockApiClient } from '@grafana-fast/api';
 
-import { GF_API_KEY, GF_RUNTIME_KEY } from '/#/runtime/keys';
+import { GF_RUNTIME_KEY } from '/#/runtime/keys';
 import { setPiniaApiClient } from '/#/runtime/piniaAttachments';
 import { subscribeWindowResize } from '/#/runtime/windowEvents';
 
@@ -21,22 +20,23 @@ interface Options {
 }
 
 export function useDashboardRuntimeBindings(options: Options) {
-  const apiClient = computed(() => options.apiClient ?? createMockApiClient());
-
   // Provide “runtime deps” (isolated per dashboard instance).
-  provide(GF_API_KEY, apiClient.value);
   provide(GF_RUNTIME_KEY, { id: options.instanceId.value, rootEl: options.rootEl, scrollEl: options.scrollEl });
 
   // NOTE: inject() must be called during setup (not inside onMounted).
   const injectedPinia = inject<Pinia | undefined>('pinia', undefined);
 
-  // Attach apiClient to pinia so stores (non-component modules) can access the per-instance runtime deps.
-  onMounted(() => {
-    const active = injectedPinia ?? getActivePinia();
-    if (active) {
-      setPiniaApiClient(active, apiClient.value);
-    }
-  });
+  // Attach apiClient to pinia so stores (non-component modules) can access per-instance runtime deps.
+  // Important: do this during setup/watch (not onMounted) so QueryScheduler can safely access it in setup.
+  const activePinia = injectedPinia ?? getActivePinia();
+  watch(
+    () => options.apiClient,
+    (client) => {
+      if (!activePinia || !client) return;
+      setPiniaApiClient(activePinia, client);
+    },
+    { immediate: true }
+  );
 
   // ---------------------------
   // Host container height sync
@@ -142,7 +142,6 @@ export function useDashboardRuntimeBindings(options: Options) {
   );
 
   return {
-    apiClient,
     rootStyle,
   };
 }

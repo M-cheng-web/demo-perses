@@ -14,7 +14,7 @@
  * - getActivePinia 已做“组件内优先 injected pinia”的改造，避免串实例
  */
 import { getActivePinia, type Pinia } from '@grafana-fast/store';
-import { createMockApiClient, type GrafanaFastApiClient } from '@grafana-fast/api';
+import type { GrafanaFastApiClient } from '@grafana-fast/api';
 import { effectScope, type EffectScope } from 'vue';
 import { createQueryScheduler } from '/#/query/queryScheduler';
 
@@ -30,16 +30,17 @@ export function setPiniaApiClient(pinia: Pinia, api: GrafanaFastApiClient) {
 }
 
 /**
- * 获取 pinia 上绑定的 apiClient（若不存在则回退到 mock）
+ * 获取 pinia 上绑定的 apiClient
  *
  * 注意：
- * - 这个方法是“运行时兜底”，避免调用方因依赖缺失而直接崩溃
- * - 对多实例页面，推荐显式传入 pinia 或确保组件树正确注入 pinia
+ * - 为了避免生产构建把 mock 实现/数据打进包里，这里不再提供默认 mock 兜底
+ * - 宿主必须显式注入 apiClient（通过 useDashboardSdk({ apiClient }) 或 setPiniaApiClient(pinia, apiClient)）
  */
 export function getPiniaApiClient(pinia?: Pinia): GrafanaFastApiClient {
   const p = pinia ?? (getActivePinia() as any as Pinia | undefined);
   const api = p ? ((p as any)[API_FIELD] as GrafanaFastApiClient | undefined) : undefined;
-  return api ?? createMockApiClient();
+  if (api) return api;
+  throw new Error('[grafana-fast] Missing apiClient. Provide it via useDashboardSdk({ apiClient }) or setPiniaApiClient(pinia, apiClient).');
 }
 
 /**
@@ -52,8 +53,7 @@ export function getPiniaApiClient(pinia?: Pinia): GrafanaFastApiClient {
 export function getPiniaQueryScheduler(pinia?: Pinia) {
   const p = pinia ?? (getActivePinia() as any as Pinia | undefined);
   if (!p) {
-    // Fallback: create an unscoped scheduler. Prefer passing pinia.
-    return createQueryScheduler(undefined as any);
+    throw new Error('[grafana-fast] Missing pinia instance. Ensure Dashboard is mounted via useDashboardSdk() or pass pinia explicitly.');
   }
 
   const existing = (p as any)[QUERY_SCHEDULER_FIELD] as ReturnType<typeof createQueryScheduler> | undefined;

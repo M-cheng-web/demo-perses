@@ -27,13 +27,13 @@ const sdk = useDashboardSdk(dashboardRef, {
   // apiClient / theme / readOnly 等…
 });
 
-sdk.actions.toolbar.viewJson();
+sdk.actions.setReadOnly(true);
 ```
 
 优点：
 
 - 自动处理 pinia 隔离、多实例销毁清理
-- 对外提供“命令式 actions + 事件订阅 on/off + getState/getDashboardSnapshot 快照读取”的稳定 API 面
+- 对外提供“命令式 actions + 事件订阅 on/off + getState 快照读取”的稳定 API 面
 
 说明：
 

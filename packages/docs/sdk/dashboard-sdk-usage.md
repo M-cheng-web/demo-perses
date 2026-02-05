@@ -54,23 +54,17 @@ actions.setReadOnly(true);
 
 ---
 
-## 状态读取：`getState()` vs `getDashboardSnapshot()`
+## 状态读取：只保留 `getState()`
 
-SDK 提供两类读取方式：
+SDK 只提供一类读取方式：
 
 - `getState()`：轻量状态快照（适合频繁读取/渲染 UI）
   - 包含容器尺寸、主题、只读开关、viewMode、timeRange、加载/保存状态等
   - `state.dashboard` 只提供摘要（id/name/groupCount/panelCount）
     - 其中 `id` 指的是 `dashboardId`（资源标识），不是 Dashboard JSON 的字段
-  - 通过 `state.dashboardRevision` 反映 dashboard JSON 是否发生变化（单调递增）
-- `getDashboardSnapshot()`：深拷贝后的 dashboard JSON（可能很大，**不要在每次 change 都调用**）
-  - 返回的是 `DashboardContent`（纯内容），不包含 `dashboardId`
+  - 通过 `state.dashboardRevision` 反映 dashboard 内容是否发生变化（单调递增）
 
-推荐策略：
-
-- 平时 UI 只用 `getState()`（或 `change.payload.state`）。
-- 当你确实需要 dashboard 全量 JSON 时：
-  - 只在 `payload.dashboardChanged === true` 或 `payload.changedKeys` 包含 `dashboardRevision` 时，再调用 `getDashboardSnapshot()`。
+如果宿主需要“全量 dashboard JSON”，建议由宿主自己管理（通常本来就来自你的后端/业务缓存），或在宿主侧包装 `apiClient.dashboard.load/save` 来缓存你需要的内容。
 
 ---
 
@@ -109,7 +103,7 @@ on('change', ({ changedKeys, state }) => {
     // 处理时间范围变化
   }
   if (changedKeys.includes('dashboardRevision')) {
-    // dashboard JSON 变化：如确需全量，再去拉 getDashboardSnapshot()
+    // dashboard 内容变化：如宿主需要全量 JSON，可从自己的数据源/缓存重新获取
   }
 });
 ```

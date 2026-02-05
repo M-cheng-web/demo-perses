@@ -22,7 +22,6 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolveFromRoot('src/index.ts'),
-        exports: resolveFromRoot('src/exports.ts'),
         styles: resolveFromRoot('src/styles.ts'),
       },
       name: 'GrafanaFastUI',
@@ -35,6 +34,9 @@ export default defineConfig({
     rollupOptions: {
       external: ['vue', '@ant-design/icons-vue', '@grafana-fast/utils'],
       output: {
+        // `src/index.ts` exports both named + default (Vue plugin object).
+        // Make CJS export mode explicit to avoid rollup interop warnings.
+        exports: 'named',
         globals: {
           vue: 'Vue',
         },

@@ -32,8 +32,21 @@
   const dashboardRef = ref<HTMLElement | null>(null);
   const panelCount = ref(100);
 
+  let panelCountForApi = panelCount.value;
   const { actions } = useDashboardSdk(dashboardRef, {
-    dashboardId: 'default',
+    dashboardId: 'perf',
+    enableMock: true,
+    defaultApiMode: 'mock',
+    createMockApiClient: async () => {
+      const { createMockApiClient } = await import('@grafana-fast/api');
+      const api = createMockApiClient();
+      const originalLoad = api.dashboard.loadDashboard.bind(api.dashboard);
+      api.dashboard.loadDashboard = async (id) => {
+        if (String(id) === 'perf') return generateDashboard(panelCountForApi);
+        return originalLoad(id);
+      };
+      return api;
+    },
   });
 
   const generateDashboard = (count: number): DashboardContent => {
@@ -85,7 +98,8 @@
   };
 
   const apply = () => {
-    actions.setDashboard(generateDashboard(panelCount.value));
+    panelCountForApi = panelCount.value;
+    void actions.loadDashboard('perf');
   };
 
   const goHome = () => router.push('/home');

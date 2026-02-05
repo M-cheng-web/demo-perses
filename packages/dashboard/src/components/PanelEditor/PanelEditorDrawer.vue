@@ -144,7 +144,7 @@
   const editorStore = useEditorStore();
 
   const { isDrawerOpen, editingPanel, editingMode, targetGroupId, originalPanelId } = storeToRefs(editorStore);
-  const { currentDashboard, isReadOnly } = storeToRefs(dashboardStore);
+  const { panelGroups, isReadOnly } = storeToRefs(dashboardStore);
 
   const runtime = useDashboardRuntime();
   const lockScrollEl = computed(() => runtime.scrollEl?.value ?? runtime.rootEl?.value ?? null);
@@ -164,8 +164,7 @@
 
   // 获取面板组列表
   const panelGroupOptions = computed(() => {
-    const groups = currentDashboard.value?.panelGroups ?? [];
-    return groups.map((group) => ({
+    return (panelGroups.value ?? []).map((group) => ({
       label: group.title,
       value: group.id,
     }));

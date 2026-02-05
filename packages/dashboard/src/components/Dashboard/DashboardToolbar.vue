@@ -11,6 +11,17 @@
   <div :class="[bem(), bem({ sidebar: variant === 'sidebar' })]">
     <template v-if="variant === 'sidebar'">
       <div :class="bem('sidebar')">
+        <Card v-if="props.apiModeOptions?.length" size="small" title="数据源模式" :class="bem('card')">
+          <div :class="bem('hint')">更改将在点击底部“确定”后生效；远程模式需要宿主提供 apiClient。</div>
+          <Segmented
+            v-model:value="draftApiMode"
+            block
+            size="small"
+            :options="props.apiModeOptions"
+            :disabled="isBooting || props.apiModeSwitching"
+          />
+        </Card>
+
         <Card size="small" title="操作" :class="bem('card')">
           <Flex gap="8" wrap>
             <Button size="small" type="ghost" :disabled="isBooting || isReadOnly" @click="handleCreateGroup">创建面板组</Button>
@@ -143,8 +154,20 @@
     defineProps<{
       /** 展示形态：header=原头部样式；sidebar=侧边栏样式 */
       variant?: 'header' | 'sidebar';
+      /**
+       * （可选）当前 API 模式：remote/mock
+       * - 仅用于“本地开发/演示”时在全局设置中切换
+       */
+      apiMode?: 'remote' | 'mock';
+      /**
+       * （可选）API 模式可选项
+       * - 未提供则不展示“数据源模式”卡片
+       */
+      apiModeOptions?: Array<{ label: string; value: 'remote' | 'mock'; disabled?: boolean }>;
+      /** 切换中：用于禁用控件，避免重复触发 */
+      apiModeSwitching?: boolean;
     }>(),
-    { variant: 'header' }
+    { variant: 'header', apiMode: undefined, apiModeOptions: undefined, apiModeSwitching: false }
   );
 
   const emit = defineEmits<{
@@ -152,6 +175,7 @@
     (e: 'view-json'): void;
     (e: 'import-json'): void;
     (e: 'export-json'): void;
+    (e: 'api-mode-change', mode: 'remote' | 'mock'): void;
   }>();
 
   const variant = computed(() => props.variant ?? 'header');
@@ -188,6 +212,7 @@
   const draftViewMode = ref<'grouped' | 'allPanels'>('grouped');
   const draftTimeRange = ref('now-1h');
   const draftRefreshInterval = ref<number>(0);
+  const draftApiMode = ref<'remote' | 'mock'>('remote');
 
   const isAllPanelsViewDraft = computed(() => draftViewMode.value === 'allPanels');
 
@@ -211,6 +236,7 @@
     draftViewMode.value = isAllPanelsView.value ? 'allPanels' : 'grouped';
     draftTimeRange.value = selectedTimeRange.value || 'now-1h';
     draftRefreshInterval.value = normalizeNonNegativeInt(refreshInterval.value, 0);
+    draftApiMode.value = props.apiMode ?? draftApiMode.value;
 
     const next: Record<string, string | string[]> = {};
     const values = (variablesStore.state?.values ?? {}) as Record<string, unknown>;
@@ -325,6 +351,9 @@
 
   const applySidebarDraft = () => {
     if (isBooting.value) return;
+    if (props.apiModeOptions?.length && draftApiMode.value !== (props.apiMode ?? draftApiMode.value)) {
+      emit('api-mode-change', draftApiMode.value);
+    }
     dashboardStore.setViewMode(draftViewMode.value === 'allPanels' ? 'allPanels' : 'grouped');
     timeRangeStore.setTimeRange({ from: draftTimeRange.value, to: 'now' });
     timeRangeStore.setRefreshInterval(normalizeNonNegativeInt(draftRefreshInterval.value, 0));
