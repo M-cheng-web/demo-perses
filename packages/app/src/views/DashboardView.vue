@@ -305,7 +305,9 @@
     }
 
     &__canvas {
-      flex: 1;
+      // 固定测试台主画布高度：避免 dashboard 加载完成后 header 变高导致 canvas 被压缩（布局跳动）
+      flex: 0 0 auto;
+      height: clamp(520px, 72vh, 940px);
       min-height: 480px;
       border-radius: var(--gf-radius-lg);
       background: var(--gf-color-surface-muted);

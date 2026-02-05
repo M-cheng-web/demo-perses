@@ -184,6 +184,7 @@
 </script>
 
 <style scoped lang="less">
+  // Ant Design 5.x inspired Modal styles
   .gf-modal__root {
     position: fixed;
     inset: 0;
@@ -217,19 +218,20 @@
 
   .gf-modal__content {
     position: relative;
-    background: var(--gf-color-surface);
+    background: var(--gf-color-bg-elevated);
     border-radius: var(--gf-radius-lg);
-    box-shadow: var(--gf-shadow-2);
+    box-shadow: var(--gf-shadow-3);
     max-width: calc(100vw - 32px);
     max-height: calc(100vh - 48px);
     display: flex;
     flex-direction: column;
+    pointer-events: auto;
   }
 
   .gf-modal__close {
     position: absolute;
-    top: 17px;
-    right: 17px;
+    top: 16px;
+    right: 16px;
     z-index: 10;
     display: flex;
     align-items: center;
@@ -239,57 +241,60 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--gf-color-text-tertiary);
+    color: var(--gf-color-text-quaternary);
     cursor: pointer;
-    border-radius: var(--gf-radius-xs);
-    transition:
-      color var(--gf-motion-fast) var(--gf-easing),
-      background var(--gf-motion-fast) var(--gf-easing);
+    border-radius: var(--gf-radius-sm);
+    transition: all var(--gf-motion-normal) var(--gf-easing);
 
     &:hover {
-      color: var(--gf-color-text);
+      color: var(--gf-color-text-secondary);
       background: var(--gf-color-fill);
+    }
+
+    &:active {
+      color: var(--gf-color-text);
     }
   }
 
   .gf-modal__header {
     padding: 16px 24px;
     flex-shrink: 0;
+    border-radius: var(--gf-radius-lg) var(--gf-radius-lg) 0 0;
   }
 
   .gf-modal__title {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--gf-font-size-lg);
     font-weight: 600;
     line-height: 1.5;
-    color: var(--gf-text);
+    color: var(--gf-color-text-heading);
     word-wrap: break-word;
   }
 
   .gf-modal__body {
-    padding: 8px 24px 24px;
-    font-size: var(--gf-font-size-sm);
-    line-height: 1.5714285714285714;
+    padding: 0 24px 24px;
+    font-size: var(--gf-font-size-md);
+    line-height: 1.5714285714;
     overflow: auto;
     flex: 1;
-    color: var(--gf-text);
+    color: var(--gf-color-text);
   }
 
   .gf-modal__footer {
     padding: 12px 16px;
-    border-top: 1px solid var(--gf-border);
+    border-top: 1px solid var(--gf-color-border-secondary);
     display: flex;
     justify-content: flex-end;
     gap: 8px;
     flex-shrink: 0;
     border-radius: 0 0 var(--gf-radius-lg) var(--gf-radius-lg);
-    background: var(--gf-color-surface-muted);
+    background: var(--gf-color-bg-elevated);
   }
 
-  // Animations
+  // Animations - Ant Design 5.x motion
   .gf-fade-enter-active,
   .gf-fade-leave-active {
-    transition: opacity var(--gf-motion-fast) var(--gf-easing);
+    transition: opacity var(--gf-motion-normal) var(--gf-easing);
   }
 
   .gf-fade-enter-from,
@@ -297,16 +302,25 @@
     opacity: 0;
   }
 
-  .gf-zoom-enter-active,
-  .gf-zoom-leave-active {
+  .gf-zoom-enter-active {
     transition:
-      opacity var(--gf-motion-fast) var(--gf-easing),
-      transform var(--gf-motion-fast) var(--gf-easing);
+      opacity var(--gf-motion-normal) var(--gf-easing-out),
+      transform var(--gf-motion-normal) var(--gf-easing-out);
   }
 
-  .gf-zoom-enter-from,
+  .gf-zoom-leave-active {
+    transition:
+      opacity var(--gf-motion-fast) var(--gf-easing-in),
+      transform var(--gf-motion-fast) var(--gf-easing-in);
+  }
+
+  .gf-zoom-enter-from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
   .gf-zoom-leave-to {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.9);
   }
 </style>

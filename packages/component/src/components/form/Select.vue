@@ -738,10 +738,11 @@
 </script>
 
 <style scoped lang="less">
+  // Ant Design 5.x inspired Select styles
   .gf-select {
     position: relative;
     width: 100%;
-    font-size: var(--gf-font-size-sm);
+    font-size: var(--gf-font-size-md);
     min-width: 0;
     flex: 1 1 auto;
 
@@ -750,24 +751,24 @@
       display: flex;
       align-items: center;
       width: 100%;
+      height: var(--gf-control-height-md);
       min-height: var(--gf-control-height-md);
       padding: 0 11px;
       padding-right: 30px;
-      border-radius: var(--gf-radius-sm);
-      border: 1px solid var(--gf-control-border-color, var(--gf-border));
-      background: var(--gf-control-bg, var(--gf-color-surface));
+      border-radius: var(--gf-radius-md);
+      border: 1px solid var(--gf-color-border);
+      background: var(--gf-color-surface);
       cursor: pointer;
-      transition:
-        border-color var(--gf-motion-fast) var(--gf-easing),
-        box-shadow var(--gf-motion-fast) var(--gf-easing),
-        background var(--gf-motion-fast) var(--gf-easing);
+      transition: all var(--gf-motion-normal) var(--gf-easing);
 
       &:hover:not(.is-disabled) {
-        border-color: var(--gf-color-primary);
+        border-color: var(--gf-color-primary-hover);
       }
 
       &.is-disabled {
         background: var(--gf-color-fill);
+        border-color: var(--gf-color-border);
+        color: var(--gf-color-text-disabled);
         cursor: not-allowed;
       }
     }
@@ -775,7 +776,7 @@
     &.is-focused:not(.is-disabled) &__selector,
     &.is-open:not(.is-disabled) &__selector {
       border-color: var(--gf-color-primary);
-      box-shadow: 0 0 0 2px var(--gf-color-primary-soft);
+      box-shadow: var(--gf-focus-ring);
     }
 
     &__selector--text {
@@ -783,6 +784,7 @@
       background: transparent;
       padding: 0;
       min-height: auto;
+      height: auto;
       box-shadow: none !important;
     }
 
@@ -790,7 +792,8 @@
     &.is-multiple &__selector {
       padding: 1px 30px 1px 4px;
       flex-wrap: wrap;
-      gap: 2px;
+      gap: 4px;
+      height: auto;
       min-height: var(--gf-control-height-md);
     }
 
@@ -800,7 +803,7 @@
       flex: 1;
       min-width: 0;
       align-items: center;
-      gap: 2px;
+      gap: 4px;
       position: relative;
       overflow: hidden;
     }
@@ -810,30 +813,31 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      color: var(--gf-text);
-      line-height: 1.5714285714285714;
+      color: var(--gf-color-text);
+      line-height: 1.5714285714;
     }
 
     &__placeholder {
-      color: var(--gf-color-text-tertiary);
+      color: var(--gf-color-text-placeholder);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    // Tag item (multi-select)
+    // Tag item (multi-select) - Ant Design style
     &__item {
       display: inline-flex;
       align-items: center;
-      height: 22px;
+      height: 24px;
       padding: 0 4px 0 8px;
       margin: 2px 0;
       max-width: 100%;
       background: var(--gf-color-fill-secondary);
-      border-radius: var(--gf-radius-xs);
+      border: 1px solid var(--gf-color-border-muted);
+      border-radius: var(--gf-radius-sm);
       font-size: var(--gf-font-size-sm);
-      line-height: 20px;
-      transition: background var(--gf-motion-fast) var(--gf-easing);
+      line-height: 22px;
+      transition: all var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
         background: var(--gf-color-fill-tertiary);
@@ -844,33 +848,32 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      margin-right: 2px;
+      margin-right: 4px;
     }
 
     &__item-remove {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       margin-left: 2px;
       font-size: 10px;
-      color: var(--gf-color-text-tertiary);
+      color: var(--gf-color-text-quaternary);
       cursor: pointer;
-      border-radius: 50%;
-      transition:
-        color var(--gf-motion-fast) var(--gf-easing),
-        background var(--gf-motion-fast) var(--gf-easing);
+      border-radius: var(--gf-radius-xs);
+      transition: all var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
-        color: var(--gf-color-text);
-        background: var(--gf-color-fill-tertiary);
+        color: var(--gf-color-text-secondary);
+        background: var(--gf-color-fill);
       }
     }
 
     &__item-rest {
       padding: 0 8px;
       background: var(--gf-color-fill);
+      border-color: transparent;
     }
 
     &__search-mirror {
@@ -892,11 +895,11 @@
       outline: none;
       background: transparent;
       font-size: inherit;
-      line-height: 20px;
-      color: var(--gf-text);
+      line-height: 22px;
+      color: var(--gf-color-text);
 
       &::placeholder {
-        color: var(--gf-color-text-tertiary);
+        color: var(--gf-color-text-placeholder);
       }
     }
 
@@ -909,14 +912,19 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--gf-color-text-tertiary);
+      color: var(--gf-color-text-quaternary);
       font-size: 12px;
       pointer-events: none;
+      transition: color var(--gf-motion-fast) var(--gf-easing);
+    }
+
+    &:hover:not(.is-disabled) &__arrow {
+      color: var(--gf-color-text-tertiary);
     }
 
     &__arrow-icon {
       display: flex;
-      transition: transform var(--gf-motion-fast) var(--gf-easing);
+      transition: transform var(--gf-motion-normal) var(--gf-easing);
 
       &.is-open {
         transform: rotate(180deg);
@@ -928,7 +936,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--gf-color-text-tertiary);
+      color: var(--gf-color-text-quaternary);
       cursor: pointer;
       pointer-events: auto;
       transition: color var(--gf-motion-fast) var(--gf-easing);
@@ -950,41 +958,44 @@
       opacity: 1;
     }
 
-    // Dropdown
+    // Dropdown - Ant Design 5.x style
     &__dropdown {
       position: fixed;
       z-index: var(--gf-z-popover);
-      background: var(--gf-color-surface);
-      border-radius: var(--gf-radius-md);
+      background: var(--gf-color-bg-elevated);
+      border-radius: var(--gf-radius-lg);
       box-shadow: var(--gf-shadow-2);
       overflow: hidden;
     }
 
     &__dropdown-search {
-      padding: 8px 12px 4px;
+      padding: 8px 8px 4px;
     }
 
     &__dropdown-search-input {
       width: 100%;
-      padding: 4px 11px;
-      border: 1px solid var(--gf-border);
-      border-radius: var(--gf-radius-sm);
+      height: var(--gf-control-height-sm);
+      padding: 0 11px;
+      border: 1px solid var(--gf-color-border);
+      border-radius: var(--gf-radius-md);
       background: var(--gf-color-surface);
-      color: var(--gf-text);
-      font-size: var(--gf-font-size-sm);
-      line-height: 1.5714285714285714;
+      color: var(--gf-color-text);
+      font-size: var(--gf-font-size-md);
+      line-height: 1.5714285714;
       outline: none;
-      transition:
-        border-color var(--gf-motion-fast) var(--gf-easing),
-        box-shadow var(--gf-motion-fast) var(--gf-easing);
+      transition: all var(--gf-motion-normal) var(--gf-easing);
+
+      &:hover {
+        border-color: var(--gf-color-primary-hover);
+      }
 
       &:focus {
         border-color: var(--gf-color-primary);
-        box-shadow: 0 0 0 2px var(--gf-color-primary-soft);
+        box-shadow: var(--gf-focus-ring);
       }
 
       &::placeholder {
-        color: var(--gf-color-text-tertiary);
+        color: var(--gf-color-text-placeholder);
       }
     }
 
@@ -1000,9 +1011,9 @@
       padding: 5px 12px;
       border-radius: var(--gf-radius-sm);
       cursor: pointer;
-      color: var(--gf-text);
-      font-size: var(--gf-font-size-sm);
-      line-height: 1.5714285714285714;
+      color: var(--gf-color-text);
+      font-size: var(--gf-font-size-md);
+      line-height: 1.5714285714;
       transition: background var(--gf-motion-fast) var(--gf-easing);
 
       &:hover,
@@ -1011,9 +1022,14 @@
       }
 
       &.is-selected {
-        color: var(--gf-text);
+        color: var(--gf-color-text);
         font-weight: 600;
-        background: var(--gf-color-primary-soft);
+        background: var(--gf-color-primary-bg);
+      }
+
+      &.is-selected:hover,
+      &.is-selected.is-active {
+        background: var(--gf-color-primary-bg-hover);
       }
 
       &.is-disabled {
@@ -1041,18 +1057,22 @@
     }
 
     &__empty {
-      padding: 8px 12px;
+      padding: 24px 12px;
       text-align: center;
       color: var(--gf-color-text-tertiary);
-      font-size: var(--gf-font-size-sm);
+      font-size: var(--gf-font-size-md);
     }
 
     // Size variants
     &--size-small {
+      font-size: var(--gf-font-size-sm);
+
       .gf-select__selector {
+        height: var(--gf-control-height-sm);
         min-height: var(--gf-control-height-sm);
         padding: 0 7px;
-        padding-right: 26px;
+        padding-right: 24px;
+        border-radius: var(--gf-radius-sm);
       }
 
       .gf-select__option {
@@ -1064,26 +1084,36 @@
       .gf-select__item {
         height: 18px;
         line-height: 16px;
-        font-size: 11px;
+        font-size: 12px;
+        padding: 0 2px 0 6px;
+      }
+
+      .gf-select__item-remove {
+        width: 14px;
+        height: 14px;
       }
     }
 
     &--size-large {
+      font-size: var(--gf-font-size-lg);
+
       .gf-select__selector {
+        height: var(--gf-control-height-lg);
         min-height: var(--gf-control-height-lg);
         padding: 0 11px;
         padding-right: 34px;
-        font-size: var(--gf-font-size-md);
+        border-radius: var(--gf-radius-lg);
       }
 
       .gf-select__option {
         min-height: 40px;
-        font-size: var(--gf-font-size-md);
+        font-size: var(--gf-font-size-lg);
       }
 
       .gf-select__item {
-        height: 26px;
-        line-height: 24px;
+        height: 28px;
+        line-height: 26px;
+        font-size: var(--gf-font-size-md);
       }
     }
 
@@ -1094,18 +1124,19 @@
     }
   }
 
-  // Transition animations
+  // Transition animations - Ant Design style
   .gf-slide-up-enter-active,
   .gf-slide-up-leave-active {
     transition:
-      opacity var(--gf-motion-fast) var(--gf-easing),
-      transform var(--gf-motion-fast) var(--gf-easing);
+      opacity var(--gf-motion-fast) var(--gf-easing-out),
+      transform var(--gf-motion-fast) var(--gf-easing-out);
+    transform-origin: top center;
   }
 
   .gf-slide-up-enter-from,
   .gf-slide-up-leave-to {
     opacity: 0;
-    transform: translateY(-4px) scaleY(0.98);
+    transform: scaleY(0.8);
   }
 
   .gf-zoom-in-enter-active,

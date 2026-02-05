@@ -1,11 +1,4 @@
-<!--
-  文件说明：面板内容渲染容器
-
-  说明：
-  - 负责把 panel.type 映射到具体渲染组件（内置 panels）
-  - 负责向 QueryScheduler 注册 panel，并拿到 loading/error/results
-  - 负责在渲染前应用 transformations（数据变换层）
--->
+<!-- 文件说明：面板内容渲染容器 -->
 <template>
   <div :class="bem()">
     <div :class="bem('wrapper')">
@@ -23,9 +16,12 @@
           <Alert type="warning" show-icon :message="queryErrorText" />
         </div>
         <div :class="bem('chart')">
-          <div v-if="loading" :class="bem('loading')">
-            <Loading text="加载中..." />
-          </div>
+          <!-- Loading 遮罩：使用过渡动画 -->
+          <Transition name="gf-loading-fade">
+            <div v-if="loading" :class="bem('loading')">
+              <div :class="bem('loading-spinner')"></div>
+            </div>
+          </Transition>
           <component :is="chartComponent" :panel="panel" :query-results="displayResults" />
         </div>
       </div>
@@ -38,7 +34,7 @@
 
 <script setup lang="ts">
   import { computed, onErrorCaptured, ref, watch } from 'vue';
-  import { Alert, Loading, Empty } from '@grafana-fast/component';
+  import { Alert, Empty } from '@grafana-fast/component';
   import type { Panel } from '@grafana-fast/types';
   import { createNamespace } from '/#/utils';
   import { getPiniaQueryScheduler } from '/#/runtime/piniaAttachments';
@@ -133,11 +129,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: color-mix(in srgb, var(--gf-color-surface), transparent 30%);
-      backdrop-filter: blur(2px);
-      -webkit-backdrop-filter: blur(2px);
-      pointer-events: all;
-      transition: opacity var(--gf-motion-normal) var(--gf-easing);
+      background: var(--gf-color-surface);
+      pointer-events: none;
+    }
+
+    &__loading-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--gf-color-fill-tertiary);
+      border-top-color: var(--gf-color-primary);
+      border-radius: 50%;
+      animation: gf-spin 0.8s linear infinite;
     }
 
     &__wrapper {
@@ -172,6 +174,29 @@
       justify-content: center;
       height: 100%;
       padding: 16px;
+    }
+  }
+
+  // Loading 过渡动画
+  .gf-loading-fade-enter-active {
+    transition: opacity 0.15s var(--gf-easing);
+  }
+
+  .gf-loading-fade-leave-active {
+    transition: opacity 0.3s var(--gf-easing);
+  }
+
+  .gf-loading-fade-enter-from,
+  .gf-loading-fade-leave-to {
+    opacity: 0;
+  }
+
+  @keyframes gf-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
     }
   }
 </style>

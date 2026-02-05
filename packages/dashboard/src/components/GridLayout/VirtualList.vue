@@ -302,9 +302,17 @@
     ids.forEach((id) => nextHydrated.add(id));
     hydratedIds.value = nextHydrated;
 
+    /**
+     * 关键体验修复：
+     * - 之前在 nextTick() 之后才上报可视集合，导致 PanelContent 首次 mount 时 loading=false，
+     *   下一拍才被 scheduler enqueue -> loading=true，会出现“先渲染一次空态/闪一下再加载”的观感。
+     * - 这里提前上报可视集合，让 PanelContent 在 setup/registerPanel 时就能判断自己已可视并立即 enqueue，
+     *   从而首帧就进入 loading，避免“首次打开面板组闪一下/像加载两次”。
+     */
+    scheduler.setVisiblePanels?.(schedulerScopeId.value, ids.map(toSchedulerPanelId));
+
     await nextTick();
     if (startedGen !== visibilityGeneration) return;
-    scheduler.setVisiblePanels?.(schedulerScopeId.value, ids.map(toSchedulerPanelId));
 
     isScrolling.value = false;
   };

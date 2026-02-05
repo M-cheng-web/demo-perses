@@ -122,6 +122,7 @@
   const editorStore = useEditorStore();
   const timeRangeStore = useTimeRangeStore();
   const { isReadOnly } = storeToRefs(dashboardStore);
+  const { isDrawerOpen } = storeToRefs(editorStore);
 
   const isGroupEditing = computed(() => {
     const g = group.value;
@@ -130,6 +131,10 @@
   });
 
   const canEditGroup = computed(() => !props.isBooting && !isReadOnly.value);
+
+  const isEditingLocked = computed(() => isGroupEditing.value || isDrawerOpen.value);
+  const lastBlockedCloseAt = ref(0);
+  const BLOCKED_CLOSE_TOAST_COOLDOWN_MS = 1_200;
 
   const isActive = ref(false);
   const isOpen = ref(false);
@@ -194,6 +199,15 @@
   };
 
   const requestClose = () => {
+    // 编辑态不允许关闭：避免用户误关闭导致“编辑器还在/不可见”或误以为已保存
+    if (isEditingLocked.value) {
+      const now = Date.now();
+      if (now - lastBlockedCloseAt.value > BLOCKED_CLOSE_TOAST_COOLDOWN_MS) {
+        lastBlockedCloseAt.value = now;
+        message.warning('编辑状态下无法关闭面板组，请先退出编辑');
+      }
+      return;
+    }
     emit('update:open', false);
   };
 

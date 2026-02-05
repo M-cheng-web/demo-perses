@@ -131,17 +131,26 @@
       <input ref="jsonFileInputRef" type="file" accept=".json" style="display: none" @change="handleJsonFileChange" />
 
       <!-- 全局 Loading Mask：boot 阶段锁住交互（禁止滚动/折叠/点击） -->
-      <div v-if="statusKind != null" :class="bem('boot-mask')" @wheel="handleStatusMaskWheel" @touchmove="handleStatusMaskTouchMove">
-        <div :class="bem('boot-card')">
-          <div :class="bem('status-head')">
-            <Loading v-if="statusKind === 'loading'" :text="''" />
-            <component v-else :is="statusIcon" :class="[bem('status-icon'), { 'is-error': statusKind === 'error' }]" />
-            <div :class="[bem('status-title'), { 'is-error': statusKind === 'error' }]">{{ statusTitle }}</div>
+      <Transition name="gf-boot-fade">
+        <div v-if="statusKind != null" :class="bem('boot-mask')" @wheel="handleStatusMaskWheel" @touchmove="handleStatusMaskTouchMove">
+          <div :class="bem('boot-card')">
+            <div :class="bem('status-head')">
+              <!-- waiting 和 loading 都使用 spinner，保持连续性 -->
+              <div v-if="statusKind === 'loading' || statusKind === 'waiting'" :class="bem('status-spinner')">
+                <div :class="bem('spinner-ring')"></div>
+              </div>
+              <component v-else :is="statusIcon" :class="[bem('status-icon'), `is-${statusKind}`]" />
+              <div :class="[bem('status-title'), `is-${statusKind}`]">{{ statusTitle }}</div>
+            </div>
+            <div :class="bem('boot-detail')">{{ statusDetail }}</div>
+            <div v-if="statusHint" :class="bem('boot-hint')">{{ statusHint }}</div>
+            <!-- waiting 和 loading 都显示进度条，保持连续性 -->
+            <div v-if="statusKind === 'loading' || statusKind === 'waiting'" :class="bem('boot-progress')">
+              <div :class="bem('progress-bar')"></div>
+            </div>
           </div>
-          <div :class="bem('boot-detail')">{{ statusDetail }}</div>
-          <div v-if="statusHint" :class="bem('boot-hint')">{{ statusHint }}</div>
         </div>
-      </div>
+      </Transition>
     </div>
   </ConfigProvider>
 </template>
@@ -149,7 +158,7 @@
 <script setup lang="ts">
   import { ref, watch, computed, defineAsyncComponent, h } from 'vue';
   import { storeToRefs } from '@grafana-fast/store';
-  import { Button, ConfigProvider, Drawer, Empty, Loading, Modal, Space, message } from '@grafana-fast/component';
+  import { Button, ConfigProvider, Drawer, Empty, Modal, Space, message } from '@grafana-fast/component';
   import { ClockCircleOutlined, CloseCircleOutlined, SettingOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useEditorStore, useTimeRangeStore, useTooltipStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
@@ -811,60 +820,145 @@
       align-items: center;
       justify-content: center;
       padding: 16px;
-      // 嵌入式场景：遮罩层尽量使用不透明 surface，避免“底层内容透出/叠印”
-      background: var(--gf-color-surface);
+      background: linear-gradient(135deg, var(--gf-color-surface) 0%, var(--gf-color-surface-muted) 100%);
       cursor: progress;
     }
 
     &__boot-card {
-      width: min(560px, 100%);
-      padding: 16px 16px 14px;
-      border-radius: var(--gf-radius-md);
-      border: 1px solid var(--gf-color-border-muted);
-      background: var(--gf-color-surface-muted);
-      box-shadow: var(--gf-shadow-2);
+      width: min(480px, 100%);
+      padding: 24px;
+      border-radius: var(--gf-radius-lg);
+      border: 1px solid var(--gf-color-border);
+      background: var(--gf-color-bg-elevated);
+      box-shadow: var(--gf-shadow-3);
+      animation: gf-card-float 0.4s var(--gf-easing-out) backwards;
     }
 
     &__boot-detail {
-      margin-top: 10px;
-      font-size: 12px;
+      margin-top: 12px;
+      font-size: 13px;
       color: var(--gf-color-text-secondary);
-      line-height: 1.45;
+      line-height: 1.6;
       word-break: break-word;
     }
 
     &__boot-hint {
-      margin-top: 8px;
+      margin-top: 10px;
       font-size: 12px;
-      color: var(--gf-color-warning-text, var(--gf-color-text-secondary));
-      line-height: 1.45;
+      color: var(--gf-color-warning-text, var(--gf-color-text-tertiary));
+      line-height: 1.5;
+    }
+
+    &__boot-progress {
+      margin-top: 16px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--gf-color-fill-secondary);
+      overflow: hidden;
+    }
+
+    &__progress-bar {
+      height: 100%;
+      width: 30%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--gf-color-primary) 0%, var(--gf-color-primary-hover) 100%);
+      animation: gf-progress-indeterminate 1.5s var(--gf-easing) infinite;
     }
 
     &__status-head {
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: var(--gf-color-primary);
+      gap: 12px;
+    }
+
+    &__status-spinner {
+      position: relative;
+      width: 24px;
+      height: 24px;
+    }
+
+    &__spinner-ring {
+      position: absolute;
+      inset: 0;
+      border: 2.5px solid var(--gf-color-fill-tertiary);
+      border-top-color: var(--gf-color-primary);
+      border-radius: 50%;
+      animation: gf-spin 0.9s linear infinite;
     }
 
     &__status-icon {
-      font-size: 20px;
+      font-size: 22px;
       line-height: 1;
-      color: currentColor;
 
       &.is-error {
-        color: var(--gf-color-danger, #ff4d4f);
+        color: var(--gf-color-danger);
+      }
+
+      &.is-waiting {
+        color: var(--gf-color-primary);
       }
     }
 
     &__status-title {
-      font-size: var(--gf-font-size-sm);
-      font-weight: 650;
-      color: currentColor;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gf-color-text-heading);
+
+      &.is-loading {
+        color: var(--gf-color-primary);
+      }
 
       &.is-error {
-        color: var(--gf-color-danger, #ff4d4f);
+        color: var(--gf-color-danger);
+      }
+
+      &.is-waiting {
+        color: var(--gf-color-primary);
       }
     }
+  }
+
+  // ===== 动画定义 =====
+  @keyframes gf-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes gf-progress-indeterminate {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(400%);
+    }
+  }
+
+  @keyframes gf-card-float {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  // ===== Boot Fade 过渡 =====
+  .gf-boot-fade-enter-active {
+    transition: opacity 0.3s var(--gf-easing);
+  }
+
+  .gf-boot-fade-leave-active {
+    transition: opacity 0.5s var(--gf-easing);
+  }
+
+  .gf-boot-fade-enter-from,
+  .gf-boot-fade-leave-to {
+    opacity: 0;
   }
 </style>

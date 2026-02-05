@@ -1,27 +1,25 @@
-// AntD-inspired control styles with enhanced interactions
+// Ant Design 5.x inspired control styles with enhanced interactions
 .gf-control {
   width: 100%;
   padding: 4px 11px;
+  height: var(--gf-control-height-md);
   min-height: var(--gf-control-height-md);
-  border-radius: var(--gf-control-radius, var(--gf-radius-sm));
-  border: 1px solid var(--gf-control-border-color, var(--gf-border));
+  border-radius: var(--gf-control-radius, var(--gf-radius-md));
+  border: 1px solid var(--gf-control-border-color, var(--gf-color-border));
   background: var(--gf-control-bg, var(--gf-color-surface));
-  color: var(--gf-text);
-  font-size: var(--gf-font-size-sm);
-  line-height: 1.5714285714285714; // AntD line-height: 22/14
-  transition:
-    border-color var(--gf-motion-fast) var(--gf-easing),
-    box-shadow var(--gf-motion-fast) var(--gf-easing),
-    background var(--gf-motion-fast) var(--gf-easing);
+  color: var(--gf-color-text);
+  font-size: var(--gf-font-size-md);
+  line-height: 1.5714285714; // AntD line-height: 22/14
+  transition: all var(--gf-motion-normal) var(--gf-easing);
 
   // Placeholder styling (AntD-like)
   &::placeholder {
-    color: var(--gf-color-text-tertiary);
+    color: var(--gf-color-text-placeholder);
     opacity: 1;
   }
 
   &:hover:not(:disabled):not(.gf-control--disabled) {
-    border-color: var(--gf-control-border-color-hover, var(--gf-color-primary));
+    border-color: var(--gf-control-border-color-hover, var(--gf-color-primary-hover));
     background: var(--gf-control-bg-hover, var(--gf-color-surface));
   }
 
@@ -30,19 +28,20 @@
   &:focus-within {
     outline: none;
     border-color: var(--gf-control-border-color-focus, var(--gf-color-primary));
-    box-shadow: var(--gf-control-shadow-focus, 0 0 0 2px var(--gf-color-primary-soft));
+    box-shadow: var(--gf-control-shadow-focus, var(--gf-focus-ring));
     background: var(--gf-control-bg-focus, var(--gf-color-surface));
   }
 
   &--ghost {
     background: var(--gf-control-bg, var(--gf-color-surface-raised));
-    color: var(--gf-text);
+    color: var(--gf-color-text);
     border-color: var(--gf-control-border-color, var(--gf-color-border-muted));
   }
 
   &--disabled {
     color: var(--gf-color-text-disabled);
     background: var(--gf-color-fill);
+    border-color: var(--gf-color-border);
     cursor: not-allowed;
 
     &::placeholder {
@@ -51,30 +50,35 @@
   }
 
   &--size-small {
+    height: var(--gf-control-height-sm);
     min-height: var(--gf-control-height-sm);
     padding: 0px 7px;
     font-size: var(--gf-font-size-sm);
+    border-radius: var(--gf-radius-sm);
   }
 
   &--size-large {
+    height: var(--gf-control-height-lg);
     min-height: var(--gf-control-height-lg);
     padding: 7px 11px;
-    font-size: var(--gf-font-size-md);
+    font-size: var(--gf-font-size-lg);
+    border-radius: var(--gf-radius-lg);
   }
 
   &--disabled:hover,
   &--disabled:focus,
   &--disabled:focus-visible,
   &--disabled:focus-within {
-    border-color: var(--gf-control-border-color, var(--gf-border));
+    border-color: var(--gf-color-border);
     box-shadow: none;
   }
 }
 
 .gf-field-label {
-  font-size: var(--gf-font-size-sm);
-  color: var(--gf-text-secondary);
-  letter-spacing: 0.01em;
+  font-size: var(--gf-font-size-md);
+  color: var(--gf-color-text-label);
+  letter-spacing: 0;
+  line-height: 1.5714285714;
 }
 
 /*

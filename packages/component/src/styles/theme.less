@@ -7,23 +7,27 @@
  * - This file must be safe to import in embedded/widget scenarios.
  * - Do NOT style `html`/`body`/`:root` here (avoid polluting host apps).
  * - Only style namespaced classes or `[data-gf-theme]` containers.
+ *
+ * Aligned with Ant Design 5.x design system.
  */
 
 :where(.gf-theme-light, .gf-theme-blue, .gf-theme-dark, [data-gf-theme]) {
   font-family: var(--gf-font-family);
   font-size: var(--gf-font-size-md);
   line-height: var(--gf-line-height);
-  color: var(--gf-text);
+  color: var(--gf-color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 :where(.gf-theme-light, .gf-theme-blue, [data-gf-theme='light']) {
   color-scheme: light;
-  color: var(--gf-text);
+  color: var(--gf-color-text);
 }
 
 :where(.gf-theme-dark, [data-gf-theme='dark']) {
   color-scheme: dark;
-  color: var(--gf-text);
+  color: var(--gf-color-text);
 }
 
 :where(.gf-config-provider.gf-theme-light, .gf-config-provider.gf-theme-blue, .gf-config-provider[data-gf-theme='light']) {
@@ -38,25 +42,20 @@
   box-sizing: border-box;
 }
 
-@keyframes gf-ambient-breathe {
-  0%,
-  100% {
-    opacity: 0.52;
-    filter: saturate(1) contrast(1);
-  }
-  50% {
-    opacity: 0.66;
-    filter: saturate(1.04) contrast(1.01);
-  }
-}
-
+// Link styles - Ant Design 5.x
 :where(.gf-theme-light, .gf-theme-blue, .gf-theme-dark, [data-gf-theme], .gf-app) a {
-  color: var(--gf-primary-strong);
+  color: var(--gf-color-primary);
   text-decoration: none;
+  outline: none;
+  cursor: pointer;
   transition: color var(--gf-motion-normal) var(--gf-easing);
 
   &:hover {
     color: var(--gf-color-primary-hover);
+  }
+
+  &:active {
+    color: var(--gf-color-primary-active);
   }
 }
 
@@ -75,7 +74,7 @@
     radial-gradient(800px circle at 50% 115%, var(--gf-bg-glow-3), transparent 60%),
     linear-gradient(180deg, var(--gf-bg-haze-top), rgba(255, 255, 255, 0));
   background-attachment: fixed;
-  color: var(--gf-text);
+  color: var(--gf-color-text);
   font-feature-settings: 'cv02', 'cv03', 'cv04';
   position: relative;
 }
@@ -85,14 +84,15 @@
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(to right, var(--gf-bg-grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--gf-bg-grid-line) 1px, transparent 1px);
+    linear-gradient(to right, var(--gf-bg-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--gf-bg-grid-line) 1px, transparent 1px);
   background-size: var(--gf-bg-grid-size);
   background-position: 0 0;
-  opacity: 0.42;
+  opacity: 0.5;
   pointer-events: none;
   z-index: 0;
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0) 70%);
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0) 70%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0) 70%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0) 70%);
 }
 
 .gf-app::after {
@@ -103,7 +103,7 @@
     radial-gradient(1300px circle at 10% -15%, var(--gf-bg-glow-1), transparent 66%),
     radial-gradient(760px circle at 86% -8%, var(--gf-bg-glow-2), transparent 62%),
     radial-gradient(1100px circle at 50% 118%, var(--gf-bg-glow-3), transparent 74%);
-  opacity: 0.52;
+  opacity: 0.5;
   pointer-events: none;
   z-index: 0;
 }
@@ -113,23 +113,15 @@
   z-index: 1;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .gf-app::after {
-    animation: gf-ambient-breathe 9s var(--gf-easing) infinite;
-  }
-}
-
+// Surface card - Ant Design 5.x style
 .gf-surface {
-  background: var(--gf-surface);
-  border: 1px solid var(--gf-border);
-  border-radius: var(--gf-radius-md);
-  transition:
-    box-shadow var(--gf-motion-normal) var(--gf-easing),
-    border-color var(--gf-motion-normal) var(--gf-easing);
+  background: var(--gf-color-surface);
+  border: 1px solid var(--gf-color-border-secondary);
+  border-radius: var(--gf-radius-lg);
+  transition: all var(--gf-motion-normal) var(--gf-easing);
 }
 
 .gf-surface:hover {
-  border-color: var(--gf-border-strong);
   box-shadow: var(--gf-shadow-1);
 }
 
@@ -147,6 +139,7 @@
   box-shadow: 0 0 24px var(--gf-color-primary-soft);
 }
 
+// Vue transition animations - Ant Design 5.x motion
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity var(--gf-motion-normal) var(--gf-easing);
@@ -166,4 +159,25 @@
 
 .gf-zebra-cards > .gf-card:nth-child(even) {
   --gf-card-bg: var(--gf-color-zebra);
+}
+
+/* ------------------------------------------------------------
+ * Focus visible styles for keyboard navigation
+ * ------------------------------------------------------------ */
+:where(.gf-theme-light, .gf-theme-dark, [data-gf-theme]) :focus-visible {
+  outline: none;
+  box-shadow: var(--gf-focus-ring);
+}
+
+/* ------------------------------------------------------------
+ * Selection styles
+ * ------------------------------------------------------------ */
+:where(.gf-theme-light, .gf-theme-blue, [data-gf-theme='light'])::selection {
+  background: var(--gf-color-primary-bg);
+  color: var(--gf-color-primary);
+}
+
+:where(.gf-theme-dark, [data-gf-theme='dark'])::selection {
+  background: var(--gf-color-primary-bg);
+  color: var(--gf-color-primary);
 }

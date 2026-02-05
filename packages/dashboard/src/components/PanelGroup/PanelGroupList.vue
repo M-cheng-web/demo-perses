@@ -10,7 +10,7 @@
   - 打开态的高频操作放到 FocusLayer header
 -->
 <template>
-  <div :class="bem()">
+  <div :class="[bem(), { 'is-dragging': isDragging }]">
     <grid-layout
       v-model:layout="layoutModel"
       :col-num="1"
@@ -157,6 +157,8 @@
   const lastDragEndAt = ref(0);
   const DRAG_CLICK_SUPPRESS_MS = 180;
 
+  const isDragging = ref(false);
+
   const openGroup = (groupId: PanelGroup['id']) => {
     if (isBooting.value) return;
     // 拖拽排序结束后会产生 click：短时间内忽略“打开组”，避免误触
@@ -190,13 +192,15 @@
   };
 
   const handleGroupMove = () => {
-    // no-op: used to mark "dragging" if needed
+    if (!canManageGroups.value) return;
+    if (!isDragging.value) isDragging.value = true;
   };
 
   const handleGroupMoved = () => {
     if (!canManageGroups.value) return;
     // drag end: commit order to store
     lastDragEndAt.value = Date.now();
+    isDragging.value = false;
     const nextOrder = [...layoutModel.value]
       .slice()
       .sort((a, b) => a.y - b.y || a.x - b.x)
@@ -210,27 +214,95 @@
     display: flex;
     flex-direction: column;
     gap: 0;
+    padding: 8px 0;
+
+    &.is-dragging {
+      // 拖拽时禁用 hover 视觉反馈（box-shadow/gradient）与操作按钮渐变，减少 repaint
+      :deep(.gf-panel--header-variant-list-row .gf-panel__header) {
+        transition: none !important;
+      }
+
+      :deep(.gf-panel--header-variant-list-row .gf-panel__header:hover) {
+        border-color: var(--gf-color-border) !important;
+        box-shadow: var(--gf-shadow-1) !important;
+        background: linear-gradient(135deg, var(--gf-color-surface) 0%, var(--gf-color-surface-raised) 100%) !important;
+      }
+
+      :deep(.gf-panel:hover) .dp-panel-group-list__actions {
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    }
 
     &__group {
-      border-radius: var(--gf-radius-md);
-      transition: box-shadow var(--gf-motion-fast) var(--gf-easing);
+      border-radius: var(--gf-radius-lg);
+      // 拖拽时禁用 transition，避免卡顿
+      transition: none;
+      animation: gf-fade-slide-in 0.35s var(--gf-easing) backwards;
+      // 使用 CSS 变量实现 stagger 动画
+      animation-delay: calc(var(--gf-stagger-index, 0) * 30ms);
+    }
 
-      &:hover {
-        box-shadow: var(--gf-shadow-1);
-      }
+    // 手动设置前 15 个的 stagger index
+    &__group:nth-child(1) {
+      --gf-stagger-index: 0;
+    }
+    &__group:nth-child(2) {
+      --gf-stagger-index: 1;
+    }
+    &__group:nth-child(3) {
+      --gf-stagger-index: 2;
+    }
+    &__group:nth-child(4) {
+      --gf-stagger-index: 3;
+    }
+    &__group:nth-child(5) {
+      --gf-stagger-index: 4;
+    }
+    &__group:nth-child(6) {
+      --gf-stagger-index: 5;
+    }
+    &__group:nth-child(7) {
+      --gf-stagger-index: 6;
+    }
+    &__group:nth-child(8) {
+      --gf-stagger-index: 7;
+    }
+    &__group:nth-child(9) {
+      --gf-stagger-index: 8;
+    }
+    &__group:nth-child(10) {
+      --gf-stagger-index: 9;
+    }
+    &__group:nth-child(11) {
+      --gf-stagger-index: 10;
+    }
+    &__group:nth-child(12) {
+      --gf-stagger-index: 11;
+    }
+    &__group:nth-child(13) {
+      --gf-stagger-index: 12;
+    }
+    &__group:nth-child(14) {
+      --gf-stagger-index: 13;
+    }
+    &__group:nth-child(15) {
+      --gf-stagger-index: 14;
     }
 
     &__actions {
       display: flex;
       align-items: center;
-      gap: 2px;
+      gap: 4px;
       opacity: 0;
+      pointer-events: none;
       transition: opacity var(--gf-motion-fast) var(--gf-easing);
     }
 
     // Show actions on hover
     :deep(.gf-panel:hover) .dp-panel-group-list__actions {
       opacity: 1;
+      pointer-events: auto;
     }
 
     &__group.is-focus-source {
@@ -251,40 +323,75 @@
       }
     }
 
-    // Grid item styling
+    // Grid item styling - 拖拽优化
     :deep(.vue-grid-item) {
-      transition: transform var(--gf-motion-fast) var(--gf-easing);
+      // 关键：拖拽时禁用所有 transition 避免卡顿
+      transition: none;
 
       &:hover {
         z-index: 10;
       }
 
+      // 拖拽中：仅使用简单的 outline 而非昂贵的 box-shadow
       &.vue-draggable-dragging {
         z-index: 100;
-        box-shadow: var(--gf-shadow-2);
+        outline: 2px solid var(--gf-color-primary);
+        outline-offset: -1px;
+        border-radius: var(--gf-radius-lg);
+        opacity: 0.95;
+        // 禁用任何 transition
+        transition: none !important;
+
+        * {
+          transition: none !important;
+        }
       }
     }
 
-    // Panel header styling in list view
+    // Panel header styling in list view - 优化视觉效果
     :deep(.gf-panel--header-variant-list-row) {
       .gf-panel__header {
-        padding: 0 16px;
-        height: 44px;
-        border-radius: var(--gf-radius-md);
-        background: var(--gf-color-surface);
-        border: 1px solid var(--gf-color-border-muted);
-        transition: all var(--gf-motion-fast) var(--gf-easing);
+        padding: 0 20px;
+        height: 52px;
+        border-radius: var(--gf-radius-lg);
+        background: linear-gradient(135deg, var(--gf-color-surface) 0%, var(--gf-color-surface-raised) 100%);
+        border: 1px solid var(--gf-color-border);
+        box-shadow: var(--gf-shadow-1);
+        transition:
+          border-color var(--gf-motion-fast) var(--gf-easing),
+          box-shadow var(--gf-motion-fast) var(--gf-easing),
+          background var(--gf-motion-fast) var(--gf-easing);
 
         &:hover {
-          border-color: var(--gf-color-border);
-          background: var(--gf-color-surface-raised);
+          border-color: var(--gf-color-primary-border);
+          box-shadow: var(--gf-shadow-2);
+          background: linear-gradient(135deg, var(--gf-color-surface-raised) 0%, var(--gf-color-bg-elevated) 100%);
         }
       }
 
       .gf-panel__title {
-        font-size: 14px;
-        font-weight: 500;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--gf-color-text-heading);
+        letter-spacing: 0.01em;
       }
+
+      .gf-panel__collapse-icon {
+        color: var(--gf-color-primary);
+        transition: transform var(--gf-motion-normal) var(--gf-easing);
+      }
+    }
+  }
+
+  // 入场动画
+  @keyframes gf-fade-slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 </style>

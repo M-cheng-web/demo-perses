@@ -258,6 +258,7 @@
   .dp-grid-layout {
     min-height: 200px;
     height: 100%;
+    width: 100%;
 
     &__panel-error {
       height: 100%;
@@ -273,27 +274,46 @@
       padding: 16px;
     }
 
-    // Grid item hover effect
+    // Grid item styling - 优化拖拽性能
     :deep(.vue-grid-item) {
-      transition: box-shadow var(--gf-motion-normal) var(--gf-easing);
+      // 关键：非拖拽时不使用 transition，避免布局时的延迟
+      transition: none;
 
       &:hover {
         z-index: 10;
       }
 
+      // 拖拽/缩放中：使用简单的视觉反馈
       &.vue-draggable-dragging,
       &.vue-resizable-resizing {
         z-index: 100;
-        box-shadow: var(--gf-shadow-3);
+        outline: 2px solid var(--gf-color-primary);
+        outline-offset: -1px;
+        border-radius: var(--gf-radius-md);
+        opacity: 0.95;
+        // 禁用 transition 避免卡顿
+        transition: none !important;
       }
     }
 
     // Placeholder styling
     :deep(.vue-grid-placeholder) {
-      background: var(--gf-color-primary-soft);
+      background: var(--gf-color-primary-bg);
       border: 2px dashed var(--gf-color-primary-border);
       border-radius: var(--gf-radius-md);
-      opacity: 0.6;
+      opacity: 0.7;
+    }
+
+    // 确保 grid-layout 容器正确计算宽度
+    :deep(.vue-grid-layout) {
+      width: 100% !important;
+      min-width: 0;
+    }
+
+    // 确保 Panel 组件正确占满
+    :deep(.gf-panel) {
+      width: 100%;
+      height: 100%;
     }
   }
 </style>

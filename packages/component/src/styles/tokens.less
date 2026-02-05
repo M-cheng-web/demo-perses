@@ -3,17 +3,20 @@
 // - Primitive palette: --gf-palette-*
 // - Semantic tokens:   --gf-color-*, --gf-font-*, --gf-space-*, --gf-radius-*, --gf-shadow-*, --gf-z-*
 // - Legacy aliases:    --gf-primary, --gf-surface... (kept for backward compatibility)
+//
+// Color System: Based on Ant Design 5.x color palette
+// Primary: #1677ff (Ant Design Daybreak Blue)
 
 .gf-theme-light,
 .gf-theme-blue, // legacy alias (deprecated)
 [data-gf-theme='light'] {
-  /* Typography */
-  --gf-font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  --gf-font-size-xs: 11px;
+  /* Typography - Ant Design 5.x standards */
+  --gf-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --gf-font-size-xs: 12px;
   --gf-font-size-sm: 12px;
-  --gf-font-size-md: 13px;
-  --gf-font-size-lg: 14px;
-  --gf-line-height: 1.35;
+  --gf-font-size-md: 14px;
+  --gf-font-size-lg: 16px;
+  --gf-line-height: 1.5714285714;
 
   /* Spacing (8px baseline; allow 4px micro spacing) */
   --gf-space-1: 4px;
@@ -24,155 +27,210 @@
   --gf-space-6: 24px;
   --gf-space-8: 32px;
 
-  /* Radius (financial: moderate, steady) */
-  --gf-radius-xs: 4px;
-  --gf-radius-sm: 6px;
-  --gf-radius-md: 8px;
-  --gf-radius-lg: 10px;
+  /* Radius - Ant Design 5.x style */
+  --gf-radius-xs: 2px;
+  --gf-radius-sm: 4px;
+  --gf-radius-md: 6px;
+  --gf-radius-lg: 8px;
 
-  /* Control heights (AntD-compatible semantics) */
-  --gf-control-height-sm: 26px;
+  /* Control heights (AntD 5.x compatible) */
+  --gf-control-height-sm: 24px;
   --gf-control-height-md: 32px;
-  --gf-control-height-lg: 36px;
+  --gf-control-height-lg: 40px;
 
-  /* Motion */
-  --gf-easing: cubic-bezier(0.4, 0.14, 0.3, 1);
-  --gf-motion-fast: 140ms;
+  /* Motion - Ant Design 5.x timing */
+  --gf-easing: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --gf-easing-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --gf-easing-in: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  --gf-easing-in-out: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --gf-motion-fast: 100ms;
   --gf-motion-normal: 200ms;
+  --gf-motion-slow: 300ms;
 
-  /* Palette (financial blue, calmer saturation) */
-  --gf-palette-blue-400: #4f83d1;
-  --gf-palette-blue-500: #2f61bf;
-  --gf-palette-blue-600: #2955a8;
-  --gf-palette-blue-700: #224687;
-  --gf-palette-blue-soft: rgba(47, 97, 191, 0.12);
+  /* Palette - Ant Design 5.x Daybreak Blue */
+  --gf-palette-blue-50: #e6f4ff;
+  --gf-palette-blue-100: #bae0ff;
+  --gf-palette-blue-200: #91caff;
+  --gf-palette-blue-300: #69b1ff;
+  --gf-palette-blue-400: #4096ff;
+  --gf-palette-blue-500: #1677ff;
+  --gf-palette-blue-600: #0958d9;
+  --gf-palette-blue-700: #003eb3;
+  --gf-palette-blue-800: #002c8c;
+  --gf-palette-blue-900: #001d66;
+  --gf-palette-blue-soft: rgba(22, 119, 255, 0.1);
 
+  /* Neutral - Ant Design 5.x Gray Scale */
   --gf-palette-neutral-0: #ffffff;
-  /* Neutral: align closer to AntD grey scale, reduce blue cast */
   --gf-palette-neutral-50: #fafafa;
   --gf-palette-neutral-100: #f5f5f5;
   --gf-palette-neutral-200: #f0f0f0;
-  --gf-palette-neutral-700: #595959;
-  --gf-palette-neutral-900: #1f1f1f;
+  --gf-palette-neutral-300: #d9d9d9;
+  --gf-palette-neutral-400: #bfbfbf;
+  --gf-palette-neutral-500: #8c8c8c;
+  --gf-palette-neutral-600: #595959;
+  --gf-palette-neutral-700: #434343;
+  --gf-palette-neutral-800: #262626;
+  --gf-palette-neutral-900: #141414;
 
-  /* Higher-contrast status colors for ops */
-  --gf-palette-success: #22a06b;
-  --gf-palette-warning: #f0b429;
-  --gf-palette-danger: #e4586c;
+  /* Status colors - Ant Design 5.x */
+  --gf-palette-success: #52c41a;
+  --gf-palette-success-hover: #73d13d;
+  --gf-palette-success-active: #389e0d;
+  --gf-palette-warning: #faad14;
+  --gf-palette-warning-hover: #ffc53d;
+  --gf-palette-warning-active: #d48806;
+  --gf-palette-danger: #ff4d4f;
+  --gf-palette-danger-hover: #ff7875;
+  --gf-palette-danger-active: #d9363e;
+  --gf-palette-info: #1677ff;
 
-  /* Semantic colors */
+  /* Semantic colors - Primary */
   --gf-color-primary: var(--gf-palette-blue-500);
   --gf-color-primary-secondary: var(--gf-palette-blue-400);
-  --gf-color-primary-hover: var(--gf-palette-blue-600);
-  --gf-color-primary-active: var(--gf-palette-blue-700);
+  --gf-color-primary-hover: var(--gf-palette-blue-400);
+  --gf-color-primary-active: var(--gf-palette-blue-600);
   --gf-color-primary-soft: var(--gf-palette-blue-soft);
-  --gf-color-primary-soft-hover: rgba(47, 97, 191, 0.16);
-  --gf-color-primary-soft-active: rgba(47, 97, 191, 0.22);
-  --gf-color-primary-border: rgba(47, 97, 191, 0.3);
-  --gf-color-primary-border-strong: rgba(47, 97, 191, 0.46);
+  --gf-color-primary-soft-hover: rgba(22, 119, 255, 0.15);
+  --gf-color-primary-soft-active: rgba(22, 119, 255, 0.2);
+  --gf-color-primary-border: var(--gf-palette-blue-300);
+  --gf-color-primary-border-strong: var(--gf-palette-blue-400);
+  --gf-color-primary-bg: var(--gf-palette-blue-50);
+  --gf-color-primary-bg-hover: var(--gf-palette-blue-100);
 
+  /* Background colors */
   --gf-color-bg: var(--gf-palette-neutral-100);
+  --gf-color-bg-container: var(--gf-palette-neutral-0);
+  --gf-color-bg-elevated: var(--gf-palette-neutral-0);
+  --gf-color-bg-layout: var(--gf-palette-neutral-100);
+  --gf-color-bg-spotlight: rgba(0, 0, 0, 0.85);
   --gf-color-surface: var(--gf-palette-neutral-0);
   --gf-color-surface-muted: var(--gf-palette-neutral-50);
-  --gf-color-surface-raised: rgba(255, 255, 255, 0.92);
+  --gf-color-surface-raised: var(--gf-palette-neutral-0);
 
-  /* Ambient background (subtle, finance-friendly) */
-  --gf-bg-glow-1: rgba(47, 97, 191, 0.12);
-  --gf-bg-glow-2: rgba(79, 131, 209, 0.07);
-  --gf-bg-glow-3: rgba(100, 116, 139, 0.06);
-  --gf-bg-haze-top: rgba(255, 255, 255, 0.22);
-  /* Neutral grid line */
-  --gf-bg-grid-line: rgba(0, 0, 0, 0.06);
-  --gf-bg-grid-size: 28px 28px;
+  /* Ambient background (subtle glow effects) */
+  --gf-bg-glow-1: rgba(22, 119, 255, 0.08);
+  --gf-bg-glow-2: rgba(64, 150, 255, 0.05);
+  --gf-bg-glow-3: rgba(100, 116, 139, 0.04);
+  --gf-bg-haze-top: rgba(255, 255, 255, 0.2);
+  --gf-bg-grid-line: rgba(0, 0, 0, 0.04);
+  --gf-bg-grid-size: 24px 24px;
 
-  --gf-color-text: var(--gf-palette-neutral-900);
-  --gf-color-text-secondary: var(--gf-palette-neutral-700);
-  /* Text (AntD-ish alpha) */
+  /* Text colors - Ant Design 5.x */
+  --gf-color-text: rgba(0, 0, 0, 0.88);
+  --gf-color-text-secondary: rgba(0, 0, 0, 0.65);
   --gf-color-text-tertiary: rgba(0, 0, 0, 0.45);
+  --gf-color-text-quaternary: rgba(0, 0, 0, 0.25);
   --gf-color-text-disabled: rgba(0, 0, 0, 0.25);
+  --gf-color-text-placeholder: rgba(0, 0, 0, 0.25);
+  --gf-color-text-heading: rgba(0, 0, 0, 0.88);
+  --gf-color-text-label: rgba(0, 0, 0, 0.65);
+  --gf-color-text-description: rgba(0, 0, 0, 0.45);
 
-  /* Border: stronger outline, still subtle */
-  /* Neutral borders: keep contrast without a blue tint everywhere */
-  --gf-color-border-muted: rgba(0, 0, 0, 0.08);
-  --gf-color-border: rgba(0, 0, 0, 0.12);
-  --gf-color-border-strong: rgba(0, 0, 0, 0.18);
+  /* Border colors - Ant Design 5.x */
+  --gf-color-border-muted: var(--gf-palette-neutral-200);
+  --gf-color-border: var(--gf-palette-neutral-300);
+  --gf-color-border-strong: var(--gf-palette-neutral-400);
+  --gf-color-border-secondary: var(--gf-palette-neutral-200);
 
-  /* Neutral fills (hover/selected backgrounds) */
+  /* Fill colors (hover/selected backgrounds) */
   --gf-color-fill: rgba(0, 0, 0, 0.04);
   --gf-color-fill-secondary: rgba(0, 0, 0, 0.06);
-  --gf-color-fill-tertiary: rgba(0, 0, 0, 0.08);
-  --gf-color-fill-quaternary: rgba(0, 0, 0, 0.12);
+  --gf-color-fill-tertiary: rgba(0, 0, 0, 0.04);
+  --gf-color-fill-quaternary: rgba(0, 0, 0, 0.02);
+  --gf-color-fill-content: rgba(0, 0, 0, 0.06);
+  --gf-color-fill-content-hover: rgba(0, 0, 0, 0.12);
+  --gf-color-fill-alter: rgba(0, 0, 0, 0.02);
   --gf-color-zebra: rgba(0, 0, 0, 0.02);
 
+  /* Status semantic colors */
   --gf-color-success: var(--gf-palette-success);
+  --gf-color-success-hover: var(--gf-palette-success-hover);
+  --gf-color-success-active: var(--gf-palette-success-active);
   --gf-color-warning: var(--gf-palette-warning);
+  --gf-color-warning-hover: var(--gf-palette-warning-hover);
+  --gf-color-warning-active: var(--gf-palette-warning-active);
   --gf-color-danger: var(--gf-palette-danger);
+  --gf-color-danger-hover: var(--gf-palette-danger-hover);
+  --gf-color-danger-active: var(--gf-palette-danger-active);
+  --gf-color-info: var(--gf-palette-info);
 
-  --gf-color-success-soft: rgba(34, 160, 107, 0.12);
-  --gf-color-warning-soft: rgba(240, 180, 41, 0.16);
-  --gf-color-danger-soft: rgba(228, 88, 108, 0.12);
-  --gf-color-success-border: rgba(34, 160, 107, 0.35);
-  --gf-color-warning-border: rgba(240, 180, 41, 0.35);
-  --gf-color-danger-border: rgba(228, 88, 108, 0.35);
+  /* Status soft backgrounds */
+  --gf-color-success-soft: rgba(82, 196, 26, 0.1);
+  --gf-color-success-bg: #f6ffed;
+  --gf-color-success-border: #b7eb8f;
+  --gf-color-warning-soft: rgba(250, 173, 20, 0.1);
+  --gf-color-warning-bg: #fffbe6;
+  --gf-color-warning-border: #ffe58f;
+  --gf-color-danger-soft: rgba(255, 77, 79, 0.1);
+  --gf-color-danger-bg: #fff2f0;
+  --gf-color-danger-border: #ffccc7;
+  --gf-color-info-soft: rgba(22, 119, 255, 0.1);
+  --gf-color-info-bg: #e6f4ff;
+  --gf-color-info-border: #91caff;
 
-  /* Form validation (AntD-ish) */
+  /* Form validation */
   --gf-color-form-error: var(--gf-color-danger);
-  --gf-color-form-error-border: color-mix(in srgb, var(--gf-color-danger) 72%, var(--gf-color-border));
-  --gf-color-form-error-bg: color-mix(in srgb, var(--gf-color-danger-soft) 72%, var(--gf-color-surface));
-  --gf-form-error-ring: 0 0 0 3px color-mix(in srgb, var(--gf-color-danger) 22%, transparent);
+  --gf-color-form-error-border: var(--gf-color-danger);
+  --gf-color-form-error-bg: var(--gf-color-danger-bg);
+  --gf-form-error-ring: 0 0 0 2px rgba(255, 77, 79, 0.1);
 
   --gf-color-form-warning: var(--gf-color-warning);
-  --gf-color-form-warning-border: color-mix(in srgb, var(--gf-color-warning) 68%, var(--gf-color-border));
-  --gf-color-form-warning-bg: color-mix(in srgb, var(--gf-color-warning-soft) 72%, var(--gf-color-surface));
-  --gf-form-warning-ring: 0 0 0 3px color-mix(in srgb, var(--gf-color-warning) 18%, transparent);
+  --gf-color-form-warning-border: var(--gf-color-warning);
+  --gf-color-form-warning-bg: var(--gf-color-warning-bg);
+  --gf-form-warning-ring: 0 0 0 2px rgba(250, 173, 20, 0.1);
 
   /* Floating layer colors */
-  /* Mask: AntD-like dim */
   --gf-color-mask: rgba(0, 0, 0, 0.45);
   --gf-color-overlay: rgba(255, 255, 255, 0.65);
-  --gf-color-tooltip-bg: rgba(15, 23, 42, 0.92);
-  --gf-color-tooltip-text: #f5f8ff;
+  --gf-color-tooltip-bg: rgba(0, 0, 0, 0.85);
+  --gf-color-tooltip-text: #ffffff;
 
   /* Kbd / shortcut hint */
-  --gf-color-kbd-bg: rgba(0, 0, 0, 0.04);
-  --gf-color-kbd-border: rgba(0, 0, 0, 0.12);
+  --gf-color-kbd-bg: var(--gf-palette-neutral-100);
+  --gf-color-kbd-border: var(--gf-palette-neutral-300);
   --gf-color-kbd-text: rgba(0, 0, 0, 0.65);
 
-  /* Shadows (closer to AntD feel: tighter + less "lift") */
-  --gf-shadow-1: 0 2px 8px rgba(15, 23, 42, 0.1);
-  --gf-shadow-2: 0 8px 30px rgba(15, 23, 42, 0.16);
+  /* Shadows - Ant Design 5.x */
+  --gf-shadow-1: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+  --gf-shadow-2: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  --gf-shadow-3: 0 6px 16px -8px rgba(0, 0, 0, 0.08), 0 9px 28px 0 rgba(0, 0, 0, 0.05), 0 12px 48px 16px rgba(0, 0, 0, 0.03);
 
-  /* Focus */
-  --gf-color-focus-border: rgba(120, 176, 255, 0.92);
-  --gf-focus-ring: 0 0 0 3px rgba(47, 97, 191, 0.22);
+  /* Focus - Ant Design 5.x style */
+  --gf-color-focus-border: var(--gf-color-primary);
+  --gf-focus-ring: 0 0 0 2px rgba(22, 119, 255, 0.1);
+  --gf-focus-ring-error: 0 0 0 2px rgba(255, 77, 79, 0.1);
+  --gf-focus-ring-warning: 0 0 0 2px rgba(250, 173, 20, 0.1);
 
-  /* Charts: balanced palette (still blue-first, but not all-blue) */
-  --gf-chart-1: #2f61bf; /* blue */
-  --gf-chart-2: #22a06b; /* green */
-  --gf-chart-3: #f0b429; /* amber */
-  --gf-chart-4: #e4586c; /* red/pink */
-  --gf-chart-5: #3aa7c2; /* cyan */
-  --gf-chart-6: #7b61d1; /* violet */
-  --gf-chart-7: #fc8452; /* orange */
-  --gf-chart-8: #64748b; /* slate */
+  /* Charts - Ant Design 5.x inspired palette */
+  --gf-chart-1: #1677ff; /* primary blue */
+  --gf-chart-2: #52c41a; /* success green */
+  --gf-chart-3: #faad14; /* warning gold */
+  --gf-chart-4: #ff4d4f; /* danger red */
+  --gf-chart-5: #13c2c2; /* cyan */
+  --gf-chart-6: #722ed1; /* purple */
+  --gf-chart-7: #fa8c16; /* orange */
+  --gf-chart-8: #eb2f96; /* magenta */
+  --gf-chart-9: #2f54eb; /* geekblue */
+  --gf-chart-10: #a0d911; /* lime */
 
   /* Z-index scale */
-  --gf-z-mask: 2400;
-  --gf-z-drawer: 2450;
-  --gf-z-modal: 2480;
-  --gf-z-popover: 2550;
-  --gf-z-tooltip: 2580;
-  --gf-z-message: 2600;
+  --gf-z-mask: 1000;
+  --gf-z-drawer: 1000;
+  --gf-z-modal: 1000;
+  --gf-z-popover: 1030;
+  --gf-z-tooltip: 1070;
+  --gf-z-message: 1010;
 
   /* Legacy aliases (keep stable for existing components) */
   --gf-primary: var(--gf-color-primary);
-  --gf-primary-strong: var(--gf-color-primary-hover);
+  --gf-primary-strong: var(--gf-color-primary-active);
   --gf-primary-soft: var(--gf-color-primary-soft);
-  --gf-accent: rgba(120, 176, 255, 0.95);
+  --gf-accent: var(--gf-palette-blue-400);
 
   --gf-surface: var(--gf-color-surface);
   --gf-surface-muted: var(--gf-color-surface-muted);
-  --gf-surface-strong: rgba(15, 24, 42, 0.92);
+  --gf-surface-strong: rgba(0, 0, 0, 0.88);
 
   --gf-text: var(--gf-color-text);
   --gf-text-secondary: var(--gf-color-text-secondary);
@@ -181,20 +239,20 @@
   --gf-shadow-soft: var(--gf-shadow-1);
   --gf-shadow-strong: var(--gf-shadow-2);
 
-  /* Keep for compatibility (no longer the default visual choice) */
-  --gf-gradient: linear-gradient(135deg, var(--gf-color-primary) 0%, rgba(79, 131, 209, 0.88) 100%);
-  --gf-panel-glow: 0 0 0 1px rgba(47, 97, 191, 0.14), 0 14px 40px rgba(15, 23, 42, 0.14);
+  /* Gradient & glow effects */
+  --gf-gradient: linear-gradient(135deg, var(--gf-palette-blue-500) 0%, var(--gf-palette-blue-400) 100%);
+  --gf-panel-glow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
 }
 
 .gf-theme-dark,
 [data-gf-theme='dark'] {
-  /* Typography */
-  --gf-font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  --gf-font-size-xs: 11px;
+  /* Typography - Ant Design 5.x standards */
+  --gf-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --gf-font-size-xs: 12px;
   --gf-font-size-sm: 12px;
-  --gf-font-size-md: 13px;
-  --gf-font-size-lg: 14px;
-  --gf-line-height: 1.35;
+  --gf-font-size-md: 14px;
+  --gf-font-size-lg: 16px;
+  --gf-line-height: 1.5714285714;
 
   /* Spacing */
   --gf-space-1: 4px;
@@ -205,146 +263,210 @@
   --gf-space-6: 24px;
   --gf-space-8: 32px;
 
-  /* Radius */
-  --gf-radius-xs: 4px;
-  --gf-radius-sm: 6px;
-  --gf-radius-md: 8px;
-  --gf-radius-lg: 10px;
+  /* Radius - Ant Design 5.x style */
+  --gf-radius-xs: 2px;
+  --gf-radius-sm: 4px;
+  --gf-radius-md: 6px;
+  --gf-radius-lg: 8px;
 
-  /* Control heights */
-  --gf-control-height-sm: 26px;
+  /* Control heights (AntD 5.x compatible) */
+  --gf-control-height-sm: 24px;
   --gf-control-height-md: 32px;
-  --gf-control-height-lg: 36px;
+  --gf-control-height-lg: 40px;
 
-  /* Motion */
-  --gf-easing: cubic-bezier(0.4, 0.14, 0.3, 1);
-  --gf-motion-fast: 140ms;
+  /* Motion - Ant Design 5.x timing */
+  --gf-easing: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --gf-easing-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --gf-easing-in: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  --gf-easing-in-out: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --gf-motion-fast: 100ms;
   --gf-motion-normal: 200ms;
+  --gf-motion-slow: 300ms;
 
-  /* Palette */
-  --gf-palette-blue-400: #8db9ff;
-  --gf-palette-blue-500: #6aa6ff;
-  --gf-palette-blue-600: #4f92ff;
-  --gf-palette-blue-700: #2f79f2;
-  --gf-palette-blue-soft: rgba(106, 166, 255, 0.14);
+  /* Palette - Ant Design 5.x Dark Mode Blue */
+  --gf-palette-blue-50: #111a2c;
+  --gf-palette-blue-100: #112545;
+  --gf-palette-blue-200: #15325b;
+  --gf-palette-blue-300: #15417e;
+  --gf-palette-blue-400: #1554ad;
+  --gf-palette-blue-500: #1668dc;
+  --gf-palette-blue-600: #3c89e8;
+  --gf-palette-blue-700: #65a9f3;
+  --gf-palette-blue-800: #8dc5f8;
+  --gf-palette-blue-900: #b7dcfa;
+  --gf-palette-blue-soft: rgba(22, 104, 220, 0.15);
 
-  --gf-palette-neutral-0: #0f182a;
-  --gf-palette-neutral-50: #0b1220;
-  --gf-palette-neutral-100: #070c16;
-  --gf-palette-neutral-200: #141f35;
-  --gf-palette-neutral-700: #a8b4c8;
-  --gf-palette-neutral-900: #e6edf7;
+  /* Neutral - Ant Design 5.x Dark Gray Scale */
+  --gf-palette-neutral-0: #141414;
+  --gf-palette-neutral-50: #1f1f1f;
+  --gf-palette-neutral-100: #141414;
+  --gf-palette-neutral-200: #1f1f1f;
+  --gf-palette-neutral-300: #303030;
+  --gf-palette-neutral-400: #424242;
+  --gf-palette-neutral-500: #6b6b6b;
+  --gf-palette-neutral-600: #8c8c8c;
+  --gf-palette-neutral-700: #a6a6a6;
+  --gf-palette-neutral-800: #bfbfbf;
+  --gf-palette-neutral-900: #dbdbdb;
 
-  --gf-palette-success: #33c28e;
-  --gf-palette-warning: #ffd166;
-  --gf-palette-danger: #ff6b83;
+  /* Status colors - Ant Design 5.x Dark Mode */
+  --gf-palette-success: #49aa19;
+  --gf-palette-success-hover: #6abe39;
+  --gf-palette-success-active: #3c8618;
+  --gf-palette-warning: #d89614;
+  --gf-palette-warning-hover: #e8b339;
+  --gf-palette-warning-active: #aa7714;
+  --gf-palette-danger: #dc4446;
+  --gf-palette-danger-hover: #e86e6b;
+  --gf-palette-danger-active: #a8282a;
+  --gf-palette-info: #1668dc;
 
-  /* Semantic colors */
+  /* Semantic colors - Primary */
   --gf-color-primary: var(--gf-palette-blue-500);
-  --gf-color-primary-secondary: var(--gf-palette-blue-400);
+  --gf-color-primary-secondary: var(--gf-palette-blue-600);
   --gf-color-primary-hover: var(--gf-palette-blue-600);
-  --gf-color-primary-active: var(--gf-palette-blue-700);
+  --gf-color-primary-active: var(--gf-palette-blue-400);
   --gf-color-primary-soft: var(--gf-palette-blue-soft);
-  --gf-color-primary-soft-hover: rgba(106, 166, 255, 0.22);
-  --gf-color-primary-soft-active: rgba(106, 166, 255, 0.3);
-  --gf-color-primary-border: rgba(106, 166, 255, 0.36);
-  --gf-color-primary-border-strong: rgba(106, 166, 255, 0.54);
+  --gf-color-primary-soft-hover: rgba(22, 104, 220, 0.25);
+  --gf-color-primary-soft-active: rgba(22, 104, 220, 0.35);
+  --gf-color-primary-border: var(--gf-palette-blue-400);
+  --gf-color-primary-border-strong: var(--gf-palette-blue-500);
+  --gf-color-primary-bg: var(--gf-palette-blue-50);
+  --gf-color-primary-bg-hover: var(--gf-palette-blue-100);
 
+  /* Background colors */
   --gf-color-bg: var(--gf-palette-neutral-100);
+  --gf-color-bg-container: var(--gf-palette-neutral-0);
+  --gf-color-bg-elevated: #1f1f1f;
+  --gf-color-bg-layout: #000000;
+  --gf-color-bg-spotlight: rgba(255, 255, 255, 0.04);
   --gf-color-surface: var(--gf-palette-neutral-0);
   --gf-color-surface-muted: var(--gf-palette-neutral-50);
-  --gf-color-surface-raised: rgba(18, 28, 48, 0.92);
+  --gf-color-surface-raised: #1f1f1f;
 
-  /* Ambient background (subtle, finance-friendly) */
-  --gf-bg-glow-1: rgba(47, 121, 242, 0.32);
-  --gf-bg-glow-2: rgba(141, 185, 255, 0.16);
-  --gf-bg-glow-3: rgba(168, 180, 200, 0.12);
-  --gf-bg-haze-top: rgba(0, 0, 0, 0.22);
-  --gf-bg-grid-line: rgba(230, 237, 247, 0.12);
-  --gf-bg-grid-size: 28px 28px;
+  /* Ambient background (subtle glow effects) */
+  --gf-bg-glow-1: rgba(22, 104, 220, 0.15);
+  --gf-bg-glow-2: rgba(60, 137, 232, 0.1);
+  --gf-bg-glow-3: rgba(140, 140, 140, 0.08);
+  --gf-bg-haze-top: rgba(0, 0, 0, 0.3);
+  --gf-bg-grid-line: rgba(255, 255, 255, 0.06);
+  --gf-bg-grid-size: 24px 24px;
 
-  --gf-color-text: var(--gf-palette-neutral-900);
-  --gf-color-text-secondary: var(--gf-palette-neutral-700);
-  --gf-color-text-tertiary: rgba(230, 237, 247, 0.72);
-  --gf-color-text-disabled: rgba(230, 237, 247, 0.42);
+  /* Text colors - Ant Design 5.x Dark Mode */
+  --gf-color-text: rgba(255, 255, 255, 0.85);
+  --gf-color-text-secondary: rgba(255, 255, 255, 0.65);
+  --gf-color-text-tertiary: rgba(255, 255, 255, 0.45);
+  --gf-color-text-quaternary: rgba(255, 255, 255, 0.25);
+  --gf-color-text-disabled: rgba(255, 255, 255, 0.25);
+  --gf-color-text-placeholder: rgba(255, 255, 255, 0.25);
+  --gf-color-text-heading: rgba(255, 255, 255, 0.85);
+  --gf-color-text-label: rgba(255, 255, 255, 0.65);
+  --gf-color-text-description: rgba(255, 255, 255, 0.45);
 
-  /* Neutral borders in dark (reduce the blue cast) */
-  --gf-color-border-muted: rgba(230, 237, 247, 0.14);
-  --gf-color-border: rgba(230, 237, 247, 0.22);
-  --gf-color-border-strong: rgba(230, 237, 247, 0.34);
+  /* Border colors - Ant Design 5.x Dark Mode */
+  --gf-color-border-muted: #303030;
+  --gf-color-border: #424242;
+  --gf-color-border-strong: #525252;
+  --gf-color-border-secondary: #303030;
 
-  --gf-color-fill: rgba(230, 237, 247, 0.08);
-  --gf-color-fill-secondary: rgba(230, 237, 247, 0.1);
-  --gf-color-fill-tertiary: rgba(230, 237, 247, 0.14);
-  --gf-color-fill-quaternary: rgba(230, 237, 247, 0.18);
-  --gf-color-zebra: rgba(230, 237, 247, 0.04);
+  /* Fill colors (hover/selected backgrounds) */
+  --gf-color-fill: rgba(255, 255, 255, 0.04);
+  --gf-color-fill-secondary: rgba(255, 255, 255, 0.08);
+  --gf-color-fill-tertiary: rgba(255, 255, 255, 0.04);
+  --gf-color-fill-quaternary: rgba(255, 255, 255, 0.02);
+  --gf-color-fill-content: rgba(255, 255, 255, 0.12);
+  --gf-color-fill-content-hover: rgba(255, 255, 255, 0.18);
+  --gf-color-fill-alter: rgba(255, 255, 255, 0.04);
+  --gf-color-zebra: rgba(255, 255, 255, 0.04);
 
+  /* Status semantic colors */
   --gf-color-success: var(--gf-palette-success);
+  --gf-color-success-hover: var(--gf-palette-success-hover);
+  --gf-color-success-active: var(--gf-palette-success-active);
   --gf-color-warning: var(--gf-palette-warning);
+  --gf-color-warning-hover: var(--gf-palette-warning-hover);
+  --gf-color-warning-active: var(--gf-palette-warning-active);
   --gf-color-danger: var(--gf-palette-danger);
+  --gf-color-danger-hover: var(--gf-palette-danger-hover);
+  --gf-color-danger-active: var(--gf-palette-danger-active);
+  --gf-color-info: var(--gf-palette-info);
 
-  --gf-color-success-soft: rgba(51, 194, 142, 0.16);
-  --gf-color-warning-soft: rgba(255, 209, 102, 0.16);
-  --gf-color-danger-soft: rgba(255, 107, 131, 0.16);
-  --gf-color-success-border: rgba(51, 194, 142, 0.34);
-  --gf-color-warning-border: rgba(255, 209, 102, 0.34);
-  --gf-color-danger-border: rgba(255, 107, 131, 0.34);
+  /* Status soft backgrounds - Dark Mode */
+  --gf-color-success-soft: rgba(73, 170, 25, 0.15);
+  --gf-color-success-bg: #162312;
+  --gf-color-success-border: #274916;
+  --gf-color-warning-soft: rgba(216, 150, 20, 0.15);
+  --gf-color-warning-bg: #2b2111;
+  --gf-color-warning-border: #594214;
+  --gf-color-danger-soft: rgba(220, 68, 70, 0.15);
+  --gf-color-danger-bg: #2c1618;
+  --gf-color-danger-border: #5c2223;
+  --gf-color-info-soft: rgba(22, 104, 220, 0.15);
+  --gf-color-info-bg: #111a2c;
+  --gf-color-info-border: #15325b;
 
-  /* Form validation (AntD-ish) */
+  /* Form validation - Dark Mode */
   --gf-color-form-error: var(--gf-color-danger);
-  --gf-color-form-error-border: color-mix(in srgb, var(--gf-color-danger) 72%, var(--gf-color-border));
-  --gf-color-form-error-bg: color-mix(in srgb, var(--gf-color-danger-soft) 64%, var(--gf-color-surface));
-  --gf-form-error-ring: 0 0 0 3px color-mix(in srgb, var(--gf-color-danger) 22%, transparent);
+  --gf-color-form-error-border: var(--gf-color-danger);
+  --gf-color-form-error-bg: var(--gf-color-danger-bg);
+  --gf-form-error-ring: 0 0 0 2px rgba(220, 68, 70, 0.15);
 
   --gf-color-form-warning: var(--gf-color-warning);
-  --gf-color-form-warning-border: color-mix(in srgb, var(--gf-color-warning) 68%, var(--gf-color-border));
-  --gf-color-form-warning-bg: color-mix(in srgb, var(--gf-color-warning-soft) 64%, var(--gf-color-surface));
-  --gf-form-warning-ring: 0 0 0 3px color-mix(in srgb, var(--gf-color-warning) 18%, transparent);
+  --gf-color-form-warning-border: var(--gf-color-warning);
+  --gf-color-form-warning-bg: var(--gf-color-warning-bg);
+  --gf-form-warning-ring: 0 0 0 2px rgba(216, 150, 20, 0.15);
 
+  /* Floating layer colors */
   --gf-color-mask: rgba(0, 0, 0, 0.45);
-  --gf-color-overlay: rgba(0, 0, 0, 0.32);
-  --gf-color-tooltip-bg: rgba(17, 26, 44, 0.96);
-  --gf-color-tooltip-text: rgba(230, 237, 247, 0.94);
+  --gf-color-overlay: rgba(0, 0, 0, 0.45);
+  --gf-color-tooltip-bg: #434343;
+  --gf-color-tooltip-text: rgba(255, 255, 255, 0.85);
 
-  --gf-color-kbd-bg: rgba(230, 237, 247, 0.08);
-  --gf-color-kbd-border: rgba(230, 237, 247, 0.18);
-  --gf-color-kbd-text: rgba(230, 237, 247, 0.78);
+  /* Kbd / shortcut hint */
+  --gf-color-kbd-bg: rgba(255, 255, 255, 0.08);
+  --gf-color-kbd-border: #424242;
+  --gf-color-kbd-text: rgba(255, 255, 255, 0.65);
 
-  /* Shadows (only for floating layers) */
-  --gf-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 24px rgba(0, 0, 0, 0.22);
-  --gf-shadow-2: 0 2px 10px rgba(0, 0, 0, 0.42), 0 18px 48px rgba(0, 0, 0, 0.26);
+  /* Shadows - Dark Mode */
+  --gf-shadow-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 6px -1px rgba(0, 0, 0, 0.25), 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+  --gf-shadow-2: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
+  --gf-shadow-3: 0 6px 16px -8px rgba(0, 0, 0, 0.32), 0 9px 28px 0 rgba(0, 0, 0, 0.2), 0 12px 48px 16px rgba(0, 0, 0, 0.12);
 
-  /* Focus */
-  --gf-color-focus-border: rgba(155, 205, 255, 0.92);
-  --gf-focus-ring: 0 0 0 3px rgba(106, 166, 255, 0.28);
+  /* Focus - Ant Design 5.x style */
+  --gf-color-focus-border: var(--gf-color-primary);
+  --gf-focus-ring: 0 0 0 2px rgba(22, 104, 220, 0.2);
+  --gf-focus-ring-error: 0 0 0 2px rgba(220, 68, 70, 0.2);
+  --gf-focus-ring-warning: 0 0 0 2px rgba(216, 150, 20, 0.2);
 
-  /* Charts: balanced palette (still blue-first, but not all-blue) */
-  --gf-chart-1: #6aa6ff; /* blue */
-  --gf-chart-2: #33c28e; /* green */
-  --gf-chart-3: #ffd166; /* amber */
-  --gf-chart-4: #ff6b83; /* red/pink */
-  --gf-chart-5: #73c0de; /* cyan */
-  --gf-chart-6: #b59cff; /* violet */
-  --gf-chart-7: #ff9f6e; /* orange */
-  --gf-chart-8: #a8b4c8; /* slate */
+  /* Charts - Ant Design 5.x Dark Mode palette */
+  --gf-chart-1: #1668dc; /* primary blue */
+  --gf-chart-2: #49aa19; /* success green */
+  --gf-chart-3: #d89614; /* warning gold */
+  --gf-chart-4: #dc4446; /* danger red */
+  --gf-chart-5: #13a8a8; /* cyan */
+  --gf-chart-6: #642ab5; /* purple */
+  --gf-chart-7: #d87a16; /* orange */
+  --gf-chart-8: #cb2b83; /* magenta */
+  --gf-chart-9: #2b4acb; /* geekblue */
+  --gf-chart-10: #8bbb11; /* lime */
 
   /* Z-index scale */
-  --gf-z-mask: 2400;
-  --gf-z-drawer: 2450;
-  --gf-z-modal: 2480;
-  --gf-z-popover: 2550;
-  --gf-z-tooltip: 2580;
-  --gf-z-message: 2600;
+  --gf-z-mask: 1000;
+  --gf-z-drawer: 1000;
+  --gf-z-modal: 1000;
+  --gf-z-popover: 1030;
+  --gf-z-tooltip: 1070;
+  --gf-z-message: 1010;
 
   /* Legacy aliases */
   --gf-primary: var(--gf-color-primary);
-  --gf-primary-strong: var(--gf-color-primary-hover);
+  --gf-primary-strong: var(--gf-color-primary-active);
   --gf-primary-soft: var(--gf-color-primary-soft);
-  --gf-accent: rgba(120, 197, 255, 0.92);
+  --gf-accent: var(--gf-palette-blue-600);
 
   --gf-surface: var(--gf-color-surface);
   --gf-surface-muted: var(--gf-color-surface-muted);
-  --gf-surface-strong: rgba(230, 237, 247, 0.92);
+  --gf-surface-strong: rgba(255, 255, 255, 0.85);
 
   --gf-text: var(--gf-color-text);
   --gf-text-secondary: var(--gf-color-text-secondary);
@@ -353,6 +475,7 @@
   --gf-shadow-soft: var(--gf-shadow-1);
   --gf-shadow-strong: var(--gf-shadow-2);
 
-  --gf-gradient: linear-gradient(135deg, var(--gf-color-primary) 0%, rgba(141, 185, 255, 0.78) 100%);
-  --gf-panel-glow: 0 0 0 1px rgba(106, 166, 255, 0.18), 0 18px 56px rgba(0, 0, 0, 0.28);
+  /* Gradient & glow effects */
+  --gf-gradient: linear-gradient(135deg, var(--gf-palette-blue-500) 0%, var(--gf-palette-blue-600) 100%);
+  --gf-panel-glow: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 6px -1px rgba(0, 0, 0, 0.25), 0 2px 4px 0 rgba(0, 0, 0, 0.2);
 }

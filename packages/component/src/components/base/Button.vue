@@ -109,38 +109,42 @@
 </script>
 
 <style scoped lang="less">
+  // Ant Design 5.x inspired Button styles
   .gf-button {
+    // CSS Variables for easy customization
     --gf-btn-bg: var(--gf-color-surface);
-    --gf-btn-bg-hover: var(--gf-color-surface-muted);
-    --gf-btn-bg-active: var(--gf-color-surface-muted);
+    --gf-btn-bg-hover: var(--gf-color-surface);
+    --gf-btn-bg-active: var(--gf-color-surface);
     --gf-btn-color: var(--gf-color-text);
     --gf-btn-border: var(--gf-color-border);
-    --gf-btn-border-hover: var(--gf-color-border-strong);
-    --gf-btn-shadow: none;
-    --gf-btn-shadow-hover: var(--gf-shadow-1);
+    --gf-btn-border-hover: var(--gf-color-primary-hover);
+    --gf-btn-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
+    --gf-btn-shadow-hover: 0 2px 0 rgba(0, 0, 0, 0.02);
+
     position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    gap: 6px;
-    padding: 6px 10px;
+    gap: 8px;
+    padding: 4px 15px;
+    height: var(--gf-control-height-md, 32px);
     min-height: var(--gf-control-height-md, 32px);
-    border-radius: var(--gf-radius-sm);
+    border-radius: var(--gf-radius-md);
     border: 1px solid var(--gf-btn-border);
     background: var(--gf-btn-bg);
     color: var(--gf-btn-color);
-    font-size: var(--gf-font-size-sm);
-    line-height: 1;
+    font-size: var(--gf-font-size-md);
+    font-weight: 400;
+    line-height: 1.5714285714;
     white-space: nowrap;
     cursor: pointer;
-    transition:
-      background var(--gf-motion-normal) var(--gf-easing),
-      border-color var(--gf-motion-normal) var(--gf-easing),
-      box-shadow var(--gf-motion-normal) var(--gf-easing),
-      color var(--gf-motion-normal) var(--gf-easing);
+    user-select: none;
+    touch-action: manipulation;
+    transition: all var(--gf-motion-normal) var(--gf-easing);
     box-shadow: var(--gf-btn-shadow);
 
+    // Primary button - Ant Design style
     &--type-primary {
       --gf-btn-bg: var(--gf-color-primary);
       --gf-btn-bg-hover: var(--gf-color-primary-hover);
@@ -148,120 +152,148 @@
       --gf-btn-color: #fff;
       --gf-btn-border: transparent;
       --gf-btn-border-hover: transparent;
-      --gf-btn-shadow-hover: var(--gf-shadow-1);
+      --gf-btn-shadow: 0 2px 0 rgba(5, 145, 255, 0.1);
+      --gf-btn-shadow-hover: 0 2px 0 rgba(5, 145, 255, 0.1);
     }
 
+    // Ghost/Outline button
     &--type-ghost {
       --gf-btn-bg: transparent;
-      --gf-btn-bg-hover: var(--gf-color-primary-soft-hover);
-      --gf-btn-bg-active: var(--gf-color-primary-soft-active);
+      --gf-btn-bg-hover: transparent;
+      --gf-btn-bg-active: transparent;
       --gf-btn-color: var(--gf-color-primary);
-      --gf-btn-border: var(--gf-color-primary-border);
-      --gf-btn-border-hover: var(--gf-color-primary-border-strong);
+      --gf-btn-border: var(--gf-color-primary);
+      --gf-btn-border-hover: var(--gf-color-primary-hover);
+      --gf-btn-shadow: none;
+      --gf-btn-shadow-hover: none;
+
+      &:hover:not(.is-disabled) {
+        --gf-btn-color: var(--gf-color-primary-hover);
+      }
     }
 
+    // Text button - minimal style
     &--type-text {
       --gf-btn-bg: transparent;
-      --gf-btn-bg-hover: var(--gf-color-primary-soft-hover);
-      --gf-btn-bg-active: var(--gf-color-primary-soft-active);
-      --gf-btn-border: transparent;
-      --gf-btn-border-hover: transparent;
-      --gf-btn-color: var(--gf-color-primary);
-      --gf-btn-shadow-hover: none;
-      padding: 6px 8px;
-    }
-
-    // Icon-only in text mode: use neutral hover/active (less blue, closer to AntD)
-    &--icon-only&--type-text {
       --gf-btn-bg-hover: var(--gf-color-fill);
       --gf-btn-bg-active: var(--gf-color-fill-secondary);
+      --gf-btn-border: transparent;
+      --gf-btn-border-hover: transparent;
+      --gf-btn-color: var(--gf-color-text);
+      --gf-btn-shadow: none;
       --gf-btn-shadow-hover: none;
-      --gf-btn-color: var(--gf-color-text-secondary);
+      padding: 4px 8px;
     }
 
+    // Icon-only text button - neutral hover
+    &--icon-only&--type-text {
+      --gf-btn-color: var(--gf-color-text-secondary);
+
+      &:hover:not(.is-disabled) {
+        --gf-btn-color: var(--gf-color-text);
+      }
+    }
+
+    // Link button
     &--type-link {
       --gf-btn-bg: transparent;
-      --gf-btn-bg-hover: var(--gf-color-primary-soft-hover);
-      --gf-btn-bg-active: var(--gf-color-primary-soft-active);
+      --gf-btn-bg-hover: transparent;
+      --gf-btn-bg-active: transparent;
       --gf-btn-border: transparent;
       --gf-btn-border-hover: transparent;
       --gf-btn-color: var(--gf-color-primary);
+      --gf-btn-shadow: none;
       --gf-btn-shadow-hover: none;
-      padding: 4px 6px;
-      text-decoration: underline;
+      padding: 4px 4px;
+      height: auto;
+      min-height: auto;
+
+      &:hover:not(.is-disabled) {
+        --gf-btn-color: var(--gf-color-primary-hover);
+      }
     }
 
+    // Dashed button
     &--type-dashed {
       --gf-btn-bg: var(--gf-color-surface);
-      --gf-btn-bg-hover: var(--gf-color-surface-muted);
-      --gf-btn-color: var(--gf-color-primary);
+      --gf-btn-bg-hover: var(--gf-color-surface);
+      --gf-btn-color: var(--gf-color-text);
       border-style: dashed;
+
+      &:hover:not(.is-disabled) {
+        --gf-btn-color: var(--gf-color-primary);
+        --gf-btn-border: var(--gf-color-primary);
+      }
     }
 
-    // Danger (AntD-ish): follow button `type`
+    // Danger state - follows button type
     &--danger {
       --gf-btn-color: var(--gf-color-danger);
-      --gf-btn-border: var(--gf-color-danger-border);
-      --gf-btn-border-hover: color-mix(in srgb, var(--gf-color-danger) 70%, var(--gf-color-danger-border));
-      --gf-btn-bg: var(--gf-color-surface);
-      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-danger-soft) 55%, var(--gf-color-surface));
-      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-danger-soft) 75%, var(--gf-color-surface));
-      --gf-btn-shadow-hover: var(--gf-shadow-1);
+      --gf-btn-border: var(--gf-color-danger);
+      --gf-btn-border-hover: var(--gf-color-danger-hover);
+
+      &:hover:not(.is-disabled) {
+        --gf-btn-color: var(--gf-color-danger-hover);
+      }
     }
 
     &--danger&--type-primary {
       --gf-btn-bg: var(--gf-color-danger);
-      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-danger) 86%, black);
-      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-danger) 78%, black);
+      --gf-btn-bg-hover: var(--gf-color-danger-hover);
+      --gf-btn-bg-active: var(--gf-color-danger-active);
       --gf-btn-color: #fff;
       --gf-btn-border: transparent;
       --gf-btn-border-hover: transparent;
+      --gf-btn-shadow: 0 2px 0 rgba(255, 77, 79, 0.1);
     }
 
     &--danger&--type-ghost {
       --gf-btn-bg: transparent;
-      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-danger-soft) 65%, transparent);
-      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-danger-soft) 85%, transparent);
-      --gf-btn-shadow-hover: none;
+      --gf-btn-bg-hover: transparent;
     }
 
     &--danger&--type-text,
     &--danger&--type-link {
       --gf-btn-bg: transparent;
-      --gf-btn-bg-hover: color-mix(in srgb, var(--gf-color-danger-soft) 70%, transparent);
-      --gf-btn-bg-active: color-mix(in srgb, var(--gf-color-danger-soft) 88%, transparent);
+      --gf-btn-bg-hover: var(--gf-color-danger-soft);
       --gf-btn-border: transparent;
-      --gf-btn-border-hover: transparent;
-      --gf-btn-shadow-hover: none;
     }
 
+    // Size variants
     &--size-small {
-      padding: 5px 8px;
-      min-height: var(--gf-control-height-sm, 26px);
-      border-radius: var(--gf-radius-xs);
-      font-size: var(--gf-font-size-xs);
-      gap: 5px;
+      padding: 0 7px;
+      height: var(--gf-control-height-sm, 24px);
+      min-height: var(--gf-control-height-sm, 24px);
+      border-radius: var(--gf-radius-sm);
+      font-size: var(--gf-font-size-sm);
+      gap: 4px;
     }
 
     &--type-link&--size-small {
-      padding: 4px 6px;
+      padding: 0 4px;
+      height: auto;
+      min-height: auto;
     }
 
     &--size-large {
-      padding: 8px 12px;
-      min-height: var(--gf-control-height-lg, 36px);
+      padding: 6px 15px;
+      height: var(--gf-control-height-lg, 40px);
+      min-height: var(--gf-control-height-lg, 40px);
       font-size: var(--gf-font-size-lg);
+      border-radius: var(--gf-radius-lg);
     }
 
+    // Block button
     &--block {
       width: 100%;
     }
 
+    // Icon-only button
     &--icon-only {
       padding: 0;
-      width: var(--gf-btn-icon-only-size, 28px);
-      height: var(--gf-btn-icon-only-size, 28px);
-      min-height: var(--gf-btn-icon-only-size, 28px);
+      width: var(--gf-btn-icon-only-size, 32px);
+      height: var(--gf-btn-icon-only-size, 32px);
+      min-height: var(--gf-btn-icon-only-size, 32px);
       gap: 0;
     }
 
@@ -270,74 +302,110 @@
     }
 
     &--size-middle&--icon-only {
-      --gf-btn-icon-only-size: 28px;
-    }
-
-    &--size-large&--icon-only {
       --gf-btn-icon-only-size: 32px;
     }
 
-    &--shape-circle {
-      border-radius: 999px;
+    &--size-large&--icon-only {
+      --gf-btn-icon-only-size: 40px;
     }
 
+    // Shape variants
+    &--shape-circle {
+      border-radius: 50%;
+    }
+
+    // Interactive states
     &:hover:not(.is-disabled) {
       background: var(--gf-btn-bg-hover);
       border-color: var(--gf-btn-border-hover);
+      color: var(--gf-btn-color);
       box-shadow: var(--gf-btn-shadow-hover);
     }
 
     &:active:not(.is-disabled) {
       background: var(--gf-btn-bg-active);
+      transition-duration: 0ms;
     }
 
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gf-focus-ring);
+    }
+
+    // Disabled state
     &.is-disabled {
-      opacity: 0.6;
       cursor: not-allowed;
+      border-color: var(--gf-color-border);
+      color: var(--gf-color-text-disabled);
+      background: var(--gf-color-fill);
       box-shadow: none;
-      filter: saturate(0.8);
     }
 
+    &--type-primary.is-disabled {
+      background: rgba(0, 0, 0, 0.04);
+      border-color: var(--gf-color-border);
+    }
+
+    &--type-text.is-disabled,
+    &--type-link.is-disabled,
+    &--type-ghost.is-disabled {
+      background: transparent;
+      border-color: transparent;
+    }
+
+    // Loading state
     &--loading .gf-button__content {
-      opacity: 0.8;
+      opacity: 0.65;
     }
 
+    // Icon
     &__icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-size: 14px;
       line-height: 1;
+
+      .gf-button--size-large & {
+        font-size: 16px;
+      }
     }
 
+    // Loading spinner
     &__spinner {
       width: 14px;
       height: 14px;
       border-radius: 50%;
       border: 2px solid currentColor;
       border-right-color: transparent;
-      animation: btn-spin 0.8s linear infinite;
+      animation: gf-btn-spin 1s linear infinite;
+
+      .gf-button--size-large & {
+        width: 16px;
+        height: 16px;
+      }
     }
 
+    // Shortcut hint
     &__shortcut {
-      margin-left: 2px;
+      margin-left: 4px;
       padding: 0 6px;
-      height: 18px;
+      height: 20px;
       display: inline-flex;
       align-items: center;
       border-radius: var(--gf-radius-xs);
       border: 1px solid var(--gf-color-kbd-border);
       background: var(--gf-color-kbd-bg);
       color: var(--gf-color-kbd-text);
-      font-size: 11px;
+      font-size: 12px;
       line-height: 1;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-      letter-spacing: 0.01em;
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      letter-spacing: 0;
       white-space: nowrap;
     }
   }
 
-  @keyframes btn-spin {
+  @keyframes gf-btn-spin {
     to {
       transform: rotate(360deg);
     }

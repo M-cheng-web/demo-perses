@@ -67,29 +67,39 @@ export function useChartResize(
    * 需要在图表初始化后调用
    */
   function initChartResize() {
-    // 需要延迟1s再初始化，确保容器大小已确定
+    // 清理之前的定时器
     if (initTimeoutId !== null) {
       clearTimeout(initTimeoutId);
     }
+
+    // 立即设置 ResizeObserver，不再延迟
+    // 监听窗口 resize（集中管理，避免多实例重复绑定）
+    unsubscribeWindowResize?.();
+    unsubscribeWindowResize = subscribeWindowResize(debouncedResize);
+
+    // 监听容器 resize（用于 grid-layout 拖拽调整大小）
+    if (chartRef.value && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        debouncedResize();
+      });
+      resizeObserver.observe(chartRef.value);
+    }
+
+    // 延迟一小段时间后触发首次 resize，确保布局已稳定
+    // 使用 requestAnimationFrame + 短延迟，而非固定 1 秒
     initTimeoutId = window.setTimeout(() => {
       initTimeoutId = null;
-      // 监听窗口 resize（集中管理，避免多实例重复绑定）
-      unsubscribeWindowResize?.();
-      unsubscribeWindowResize = subscribeWindowResize(debouncedResize);
-
-      // 监听容器 resize（用于 grid-layout 拖拽调整大小）
-      if (chartRef.value && typeof ResizeObserver !== 'undefined') {
-        resizeObserver = new ResizeObserver(() => {
-          debouncedResize();
-        });
-        resizeObserver.observe(chartRef.value);
+      if (chartInstance.value && !chartInstance.value.isDisposed() && chartRef.value) {
+        const containerWidth = chartRef.value.offsetWidth;
+        const containerHeight = chartRef.value.offsetHeight;
+        if (containerWidth > 0 && containerHeight > 0) {
+          chartInstance.value.resize({
+            width: containerWidth,
+            height: containerHeight,
+          });
+        }
       }
-
-      // 首次初始化时不需要调用
-      // if (chartInstance.value && !chartInstance.value.isDisposed()) {
-      //   chartInstance.value.resize();
-      // }
-    }, 1000);
+    }, 100); // 100ms 足够让布局稳定
   }
 
   /**

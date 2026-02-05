@@ -186,6 +186,8 @@
 
     return {
       ...theme.baseOption,
+      // 禁用动画，依赖 loading 遮罩的过渡效果
+      animation: false,
       // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
         ...theme.baseOption.tooltip,

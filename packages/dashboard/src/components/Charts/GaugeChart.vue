@@ -214,6 +214,8 @@
 
     return {
       ...theme.baseOption,
+      // 禁用动画，依赖 loading 遮罩的过渡效果
+      animation: false,
       series: [
         {
           type: 'gauge',

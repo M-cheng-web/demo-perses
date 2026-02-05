@@ -143,30 +143,36 @@
 </script>
 
 <style scoped lang="less">
+  // Ant Design 5.x inspired Input styles
   .gf-input {
     position: relative;
     display: inline-flex;
     align-items: center;
     width: 100%;
+    height: var(--gf-control-height-md);
     min-height: var(--gf-control-height-md);
     padding: 0 11px;
-    border-radius: var(--gf-radius-sm);
-    border: 1px solid var(--gf-control-border-color, var(--gf-border));
-    background: var(--gf-control-bg, var(--gf-color-surface));
-    transition:
-      border-color var(--gf-motion-fast) var(--gf-easing),
-      box-shadow var(--gf-motion-fast) var(--gf-easing),
-      background var(--gf-motion-fast) var(--gf-easing);
+    border-radius: var(--gf-radius-md);
+    border: 1px solid var(--gf-color-border);
+    background: var(--gf-color-surface);
+    color: var(--gf-color-text);
+    font-size: var(--gf-font-size-md);
+    line-height: 1.5714285714;
+    transition: all var(--gf-motion-normal) var(--gf-easing);
 
+    // Hover state
     &:hover:not(.is-disabled) {
-      border-color: var(--gf-color-primary);
+      border-color: var(--gf-color-primary-hover);
     }
 
+    // Focus state - Ant Design style
     &.is-focused:not(.is-disabled) {
       border-color: var(--gf-color-primary);
-      box-shadow: 0 0 0 2px var(--gf-color-primary-soft);
+      box-shadow: var(--gf-focus-ring);
+      outline: none;
     }
 
+    // Inner input element
     &__input {
       flex: 1;
       min-width: 0;
@@ -175,53 +181,64 @@
       border: none;
       outline: none;
       background: transparent;
-      color: var(--gf-text);
-      font-size: var(--gf-font-size-sm);
-      line-height: 1.5714285714285714;
+      color: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      font-family: inherit;
 
       &::placeholder {
-        color: var(--gf-color-text-tertiary);
+        color: var(--gf-color-text-placeholder);
         opacity: 1;
       }
 
       &:disabled {
         cursor: not-allowed;
         color: var(--gf-color-text-disabled);
+
+        &::placeholder {
+          color: var(--gf-color-text-disabled);
+        }
       }
     }
 
+    // Prefix and suffix
     &__prefix,
     &__suffix {
       display: inline-flex;
       align-items: center;
       flex-shrink: 0;
-      color: var(--gf-color-text-secondary);
-      font-size: var(--gf-font-size-sm);
+      color: var(--gf-color-text-quaternary);
+      font-size: var(--gf-font-size-md);
+      transition: color var(--gf-motion-fast) var(--gf-easing);
     }
 
     &__prefix {
-      margin-right: 4px;
+      margin-right: 8px;
     }
 
     &__suffix {
-      margin-left: 4px;
+      margin-left: 8px;
     }
 
+    // Clear button
     &__clear {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       margin-left: 4px;
-      color: var(--gf-color-text-tertiary);
+      padding: 0 4px;
+      color: var(--gf-color-text-quaternary);
       font-size: 12px;
       cursor: pointer;
       opacity: 0;
-      transition:
-        color var(--gf-motion-fast) var(--gf-easing),
-        opacity var(--gf-motion-fast) var(--gf-easing);
+      transition: all var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
         color: var(--gf-color-text-secondary);
+      }
+
+      &:active {
+        color: var(--gf-color-text);
       }
     }
 
@@ -231,6 +248,7 @@
       justify-content: center;
     }
 
+    // Show clear button on hover/focus
     &:hover &__clear,
     &.is-focused &__clear {
       opacity: 1;
@@ -238,36 +256,73 @@
 
     // Size variants
     &--size-small {
+      height: var(--gf-control-height-sm);
       min-height: var(--gf-control-height-sm);
       padding: 0 7px;
+      border-radius: var(--gf-radius-sm);
+      font-size: var(--gf-font-size-sm);
 
       .gf-input__input {
         padding: 0;
-        font-size: var(--gf-font-size-sm);
+      }
+
+      .gf-input__prefix {
+        margin-right: 4px;
+      }
+
+      .gf-input__suffix {
+        margin-left: 4px;
       }
     }
 
     &--size-large {
+      height: var(--gf-control-height-lg);
       min-height: var(--gf-control-height-lg);
       padding: 0 11px;
+      border-radius: var(--gf-radius-lg);
+      font-size: var(--gf-font-size-lg);
 
       .gf-input__input {
         padding: 7px 0;
-        font-size: var(--gf-font-size-md);
       }
     }
 
     // Disabled state
     &.is-disabled {
       background: var(--gf-color-fill);
+      border-color: var(--gf-color-border);
+      color: var(--gf-color-text-disabled);
       cursor: not-allowed;
 
       &:hover {
-        border-color: var(--gf-border);
+        border-color: var(--gf-color-border);
+      }
+    }
+
+    // Status variants (for form validation)
+    &.is-error {
+      border-color: var(--gf-color-danger);
+
+      &:hover:not(.is-disabled) {
+        border-color: var(--gf-color-danger-hover);
       }
 
-      .gf-input__input::placeholder {
-        color: var(--gf-color-text-disabled);
+      &.is-focused:not(.is-disabled) {
+        border-color: var(--gf-color-danger);
+        box-shadow: var(--gf-focus-ring-error);
+      }
+    }
+
+    &.is-warning {
+      border-color: var(--gf-color-warning);
+
+      &:hover:not(.is-disabled) {
+        border-color: var(--gf-color-warning-hover);
+      }
+
+      &.is-focused:not(.is-disabled) {
+        border-color: var(--gf-color-warning);
+        box-shadow: var(--gf-focus-ring-warning);
       }
     }
   }

@@ -286,6 +286,7 @@
 </script>
 
 <style scoped lang="less">
+  // Ant Design 5.x inspired Drawer styles
   .gf-drawer {
     position: fixed;
     inset: 0;
@@ -300,7 +301,7 @@
     background: var(--gf-color-mask);
     opacity: 0;
     pointer-events: none;
-    transition: opacity var(--gf-motion-normal) var(--gf-easing);
+    transition: opacity var(--gf-motion-slow) var(--gf-easing);
   }
 
   .gf-drawer__mask.is-visible {
@@ -312,14 +313,14 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    background: var(--gf-color-surface);
-    box-shadow: var(--gf-shadow-2);
+    background: var(--gf-color-bg-elevated);
+    box-shadow: var(--gf-shadow-3);
     display: flex;
     flex-direction: column;
     will-change: transform;
     transform: translateX(var(--gf-drawer-slide-from, 100%));
     pointer-events: none;
-    transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    transition: transform var(--gf-motion-slow) cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   .gf-drawer__panel.is-visible {
@@ -339,11 +340,11 @@
 
   .gf-drawer__header {
     padding: 16px 24px;
-    border-bottom: 1px solid var(--gf-color-border);
+    border-bottom: 1px solid var(--gf-color-border-secondary);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 16px;
     flex-shrink: 0;
   }
 
@@ -368,22 +369,22 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    gap: 2px;
+    gap: 4px;
   }
 
   .gf-drawer__title {
-    font-size: 16px;
+    font-size: var(--gf-font-size-lg);
     font-weight: 600;
     line-height: 1.5;
-    color: var(--gf-color-text);
+    color: var(--gf-color-text-heading);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .gf-drawer__subtitle {
-    font-size: var(--gf-font-size-sm);
-    line-height: 1.5714285714285714;
+    font-size: var(--gf-font-size-md);
+    line-height: 1.5714285714;
     color: var(--gf-color-text-secondary);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -394,40 +395,42 @@
     flex: 1;
     overflow: auto;
     padding: 24px;
-    font-size: var(--gf-font-size-sm);
-    line-height: 1.5714285714285714;
+    font-size: var(--gf-font-size-md);
+    line-height: 1.5714285714;
     color: var(--gf-color-text);
   }
 
   .gf-drawer__footer {
-    padding: 12px 16px;
-    border-top: 1px solid var(--gf-color-border);
+    padding: 16px 24px;
+    border-top: 1px solid var(--gf-color-border-secondary);
     display: flex;
     justify-content: flex-end;
     gap: 8px;
     flex-shrink: 0;
-    background: var(--gf-color-surface-muted);
+    background: var(--gf-color-bg-elevated);
   }
 
   .gf-drawer__close {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--gf-color-text-tertiary);
+    color: var(--gf-color-text-quaternary);
     cursor: pointer;
-    border-radius: var(--gf-radius-xs);
-    transition:
-      color var(--gf-motion-fast) var(--gf-easing),
-      background var(--gf-motion-fast) var(--gf-easing);
+    border-radius: var(--gf-radius-sm);
+    transition: all var(--gf-motion-normal) var(--gf-easing);
 
     &:hover {
-      color: var(--gf-color-text);
+      color: var(--gf-color-text-secondary);
       background: var(--gf-color-fill);
+    }
+
+    &:active {
+      color: var(--gf-color-text);
     }
   }
 </style>
