@@ -5,7 +5,7 @@
   - 一次性传入全量 items（layout），不做分页、不做 loadMore
   - DOM 只渲染可视范围（hotRange）+ pinned 缓存，避免 1000+ 面板 DOM 压力
   - 滚动过程中不更新“可视面板集合”（scheduler 可据此暂停查询/渲染），停留 idleMs 后再上报
-  - hydratedIds 累积：已经真实渲染过的面板再次出现时可直接渲染内容（减少骨架闪烁）
+  - hydratedIds 累积：已经真实渲染过的面板再次出现时可直接渲染内容（减少占位态闪烁）
 -->
 <template>
   <div ref="containerRef" :class="bem()" :style="containerStyle">

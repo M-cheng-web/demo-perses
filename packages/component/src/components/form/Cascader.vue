@@ -92,10 +92,15 @@
       size?: 'small' | 'middle' | 'large';
       /**
        * 下拉最小宽度（px）
-       * - 默认：跟随触发器宽度
-       * - 传入后：minWidth = max(triggerWidth, dropdownMinWidth)
+       * - 默认：跟随级联菜单内容宽度（避免大触发器导致下拉过宽）
+       * - 传入后：用于抬高最小宽度
        */
       dropdownMinWidth?: number;
+      /**
+       * 下拉最大宽度（px）
+       * - 用于避免触发器过宽时下拉面板铺满整个屏幕
+       */
+      dropdownMaxWidth?: number;
       /** 禁用状态 */
       disabled?: boolean;
     }>(),
@@ -104,6 +109,7 @@
       placeholder: '请选择',
       size: 'middle',
       dropdownMinWidth: undefined,
+      dropdownMaxWidth: 640,
       disabled: false,
     }
   );
@@ -176,7 +182,9 @@
   const openDropdown = async () => {
     if (props.disabled) return;
     if (open.value) return;
-    activePath.value = [...selectedPath.value];
+    // 打开时先仅展示首列；hover 到父级时再展开子级（更符合级联预期）
+    activePath.value = [];
+    primeDropdownPosition();
     open.value = true;
     await nextTick();
     syncDropdownPosition();
@@ -185,6 +193,7 @@
   const close = () => {
     if (!open.value) return;
     open.value = false;
+    dropdownStyle.value = {};
     // Treat "dropdown closed" as finishing interaction (AntD-ish blur validation).
     formItem?.onFieldBlur();
   };
@@ -230,7 +239,55 @@
   };
 
   const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
+  const MENU_COLUMN_WIDTH = 168;
+  const VIEWPORT_PADDING = 8;
+  const DROPDOWN_OFFSET = 6;
   let rafId: number | null = null;
+
+  const resolveDropdownMetrics = (columnCount: number) => {
+    const viewportMaxWidth = Math.max(220, window.innerWidth - VIEWPORT_PADDING * 2);
+    const configMaxWidth = typeof props.dropdownMaxWidth === 'number' ? Math.max(220, props.dropdownMaxWidth) : viewportMaxWidth;
+    const maxWidth = Math.min(configMaxWidth, viewportMaxWidth);
+    const rawMin = typeof props.dropdownMinWidth === 'number' ? props.dropdownMinWidth : MENU_COLUMN_WIDTH;
+    const minWidth = clamp(rawMin, MENU_COLUMN_WIDTH, maxWidth);
+    const menuWidth = clamp(MENU_COLUMN_WIDTH * Math.max(1, columnCount), minWidth, maxWidth);
+    return {
+      minWidth,
+      maxWidth,
+      menuWidth,
+    };
+  };
+
+  const placeDropdown = (rect: DOMRect, menuWidth: number, menuHeight: number) => {
+    let left = rect.left;
+    let top = rect.bottom + DROPDOWN_OFFSET;
+
+    left = clamp(left, VIEWPORT_PADDING, window.innerWidth - menuWidth - VIEWPORT_PADDING);
+    if (top + menuHeight > window.innerHeight - VIEWPORT_PADDING) {
+      top = rect.top - menuHeight - DROPDOWN_OFFSET;
+      if (top < VIEWPORT_PADDING) top = VIEWPORT_PADDING;
+    }
+
+    return {
+      left,
+      top,
+    };
+  };
+
+  const primeDropdownPosition = () => {
+    const trigger = triggerRef.value;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    const { minWidth, maxWidth, menuWidth } = resolveDropdownMetrics(1);
+    const { left, top } = placeDropdown(rect, menuWidth, 0);
+    dropdownStyle.value = {
+      width: `${menuWidth}px`,
+      minWidth: `${minWidth}px`,
+      maxWidth: `${maxWidth}px`,
+      left: `${left}px`,
+      top: `${top}px`,
+    };
+  };
 
   const scheduleSyncDropdownPosition = () => {
     if (!open.value) return;
@@ -247,22 +304,14 @@
     const rect = trigger.getBoundingClientRect();
     await nextTick();
     const menu = dropdownRef.value;
-    const menuWidth = menu?.offsetWidth || rect.width;
+    const { minWidth, maxWidth, menuWidth } = resolveDropdownMetrics(menus.value.length);
     const menuHeight = menu?.offsetHeight || 0;
-    const padding = 8;
-    let left = rect.left;
-    let top = rect.bottom + 6;
-
-    left = clamp(left, padding, window.innerWidth - menuWidth - padding);
-    if (top + menuHeight > window.innerHeight - padding) {
-      top = rect.top - menuHeight - 6;
-      if (top < padding) top = padding;
-    }
-
-    const minWidth = Math.max(rect.width, typeof props.dropdownMinWidth === 'number' ? props.dropdownMinWidth : 0);
+    const { left, top } = placeDropdown(rect, menuWidth, menuHeight);
 
     dropdownStyle.value = {
+      width: `${menuWidth}px`,
       minWidth: `${minWidth}px`,
+      maxWidth: `${maxWidth}px`,
       left: `${left}px`,
       top: `${top}px`,
     };
@@ -298,6 +347,15 @@
       if (val) {
         unsubscribeScroll = subscribeWindowEvent('scroll', () => scheduleSyncDropdownPosition(), { capture: true, passive: true });
       }
+    }
+  );
+
+  watch(
+    () => activeValues.value.join('|'),
+    async () => {
+      if (!open.value) return;
+      await nextTick();
+      scheduleSyncDropdownPosition();
     }
   );
 </script>
@@ -369,13 +427,21 @@
 
     &__menus {
       display: flex;
+      width: max-content;
+      max-width: 100%;
       max-height: 320px;
+      overflow-x: auto;
+      overflow-y: hidden;
     }
 
     &__menu {
-      min-width: 180px;
+      flex: 0 0 168px;
+      width: 168px;
+      min-width: 168px;
+      max-width: 168px;
       max-height: 320px;
-      overflow: auto;
+      overflow-x: hidden;
+      overflow-y: auto;
       padding: 4px;
       border-right: 1px solid var(--gf-color-border);
 
@@ -390,6 +456,7 @@
       cursor: pointer;
       color: var(--gf-color-text);
       min-height: 32px;
+      min-width: 0;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -419,8 +486,10 @@
     }
 
     &__option-label {
+      display: block;
       flex: 1;
       min-width: 0;
+      max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;

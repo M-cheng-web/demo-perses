@@ -1,10 +1,16 @@
 <!-- 组件说明：轻量表格，支持排序、分页、加载遮罩与自定义单元格 (AntD-inspired) -->
 <template>
-  <div :class="[bem(), bem({ [`size-${size}`]: true, bordered })]">
-    <Spin :spinning="loading" :tip="loadingTip">
+  <div
+    :class="[
+      bem(),
+      bem({ [`size-${size}`]: true, bordered }),
+      { 'has-scroll-y': hasScrollY, 'has-scroll-x': hasScrollX, 'use-body-scroll': useBodyScroll },
+    ]"
+  >
+    <Spin :spinning="loading" :tip="loadingTip" :class="bem('spin')">
       <div :class="bem('container')">
         <div :class="bem('content')" :style="wrapStyle">
-          <table :class="bem('table')">
+          <table :class="bem('table')" :style="tableStyle">
             <thead :class="bem('thead')">
               <tr>
                 <th
@@ -24,7 +30,7 @@
                 </th>
               </tr>
             </thead>
-            <tbody :class="bem('tbody')">
+            <tbody ref="tbodyRef" :class="bem('tbody')" :style="tbodyStyle">
               <tr v-for="(row, rowIndex) in pagedData" :key="resolveRowKey(row, rowIndex)" :class="bem('row')">
                 <td v-for="col in columns" :key="col.key || col.dataIndex" :class="bem('cell')">
                   <slot name="bodyCell" :column="col" :text="row[col.dataIndex || '']" :record="row" :index="rowIndex">
@@ -146,6 +152,7 @@
   const page = ref(mergedPagination.value !== false && mergedPagination.value.current ? mergedPagination.value.current : 1);
   const pageSize = ref(mergedPagination.value !== false && mergedPagination.value.pageSize ? mergedPagination.value.pageSize : 20);
   const sortState = ref<{ key: string; order: 'ascend' | 'descend' } | null>(null);
+  const tbodyRef = ref<HTMLTableSectionElement | null>(null);
 
   watch(
     () => props.dataSource,
@@ -214,17 +221,53 @@
     return row.key ?? index;
   };
 
+  const hasScrollY = computed(() => props.scroll?.y !== undefined && props.scroll?.y !== null && props.scroll?.y !== '');
+  const hasScrollX = computed(() => props.scroll?.x !== undefined && props.scroll?.x !== null && props.scroll?.x !== '');
+  const useBodyScroll = computed(() => hasScrollY.value && !hasScrollX.value);
+
+  const tableStyle = computed<Record<string, string> | undefined>(() => {
+    if (!hasScrollX.value) {
+      return {
+        width: '100%',
+        minWidth: '100%',
+      };
+    }
+    const x = props.scroll?.x;
+    if (!x) return undefined;
+    return {
+      width: 'max-content',
+      minWidth: typeof x === 'number' ? `${x}px` : x,
+    };
+  });
+
   const wrapStyle = computed(() => {
     const style: Record<string, string> = {};
-    if (props.scroll?.y) {
-      const y = props.scroll.y;
+    style.overflowX = 'auto';
+    if (hasScrollY.value && !useBodyScroll.value) {
+      const y = props.scroll?.y;
+      if (!y) return style;
       style.maxHeight = typeof y === 'number' ? `${y}px` : y;
       style.overflowY = 'auto';
-    }
-    if (props.scroll?.x) {
-      style.overflowX = 'auto';
+    } else {
+      style.overflowY = 'visible';
     }
     return style;
+  });
+
+  const tbodyStyle = computed<Record<string, string> | undefined>(() => {
+    if (!useBodyScroll.value) return undefined;
+    const y = props.scroll?.y;
+    if (!y) return undefined;
+    return {
+      maxHeight: typeof y === 'number' ? `${y}px` : y,
+    };
+  });
+
+  watch([page, pageSize], () => {
+    if (!useBodyScroll.value) return;
+    const el = tbodyRef.value;
+    if (!el) return;
+    el.scrollTop = 0;
   });
 </script>
 
@@ -237,22 +280,45 @@
 
     &__container {
       width: 100%;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    &__spin {
+      width: 100%;
+      min-width: 0;
+    }
+
+    &__spin :deep(.gf-spin__container) {
+      width: 100%;
+      min-width: 0;
     }
 
     &__content {
       width: 100%;
-      overflow: auto;
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
     }
 
     &__table {
       width: 100%;
+      min-width: 100%;
       border-collapse: separate;
       border-spacing: 0;
       table-layout: auto;
     }
 
+    &:not(.has-scroll-x) &__table {
+      table-layout: fixed;
+    }
+
     &__thead {
       background: var(--gf-color-fill);
+    }
+
+    &__tbody {
+      background: var(--gf-color-surface);
     }
 
     &__cell {
@@ -272,6 +338,8 @@
       color: var(--gf-color-text);
       background: var(--gf-color-fill);
       position: relative;
+      padding-top: 12px;
+      padding-bottom: 12px;
 
       &.is-sortable {
         cursor: pointer;
@@ -292,9 +360,16 @@
     &__sorter {
       display: inline-flex;
       flex-direction: column;
-      gap: 0;
-      font-size: 11px;
+      gap: 1px;
+      margin-left: 1px;
+      font-size: 9px;
+      line-height: 1;
       color: var(--gf-color-text-tertiary);
+
+      > * {
+        display: block;
+        line-height: 1;
+      }
 
       .is-active {
         color: var(--gf-color-primary);
@@ -317,6 +392,58 @@
     &__pagination {
       display: flex;
       justify-content: flex-end;
+    }
+
+    &.has-scroll-y &__cell-header {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      background: var(--gf-color-fill);
+      background-clip: padding-box;
+    }
+
+    &.has-scroll-y &__thead {
+      position: relative;
+      z-index: 3;
+    }
+
+    &.has-scroll-y &__cell-header::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: var(--gf-color-border);
+      pointer-events: none;
+    }
+
+    &.use-body-scroll &__content {
+      overflow-y: visible;
+    }
+
+    &.use-body-scroll &__table {
+      table-layout: fixed;
+    }
+
+    &.use-body-scroll &__thead,
+    &.use-body-scroll &__tbody > tr {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    &.use-body-scroll &__tbody {
+      display: block;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+    }
+
+    &.use-body-scroll &__cell-header {
+      position: relative;
+      top: auto;
+      z-index: 1;
     }
 
     // Bordered variant
@@ -348,9 +475,18 @@
       font-size: var(--gf-font-size-xs);
     }
 
+    &--size-small &__sorter {
+      font-size: 8px;
+      gap: 0;
+    }
+
     &--size-large &__cell {
       padding: 20px 16px;
       font-size: var(--gf-font-size-md);
+    }
+
+    &--size-large &__sorter {
+      font-size: 10px;
     }
   }
 </style>

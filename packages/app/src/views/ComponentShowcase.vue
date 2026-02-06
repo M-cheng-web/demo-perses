@@ -195,7 +195,7 @@
         </Card>
 
         <Card title="数据展示（Table + 斑马纹）" size="small" :bordered="true">
-          <Table :columns="tableColumns" :data-source="tableData" :pagination="tablePagination" size="small" />
+          <Table :columns="tableColumns" :data-source="tableData" :pagination="tablePagination" :scroll="tableScroll" size="small" />
         </Card>
 
         <Card title="列表（Variants / Slots）" size="small" :bordered="true">
@@ -518,7 +518,7 @@
   ];
 
   const tableData = computed(() =>
-    Array.from({ length: 14 }, (_, i) => ({
+    Array.from({ length: 72 }, (_, i) => ({
       key: `row-${i + 1}`,
       name: `metric_${String(i + 1).padStart(2, '0')}`,
       env: i % 3 === 0 ? 'prod' : i % 3 === 1 ? 'staging' : 'dev',
@@ -526,10 +526,14 @@
     }))
   );
 
+  const tableScroll = {
+    y: 320,
+  };
+
   const tablePagination = {
-    pageSize: 8,
+    pageSize: 20,
     showSizeChanger: true,
-    pageSizeOptions: ['8', '12', '20'],
+    pageSizeOptions: ['10', '20', '50'],
     hideOnSinglePage: false,
     showTotal: (total: number) => `共 ${total} 条`,
   };

@@ -13,6 +13,7 @@
   <div :class="bem()">
     <grid-layout
       ref="gridLayoutRef"
+      :class="bem('grid')"
       :layout="layoutModel"
       :col-num="1"
       :row-height="GROUP_ROW_HEIGHT"
@@ -285,6 +286,19 @@
     :deep(.vue-grid-item) {
       // 关键：拖拽时禁用所有 transition 避免卡顿
       transition: none;
+      position: relative;
+
+      // 列表态视觉分割线（不参与布局尺寸计算，避免影响拖拽定位）
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 1px;
+        background: var(--gf-color-border-muted);
+        pointer-events: none;
+      }
 
       &:hover {
         z-index: 10;
@@ -299,6 +313,10 @@
         opacity: 0.95;
         // 禁用任何 transition
         transition: none !important;
+
+        &::after {
+          opacity: 0;
+        }
 
         * {
           transition: none !important;

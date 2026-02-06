@@ -1,6 +1,6 @@
 <!-- 组件说明：元素间距容器，支持方向、对齐与换行 (AntD-inspired) -->
 <template>
-  <div :class="[bem(), bem(`dir-${direction}`), { 'is-wrap': wrap, [`gf-space--size-${sizePreset}`]: sizePreset }]" :style="inlineStyle">
+  <div :class="[bem(), bem({ [`dir-${direction}`]: true }), { 'is-wrap': wrap, [`gf-space--size-${sizePreset}`]: sizePreset }]" :style="inlineStyle">
     <template v-for="(child, index) in $slots.default?.()" :key="index">
       <div v-if="split && index > 0" :class="bem('split')">
         <slot name="split">
@@ -55,6 +55,7 @@
 
   const inlineStyle = computed<CSSProperties>(() => {
     const style: CSSProperties = {};
+    const resolvedAlign = props.direction === 'vertical' && props.align === 'center' ? 'stretch' : props.align;
 
     // Gap
     if (typeof props.size === 'number') {
@@ -65,7 +66,7 @@
     }
 
     // Align
-    switch (props.align) {
+    switch (resolvedAlign) {
       case 'start':
         style.alignItems = 'flex-start';
         break;
@@ -74,6 +75,9 @@
         break;
       case 'baseline':
         style.alignItems = 'baseline';
+        break;
+      case 'stretch':
+        style.alignItems = 'stretch';
         break;
       default:
         style.alignItems = 'center';
@@ -110,6 +114,12 @@
     &--dir-vertical {
       flex-direction: column;
       width: 100%;
+    }
+
+    &--dir-vertical > .gf-space__item {
+      width: 100%;
+      min-width: 0;
+      display: flex;
     }
 
     &.is-wrap {

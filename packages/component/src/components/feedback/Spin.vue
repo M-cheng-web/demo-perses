@@ -88,7 +88,8 @@
       background: currentColor;
       border-radius: 50%;
       opacity: 0.3;
-      animation: gf-spin-dot 1s ease-in-out infinite alternate;
+      transform: scale(0.72);
+      animation: gf-spin-dot 1.2s ease-in-out infinite;
 
       &:nth-child(1) {
         top: 0;
@@ -98,19 +99,19 @@
       &:nth-child(2) {
         top: 0;
         right: 0;
-        animation-delay: 0.4s;
+        animation-delay: 0.3s;
       }
 
       &:nth-child(3) {
         bottom: 0;
         right: 0;
-        animation-delay: 0.8s;
+        animation-delay: 0.6s;
       }
 
       &:nth-child(4) {
         bottom: 0;
         left: 0;
-        animation-delay: 1.2s;
+        animation-delay: 0.9s;
       }
     }
 
@@ -154,13 +155,20 @@
 
   @keyframes gf-spin-rotate {
     to {
-      transform: rotate(405deg);
+      transform: rotate(360deg);
     }
   }
 
   @keyframes gf-spin-dot {
-    to {
+    0%,
+    100% {
+      opacity: 0.3;
+      transform: scale(0.72);
+    }
+
+    50% {
       opacity: 1;
+      transform: scale(1);
     }
   }
 </style>

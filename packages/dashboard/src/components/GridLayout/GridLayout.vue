@@ -58,8 +58,8 @@
               </template>
 
               <PanelContent v-if="isHydrated(layoutItem.i)" :panel="panelById.get(layoutItem.i as ID)!" />
-              <div v-else :class="bem('panel-skeleton')">
-                <Skeleton :active="true" height="100%" />
+              <div v-else :class="bem('panel-loading')">
+                <div :class="bem('panel-loading-spinner')"></div>
               </div>
             </Panel>
 
@@ -83,7 +83,7 @@
 
 <script setup lang="ts">
   import { computed, onBeforeUnmount, ref, watch } from 'vue';
-  import { Alert, Button, Empty, Panel, Skeleton } from '@grafana-fast/component';
+  import { Alert, Button, Empty, Panel } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import { GridLayout, GridItem } from 'vue-grid-layout-v3';
   import type { PanelLayout, Panel as PanelType, ID } from '@grafana-fast/types';
@@ -135,7 +135,7 @@
 
   /**
    * 缓存策略（解决“滚远了再滚回来，ECharts 重新 init/重画”的体感问题）
-   * - VirtualList 的 hydratedIds 只保证“不显示骨架”，不保证组件实例不被卸载
+   * - VirtualList 的 hydratedIds 只保证“不显示占位态”，不保证组件实例不被卸载
    * - keepAliveCount 通过 pinnedIds 让一定数量的面板保持渲染，避免频繁卸载/重建
    */
   const keepAliveCount = computed(() => {
@@ -269,9 +269,23 @@
       padding: 16px;
     }
 
-    &__panel-skeleton {
+    &__panel-loading {
       height: 100%;
-      padding: 16px;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      background: var(--gf-color-surface);
+    }
+
+    &__panel-loading-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--gf-color-fill-tertiary);
+      border-top-color: var(--gf-color-primary);
+      border-radius: 50%;
+      animation: dp-grid-layout-spin 0.8s linear infinite;
     }
 
     // Grid item styling - 优化拖拽性能
@@ -314,6 +328,15 @@
     :deep(.gf-panel) {
       width: 100%;
       height: 100%;
+    }
+  }
+
+  @keyframes dp-grid-layout-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
     }
   }
 </style>

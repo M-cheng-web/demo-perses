@@ -43,8 +43,8 @@
               </template>
 
               <PanelContent v-if="isHydrated(layoutItem.i)" :panel="panelById.get(String(layoutItem.i))!" />
-              <div v-else :class="bem('panel-skeleton')">
-                <Skeleton :active="true" height="100%" />
+              <div v-else :class="bem('panel-loading')">
+                <div :class="bem('panel-loading-spinner')"></div>
               </div>
             </Panel>
 
@@ -67,7 +67,7 @@
 <script setup lang="ts">
   import { computed, h } from 'vue';
   import type { PanelGroup, PanelLayout, Panel as PanelType, ID } from '@grafana-fast/types';
-  import { Alert, Button, Empty, Panel, Skeleton, Tooltip } from '@grafana-fast/component';
+  import { Alert, Button, Empty, Panel, Tooltip } from '@grafana-fast/component';
   import { FullscreenOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '/#/utils';
   import { useDashboardStore } from '/#/stores';
@@ -195,9 +195,32 @@
       padding: 16px;
     }
 
-    &__panel-skeleton {
+    &__panel-loading {
       height: 100%;
-      padding: 16px;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      background: var(--gf-color-surface);
+    }
+
+    &__panel-loading-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--gf-color-fill-tertiary);
+      border-top-color: var(--gf-color-primary);
+      border-radius: 50%;
+      animation: dp-all-panels-view-spin 0.8s linear infinite;
+    }
+  }
+
+  @keyframes dp-all-panels-view-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
     }
   }
 </style>

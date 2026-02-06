@@ -23,9 +23,9 @@
         </div>
       </div>
 
-      <div v-if="state.dashboard" class="dp-dashboard-view__stats">
-        <Tag size="small" color="var(--gf-color-primary)">面板组 {{ state.dashboard.groupCount }}</Tag>
-        <Tag size="small" variant="neutral">dashboardId: {{ state.dashboard.id ?? '-' }}</Tag>
+      <div class="dp-dashboard-view__stats" :class="{ 'is-placeholder': !state.dashboard }">
+        <Tag size="small" color="var(--gf-color-primary)">面板组 {{ state.dashboard?.groupCount ?? '-' }}</Tag>
+        <Tag size="small" variant="neutral">dashboardId: {{ state.dashboard?.id ?? '-' }}</Tag>
         <Tag size="small" :color="state.mounted ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
           {{ state.mounted ? '已挂载' : '未挂载' }}
         </Tag>
@@ -38,14 +38,16 @@
         <Tag size="small" variant="neutral">容器: {{ state.containerSize.width }} × {{ state.containerSize.height }}</Tag>
       </div>
 
-      <div v-if="state.dashboard" class="dp-dashboard-view__command-grid">
+      <div class="dp-dashboard-view__command-grid" :class="{ 'is-placeholder': !state.dashboard }">
         <div class="dp-dashboard-view__group">
           <div class="dp-dashboard-view__group-title">Dashboard</div>
           <div class="dp-dashboard-view__group-actions">
             <Button size="small" type="primary" @click="reloadDashboard">重新加载</Button>
-            <Button size="small" type="ghost" @click="handleRefresh">刷新时间范围</Button>
-            <Button size="small" type="ghost" @click="setQuickRange">最近 5 分钟</Button>
-            <Button size="small" type="ghost" @click="toggleReadOnly">{{ state.readOnly ? '切换为可编辑' : '切换为只读' }}</Button>
+            <Button size="small" type="ghost" :disabled="!state.dashboard" @click="handleRefresh">刷新时间范围</Button>
+            <Button size="small" type="ghost" :disabled="!state.dashboard" @click="setQuickRange">最近 5 分钟</Button>
+            <Button size="small" type="ghost" :disabled="!state.dashboard" @click="toggleReadOnly">
+              {{ state.readOnly ? '切换为可编辑' : '切换为只读' }}
+            </Button>
           </div>
         </div>
 
@@ -177,17 +179,18 @@
   .dp-dashboard-view {
     width: 100%;
     height: 100%;
-    overflow: auto;
+    min-height: 0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: var(--gf-space-3);
-    padding: var(--gf-space-3);
+    gap: var(--gf-space-2);
+    padding: var(--gf-space-2);
 
     &__header {
       position: sticky;
-      top: var(--gf-space-3);
+      top: var(--gf-space-2);
       z-index: 20;
-      padding: 14px 16px;
+      padding: 10px 12px;
       border-radius: var(--gf-radius-lg);
       border: 1px solid var(--gf-color-border);
       background: var(--gf-color-surface);
@@ -206,34 +209,34 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
     &__title {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
       min-width: 0;
     }
 
     &__h1 {
-      font-size: 18px;
+      font-size: 17px;
       line-height: 1.15;
       font-weight: 820;
       letter-spacing: 0.2px;
     }
 
     &__sub {
-      font-size: 12px;
+      font-size: 11px;
       line-height: 1.45;
       color: var(--gf-color-text-tertiary);
-      max-width: 640px;
+      max-width: 560px;
     }
 
     &__nav {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
       justify-content: flex-end;
       flex-wrap: wrap;
@@ -242,11 +245,16 @@
     &__stats {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
-      padding-top: 10px;
-      margin-top: 10px;
+      padding-top: 8px;
+      margin-top: 8px;
       border-top: 1px solid var(--gf-color-border-muted);
+    }
+
+    &__stats.is-placeholder,
+    &__command-grid.is-placeholder {
+      opacity: 0.96;
     }
 
     &__mono {
@@ -269,12 +277,12 @@
     &__command-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 10px;
-      margin-top: 12px;
+      gap: 8px;
+      margin-top: 8px;
     }
 
     &__group {
-      padding: 10px;
+      padding: 8px;
       border-radius: var(--gf-radius-md);
       border: 1px solid var(--gf-color-border-muted);
       background: var(--gf-color-surface);
@@ -294,7 +302,7 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--gf-color-text-tertiary);
-      padding-bottom: 8px;
+      padding-bottom: 6px;
     }
 
     &__group-actions {
@@ -305,10 +313,10 @@
     }
 
     &__canvas {
-      // 固定测试台主画布高度：避免 dashboard 加载完成后 header 变高导致 canvas 被压缩（布局跳动）
-      flex: 0 0 auto;
-      height: clamp(520px, 72vh, 940px);
-      min-height: 480px;
+      // 画布占满测试台剩余空间；header 区域常驻后，加载前后高度不会跳动
+      flex: 1 1 auto;
+      height: auto;
+      min-height: 0;
       border-radius: var(--gf-radius-lg);
       background: var(--gf-color-surface-muted);
       border: 1px solid var(--gf-color-border);

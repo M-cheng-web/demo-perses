@@ -3,8 +3,16 @@
   <div :class="bem()">
     <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
 
-    <div :class="bem('wrapper')">
-      <Table :columns="columns" :data-source="dataSource" :pagination="paginationConfig" size="small" :style="{ '--gf-table-wrap-height': '100%' }">
+    <div ref="wrapperRef" :class="bem('wrapper')">
+      <Table
+        ref="tableRef"
+        :columns="columns"
+        :data-source="dataSource"
+        :pagination="paginationConfig"
+        :scroll="tableScroll"
+        size="small"
+        style="height: 100%"
+      >
         <template #bodyCell="{ column, text }">
           <template v-if="column.key !== 'time'">
             {{ formatValue(text, panel.options.format || {}) }}
@@ -19,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { Spin, Table } from '@grafana-fast/component';
   import type { TableColumnType } from '@grafana-fast/component';
   import type { Panel, QueryResult, TableOptions } from '@grafana-fast/types';
@@ -33,6 +41,10 @@
   }>();
 
   const tableOptions = computed(() => (props.panel.options.specific as TableOptions) || {});
+  const wrapperRef = ref<HTMLElement | null>(null);
+  const tableRef = ref<any>(null);
+  const tableBodyHeight = ref(240);
+  let resizeObserver: ResizeObserver | null = null;
 
   // 判断是否正在加载
   const isLoading = computed(() => {
@@ -126,6 +138,57 @@
       hideOnSinglePage: true,
     };
   });
+
+  const tableScroll = computed(() => ({
+    y: tableBodyHeight.value,
+  }));
+
+  const syncTableBodyHeight = async () => {
+    await nextTick();
+    const wrapperEl = wrapperRef.value;
+    const tableEl = (tableRef.value?.$el ?? tableRef.value) as HTMLElement | undefined;
+    if (!wrapperEl || !tableEl) return;
+
+    const wrapperHeight = wrapperEl.clientHeight;
+    if (wrapperHeight <= 0) return;
+
+    const theadEl = tableEl.querySelector('.gf-table__thead') as HTMLElement | null;
+    const paginationEl = tableEl.querySelector('.gf-table__pagination') as HTMLElement | null;
+    const tableStyle = window.getComputedStyle(tableEl);
+
+    const headerHeight = theadEl?.offsetHeight ?? 42;
+    const paginationHeight = paginationEl?.offsetHeight ?? 0;
+    const gap = Number.parseFloat(tableStyle.rowGap || tableStyle.gap || '0') || 0;
+    const nextHeight = Math.max(96, Math.floor(wrapperHeight - headerHeight - paginationHeight - gap - 2));
+
+    if (Math.abs(nextHeight - tableBodyHeight.value) > 1) {
+      tableBodyHeight.value = nextHeight;
+    }
+  };
+
+  onMounted(() => {
+    void syncTableBodyHeight();
+
+    if (wrapperRef.value && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        void syncTableBodyHeight();
+      });
+      resizeObserver.observe(wrapperRef.value);
+    }
+  });
+
+  onBeforeUnmount(() => {
+    resizeObserver?.disconnect();
+    resizeObserver = null;
+  });
+
+  watch(
+    () => [columns.value.length, dataSource.value.length, paginationConfig.value === false ? 'off' : (paginationConfig.value.pageSize ?? 20)],
+    () => {
+      void syncTableBodyHeight();
+    },
+    { flush: 'post' }
+  );
 </script>
 
 <style scoped lang="less">
@@ -155,27 +218,13 @@
       width: 100%;
       height: 100%;
       min-height: 0;
-      overflow: auto;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
       transition: opacity var(--gf-motion-fast) var(--gf-easing);
 
-      /* Scrollbar styling */
-      &::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: transparent;
-        border-radius: 3px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: var(--gf-color-fill-secondary);
-        border-radius: 3px;
-
-        &:hover {
-          background: var(--gf-color-fill);
-        }
+      :deep(.gf-table) {
+        height: 100%;
       }
     }
   }

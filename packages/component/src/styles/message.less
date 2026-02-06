@@ -1,21 +1,24 @@
 .gf-message-container {
   position: fixed;
-  top: var(--gf-space-4);
-  right: var(--gf-space-4);
+  top: var(--gf-space-3);
+  right: var(--gf-space-3);
   display: flex;
   flex-direction: column;
-  gap: var(--gf-space-3);
+  gap: var(--gf-space-2);
   z-index: var(--gf-z-message);
   pointer-events: none;
 }
 
 .gf-message {
-  min-width: 200px;
+  min-width: 220px;
+  max-width: min(440px, calc(100vw - var(--gf-space-6)));
   padding: 10px 12px;
-  border-radius: var(--gf-radius-md);
-  border: 1px solid var(--gf-color-border-strong);
-  background: var(--gf-color-surface);
+  border-radius: var(--gf-radius-lg);
+  border: 1px solid var(--gf-color-border);
+  background: color-mix(in srgb, var(--gf-color-bg-elevated) 92%, var(--gf-color-surface));
   box-shadow: var(--gf-shadow-2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--gf-text);
   display: flex;
   align-items: center;
@@ -42,15 +45,15 @@
 }
 
 .gf-message__icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--gf-color-primary);
-  background: var(--gf-color-primary-soft);
+  background: color-mix(in srgb, var(--gf-color-primary-soft) 92%, var(--gf-color-surface));
 
   &::before {
     content: attr(data-symbol);
@@ -61,49 +64,51 @@
 .gf-message__content {
   flex: 1;
   font-size: var(--gf-font-size-sm);
+  line-height: 1.5;
   letter-spacing: 0.01em;
 }
 
 .gf-message--info {
   border-left: 3px solid var(--gf-color-primary);
+  background: color-mix(in srgb, var(--gf-color-primary-bg) 72%, var(--gf-color-bg-elevated));
 }
 
 .gf-message--success {
   border-left: 3px solid var(--gf-color-success);
-  background: color-mix(in srgb, var(--gf-color-success-soft) 55%, var(--gf-color-surface));
+  background: color-mix(in srgb, var(--gf-color-success-bg) 76%, var(--gf-color-bg-elevated));
 
   .gf-message__icon {
     color: var(--gf-color-success);
-    background: var(--gf-color-success-soft);
+    background: color-mix(in srgb, var(--gf-color-success-soft) 90%, var(--gf-color-surface));
   }
 }
 
 .gf-message--error {
   border-left: 3px solid var(--gf-color-danger);
-  background: color-mix(in srgb, var(--gf-color-danger-soft) 55%, var(--gf-color-surface));
+  background: color-mix(in srgb, var(--gf-color-danger-bg) 76%, var(--gf-color-bg-elevated));
 
   .gf-message__icon {
     color: var(--gf-color-danger);
-    background: var(--gf-color-danger-soft);
+    background: color-mix(in srgb, var(--gf-color-danger-soft) 90%, var(--gf-color-surface));
   }
 }
 
 .gf-message--warning {
   border-left: 3px solid var(--gf-color-warning);
-  background: color-mix(in srgb, var(--gf-color-warning-soft) 55%, var(--gf-color-surface));
+  background: color-mix(in srgb, var(--gf-color-warning-bg) 76%, var(--gf-color-bg-elevated));
 
   .gf-message__icon {
     color: var(--gf-color-warning);
-    background: var(--gf-color-warning-soft);
+    background: color-mix(in srgb, var(--gf-color-warning-soft) 90%, var(--gf-color-surface));
   }
 }
 
 .gf-message--loading {
   border-left: 3px solid var(--gf-color-primary-secondary);
-  background: color-mix(in srgb, var(--gf-color-primary-soft) 55%, var(--gf-color-surface));
+  background: color-mix(in srgb, var(--gf-color-primary-bg) 78%, var(--gf-color-bg-elevated));
 
   .gf-message__icon {
     color: var(--gf-color-primary-secondary);
-    background: var(--gf-color-primary-soft);
+    background: color-mix(in srgb, var(--gf-color-primary-soft) 90%, var(--gf-color-surface));
   }
 }

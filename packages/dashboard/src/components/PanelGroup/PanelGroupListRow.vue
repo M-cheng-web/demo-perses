@@ -20,6 +20,7 @@
       :title="title"
       :description="description"
       size="large"
+      header-variant="list-row"
       :collapsible="!isBooting"
       :collapsed="true"
       :bordered="false"

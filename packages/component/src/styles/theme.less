@@ -84,8 +84,7 @@
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(to right, var(--gf-bg-grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--gf-bg-grid-line) 1px, transparent 1px);
+    linear-gradient(to right, var(--gf-bg-grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--gf-bg-grid-line) 1px, transparent 1px);
   background-size: var(--gf-bg-grid-size);
   background-position: 0 0;
   opacity: 0.5;
@@ -166,7 +165,15 @@
  * ------------------------------------------------------------ */
 :where(.gf-theme-light, .gf-theme-dark, [data-gf-theme]) :focus-visible {
   outline: none;
+}
+
+:where(.gf-theme-light, .gf-theme-dark, [data-gf-theme])
+  :is(a, button, [role='button'], [tabindex]:not(input):not(textarea):not(select)):focus-visible {
   box-shadow: var(--gf-focus-ring);
+}
+
+:where(.gf-theme-light, .gf-theme-dark, [data-gf-theme]) :is(input, textarea, select):focus-visible {
+  box-shadow: none;
 }
 
 /* ------------------------------------------------------------

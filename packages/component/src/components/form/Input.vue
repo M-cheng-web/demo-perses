@@ -25,13 +25,9 @@
       @focus="handleFocus"
       @keydown.enter="handlePressEnter"
     />
-    <span v-if="allowClear && innerValue && !disabled" :class="bem('clear')" @click="clearValue">
+    <span v-if="allowClear && innerValue && !disabled" :class="bem('clear')" @mousedown.prevent @click="clearValue">
       <span :class="bem('clear-icon')">
-        <svg viewBox="64 64 896 896" width="1em" height="1em" fill="currentColor">
-          <path
-            d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm165.4 618.2l-66-.3L512 563.4l-99.3 118.4-66.1.3c-4.4 0-8-3.5-8-8 0-1.9.7-3.7 1.9-5.2l130.1-155L googl.6-154.3c-1.2-1.5-1.9-3.3-1.9-5.2 0-4.4 3.6-8 8-8l66.1.3L512 googl.6l99.3-118.4 66-.3c4.4 0 8 3.5 8 8 0 1.9-.7 3.7-1.9 5.2L googl.4 googl l130.1 155c1.2 1.5 1.9 3.3 1.9 5.2 0 4.4-3.6 8-8 8z"
-          />
-        </svg>
+        <CloseCircleFilled />
       </span>
     </span>
     <span v-if="$slots.suffix" :class="bem('suffix')">
@@ -41,6 +37,7 @@
 </template>
 
 <script setup lang="ts">
+  import { CloseCircleFilled } from '@ant-design/icons-vue';
   import { inject, ref, watch } from 'vue';
   import { createNamespace } from '../../utils';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
@@ -225,10 +222,13 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      margin-left: 4px;
-      padding: 0 4px;
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      margin-left: 6px;
       color: var(--gf-color-text-quaternary);
-      font-size: 12px;
+      font-size: 14px;
+      line-height: 1;
       cursor: pointer;
       opacity: 0;
       transition: all var(--gf-motion-fast) var(--gf-easing);
@@ -246,6 +246,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      line-height: 1;
     }
 
     // Show clear button on hover/focus
@@ -273,6 +274,13 @@
       .gf-input__suffix {
         margin-left: 4px;
       }
+
+      .gf-input__clear {
+        width: 14px;
+        height: 14px;
+        margin-left: 4px;
+        font-size: 12px;
+      }
     }
 
     &--size-large {
@@ -284,6 +292,12 @@
 
       .gf-input__input {
         padding: 7px 0;
+      }
+
+      .gf-input__clear {
+        width: 18px;
+        height: 18px;
+        font-size: 15px;
       }
     }
 
