@@ -18,7 +18,11 @@
   ],
   "scripts": {
     "build": "rollup -c ../../scripts/rollup.config.js",
-    "type-check": "tsc --noEmit -p tsconfig.json"
+    "type-check": "tsc --noEmit -p tsconfig.json",
+    "type-check:dev": "pnpm -C ../dashboard run build:types && tsc --noEmit -p tsconfig.json",
+    "test": "pnpm run test:api-mode && pnpm run test:mount-lifecycle",
+    "test:api-mode": "esno scripts/use-dashboard-api-mode.test.ts",
+    "test:mount-lifecycle": "esno scripts/use-dashboard-mount-lifecycle.test.ts"
   },
   "dependencies": {
     "@grafana-fast/api": "workspace:*",

@@ -7,7 +7,7 @@
   - 继续沿用当前的“滚动停留才加载内容”策略（VirtualList + QueryScheduler 可视范围上报）
 
   实现说明：
-  - 复用 `/#/components/GridLayout/VirtualList.vue` 的 windowing + hydrated 机制
+  - 复用 `/#/components/GridLayout/VirtualList.vue` 的 windowing + active 请求窗口机制
   - 不使用 vue-grid-layout：这里用“绝对定位 + 预估高度”做列表窗口化渲染
   - 每个 item 的高度按原 layout.h 映射（rowHeight=30，marginY=10）
 -->
@@ -22,7 +22,7 @@
       :hot-overscan-screens="0.5"
       :keep-alive-count="keepAliveCount"
       :items="virtualItems"
-      v-slot="{ dataList, renderList, isHydrated }"
+      v-slot="{ dataList, renderList }"
     >
       <template v-if="dataList.length > 0">
         <div :class="bem('list')" :style="{ height: `${totalHeightPx}px` }">
@@ -36,16 +36,13 @@
               :body-padding="false"
               :style="{ height: '100%' }"
             >
-              <template v-if="isHydrated(layoutItem.i)" #right>
+              <template #right>
                 <Tooltip title="全屏查看">
                   <Button icon-only type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen(String(layoutItem.i))" />
                 </Tooltip>
               </template>
 
-              <PanelContent v-if="isHydrated(layoutItem.i)" :panel="panelById.get(String(layoutItem.i))!" />
-              <div v-else :class="bem('panel-loading')">
-                <div :class="bem('panel-loading-spinner')"></div>
-              </div>
+              <PanelContent :panel="panelById.get(String(layoutItem.i))!" />
             </Panel>
 
             <Panel v-else size="small" :hoverable="false" :body-padding="true" title="面板加载失败" :style="{ height: '100%' }">
@@ -193,34 +190,6 @@
       align-items: center;
       justify-content: center;
       padding: 16px;
-    }
-
-    &__panel-loading {
-      height: 100%;
-      min-height: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-      background: var(--gf-color-surface);
-    }
-
-    &__panel-loading-spinner {
-      width: 24px;
-      height: 24px;
-      border: 2px solid var(--gf-color-fill-tertiary);
-      border-top-color: var(--gf-color-primary);
-      border-radius: 50%;
-      animation: dp-all-panels-view-spin 0.8s linear infinite;
-    }
-  }
-
-  @keyframes dp-all-panels-view-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
     }
   }
 </style>

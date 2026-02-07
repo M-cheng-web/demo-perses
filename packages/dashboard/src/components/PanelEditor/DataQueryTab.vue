@@ -341,12 +341,9 @@
   import type { CanonicalQuery, Datasource, PromVisualQuery } from '@grafana-fast/types';
   import { useVariablesStore } from '/#/stores';
 
-  import { formatDiagnostics, formatParseWarnings, getPromQLForDraft } from './dataQueryTab/helpers';
+  import { appendTokenToExpr, formatDiagnostics, formatParseWarnings, getPromQLForDraft, normalizeVariableToken } from './dataQueryTab/helpers';
   import type { QueryMode } from './dataQueryTab/types';
-  import { useQueryDrafts } from './dataQueryTab/useQueryDrafts';
-  import { useQueryEmit } from './dataQueryTab/useQueryEmit';
-  import { useQueryModeSync } from './dataQueryTab/useQueryModeSync';
-  import { useQueryValidation } from './dataQueryTab/useQueryValidation';
+  import { useDataQueryTabDraftLifecycle } from './dataQueryTab/useDataQueryTabDraftLifecycle';
 
   const [_, bem] = createNamespace('data-query-tab');
 
@@ -390,7 +387,6 @@
 
   const {
     queryDrafts,
-    resetFromProps,
     togglePanelCollapsed,
     toggleQueryVisibility,
     markCodeEdited,
@@ -400,22 +396,14 @@
     updateNestedQuery,
     updateBuilderQuery,
     acceptPartialConversion,
-  } = useQueryDrafts();
-
-  useQueryModeSync({ queryMode, queryDrafts });
-
-  const { validateDrafts, convertDraftsToCanonical } = useQueryValidation({
+    validateDrafts,
+    convertDraftsToCanonical,
+    markEmitted,
+  } = useDataQueryTabDraftLifecycle({
     queryMode,
-    queryDrafts,
-    getDatasource: () => props.datasource,
-  });
-
-  const { markEmitted } = useQueryEmit({
+    datasource: () => props.datasource,
     getQueriesProp: () => props.queries,
     getSessionKey: () => props.sessionKey,
-    queryDrafts,
-    resetFromProps,
-    convertDraftsToCanonical,
     emitUpdateQueries: (queries) => emit('update:queries', queries),
   });
 
@@ -439,14 +427,12 @@
   const handleUseVariable = async (index: number, name: string) => {
     const d = queryDrafts.value[index];
     if (!d) return;
-    const token = `$${String(name ?? '').trim()}`;
-    if (token === '$') return;
+    const token = normalizeVariableToken(name);
+    if (!token) return;
 
     // Code 模式：直接插入到 expr（末尾），并同步 builder 状态（避免继续使用旧 Builder PromQL）
     if (queryMode.value === 'code') {
-      const cur = String(d.code.expr ?? '');
-      const sep = cur && !/\s$/.test(cur) ? ' ' : '';
-      d.code.expr = `${cur}${sep}${token}`;
+      d.code.expr = appendTokenToExpr(d.code.expr ?? '', token);
       markCodeEdited(index);
     }
 

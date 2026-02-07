@@ -9,7 +9,6 @@
     <div :class="bem('rail')"></div>
     <div :class="bem('track')" :style="trackStyle"></div>
     <div
-      ref="handleRef"
       :class="bem('handle')"
       :style="handleStyle"
       tabindex="0"
@@ -99,7 +98,6 @@
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
 
   const sliderRef = ref<HTMLElement>();
-  const handleRef = ref<HTMLElement>();
   const innerValue = ref(props.value);
   const isDragging = ref(false);
   const showTooltip = ref(false);

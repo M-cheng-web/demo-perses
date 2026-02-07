@@ -1,8 +1,6 @@
 <!-- 时间序列图 -->
 <template>
   <div :class="bem()">
-    <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
-
     <div :class="bem('wrapper', { 'legend-right': legendOptions.position === 'right' })">
       <div ref="chartRef" :class="bem('chart')"></div>
 
@@ -23,16 +21,24 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, nextTick } from 'vue';
-  import { Spin } from '@grafana-fast/component';
+  import { ref, computed } from 'vue';
   import type { EChartsOption, ECharts } from 'echarts';
   import type { Panel, QueryResult } from '@grafana-fast/types';
   import { formatValue, formatTime, createNamespace } from '/#/utils';
-  import { useChartResize } from '/#/composables/useChartResize';
   import { useLegend } from '/#/composables/useLegend';
-  import { useChartInit } from '/#/composables/useChartInit';
+  import { useChartPanelLifecycle } from '/#/composables/useChartPanelLifecycle';
   import { useChartTooltip, TooltipDataProviders, type TooltipData } from '/#/composables/useChartTooltip';
   import Legend from '/#/components/ChartLegend/Legend.vue';
+  import { createNoDataOption, hasQuerySeriesData } from '/#/components/Charts/chartOptionHelpers';
+  import {
+    getAxisRawValue,
+    getAxisSeriesValue,
+    getSeriesLabel,
+    normalizeNumericValue,
+    resolveSeriesId,
+    toAxisTooltipParams,
+    toCssColor,
+  } from '/#/components/Charts/tooltipFormatterTypes';
   import { getEChartsTheme } from '/#/utils/echartsTheme';
 
   const [_, bem] = createNamespace('time-series-chart');
@@ -53,48 +59,19 @@
     return data;
   });
 
-  /**
-   * 使用图表初始化 Hook
-   * 等待 queryResults 和 panel.options 都有效后才初始化一次
-   */
-  const { getInstance, isLoading } = useChartInit<ECharts>({
+  const { getInstance } = useChartPanelLifecycle<ECharts>({
     chartRef,
-    dependencies: [
-      {
-        value: computed(() => props.queryResults),
-        isValid: (val: unknown) => {
-          const results = Array.isArray(val) ? (val as QueryResult[]) : [];
-          return results.length > 0 && results.some((r) => Array.isArray(r.data) && r.data.length > 0);
-        },
-      },
-      {
-        value: computed(() => props.panel.options),
-        // Options can be an empty object; charts should still render with defaults.
-        isValid: (val: unknown) => val != null,
-      },
-    ],
+    queryResults: computed(() => props.queryResults),
+    panelOptions: computed(() => props.panel.options),
     onChartCreated: (instance) => {
-      nextTick(() => {
-        updateChart(instance);
-        registerTooltip();
-        initChartResize();
-      });
+      updateChart(instance);
+      registerTooltip();
     },
-    onUpdate: (instance) => {
-      nextTick(() => {
-        updateChart(instance);
-        updateTooltip();
-      });
+    onChartUpdated: (instance) => {
+      updateChart(instance);
+      updateTooltip();
     },
   });
-
-  /**
-   * 使用图表 resize Hook
-   */
-  const { initChartResize } = useChartResize(
-    computed(() => getInstance()),
-    chartRef
-  );
 
   // 使用 Legend Hook
   const {
@@ -158,18 +135,8 @@
     const theme = getEChartsTheme(chartRef.value);
 
     // 检查是否有有效数据
-    if (!queryResults || queryResults.length === 0 || queryResults.every((r) => !r.data || r.data.length === 0)) {
-      return {
-        title: {
-          text: '暂无数据',
-          left: 'center',
-          top: 'center',
-          textStyle: {
-            color: theme.textSecondary,
-            fontSize: 14,
-          },
-        },
-      };
+    if (!hasQuerySeriesData(queryResults)) {
+      return createNoDataOption(theme);
     }
 
     // 准备系列数据
@@ -252,22 +219,12 @@
 
     // 如果没有系列数据，返回空配置
     if (series.length === 0) {
-      return {
-        title: {
-          text: '暂无数据',
-          left: 'center',
-          top: 'center',
-          textStyle: {
-            color: theme.textSecondary,
-            fontSize: 14,
-          },
-        },
-      };
+      return createNoDataOption(theme);
     }
 
     return {
       ...theme.baseOption,
-      // 禁用动画，依赖 loading 遮罩的过渡效果
+      // 禁用动画，减少高频刷新时的视觉抖动
       animation: false,
       // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
@@ -284,29 +241,38 @@
             width: 1,
           },
         },
-        formatter: (params: any) => {
-          if (!Array.isArray(params) || params.length === 0) {
+        formatter: (params) => {
+          const axisParams = toAxisTooltipParams(params);
+          if (axisParams.length === 0) {
             updateTooltipData(null);
             return '';
           }
 
           // 过滤掉隐藏的系列
-          const visibleParams = params.filter((param: any) => isSeriesSelected(param.seriesId || `series-${param.seriesIndex}`));
+          const visibleParams = axisParams.filter((param) => isSeriesSelected(resolveSeriesId(param)));
           if (visibleParams.length === 0) {
             updateTooltipData(null);
             return '';
           }
 
           const firstParam = visibleParams[0];
+          if (!firstParam) {
+            updateTooltipData(null);
+            return '';
+          }
           const tooltipData: TooltipData = {
-            time: formatTime(firstParam.axisValue, 'YYYY-MM-DD HH:mm:ss'),
-            series: visibleParams.map((param: any) => ({
-              id: param.seriesId || `series-${param.seriesIndex}`,
-              label: param.seriesName,
-              color: param.color,
-              value: param.value[1],
-              formattedValue: formatValue(param.value[1], options.format || {}),
-            })),
+            time: formatTime(normalizeNumericValue(getAxisRawValue(firstParam)), 'YYYY-MM-DD HH:mm:ss'),
+            series: visibleParams.map((param) => {
+              const value = getAxisSeriesValue(param.value);
+              const numericValue = normalizeNumericValue(value);
+              return {
+                id: resolveSeriesId(param),
+                label: getSeriesLabel(param),
+                color: toCssColor(param.color),
+                value,
+                formattedValue: formatValue(numericValue, options.format || {}),
+              };
+            }),
           };
 
           updateTooltipData(tooltipData);
@@ -393,18 +359,6 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-
-    &__loading {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 10;
-      background: var(--gf-color-surface);
-      border-radius: var(--gf-radius-sm);
-      padding: 16px;
-      box-shadow: var(--gf-shadow-1);
-    }
 
     &__wrapper {
       flex: 1;

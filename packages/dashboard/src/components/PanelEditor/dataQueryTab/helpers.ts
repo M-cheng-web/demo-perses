@@ -102,3 +102,17 @@ export function formatDiagnostics(diagnostics?: any[]): string {
     })
     .join('；');
 }
+
+export function normalizeVariableToken(name: string): string | null {
+  const n = String(name ?? '').trim();
+  if (!n) return null;
+  const token = `$${n}`;
+  if (token === '$') return null;
+  return token;
+}
+
+export function appendTokenToExpr(expr: string, token: string): string {
+  const cur = String(expr ?? '');
+  const sep = cur && !/\s$/.test(cur) ? ' ' : '';
+  return `${cur}${sep}${token}`;
+}

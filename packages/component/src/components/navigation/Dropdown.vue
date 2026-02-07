@@ -24,11 +24,11 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-  import { subscribeWindowEvent, subscribeWindowResize, type Unsubscribe } from '@grafana-fast/utils';
+  import { computed, inject, nextTick, onBeforeUnmount, ref } from 'vue';
   import { createNamespace } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
+  import { useFloatingOverlay } from '../../composables/useFloatingOverlay';
 
   defineOptions({ name: 'GfDropdown' });
 
@@ -58,20 +58,7 @@
   const overlayRef = ref<HTMLElement>();
   const open = ref(false);
   const overlayStyle = ref<Record<string, string>>({});
-  let rafId: number | null = null;
-  let unsubscribeOutside: Unsubscribe | null = null;
-  let unsubscribeResize: Unsubscribe | null = null;
-  let unsubscribeScroll: Unsubscribe | null = null;
   let hoverTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const scheduleUpdatePosition = () => {
-    if (!open.value) return;
-    if (rafId != null) return;
-    rafId = requestAnimationFrame(() => {
-      rafId = null;
-      updatePosition();
-    });
-  };
 
   const toggle = () => {
     if (props.disabled) return;
@@ -146,39 +133,19 @@
     };
   };
 
-  const handleOutside = (evt: MouseEvent) => {
-    if (!triggerRef.value) return;
-    if (triggerRef.value.contains(evt.target as Node)) return;
-    if (overlayRef.value?.contains(evt.target as Node)) return;
-    close();
-  };
-
-  onMounted(() => {
-    unsubscribeOutside = subscribeWindowEvent('click', handleOutside);
-    unsubscribeResize = subscribeWindowResize(() => void updatePosition());
+  useFloatingOverlay({
+    openRef: open,
+    triggerRef,
+    overlayRef,
+    close,
+    updatePosition,
+    enableScrollSync: true,
+    ignoreOverlayOnOutside: false,
   });
 
   onBeforeUnmount(() => {
-    unsubscribeOutside?.();
-    unsubscribeOutside = null;
-    unsubscribeResize?.();
-    unsubscribeResize = null;
-    unsubscribeScroll?.();
-    unsubscribeScroll = null;
-    if (rafId != null) cancelAnimationFrame(rafId);
     if (hoverTimer) clearTimeout(hoverTimer);
   });
-
-  watch(
-    () => open.value,
-    (val) => {
-      unsubscribeScroll?.();
-      unsubscribeScroll = null;
-      if (val) {
-        unsubscribeScroll = subscribeWindowEvent('scroll', () => scheduleUpdatePosition(), { capture: true, passive: true });
-      }
-    }
-  );
 </script>
 
 <style scoped lang="less">

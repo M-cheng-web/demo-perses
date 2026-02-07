@@ -6,6 +6,24 @@
 
 ---
 
+## 状态更新（2026-02）
+
+### 已落地
+
+- 工程链路：新增 `typecheck:dev` / `typecheck:dist`，并在 dashboard `build:types` 后追加声明产物断言（`scripts/assert-dashboard-dts.ts`）。
+- 运行时结构：QueryScheduler 已模块化拆分，且提供 debug snapshot（`packages/dashboard/src/query/scheduler/*`）。
+- UI 重构：Dashboard 状态层与 Toolbar 模式分离完成（`useDashboardStatus` + Header/Sidebar 子组件）。
+- 通用能力：浮层定位/关闭/滚动同步已抽为 `useFloatingOverlay` 并接入关键组件。
+- 测试补强：新增 QueryRunner、strictJsonValidators、SDK API mode / mount lifecycle 脚本回归（`packages/dashboard/scripts/*`、`packages/hook/scripts/*`）。
+
+### 持续项
+
+- 图表与样式编辑器的 `any` 进一步收敛（当前优先覆盖 formatter 链路）。
+- QueryRunner 的错误缓存策略继续细化（成功 TTL 与错误 TTL 分离）。
+- Dashboard e2e 场景回归（JSON round-trip + 编辑流程）仍需补齐。
+
+---
+
 ## 1. 你现在在做的到底是什么（定位要非常清晰）
 
 Grafana 是“完整产品”（含服务端、权限、数据源管理、告警、团队协作、生态市场）。  

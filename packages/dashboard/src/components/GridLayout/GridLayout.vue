@@ -17,7 +17,7 @@
       :hot-overscan-screens="0.5"
       :keep-alive-count="keepAliveCount"
       :items="layoutItems"
-      v-slot="{ dataList, renderList, isHydrated }"
+      v-slot="{ dataList, renderList }"
     >
       <template v-if="dataList.length > 0">
         <grid-layout
@@ -53,14 +53,11 @@
               :hoverable="true"
               :body-padding="false"
             >
-              <template v-if="isHydrated(layoutItem.i)" #right="{ hovered }">
+              <template #right="{ hovered }">
                 <PanelRightActions :group-id="groupId" :panel="panelById.get(layoutItem.i as ID)!" :hovered="hovered" />
               </template>
 
-              <PanelContent v-if="isHydrated(layoutItem.i)" :panel="panelById.get(layoutItem.i as ID)!" />
-              <div v-else :class="bem('panel-loading')">
-                <div :class="bem('panel-loading-spinner')"></div>
-              </div>
+              <PanelContent :panel="panelById.get(layoutItem.i as ID)!" />
             </Panel>
 
             <Panel v-else size="small" :hoverable="false" :body-padding="true" title="面板加载失败">
@@ -135,7 +132,7 @@
 
   /**
    * 缓存策略（解决“滚远了再滚回来，ECharts 重新 init/重画”的体感问题）
-   * - VirtualList 的 hydratedIds 只保证“不显示占位态”，不保证组件实例不被卸载
+   * - VirtualList 的 render window 只保证“保留必要 DOM”，不保证组件实例不被卸载
    * - keepAliveCount 通过 pinnedIds 让一定数量的面板保持渲染，避免频繁卸载/重建
    */
   const keepAliveCount = computed(() => {
@@ -269,25 +266,6 @@
       padding: 16px;
     }
 
-    &__panel-loading {
-      height: 100%;
-      min-height: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-      background: var(--gf-color-surface);
-    }
-
-    &__panel-loading-spinner {
-      width: 24px;
-      height: 24px;
-      border: 2px solid var(--gf-color-fill-tertiary);
-      border-top-color: var(--gf-color-primary);
-      border-radius: 50%;
-      animation: dp-grid-layout-spin 0.8s linear infinite;
-    }
-
     // Grid item styling - 优化拖拽性能
     :deep(.vue-grid-item) {
       // 关键：非拖拽时不使用 transition，避免布局时的延迟
@@ -328,15 +306,6 @@
     :deep(.gf-panel) {
       width: 100%;
       height: 100%;
-    }
-  }
-
-  @keyframes dp-grid-layout-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
     }
   }
 </style>

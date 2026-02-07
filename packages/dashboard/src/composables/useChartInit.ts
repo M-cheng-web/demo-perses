@@ -30,7 +30,6 @@ export function useChartInit<T = ECharts>(options: {
   let chartInstance: T | null = null;
 
   const isInitialized = ref(false);
-  const isLoading = ref(true);
   const isInitializing = ref(false); // 防止重复初始化
   let initRafId: number | null = null;
 
@@ -146,16 +145,13 @@ export function useChartInit<T = ECharts>(options: {
 
           if (success && chartInstance) {
             isInitialized.value = true;
-            isLoading.value = false;
             // 初始化成功后立即执行一次更新
             // onUpdate(chartInstance);
           } else {
-            isLoading.value = false;
             onInitFailed?.();
           }
         } catch (error) {
           console.error('[useChartInit] Initialization error:', error);
-          isLoading.value = false;
           onInitFailed?.();
         } finally {
           isInitializing.value = false;
@@ -191,11 +187,5 @@ export function useChartInit<T = ECharts>(options: {
   return {
     /** 获取原始 ECharts 实例的方法 */
     getInstance,
-    /** 是否已初始化 */
-    isInitialized,
-    /** 是否正在加载 */
-    isLoading,
-    /** 是否正在初始化中 */
-    isInitializing,
   };
 }

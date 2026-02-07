@@ -24,6 +24,7 @@ pnpm ci               # Full CI pipeline (lint, format, build, typecheck, test, 
 ### Testing Published Form
 
 To test the actual published package behavior (using `dist` instead of source):
+
 ```bash
 pnpm build
 GF_USE_DIST=1 pnpm -C packages/app dev
@@ -38,6 +39,7 @@ The `scripts/build.ts` orchestrates this sequence.
 ## Package Architecture
 
 ### Core Packages (publishable)
+
 - **@grafana-fast/types** - Shared TypeScript type definitions
 - **@grafana-fast/utils** - Common utilities (bem, time, http, etc.)
 - **@grafana-fast/store** - Lightweight Pinia-like state management with multi-instance isolation
@@ -49,17 +51,21 @@ The `scripts/build.ts` orchestrates this sequence.
 - **@grafana-fast/hooks** - SDK hooks for embedding dashboards (`useDashboardSdk`)
 
 ### Apps (non-publishable)
+
 - **@grafana-fast/app** - Demo site consuming all packages
 - **@grafana-fast/docs** - VitePress documentation
 
 ## Key Architectural Patterns
 
 ### Path Aliases
+
 - `/#/*` → `packages/dashboard/src/*` (internal dashboard alias)
 - `@grafana-fast/*` → workspace package sources (via tsconfig.base.json paths)
 
 ### SDK Integration Pattern
+
 The primary integration point is `useDashboardSdk()` from `@grafana-fast/hooks`:
+
 - Creates isolated Pinia instance per dashboard (multi-instance safe)
 - Mounts `DashboardView` to target container
 - Exposes state snapshot via `getState()` and actions via `actions.*`
@@ -68,13 +74,17 @@ The primary integration point is `useDashboardSdk()` from `@grafana-fast/hooks`:
 Direct component usage of `DashboardView` is blocked - must go through SDK.
 
 ### State Management
+
 Custom lightweight Pinia implementation in `@grafana-fast/store`:
+
 - Supports `defineStore()` with state, actions, getters
 - Multi-instance isolation via injected pinia context
 - `storeToRefs()` for reactive references
 
 ### Dashboard Stores
+
 Located in `packages/dashboard/src/stores/`:
+
 - `dashboard` - Main dashboard state, load/save operations
 - `timeRange` - Time range and auto-refresh
 - `variables` - Template variables
@@ -84,16 +94,19 @@ Located in `packages/dashboard/src/stores/`:
 ## Configuration
 
 ### Package Metadata
+
 `meta/packages.ts` is the single source of truth for:
+
 - Package names and npm publish names
 - Build order and external dependencies
 - Category (library/app/docs)
 
 ### Scripts
-The `nr` command (generated at postinstall) is a local runner used by npm scripts.
-`esno` is used for running TypeScript scripts directly.
+
+The `nr` command (generated at postinstall) is a local runner used by npm scripts. `esno` is used for running TypeScript scripts directly.
 
 ## Tech Stack
+
 - **Node**: >=20.19.0 (required for Vite 7)
 - **Vue**: 3.5+
 - **TypeScript**: 5.9+

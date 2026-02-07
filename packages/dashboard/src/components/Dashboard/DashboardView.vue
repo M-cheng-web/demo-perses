@@ -40,6 +40,10 @@
   import { Alert } from '@grafana-fast/component';
   import DashboardCore from './Dashboard.vue';
 
+  interface SdkMountPinia extends Pinia {
+    __gfDashboardSdkMount?: true;
+  }
+
   defineOptions({
     name: 'DashboardView',
   });
@@ -78,12 +82,14 @@
   );
 
   const injectedPinia = inject<Pinia | undefined>('pinia', undefined);
-  const isSdkMount = Boolean(injectedPinia && (injectedPinia as any).__gfDashboardSdkMount === true);
+  const sdkPinia = injectedPinia as SdkMountPinia | undefined;
+  const isSdkMount = Boolean(sdkPinia?.__gfDashboardSdkMount === true);
 
-  let warned = (globalThis as any).__gfDashboardDirectMountWarned === true;
+  const globalScope = globalThis as typeof globalThis & { __gfDashboardDirectMountWarned?: boolean };
+  let warned = globalScope.__gfDashboardDirectMountWarned === true;
   if (!isSdkMount && !warned) {
     warned = true;
-    (globalThis as any).__gfDashboardDirectMountWarned = true;
+    globalScope.__gfDashboardDirectMountWarned = true;
     console.warn(
       [
         '[grafana-fast] DashboardView direct mount is disabled.',

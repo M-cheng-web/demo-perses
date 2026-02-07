@@ -14,7 +14,7 @@
  * - registerTransformation(def) 注册自定义变换
  * - Panel JSON 中配置 transformations 链即可生效
  */
-import type { PanelTransformation, QueryResult, TimeSeriesData } from '@grafana-fast/types';
+import type { DataPoint, PanelTransformation, QueryResult, TimeSeriesData } from '@grafana-fast/types';
 
 export type TransformationApply = (results: QueryResult[], options?: Record<string, unknown>) => QueryResult[];
 
@@ -40,8 +40,10 @@ function renameLegend(results: QueryResult[], options: Record<string, unknown> =
   const next = cloneResults(results);
   for (const r of next) {
     for (const series of r.data ?? []) {
-      const legend = String((series.metric as any)?.__legend__ ?? (series.metric as any)?.__name__ ?? '');
-      (series.metric as any).__legend__ = legend.replace(re, rep);
+      const metric = { ...(series.metric ?? {}) } as Record<string, string>;
+      const legend = String(metric.__legend__ ?? metric.__name__ ?? '');
+      metric.__legend__ = legend.replace(re, rep);
+      series.metric = metric;
     }
   }
   return next;
@@ -56,7 +58,8 @@ function filterSeriesByLabel(results: QueryResult[], options: Record<string, unk
   const next = cloneResults(results);
 
   const match = (series: TimeSeriesData): boolean => {
-    const v = (series.metric as any)?.[label];
+    const metric = (series.metric ?? {}) as Record<string, string>;
+    const v = metric[label];
     const s = v == null ? '' : String(v);
     const target = value == null ? '' : String(value);
     if (op === '=') return s === target;
@@ -77,7 +80,7 @@ function reduceSeries(results: QueryResult[], options: Record<string, unknown> =
   const { reducer = 'last' } = options;
   const next = cloneResults(results);
 
-  const calc = (values: Array<[number, number]>): number => {
+  const calc = (values: DataPoint[]): number => {
     if (!values.length) return 0;
     if (reducer === 'last') return values[values.length - 1]?.[1] ?? 0;
     if (reducer === 'first') return values[0]?.[1] ?? 0;
@@ -89,9 +92,10 @@ function reduceSeries(results: QueryResult[], options: Record<string, unknown> =
 
   for (const r of next) {
     for (const series of r.data ?? []) {
-      const v = calc(series.values as any);
-      const t = (series.values?.[series.values.length - 1]?.[0] ?? Date.now()) as any;
-      series.values = [[t, Number(v.toFixed(4))]] as any;
+      const values = (series.values ?? []) as DataPoint[];
+      const v = calc(values);
+      const t = values[values.length - 1]?.[0] ?? Date.now();
+      series.values = [[t, Number(v.toFixed(4))]];
     }
   }
 

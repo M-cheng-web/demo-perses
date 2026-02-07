@@ -200,11 +200,10 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
+  import { createNamespace } from '/#/utils';
   import { DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue';
-  import { deepClone, createNamespace } from '/#/utils';
   import { getDefaultGaugeChartOptions } from '../ChartStylesDefaultOptions/gaugeChartDefaultOptions';
-  import { deepMerge } from './utils';
+  import { useChartStyleDraft } from './useChartStyleDraft';
   import { Switch, Segmented, Button, InputNumber, Select, Input } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('gauge-chart-styles');
@@ -219,7 +218,11 @@
     (e: 'update:options', options: any): void;
   }>();
 
-  const localOptions = ref(deepClone(deepMerge(getDefaultGaugeChartOptions(), props.options ?? {})));
+  const { localOptions, resetToDefaults } = useChartStyleDraft({
+    getOptions: () => props.options,
+    getDefaults: getDefaultGaugeChartOptions,
+    emitUpdate: (next) => emit('update:options', next),
+  });
 
   /**
    * 将颜色从一种色调偏移到另一种色调（往危险色偏移）
@@ -282,33 +285,6 @@
       localOptions.value.thresholds.steps.splice(numericIndex, 1);
     }
   };
-
-  // 恢复默认设置
-  const resetToDefaults = () => {
-    const defaults = getDefaultGaugeChartOptions();
-    localOptions.value = deepClone(defaults);
-    emit('update:options', deepClone(defaults));
-  };
-
-  // 监听 localOptions 变化，发送事件更新外部
-  watch(
-    localOptions,
-    (newVal) => {
-      emit('update:options', deepClone(newVal));
-    },
-    { deep: true }
-  );
-
-  // 监听外部 props.options 变化，更新 localOptions
-  watch(
-    () => props.options,
-    (newVal) => {
-      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
-        localOptions.value = deepClone(deepMerge(getDefaultGaugeChartOptions(), newVal ?? {}));
-      }
-    },
-    { deep: true }
-  );
 </script>
 
 <style scoped lang="less">

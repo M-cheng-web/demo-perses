@@ -103,26 +103,6 @@ export function useChartResize(
   }
 
   /**
-   * 需要监听 chartInstance 变化，重新创建 observer
-   */
-  function watchChartInstance() {
-    const newInstance = chartInstance.value;
-
-    if (resizeObserver && chartRef.value) {
-      resizeObserver.unobserve(chartRef.value);
-    }
-
-    if (newInstance && !newInstance.isDisposed() && chartRef.value && typeof ResizeObserver !== 'undefined') {
-      if (!resizeObserver) {
-        resizeObserver = new ResizeObserver(() => {
-          debouncedResize();
-        });
-      }
-      resizeObserver.observe(chartRef.value);
-    }
-  }
-
-  /**
    * 销毁图表 resize
    */
   function destroyChartResize() {
@@ -153,7 +133,6 @@ export function useChartResize(
 
   return {
     initChartResize,
-    watchChartInstance,
     destroyChartResize,
   };
 }

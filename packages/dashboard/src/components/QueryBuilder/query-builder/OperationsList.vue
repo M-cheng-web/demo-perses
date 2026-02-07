@@ -176,13 +176,12 @@
 
 <script setup lang="ts">
   import { Button, Cascader, Checkbox, Input, InputNumber, Select, Tooltip } from '@grafana-fast/component';
-  import { ref, watch, computed, nextTick, onBeforeUnmount } from 'vue';
+  import { computed } from 'vue';
   import { PlusOutlined, CloseOutlined, InfoCircleOutlined, HolderOutlined, ArrowRightOutlined } from '@ant-design/icons-vue';
   import LabelParamEditor from './LabelParamEditor.vue';
-  import { getOperationCascaderOptions } from './operationsCatalog';
-  import { promQueryModeller } from '@grafana-fast/utils';
-  import type { PromVisualQuery, QueryBuilderOperation, QueryBuilderOperationParamDef, QueryBuilderOperationParamValue } from '@grafana-fast/utils';
-  import { createNamespace, debounceCancellable } from '/#/utils';
+  import type { PromVisualQuery, QueryBuilderOperation } from '@grafana-fast/utils';
+  import { createNamespace } from '/#/utils';
+  import { useOperationsListModel } from './useOperationsListModel';
 
   const [_, bem] = createNamespace('operations-list');
 
@@ -204,311 +203,37 @@
   const props = defineProps<Props>();
   const emit = defineEmits<Emits>();
 
-  const operations = ref<QueryBuilderOperation[]>([...props.modelValue]);
-  const selectedNewOperation = ref<Array<string | number>>([]);
-  const flashingOperations = ref<Set<number>>(new Set());
-  const draggedIndex = ref<number | null>(null);
+  const highlightedIndex = computed(() => (props.highlightedIndex == null ? null : props.highlightedIndex));
 
-  // 用 cancellable timer 管理闪烁效果，避免组件卸载后仍触发 setTimeout
-  const flashTimers = new Map<number, ReturnType<typeof debounceCancellable<() => void>>>();
-
-  const scheduleUnflash = (index: number) => {
-    const existing = flashTimers.get(index);
-    existing?.cancel();
-
-    const timer = debounceCancellable(() => {
-      flashingOperations.value.delete(index);
-      flashTimers.delete(index);
-    }, 1000);
-
-    flashTimers.set(index, timer);
-    timer();
-  };
-
-  onBeforeUnmount(() => {
-    for (const t of flashTimers.values()) t.cancel();
-    flashTimers.clear();
+  const {
+    operations,
+    selectedNewOperation,
+    cascaderOptions,
+    draggedIndex,
+    shouldFlash,
+    handleAddOperation,
+    removeOperation,
+    handleParamChange,
+    addRestParam,
+    removeRestParam,
+    canRemoveRestParam,
+    shouldShowAddButton,
+    getRestParamName,
+    hasParamsOrRestParam,
+    getVisibleParams,
+    formatParamOptions,
+    getOperationName,
+    getOperationDoc,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDrop,
+  } = useOperationsListModel({
+    getModelValue: () => props.modelValue,
+    getCurrentQuery: () => props.currentQuery,
+    emitUpdateModelValue: (value) => emit('update:modelValue', value),
+    emitQueryUpdate: (query) => emit('query-update', query),
   });
-
-  const cascaderOptions = computed(() => getOperationCascaderOptions());
-
-  watch(
-    () => props.modelValue,
-    (newValue) => {
-      operations.value = [...newValue];
-    },
-    { deep: true }
-  );
-
-  // 添加操作
-  const handleAddOperation = (value: Array<string | number>) => {
-    if (!value || value.length < 2) return;
-
-    const operationId = String(value[1] ?? '').trim();
-    if (!operationId) return;
-    const opDef = promQueryModeller.getOperationDef(operationId);
-    if (!opDef) return;
-
-    const newQuery: PromVisualQuery = {
-      ...props.currentQuery,
-      operations: operations.value,
-    };
-
-    const updatedQuery = opDef.addOperationHandler(opDef, newQuery, promQueryModeller);
-    const newOperationIndex = updatedQuery.operations.length - 1;
-
-    operations.value = updatedQuery.operations;
-
-    // 添加闪烁效果
-    flashingOperations.value.add(newOperationIndex);
-    nextTick(() => {
-      scheduleUnflash(newOperationIndex);
-    });
-
-    // 对于二元查询等特殊操作，需要通知父组件整个查询对象已更新
-    // 参考 Grafana OperationList.tsx 第 69 行
-    if (updatedQuery.binaryQueries !== props.currentQuery.binaryQueries) {
-      emit('update:modelValue', operations.value);
-      emit('query-update', updatedQuery);
-    } else {
-      handleOperationChange();
-    }
-
-    selectedNewOperation.value = [];
-  };
-
-  // 移除操作
-  const removeOperation = (index: number) => {
-    operations.value.splice(index, 1);
-    handleOperationChange();
-  };
-
-  // 说明：按产品决策，操作一旦被添加后不允许通过 UI 切换为其他操作类型；
-  // 如需更换，请删除该操作并重新添加。
-
-  // 参数变化处理
-  const handleParamChange = (opIndex: number, paramIndex: number, value: QueryBuilderOperationParamValue | undefined) => {
-    const operation = operations.value[opIndex];
-    if (!operation) return;
-
-    const nextValue: QueryBuilderOperationParamValue = value ?? '';
-    operation.params[paramIndex] = nextValue;
-
-    const opDef = promQueryModeller.getOperationDef(operation.id);
-    const paramDef = opDef?.params?.[Math.min((opDef?.params?.length ?? 1) - 1, paramIndex)];
-
-    if (paramDef?.editor === 'LabelParamEditor' && paramDef.restParam) {
-      const normalized = String(nextValue ?? '').trim();
-      if (!normalized) {
-        operation.params.splice(paramIndex, 1);
-      }
-    }
-
-    // 使用参数变化处理器（如果有）
-    if (opDef?.paramChangedHandler) {
-      const updatedOp = opDef.paramChangedHandler(paramIndex, operation, opDef);
-      operations.value[opIndex] = updatedOp;
-    }
-
-    handleOperationChange();
-  };
-
-  // 不再需要 handleAddOptionalParam，因为 Grafana 不在参数区域显示 "+ By label" 按钮
-
-  // 添加 rest 参数（完全匹配Grafana逻辑）
-  const addRestParam = (opIndex: number) => {
-    const operation = operations.value[opIndex];
-    if (!operation) return;
-
-    const opDef = promQueryModeller.getOperationDef(operation.id);
-    if (!opDef) return;
-
-    // 添加一个新的空参数
-    operation.params.push('');
-
-    // 调用参数变化处理器
-    if (opDef.paramChangedHandler) {
-      const updatedOp = opDef.paramChangedHandler(operation.params.length - 1, operation, opDef);
-      operations.value[opIndex] = updatedOp;
-    }
-
-    handleOperationChange();
-  };
-
-  // 删除 rest 参数（完全匹配Grafana逻辑）
-  const removeRestParam = (opIndex: number, paramIndex: number) => {
-    const operation = operations.value[opIndex];
-    if (!operation) return;
-
-    const opDef = promQueryModeller.getOperationDef(operation.id);
-    if (!opDef) return;
-
-    // 删除参数
-    operation.params.splice(paramIndex, 1);
-
-    // 调用参数变化处理器（这会在删除最后一个标签时触发切换，如 __sum_by -> sum）
-    if (opDef.paramChangedHandler) {
-      const updatedOp = opDef.paramChangedHandler(paramIndex, operation, opDef);
-      operations.value[opIndex] = updatedOp;
-    }
-
-    handleOperationChange();
-  };
-
-  // 检查是否可以删除 rest 参数（完全匹配 Grafana 条件）
-  const canRemoveRestParam = (operation: QueryBuilderOperation, _paramIndex: number): boolean => {
-    const opDef = promQueryModeller.getOperationDef(operation.id);
-    if (!opDef || !opDef.params || opDef.params.length === 0) return false;
-
-    const lastParamDef = opDef.params[opDef.params.length - 1];
-    if (!lastParamDef) return false;
-
-    // Grafana 条件：restParam && (params.length > def.params.length || optional)
-    return Boolean(lastParamDef.restParam) && (operation.params.length > opDef.params.length || Boolean(lastParamDef.optional));
-  };
-
-  // 检查是否应该显示 "+ Label" 按钮
-  const shouldShowAddButton = (operation: QueryBuilderOperation): boolean => {
-    const opDef = promQueryModeller.getOperationDef(operation.id);
-    if (!opDef || !opDef.params || opDef.params.length === 0) return false;
-
-    const lastParamDef = opDef.params[opDef.params.length - 1];
-    if (!lastParamDef) return false;
-
-    return Boolean(lastParamDef.restParam);
-  };
-
-  // 获取 rest 参数名称
-  const getRestParamName = (operation: QueryBuilderOperation): string => {
-    const opDef = promQueryModeller.getOperationDef(operation.id);
-    if (!opDef) return 'Parameter';
-
-    const restParamDef = opDef.params.find((p) => p.restParam);
-    return restParamDef?.name || 'Parameter';
-  };
-
-  // 检查是否应该显示参数区域（有参数值或有 restParam）
-  const hasParamsOrRestParam = (operation: QueryBuilderOperation): boolean => {
-    const opDef = promQueryModeller.getOperationDef(operation.id);
-    if (!opDef || !opDef.params || opDef.params.length === 0) return false;
-
-    // 如果有参数值，显示参数区域
-    if (operation.params.length > 0) return true;
-
-    // 如果没有参数值，但有 restParam，也显示参数区域（用于显示 "+ Label" 按钮）
-    const lastParamDef = opDef.params[opDef.params.length - 1];
-    if (!lastParamDef) return false;
-
-    return Boolean(lastParamDef.restParam);
-  };
-
-  // 获取可见的参数（完全匹配 Grafana 逻辑）
-  const getVisibleParams = (operation: QueryBuilderOperation): QueryBuilderOperationParamDef[] => {
-    const opDef = promQueryModeller.getOperationDef(operation.id);
-    if (!opDef || !opDef.params || opDef.params.length === 0) return [];
-
-    if (operation.params.length === 0) {
-      const first = opDef.params[0];
-      if (first && first.restParam && first.optional && first.editor === 'LabelParamEditor') {
-        return [first];
-      }
-    }
-
-    // Grafana 逻辑：直接遍历 operation.params，对每个参数值返回对应的参数定义
-    // 如果是 restParam，多个参数值使用同一个参数定义（通过 Math.min 实现）
-    const params: QueryBuilderOperationParamDef[] = [];
-    for (let i = 0; i < operation.params.length; i++) {
-      const paramDef = opDef.params[Math.min(opDef.params.length - 1, i)];
-      if (paramDef) params.push(paramDef);
-    }
-
-    return params;
-  };
-
-  // 格式化参数选项
-  const formatParamOptions = (options: QueryBuilderOperationParamDef['options']): Array<{ label: string; value: string | number }> => {
-    if (!options || options.length === 0) return [];
-
-    return options
-      .map((opt) => {
-        if (typeof opt === 'object' && opt !== null) {
-          const maybe = opt as { label?: unknown; value?: unknown };
-          const value = maybe.value;
-          if (typeof value === 'string' || typeof value === 'number') {
-            const label = String(maybe.label ?? value);
-            return { label, value };
-          }
-          return null;
-        }
-        if (typeof opt === 'string' || typeof opt === 'number') {
-          return { label: String(opt), value: opt };
-        }
-        return null;
-      })
-      .filter((x): x is { label: string; value: string | number } => x != null);
-  };
-
-  // 判断是否应该闪烁
-  const shouldFlash = (index: number): boolean => {
-    return flashingOperations.value.has(index);
-  };
-
-  const handleOperationChange = () => {
-    emit('update:modelValue', operations.value);
-  };
-
-  const getOperationName = (id: string): string => {
-    const opDef = promQueryModeller.getOperationDef(id);
-    return opDef?.name || id;
-  };
-
-  const getOperationDoc = (operation: QueryBuilderOperation): string => {
-    const opDef = promQueryModeller.getOperationDef(operation.id);
-    if (opDef?.explainHandler) {
-      return opDef.explainHandler(operation, opDef);
-    }
-    return opDef?.documentation || '';
-  };
-
-  // 拖拽功能
-  const handleDragStart = (event: DragEvent, index: number) => {
-    draggedIndex.value = index;
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/html', String(index));
-    }
-  };
-
-  const handleDragEnd = () => {
-    draggedIndex.value = null;
-  };
-
-  const handleDragOver = (event: DragEvent, _index: number) => {
-    event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'move';
-    }
-  };
-
-  const handleDrop = (event: DragEvent, targetIndex: number) => {
-    event.preventDefault();
-    if (draggedIndex.value === null || draggedIndex.value === targetIndex) {
-      return;
-    }
-
-    // 重新排序操作列表
-    const items = [...operations.value];
-    const draggedItem = items[draggedIndex.value];
-    if (!draggedItem) {
-      return;
-    }
-    items.splice(draggedIndex.value, 1);
-    items.splice(targetIndex, 0, draggedItem);
-    operations.value = items;
-
-    draggedIndex.value = null;
-    handleOperationChange();
-  };
 </script>
 
 <style scoped lang="less">

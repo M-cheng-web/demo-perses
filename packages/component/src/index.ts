@@ -13,6 +13,7 @@ export * from './componentsExports';
 export { message } from './message';
 export * from './types';
 export * from './composables/usePagination';
+export * from './composables/useFloatingOverlay';
 export * from './context/theme';
 export * from './context/portal';
 export { gfAntdTokensCssVar } from './theme/antdTokens';

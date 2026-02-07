@@ -1,8 +1,6 @@
 <!-- 饼图 -->
 <template>
   <div :class="bem()">
-    <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
-
     <div :class="bem('wrapper', { 'legend-right': legendOptions.position === 'right' })">
       <div ref="chartRef" :class="bem('chart')"></div>
 
@@ -23,17 +21,17 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, nextTick } from 'vue';
+  import { ref, computed } from 'vue';
   import type { EChartsOption, ECharts } from 'echarts';
   import type { Panel, QueryResult } from '@grafana-fast/types';
   import { formatValue, createNamespace } from '/#/utils';
-  import { useChartResize } from '/#/composables/useChartResize';
   import { useLegend } from '/#/composables/useLegend';
-  import { useChartInit } from '/#/composables/useChartInit';
+  import { useChartPanelLifecycle } from '/#/composables/useChartPanelLifecycle';
   import { useChartTooltip, TooltipDataProviders, type TooltipData } from '/#/composables/useChartTooltip';
   import Legend from '/#/components/ChartLegend/Legend.vue';
+  import { createNoDataOption, hasQuerySeriesData } from '/#/components/Charts/chartOptionHelpers';
+  import { normalizeNumericValue, toCssColor, toItemTooltipParam, toTooltipValue } from '/#/components/Charts/tooltipFormatterTypes';
   import { getEChartsTheme } from '/#/utils/echartsTheme';
-  import { Spin } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('pie-chart');
 
@@ -47,47 +45,19 @@
   // 生成唯一的图表 ID
   const chartId = computed(() => `chart-${props.panel.id}`);
 
-  /**
-   * 使用图表初始化 Hook
-   */
-  const { getInstance, isLoading } = useChartInit<ECharts>({
+  const { getInstance } = useChartPanelLifecycle<ECharts>({
     chartRef,
-    dependencies: [
-      {
-        value: computed(() => props.queryResults),
-        isValid: (val: unknown) => {
-          const results = Array.isArray(val) ? (val as QueryResult[]) : [];
-          return results.length > 0 && results.some((r) => Array.isArray(r.data) && r.data.length > 0);
-        },
-      },
-      {
-        value: computed(() => props.panel.options),
-        // Options can be an empty object; charts should still render with defaults.
-        isValid: (val: unknown) => val != null,
-      },
-    ],
+    queryResults: computed(() => props.queryResults),
+    panelOptions: computed(() => props.panel.options),
     onChartCreated: (instance) => {
-      nextTick(() => {
-        updateChart(instance);
-        registerTooltip();
-        initChartResize();
-      });
+      updateChart(instance);
+      registerTooltip();
     },
-    onUpdate: (instance) => {
-      nextTick(() => {
-        updateChart(instance);
-        updateTooltip();
-      });
+    onChartUpdated: (instance) => {
+      updateChart(instance);
+      updateTooltip();
     },
   });
-
-  /**
-   * 使用图表 resize Hook
-   */
-  const { initChartResize } = useChartResize(
-    computed(() => getInstance()),
-    chartRef
-  );
 
   // 使用 Legend Hook
   const {
@@ -152,18 +122,8 @@
     const theme = getEChartsTheme(chartRef.value);
 
     // 检查是否有有效数据
-    if (!queryResults || queryResults.length === 0 || queryResults.every((r) => !r.data || r.data.length === 0)) {
-      return {
-        title: {
-          text: '暂无数据',
-          left: 'center',
-          top: 'center',
-          textStyle: {
-            color: theme.textSecondary,
-            fontSize: 14,
-          },
-        },
-      };
+    if (!hasQuerySeriesData(queryResults)) {
+      return createNoDataOption(theme);
     }
 
     // 准备饼图数据
@@ -209,37 +169,28 @@
 
     // 如果没有数据，返回空配置
     if (data.length === 0) {
-      return {
-        title: {
-          text: '暂无数据',
-          left: 'center',
-          top: 'center',
-          textStyle: {
-            color: theme.textSecondary,
-            fontSize: 14,
-          },
-        },
-      };
+      return createNoDataOption(theme);
     }
 
     const isPie = specificOptions?.pieType !== 'doughnut';
 
     return {
       ...theme.baseOption,
-      // 禁用动画，依赖 loading 遮罩的过渡效果
+      // 禁用动画，减少高频刷新时的视觉抖动
       animation: false,
       // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
         ...theme.baseOption.tooltip,
         trigger: 'item',
         triggerOn: 'mousemove',
-        formatter: (params: any) => {
-          if (!params || !params.data) {
+        formatter: (params) => {
+          const itemParam = toItemTooltipParam(params);
+          if (!itemParam || !itemParam.data) {
             updateTooltipData(null);
             return '';
           }
 
-          const seriesId = `series-${params.dataIndex}`;
+          const seriesId = `series-${itemParam.dataIndex}`;
 
           // 检查该系列是否被选中（未被隐藏）
           if (!isSeriesSelected(seriesId)) {
@@ -247,16 +198,18 @@
             return '';
           }
 
+          const numericValue = normalizeNumericValue(itemParam.value);
+          const tooltipValue = toTooltipValue(itemParam.value);
           const tooltipData: TooltipData = {
-            time: params.name,
+            time: String(itemParam.name ?? ''),
             series: [
               {
                 id: seriesId,
-                label: params.name,
-                color: params.color,
-                value: params.value,
-                formattedValue: formatValue(params.value, options.format || {}),
-                percent: params.percent,
+                label: String(itemParam.name ?? ''),
+                color: toCssColor(itemParam.color),
+                value: tooltipValue,
+                formattedValue: formatValue(numericValue, options.format || {}),
+                percent: itemParam.percent,
               },
             ],
           };
@@ -308,18 +261,6 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-
-    &__loading {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 10;
-      background: var(--gf-color-surface);
-      border-radius: var(--gf-radius-sm);
-      padding: 16px;
-      box-shadow: var(--gf-shadow-1);
-    }
 
     &__wrapper {
       flex: 1;

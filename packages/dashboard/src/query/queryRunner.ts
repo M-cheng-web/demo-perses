@@ -42,6 +42,15 @@ interface CacheEntry {
   result?: QueryResult;
 }
 
+const toErrorMessage = (value: unknown): string => {
+  if (value instanceof Error) return value.message;
+  if (typeof value === 'object' && value != null) {
+    const msg = (value as { message?: unknown }).message;
+    if (typeof msg === 'string' && msg.length > 0) return msg;
+  }
+  return stableStringify(value);
+};
+
 function stableStringify(value: unknown): string {
   try {
     return JSON.stringify(value);
@@ -98,12 +107,14 @@ export class QueryRunner {
 
   private createAbortError(): Error {
     const err = new Error('Aborted');
-    (err as any).name = 'AbortError';
+    Object.defineProperty(err, 'name', { value: 'AbortError', configurable: true });
     return err;
   }
 
   private isAbortError(err: unknown): boolean {
-    return (err as any)?.name === 'AbortError';
+    if (err instanceof DOMException) return err.name === 'AbortError';
+    if (typeof err !== 'object' || err == null) return false;
+    return (err as { name?: unknown }).name === 'AbortError';
   }
 
   private async runWithConcurrency<T>(task: () => Promise<T>, signal?: AbortSignal): Promise<T> {
@@ -205,7 +216,7 @@ export class QueryRunner {
           refId: q.refId,
           expr,
           data: [],
-          error: (err as any)?.message ?? stableStringify(err),
+          error: toErrorMessage(err),
         };
         this.cache.set(cacheKey, { timestamp: Date.now(), result: errorResult });
         this.pruneCache(Date.now());
@@ -231,7 +242,7 @@ export class QueryRunner {
         refId: 'unknown',
         expr: '',
         data: [],
-        error: (s.reason as any)?.message ?? stableStringify(s.reason),
+        error: toErrorMessage(s.reason),
       };
     });
   }

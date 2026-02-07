@@ -62,6 +62,7 @@
   import { useDashboardStore } from '/#/stores';
   import { useDashboardRuntime } from '/#/runtime/useInjected';
   import PanelGroupListRow from './PanelGroupListRow.vue';
+  import { useRafBatchedLayoutModel } from './useRafBatchedLayoutModel';
 
   const [_, bem] = createNamespace('panel-group-list');
 
@@ -92,8 +93,7 @@
   const dragIgnoreFrom = '.gf-panel__title, .gf-panel__info, button, a, input, textarea';
 
   const layoutModel = ref<GroupLayoutItem[]>([]);
-  let pendingLayoutModel: GroupLayoutItem[] | null = null;
-  let layoutUpdateRafId: number | null = null;
+  const { scheduleLayoutModelUpdate, flushPendingLayoutUpdate } = useRafBatchedLayoutModel(layoutModel);
   const layoutKey = computed(() => panelGroups.value.map((g) => String(g.id)).join('|'));
 
   const groupById = computed(() => {
@@ -154,47 +154,6 @@
   // ---------------------------
   // Layout model updates (drag performance)
   // ---------------------------
-  const applyLayoutModelUpdate = (nextLayout: GroupLayoutItem[]) => {
-    const currentById = new Map<string, GroupLayoutItem>();
-    layoutModel.value.forEach((it) => currentById.set(String(it.i), it));
-
-    const nextRefs: GroupLayoutItem[] = [];
-    for (const next of nextLayout) {
-      const id = String(next.i);
-      const existing = currentById.get(id);
-      if (existing) {
-        Object.assign(existing, next);
-        nextRefs.push(existing);
-      } else {
-        nextRefs.push({ ...next });
-      }
-    }
-    layoutModel.value = nextRefs;
-  };
-
-  const flushPendingLayoutUpdate = () => {
-    if (layoutUpdateRafId != null) {
-      window.cancelAnimationFrame(layoutUpdateRafId);
-      layoutUpdateRafId = null;
-    }
-    if (!pendingLayoutModel) return;
-    const layout = pendingLayoutModel;
-    pendingLayoutModel = null;
-    applyLayoutModelUpdate(layout);
-  };
-
-  const scheduleLayoutModelUpdate = (nextLayout: GroupLayoutItem[]) => {
-    pendingLayoutModel = nextLayout;
-    if (layoutUpdateRafId != null) return;
-    layoutUpdateRafId = window.requestAnimationFrame(() => {
-      layoutUpdateRafId = null;
-      if (!pendingLayoutModel) return;
-      const layout = pendingLayoutModel;
-      pendingLayoutModel = null;
-      applyLayoutModelUpdate(layout);
-    });
-  };
-
   const handleLayoutModelUpdate = (nextLayout: GroupLayoutItem[]) => {
     // vue-grid-layout-v3 在拖拽过程中会高频 emit(update:layout)（每次都会 clone layout）
     // 直接 v-model 赋值会导致大量新对象/数组分配 & 触发列表高频 patch（拖动卡顿明显）。

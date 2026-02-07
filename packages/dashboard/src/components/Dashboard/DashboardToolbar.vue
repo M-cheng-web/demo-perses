@@ -9,144 +9,65 @@
 	-->
 <template>
   <div :class="[bem(), bem({ sidebar: variant === 'sidebar' })]">
-    <template v-if="variant === 'sidebar'">
-      <div :class="bem('sidebar')">
-        <Card v-if="props.apiModeOptions?.length" size="small" title="数据源模式" :class="bem('card')">
-          <div :class="bem('hint')">更改将在点击底部“确定”后生效；远程模式需要宿主提供 apiClient。</div>
-          <Segmented
-            v-model:value="draftApiMode"
-            block
-            size="small"
-            :options="props.apiModeOptions"
-            :disabled="isBooting || props.apiModeSwitching"
-          />
-        </Card>
+    <DashboardToolbarSidebarContent
+      v-if="variant === 'sidebar'"
+      :api-mode-options="props.apiModeOptions"
+      :api-mode-switching="props.apiModeSwitching"
+      :draft-api-mode="draftApiMode"
+      :draft-view-mode="draftViewMode"
+      :view-mode-options="viewModeOptions"
+      :is-all-panels-view-draft="isAllPanelsViewDraft"
+      :draft-time-range="draftTimeRange"
+      :draft-refresh-interval="draftRefreshInterval"
+      :refresh-interval-options="refreshIntervalOptions"
+      :is-booting="isBooting"
+      :is-read-only="isReadOnly"
+      :variable-defs="variableDefs"
+      :is-resolving-variable-options="isResolvingVariableOptions"
+      :variable-last-error="variableLastError"
+      :draft-variable-values="draftVariableValues"
+      :format-variable-token="formatVariableToken"
+      :get-variable-help-lines="getVariableHelpLines"
+      :is-select-like-variable="isSelectLikeVariable"
+      :get-variable-select-options="getVariableSelectOptions"
+      :get-variable-placeholder="getVariablePlaceholder"
+      @create-group="handleCreateGroup"
+      @view-json="handleViewJson"
+      @import-json="handleImport"
+      @export-json="handleExport"
+      @update:draft-api-mode="(value) => (draftApiMode = value)"
+      @update:draft-view-mode="(value) => (draftViewMode = value)"
+      @update:draft-time-range="(value) => (draftTimeRange = value)"
+      @update:draft-refresh-interval="(value) => (draftRefreshInterval = value)"
+      @update:draft-variable-value="({ name, value }) => (draftVariableValues[name] = value ?? '')"
+    />
 
-        <Card size="small" title="操作" :class="bem('card')">
-          <Flex gap="8" wrap>
-            <Button size="small" type="ghost" :disabled="isBooting || isReadOnly" @click="handleCreateGroup">创建面板组</Button>
-          </Flex>
-          <div :class="bem('divider')"></div>
-          <Flex gap="8" wrap>
-            <Button size="small" type="ghost" :icon="h(FileTextOutlined)" :disabled="isBooting" @click="handleViewJson">查看</Button>
-            <Button size="small" type="ghost" :icon="h(UploadOutlined)" :disabled="isBooting || isReadOnly" @click="handleImport">导入</Button>
-            <Button size="small" type="ghost" :icon="h(DownloadOutlined)" :disabled="isBooting" @click="handleExport">导出</Button>
-          </Flex>
-          <div :class="bem('hint')">导入会先进行严格校验；非法 JSON 不会污染当前状态。</div>
-        </Card>
-
-        <Card size="small" title="视图与时间" :class="bem('card')">
-          <div :class="bem('hint')">更改将在点击底部“确定”后生效。</div>
-          <Segmented v-model:value="draftViewMode" block size="small" :options="viewModeOptions" :disabled="isBooting" />
-          <div v-if="isAllPanelsViewDraft" :class="bem('hint')">提示：全部面板视图为只读，不支持拖拽/编辑。</div>
-          <div :class="bem('field')">
-            <div :class="bem('label')">范围</div>
-            <TimeRangePicker v-model:value="draftTimeRange" :disabled="isBooting" />
-          </div>
-          <div :class="bem('field')">
-            <div :class="bem('label')">自动刷新</div>
-            <Select v-model:value="draftRefreshInterval" size="small" :disabled="isBooting" :options="refreshIntervalOptions" />
-          </div>
-          <div :class="bem('hint')">提示：自动刷新仅影响当前页面运行时；保存/导出时会写入 Dashboard JSON 的 refreshInterval。</div>
-        </Card>
-
-        <Card size="small" title="变量" :class="bem('card')">
-          <div :class="bem('hint')">
-            <div>更改将在点击底部“确定”后生效；仅当查询 expr 中使用了 <code>$变量名</code> 才会影响面板。</div>
-            <div v-if="variableDefs.length > 0" :class="bem('var-help-list')">
-              <div :class="bem('var-help-title')">当前仪表盘变量说明：</div>
-              <div v-for="v in variableDefs" :key="v.id" :class="bem('var-help-item')">
-                <div :class="bem('var-help-name')">
-                  <code>{{ formatVariableToken(v.name) }}</code>
-                  <span style="margin-left: 6px">{{ v.label || v.name }}</span>
-                </div>
-                <template v-for="(line, idx) in getVariableHelpLines(v)" :key="`${v.id}-${idx}`">
-                  <div :class="bem('var-help-line')">- {{ line }}</div>
-                </template>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="variableDefs.length === 0" :class="bem('hint')">当前仪表盘未定义 variables。</div>
-
-          <template v-else>
-            <div v-if="isResolvingVariableOptions" :class="bem('hint')" style="margin-top: 0">选项加载中...</div>
-            <div v-if="variableLastError" :class="bem('hint')" style="margin-top: 0">上次刷新失败：{{ variableLastError }}</div>
-
-            <div v-for="v in variableDefs" :key="v.id" :class="bem('field')">
-              <div :class="bem('var-label')" :title="v.label || v.name">{{ v.label || v.name }}</div>
-              <div :class="bem('var-control')">
-                <Select
-                  v-if="isSelectLikeVariable(v)"
-                  v-model:value="draftVariableValues[v.name]"
-                  :mode="v.multi ? 'multiple' : undefined"
-                  show-search
-                  allow-clear
-                  size="small"
-                  style="width: 100%"
-                  :disabled="isBooting || v.type === 'constant'"
-                  :options="getVariableSelectOptions(v)"
-                  :placeholder="getVariablePlaceholder(v)"
-                />
-                <Input
-                  v-else
-                  v-model:value="draftVariableValues[v.name]"
-                  size="small"
-                  allow-clear
-                  style="width: 100%"
-                  :disabled="isBooting || v.type === 'constant'"
-                  :placeholder="v.type === 'constant' ? '常量' : '请输入'"
-                />
-              </div>
-            </div>
-          </template>
-        </Card>
-      </div>
-    </template>
-
-    <template v-else>
-      <!-- 单行：标题 + 操作区（旧头部形态） -->
-      <div :class="bem('header')">
-        <h2 :class="bem('title')">{{ dashboardName }}</h2>
-        <div :class="bem('actions')">
-          <!-- 视图切换：分组 <-> 全部面板（只读） -->
-          <Button size="small" @click="handleTogglePanelsView" :disabled="isBooting">
-            {{ isAllPanelsView ? '分组视图' : '全部面板' }}
-          </Button>
-
-          <!-- 时间范围选择器 -->
-          <TimeRangePicker v-model:value="selectedTimeRange" :disabled="isBooting" @change="handleTimeRangeChange" />
-
-          <Button size="small" @click="handleSave" type="primary" :loading="isSaving" :disabled="isBooting || isReadOnly"> 保存 </Button>
-
-          <Dropdown>
-            <Button :icon="h(MoreOutlined)" size="small" :disabled="isBooting" />
-            <template #overlay>
-              <Menu
-                :items="[
-                  { key: 'export', label: '导出 JSON', icon: h(DownloadOutlined) },
-                  { key: 'import', label: '导入 JSON', icon: h(UploadOutlined), disabled: isReadOnly },
-                  { key: 'viewJson', label: '查看 JSON', icon: h(FileTextOutlined) },
-                ]"
-                @click="handleMenuClick"
-              />
-            </template>
-          </Dropdown>
-        </div>
-      </div>
-    </template>
+    <DashboardToolbarHeaderContent
+      v-else
+      :dashboard-name="dashboardName"
+      :is-all-panels-view="isAllPanelsView"
+      :is-booting="isBooting"
+      :is-read-only="isReadOnly"
+      :is-saving="isSaving"
+      :selected-time-range="selectedTimeRange"
+      @toggle-panels-view="handleTogglePanelsView"
+      @update:selected-time-range="(value) => (selectedTimeRange = value)"
+      @time-range-change="handleTimeRangeChange"
+      @save="handleSave"
+      @menu-click="handleMenuClick"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, h, watch } from 'vue';
-  import { Button, Card, Flex, Segmented, TimeRangePicker, Dropdown, Menu, Select, Input } from '@grafana-fast/component';
+  import { ref, computed, watch } from 'vue';
   import { storeToRefs } from '@grafana-fast/store';
-  import { MoreOutlined, DownloadOutlined, UploadOutlined, FileTextOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useTimeRangeStore, useVariablesStore } from '/#/stores';
   import { message } from '@grafana-fast/component';
   import { createNamespace } from '/#/utils';
   import type { DashboardVariable, VariableOption } from '@grafana-fast/types';
+  import DashboardToolbarHeaderContent from './DashboardToolbarHeaderContent.vue';
+  import DashboardToolbarSidebarContent from './DashboardToolbarSidebarContent.vue';
 
   const [_, bem] = createNamespace('dashboard-toolbar');
 
@@ -301,7 +222,7 @@
     if (name === 'window' || name === 'interval' || name === 'range' || name === 'step') return true;
     if (label.includes('窗口') || label.includes('间隔') || label.includes('步长')) return true;
     const opts = Array.isArray(v.options) ? v.options : [];
-    return opts.some((o) => isDurationLikeValue((o as any)?.value ?? (o as any)?.text));
+    return opts.some((o) => isDurationLikeValue(o?.value ?? o?.text));
   }
 
   function formatVariableToken(name: string): string {
@@ -364,7 +285,7 @@
       const name = String(v?.name ?? '').trim();
       if (!name) continue;
       if (!(name in draftVariableValues.value)) continue;
-      const next = normalizeVariableValue(v, (draftVariableValues.value as any)[name]);
+      const next = normalizeVariableValue(v, draftVariableValues.value[name]);
       const current = name in currentValues ? currentValues[name] : undefined;
       if (!isSameVariableValue(current, next)) patch[name] = next;
     }
@@ -398,7 +319,7 @@
     });
   };
 
-  const viewModeOptions = computed(() => [
+  const viewModeOptions = computed<Array<{ label: string; value: 'grouped' | 'allPanels'; disabled?: boolean }>>(() => [
     { label: '分组视图', value: 'grouped', disabled: false },
     { label: '全部面板', value: 'allPanels', disabled: false },
   ]);
@@ -448,7 +369,7 @@
   });
 </script>
 
-<style scoped lang="less">
+<style lang="less">
   .dp-dashboard-toolbar {
     position: sticky;
     top: 0;

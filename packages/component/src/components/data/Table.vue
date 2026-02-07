@@ -72,6 +72,7 @@
   import Spin from '../feedback/Spin.vue';
   import Empty from '../base/Empty.vue';
   import Pagination from '../navigation/Pagination.vue';
+  import { getColumnKey, nextSortState, type SortState } from './table/tableLogic';
 
   interface Column {
     title: string;
@@ -151,7 +152,7 @@
 
   const page = ref(mergedPagination.value !== false && mergedPagination.value.current ? mergedPagination.value.current : 1);
   const pageSize = ref(mergedPagination.value !== false && mergedPagination.value.pageSize ? mergedPagination.value.pageSize : 20);
-  const sortState = ref<{ key: string; order: 'ascend' | 'descend' } | null>(null);
+  const sortState = ref<SortState | null>(null);
   const tbodyRef = ref<HTMLTableSectionElement | null>(null);
 
   watch(
@@ -191,13 +192,9 @@
 
   const handleSort = (col: Column) => {
     if (!col.sorter) return;
-    const key = col.key || col.dataIndex || '';
+    const key = getColumnKey(col);
     if (!key) return;
-    if (sortState.value?.key === key) {
-      sortState.value = sortState.value.order === 'ascend' ? { key, order: 'descend' } : null;
-    } else {
-      sortState.value = { key, order: 'ascend' };
-    }
+    sortState.value = nextSortState(sortState.value, key);
     emitChange();
   };
 

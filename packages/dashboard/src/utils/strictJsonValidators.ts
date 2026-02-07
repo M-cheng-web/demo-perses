@@ -19,8 +19,13 @@
 
 import type { JsonTextValidator } from '@grafana-fast/json-editor';
 import type { DashboardContent, DashboardVariable } from '@grafana-fast/types';
-import { isPlainObject } from '@grafana-fast/utils';
-import { isBuiltInPanelType, listBuiltInPanelTypes } from '/#/panels/builtInPanels';
+import { isBuiltInPanelType, listBuiltInPanelTypes } from '../panels/builtInPanelTypes';
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
 
 function supportedPanelTypes(): string[] {
   return listBuiltInPanelTypes();
@@ -33,7 +38,14 @@ function validatePanelObject(panel: unknown, path: string): string[] {
     return errors;
   }
 
-  const type = panel.type;
+  const panelObj = panel as {
+    type?: unknown;
+    queries?: unknown;
+    options?: unknown;
+    transformations?: unknown;
+  };
+
+  const type = panelObj.type;
   if (typeof type !== 'string' || !type.trim()) {
     errors.push(`${path}.type 必填`);
     return errors;
@@ -45,15 +57,15 @@ function validatePanelObject(panel: unknown, path: string): string[] {
   }
 
   // queries 是一个很核心的结构：很多地方假设它是数组
-  if ('queries' in panel && !Array.isArray((panel as any).queries)) {
+  if ('queries' in panelObj && !Array.isArray(panelObj.queries)) {
     errors.push(`${path}.queries 必须是数组`);
   }
 
   // options/transformations 的类型也做一个基本兜底，避免渲染时崩溃
-  if ('options' in panel && (panel as any).options != null && !isPlainObject((panel as any).options)) {
+  if ('options' in panelObj && panelObj.options != null && !isPlainObject(panelObj.options)) {
     errors.push(`${path}.options 必须是对象`);
   }
-  if ('transformations' in panel && (panel as any).transformations != null && !Array.isArray((panel as any).transformations)) {
+  if ('transformations' in panelObj && panelObj.transformations != null && !Array.isArray(panelObj.transformations)) {
     errors.push(`${path}.transformations 必须是数组`);
   }
 
@@ -79,12 +91,12 @@ function validateVariables(variables: unknown, path: string): string[] {
     if (typeof v.name !== 'string' || !v.name.trim()) errors.push(`${p}.name 必填`);
     if (typeof v.label !== 'string') errors.push(`${p}.label 必须是 string`);
     if (typeof v.type !== 'string' || !v.type.trim()) errors.push(`${p}.type 必填`);
-    const options = (v as any).options;
+    const options = v.options;
     if (options != null && !Array.isArray(options)) errors.push(`${p}.options 必须是数组`);
 
     // current 的类型取决于 multi
-    const multi = !!(v as any).multi;
-    const current = (v as any).current;
+    const multi = !!v.multi;
+    const current = v.current;
     if (multi) {
       if (!(Array.isArray(current) || typeof current === 'string')) errors.push(`${p}.current 在 multi=true 时必须是 string 或 string[]`);
     } else {
@@ -111,41 +123,46 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
   if (parsedValue == null) return [];
   if (!isPlainObject(parsedValue)) return ['Dashboard JSON 必须是对象'];
 
-  // 注意：这里不能直接 `as DashboardContent`，因为 typescript 会认为类型“重叠不足”并报错；
-  // 我们只在校验逻辑里“按需读取字段”，因此通过 unknown 过一层即可。
-  const dashboard = parsedValue as unknown as DashboardContent;
+  const dashboard = parsedValue as Partial<DashboardContent> & {
+    panelGroups?: unknown;
+    variables?: unknown;
+    schemaVersion?: unknown;
+    name?: unknown;
+    refreshInterval?: unknown;
+  };
   const errors: string[] = [];
 
   // 基础字段校验：避免导入后出现“看似成功，但运行时异常/状态不一致”
-  const schemaVersion = (dashboard as any).schemaVersion;
+  const schemaVersion = dashboard.schemaVersion;
   if (typeof schemaVersion !== 'number' || Number.isNaN(schemaVersion)) {
     errors.push(`dashboard.schemaVersion 必填且必须是 number（当前为 ${schemaVersion ?? 'undefined'}）`);
   }
 
-  if (typeof (dashboard as any).name !== 'string' || !(dashboard as any).name.trim()) {
+  if (typeof dashboard.name !== 'string' || !dashboard.name.trim()) {
     errors.push('dashboard.name 必填');
   }
 
-  const refreshInterval = (dashboard as any).refreshInterval;
+  const refreshInterval = dashboard.refreshInterval;
   if (typeof refreshInterval !== 'number' || Number.isNaN(refreshInterval)) {
     errors.push('dashboard.refreshInterval 必须是 number');
   } else if (refreshInterval < 0) {
     errors.push('dashboard.refreshInterval 不能为负数');
   }
 
-  if (!Array.isArray((dashboard as any).panelGroups)) {
+  if (!Array.isArray(dashboard.panelGroups)) {
     errors.push('dashboard.panelGroups 必须是数组');
     return errors;
   }
 
   // 面板类型校验：保证不会出现 “不支持的面板类型：xxx” 这类 UI 警告
-  (dashboard.panelGroups ?? []).forEach((g: any, gi: number) => {
+  (dashboard.panelGroups ?? []).forEach((group, gi: number) => {
     const base = `panelGroups[${gi}]`;
-    if (!g || typeof g !== 'object') {
+    if (!group || typeof group !== 'object') {
       errors.push(`${base} 必须是对象`);
       return;
     }
-    const panels = g.panels;
+    const groupObj = group as { panels?: unknown };
+    const panels = groupObj.panels;
     if (!Array.isArray(panels)) {
       errors.push(`${base}.panels 必须是数组`);
       return;
@@ -156,7 +173,7 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
   });
 
   // 变量校验：用于“全局变量管理”场景（通过 JSON 编辑器编辑 variables）
-  errors.push(...validateVariables((dashboard as any).variables, 'dashboard.variables'));
+  errors.push(...validateVariables(dashboard.variables, 'dashboard.variables'));
 
   return errors;
 };

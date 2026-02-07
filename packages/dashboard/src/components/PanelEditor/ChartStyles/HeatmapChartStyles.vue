@@ -95,10 +95,9 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
-  import { deepClone, createNamespace } from '/#/utils';
+  import { createNamespace } from '/#/utils';
   import { getDefaultHeatmapChartOptions } from '../ChartStylesDefaultOptions/heatmapChartDefaultOptions';
-  import { deepMerge } from './utils';
+  import { useChartStyleDraft } from './useChartStyleDraft';
   import { Switch, Input, Select, Button } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('heatmap-chart-styles');
@@ -113,35 +112,11 @@
     (e: 'update:options', options: any): void;
   }>();
 
-  // 合并默认配置和传入的配置
-  const localOptions = ref(deepClone(deepMerge(getDefaultHeatmapChartOptions(), props.options ?? {})));
-
-  // 恢复默认设置
-  const resetToDefaults = () => {
-    const defaults = getDefaultHeatmapChartOptions();
-    localOptions.value = deepClone(defaults);
-    emit('update:options', deepClone(defaults));
-  };
-
-  // 监听 localOptions 变化，发送事件更新外部
-  watch(
-    localOptions,
-    (newVal) => {
-      emit('update:options', deepClone(newVal));
-    },
-    { deep: true }
-  );
-
-  // 监听外部 props.options 变化，更新 localOptions
-  watch(
-    () => props.options,
-    (newVal) => {
-      if (newVal && JSON.stringify(newVal) !== JSON.stringify(localOptions.value)) {
-        localOptions.value = deepClone(deepMerge(getDefaultHeatmapChartOptions(), newVal ?? {}));
-      }
-    },
-    { deep: true }
-  );
+  const { localOptions, resetToDefaults } = useChartStyleDraft({
+    getOptions: () => props.options,
+    getDefaults: getDefaultHeatmapChartOptions,
+    emitUpdate: (next) => emit('update:options', next),
+  });
 </script>
 
 <style scoped lang="less">

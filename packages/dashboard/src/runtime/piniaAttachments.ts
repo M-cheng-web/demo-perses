@@ -22,11 +22,23 @@ const API_FIELD = '__gfApiClient';
 const QUERY_SCHEDULER_FIELD = '__gfQueryScheduler';
 const QUERY_SCHEDULER_SCOPE_FIELD = '__gfQuerySchedulerScope';
 
+interface PiniaRuntimeAttachments extends Pinia {
+  [API_FIELD]?: GrafanaFastApiClient;
+  [QUERY_SCHEDULER_FIELD]?: ReturnType<typeof createQueryScheduler>;
+  [QUERY_SCHEDULER_SCOPE_FIELD]?: EffectScope;
+}
+
+const withAttachments = (pinia: Pinia): PiniaRuntimeAttachments => pinia as PiniaRuntimeAttachments;
+
+const resolvePinia = (pinia?: Pinia): Pinia | undefined => {
+  return pinia ?? (getActivePinia() as unknown as Pinia | undefined);
+};
+
 /**
  * 绑定 apiClient 到 pinia（给 store/调度器等非组件代码使用）
  */
 export function setPiniaApiClient(pinia: Pinia, api: GrafanaFastApiClient) {
-  (pinia as any)[API_FIELD] = api;
+  withAttachments(pinia)[API_FIELD] = api;
 }
 
 /**
@@ -37,8 +49,8 @@ export function setPiniaApiClient(pinia: Pinia, api: GrafanaFastApiClient) {
  * - 宿主必须显式注入 apiClient（通过 useDashboardSdk({ apiClient }) 或 setPiniaApiClient(pinia, apiClient)）
  */
 export function getPiniaApiClient(pinia?: Pinia): GrafanaFastApiClient {
-  const p = pinia ?? (getActivePinia() as any as Pinia | undefined);
-  const api = p ? ((p as any)[API_FIELD] as GrafanaFastApiClient | undefined) : undefined;
+  const p = resolvePinia(pinia);
+  const api = p ? withAttachments(p)[API_FIELD] : undefined;
   if (api) return api;
   throw new Error('[grafana-fast] Missing apiClient. Provide it via useDashboardSdk({ apiClient }) or setPiniaApiClient(pinia, apiClient).');
 }
@@ -51,27 +63,39 @@ export function getPiniaApiClient(pinia?: Pinia): GrafanaFastApiClient {
  * - 这里用 effectScope 包裹 scheduler 的内部 watch，确保 dispose 时可一次性停止
  */
 export function getPiniaQueryScheduler(pinia?: Pinia) {
-  const p = pinia ?? (getActivePinia() as any as Pinia | undefined);
+  const p = resolvePinia(pinia);
   if (!p) {
     throw new Error('[grafana-fast] Missing pinia instance. Ensure Dashboard is mounted via useDashboardSdk() or pass pinia explicitly.');
   }
 
-  const existing = (p as any)[QUERY_SCHEDULER_FIELD] as ReturnType<typeof createQueryScheduler> | undefined;
+  const attached = withAttachments(p);
+  const existing = attached[QUERY_SCHEDULER_FIELD];
   if (existing) return existing;
 
   const scope: EffectScope = effectScope(true);
   const scheduler = scope.run(() => createQueryScheduler(p)) as ReturnType<typeof createQueryScheduler>;
-  (p as any)[QUERY_SCHEDULER_FIELD] = scheduler;
-  (p as any)[QUERY_SCHEDULER_SCOPE_FIELD] = scope;
+  attached[QUERY_SCHEDULER_FIELD] = scheduler;
+  attached[QUERY_SCHEDULER_SCOPE_FIELD] = scope;
   return scheduler;
+}
+
+/**
+ * 获取调度器调试快照（只读，不会创建新的 scheduler 实例）
+ */
+export function getPiniaQuerySchedulerDebugSnapshot(pinia?: Pinia) {
+  const p = resolvePinia(pinia);
+  if (!p) return null;
+  const scheduler = withAttachments(p)[QUERY_SCHEDULER_FIELD];
+  return scheduler?.getDebugSnapshot?.() ?? null;
 }
 
 /**
  * 释放 pinia 上的 QueryScheduler（多实例/卸载时防止后台定时刷新与 watch 泄漏）
  */
 export function disposePiniaQueryScheduler(pinia: Pinia) {
-  const scope = (pinia as any)[QUERY_SCHEDULER_SCOPE_FIELD] as EffectScope | undefined;
+  const attached = withAttachments(pinia);
+  const scope = attached[QUERY_SCHEDULER_SCOPE_FIELD];
   scope?.stop();
-  delete (pinia as any)[QUERY_SCHEDULER_FIELD];
-  delete (pinia as any)[QUERY_SCHEDULER_SCOPE_FIELD];
+  delete attached[QUERY_SCHEDULER_FIELD];
+  delete attached[QUERY_SCHEDULER_SCOPE_FIELD];
 }

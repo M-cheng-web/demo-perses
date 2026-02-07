@@ -1,11 +1,11 @@
 <!--
-  组件说明：可视窗口 + idle 后 hydrated 的虚拟列表容器（VirtualList）
+  组件说明：可视窗口 + idle 后激活请求的虚拟列表容器（VirtualList）
 
   目标（按 Grafana 的“滚动停留才加载内容”思路）：
   - 一次性传入全量 items（layout），不做分页、不做 loadMore
   - DOM 只渲染可视范围（hotRange）+ pinned 缓存，避免 1000+ 面板 DOM 压力
-  - 滚动过程中不更新“可视面板集合”（scheduler 可据此暂停查询/渲染），停留 idleMs 后再上报
-  - hydratedIds 累积：已经真实渲染过的面板再次出现时可直接渲染内容（减少占位态闪烁）
+  - 滚动过程中：继续上报 renderPanelIds（避免白屏），但 activePanelIds 为空（暂停请求）
+  - 停留 idleMs 后：上报 activePanelIds（恢复请求）
 -->
 <template>
   <div ref="containerRef" :class="bem()" :style="containerStyle">
@@ -14,7 +14,6 @@
         :data-list="dataList"
         :render-list="renderList"
         :is-hot="isHot"
-        :is-hydrated="isHydrated"
         :is-scrolling="isScrolling"
         :total-count="totalCount"
         :viewport-height-px="viewport.height"
@@ -30,6 +29,14 @@
   import { createNamespace } from '/#/utils';
   import { useDashboardRuntime } from '/#/runtime/useInjected';
   import { getPiniaQueryScheduler } from '/#/runtime/piniaAttachments';
+  import {
+    computeHotIds as computeHotIdsInRange,
+    filterRenderItems,
+    getEffectiveViewportHeight,
+    getHotRange,
+    type VirtualViewportSnapshot,
+  } from './virtualListWindowing';
+  import { computeNextPinnedCache } from './virtualListPinnedCache';
 
   defineOptions({ name: 'VirtualList' });
 
@@ -39,7 +46,7 @@
     defineProps<{
       /** scheduler 的可视范围 scope（建议传 groupId） */
       scopeId: string;
-      /** 全量 items（layout），VirtualList 只负责“渲染窗口化 + hydrated” */
+      /** 全量 items（layout），VirtualList 只负责“渲染窗口化 + active 请求窗口” */
       items: PanelLayout[];
       /** 滚动容器来源：self=组件内部滚动；runtime=使用 Dashboard 外层滚动容器（默认） */
       scrollMode?: 'self' | 'runtime';
@@ -113,18 +120,7 @@
   const dataList = computed<PanelLayout[]>(() => (Array.isArray(props.items) ? props.items : []));
   const totalCount = computed(() => dataList.value.length);
 
-  const getEffectiveViewportHeight = (scroller: HTMLElement | null | undefined): number => {
-    const fallback = DEFAULT_SELF_HEIGHT_PX;
-    const clientHeight = scroller?.clientHeight ?? 0;
-    const safeClientHeight = clientHeight > 0 ? clientHeight : fallback;
-    const winHeight = typeof window !== 'undefined' ? window.innerHeight : safeClientHeight;
-    // runtime scroll 容器如果没有正确约束高度，clientHeight 可能会变得非常大（等于内容高度）。
-    // clamp 到 window.innerHeight，避免“首屏一次加载太多页”的误判。
-    const safeWinHeight = winHeight > 0 ? winHeight : safeClientHeight;
-    return Math.max(1, Math.min(safeClientHeight, safeWinHeight));
-  };
-
-  // 激进定型：不再区分“小组/大组”，统一采用“窗口化渲染 + idle 后 hydrated/请求”的策略
+  // 激进定型：不再区分“小组/大组”，统一采用“窗口化渲染 + idle 后请求”的策略
   // enabled=false 作为兜底开关（一般不需要关）。
   const windowingEnabled = computed(() => Boolean(props.enabled));
 
@@ -153,13 +149,7 @@
   // ---------------------------
   // 可视窗口 + idle 后上报（QueryScheduler）
   // ---------------------------
-  interface ViewportSnapshot {
-    scrollTop: number;
-    height: number;
-    gridTopInScrollContent: number;
-  }
-
-  const viewport = ref<ViewportSnapshot>({
+  const viewport = ref<VirtualViewportSnapshot>({
     scrollTop: 0,
     height: 0,
     gridTopInScrollContent: 0,
@@ -173,7 +163,7 @@
     if (!scroller || !container) return;
 
     const scrollTop = scroller.scrollTop;
-    const height = getEffectiveViewportHeight(scroller);
+    const height = getEffectiveViewportHeight(scroller, DEFAULT_SELF_HEIGHT_PX);
 
     const scrollRect = scroller.getBoundingClientRect();
     const gridRect = container.getBoundingClientRect();
@@ -193,68 +183,30 @@
 
   const canMeasureViewport = computed(() => Boolean(resolvedScrollEl.value && contentRef.value));
 
-  const hotRange = computed(() => {
-    const { scrollTop, height, gridTopInScrollContent } = viewport.value;
-    const viewportTopInGrid = scrollTop - gridTopInScrollContent;
-    const overscanPx = height * Math.max(0, props.hotOverscanScreens ?? 0);
-    return {
-      top: viewportTopInGrid - overscanPx,
-      bottom: viewportTopInGrid + height + overscanPx,
-    };
-  });
+  const hotRange = computed(() => getHotRange(viewport.value, props.hotOverscanScreens ?? 0));
 
-  const estimateItemRect = (item: PanelLayout): { top: number; bottom: number } => {
-    // 与当前 grid-layout 的 calcPosition 保持一致：
-    // top = rowHeight*y + (y+1)*marginY = marginY + y*(rowHeight+marginY)
-    const rowHeight = Math.max(0, props.rowHeight ?? 0);
-    const marginY = Math.max(0, props.marginY ?? 0);
-    const rowUnit = rowUnitPx.value;
-    const top = marginY + (item.y ?? 0) * rowUnit;
-    const h = Math.max(0, item.h ?? 0);
-    const height = h * rowHeight + Math.max(0, h - 1) * marginY;
-    return { top, bottom: top + height };
-  };
+  const estimateOptions = computed(() => ({
+    rowHeight: props.rowHeight ?? 0,
+    marginY: props.marginY ?? 0,
+    rowUnitPx: rowUnitPx.value,
+  }));
 
   // 无法测量 viewport 的兜底：只渲染前 N 个，避免一次性挂太多 DOM
   const hotFallbackCount = computed(() => 20);
 
   const hotIds = ref<Set<string>>(new Set());
-  const hydratedIds = ref<Set<string>>(new Set());
 
   const updatePinnedIds = (hotIdList: string[]) => {
-    const requestedMaxKeep = Math.max(0, Math.floor(props.keepAliveCount ?? 0));
-    if (requestedMaxKeep <= 0) {
-      pinnedIds.value = new Set();
-      pinnedQueue = [];
-      return;
-    }
-
-    const hotSet = new Set(hotIdList);
-    // 关键修复：如果 hot 数量本身就超过 keepAliveCount，则不能“强行缩到 keepAliveCount”，
-    // 否则会出现一直尝试删除 hot 元素而无法减少 size 的死循环。
-    const maxKeep = Math.max(requestedMaxKeep, hotSet.size);
-
-    const current = new Set(pinnedIds.value);
-
-    for (const id of hotIdList) {
-      if (!current.has(id)) {
-        current.add(id);
-        pinnedQueue.push(id);
-      }
-    }
-
-    while (current.size > maxKeep && pinnedQueue.length > 0) {
-      const oldest = pinnedQueue.shift();
-      if (!oldest) continue;
-      // 当前仍在 hot 的不移除（优先保证可视范围稳定）
-      if (hotSet.has(oldest)) {
-        pinnedQueue.push(oldest);
-        continue;
-      }
-      current.delete(oldest);
-    }
-
-    pinnedIds.value = current;
+    const next = computeNextPinnedCache(
+      {
+        current: pinnedIds.value,
+        queue: pinnedQueue,
+      },
+      hotIdList,
+      props.keepAliveCount ?? 0
+    );
+    pinnedIds.value = next.current;
+    pinnedQueue = next.queue;
   };
 
   const renderList = computed<PanelLayout[]>(() => {
@@ -263,14 +215,7 @@
       return dataList.value.slice(0, hotFallbackCount.value);
     }
 
-    const { top, bottom } = hotRange.value;
-    const pinned = pinnedIds.value;
-    return dataList.value.filter((it) => {
-      const r = estimateItemRect(it);
-      const id = normalizeId(it.i);
-      if (pinned.has(id)) return true;
-      return r.bottom >= top && r.top <= bottom;
-    });
+    return filterRenderItems(dataList.value, hotRange.value, pinnedIds.value, estimateOptions.value);
   });
 
   const computeHotIds = (): string[] => {
@@ -278,43 +223,42 @@
       return dataList.value.slice(0, hotFallbackCount.value).map((it) => normalizeId(it.i));
     }
 
-    const { top, bottom } = hotRange.value;
-    const ids: string[] = [];
-    for (const it of dataList.value) {
-      const r = estimateItemRect(it);
-      if (r.bottom >= top && r.top <= bottom) ids.push(normalizeId(it.i));
-    }
-    return ids;
+    return computeHotIdsInRange(dataList.value, hotRange.value, estimateOptions.value);
   };
 
   const isScrolling = ref(false);
   let visibilityGeneration = 0;
 
+  const reportViewportState = (activeIds: string[]) => {
+    const renderIds = renderList.value.map((it) => normalizeId(it.i)).map(toSchedulerPanelId);
+    const activeSchedulerIds = activeIds.map(toSchedulerPanelId);
+
+    scheduler.setViewportState(schedulerScopeId.value, {
+      renderPanelIds: renderIds,
+      activePanelIds: activeSchedulerIds,
+    });
+  };
+
   const applyHotVisible = async () => {
-    if (!windowingEnabled.value) return;
+    if (!windowingEnabled.value) {
+      const allIds = dataList.value.map((it) => normalizeId(it.i));
+      hotIds.value = new Set(allIds);
+      updatePinnedIds(allIds);
+      isScrolling.value = false;
+      reportViewportState(allIds);
+      return;
+    }
     const startedGen = visibilityGeneration;
     updateViewport();
     const ids = computeHotIds();
     hotIds.value = new Set(ids);
     updatePinnedIds(ids);
 
-    const nextHydrated = new Set(hydratedIds.value);
-    ids.forEach((id) => nextHydrated.add(id));
-    hydratedIds.value = nextHydrated;
-
-    /**
-     * 关键体验修复：
-     * - 之前在 nextTick() 之后才上报可视集合，导致 PanelContent 首次 mount 时 loading=false，
-     *   下一拍才被 scheduler enqueue -> loading=true，会出现“先渲染一次空态/闪一下再加载”的观感。
-     * - 这里提前上报可视集合，让 PanelContent 在 setup/registerPanel 时就能判断自己已可视并立即 enqueue，
-     *   从而首帧就进入 loading，避免“首次打开面板组闪一下/像加载两次”。
-     */
-    scheduler.setVisiblePanels?.(schedulerScopeId.value, ids.map(toSchedulerPanelId));
+    isScrolling.value = false;
+    reportViewportState(ids);
 
     await nextTick();
     if (startedGen !== visibilityGeneration) return;
-
-    isScrolling.value = false;
   };
 
   let idleTimer: number | null = null;
@@ -331,18 +275,30 @@
   };
 
   const onScroll = () => {
-    if (!windowingEnabled.value) return;
+    if (!windowingEnabled.value) {
+      updateViewport();
+      const allIds = dataList.value.map((it) => normalizeId(it.i));
+      hotIds.value = new Set(allIds);
+      updatePinnedIds(allIds);
+      isScrolling.value = false;
+      reportViewportState(allIds);
+      return;
+    }
     scheduleViewportUpdate();
 
     visibilityGeneration++;
-
-    if (!isScrolling.value) scheduler.setVisiblePanels?.(schedulerScopeId.value, []);
     isScrolling.value = true;
+
+    updateViewport();
+    const ids = computeHotIds();
+    hotIds.value = new Set(ids);
+    updatePinnedIds(ids);
+    reportViewportState([]);
+
     scheduleApplyHotVisible();
   };
 
   const isHot = (id: PanelId): boolean => (!windowingEnabled.value ? true : hotIds.value.has(normalizeId(id)));
-  const isHydrated = (id: PanelId): boolean => (!windowingEnabled.value ? true : hydratedIds.value.has(normalizeId(id)));
 
   let boundScrollEl: HTMLElement | null = null;
   const attachScrollListeners = () => {
@@ -380,19 +336,24 @@
       window.clearTimeout(idleTimer);
       idleTimer = null;
     }
-    scheduler.setVisiblePanels?.(schedulerScopeId.value, []);
+    scheduler.setViewportState(schedulerScopeId.value, {
+      renderPanelIds: [],
+      activePanelIds: [],
+    });
   });
 
   watch(
     () => props.resetKey,
     () => {
       hotIds.value = new Set();
-      hydratedIds.value = new Set();
       pinnedIds.value = new Set();
       pinnedQueue = [];
       isScrolling.value = false;
       visibilityGeneration++;
-      scheduler.setVisiblePanels?.(schedulerScopeId.value, []);
+      scheduler.setViewportState(schedulerScopeId.value, {
+        renderPanelIds: [],
+        activePanelIds: [],
+      });
       scheduleViewportUpdate();
       void applyHotVisible();
     }
@@ -410,7 +371,7 @@
   watch(
     () => props.items,
     () => {
-      // items 变化不清空 hydrated（避免闪动），只刷新 hot/pinned 计算
+      // items 变化只刷新 hot/pinned 计算
       scheduleViewportUpdate();
       void applyHotVisible();
     }
@@ -421,7 +382,6 @@
       dataList: PanelLayout[];
       renderList: PanelLayout[];
       isHot: (id: PanelId) => boolean;
-      isHydrated: (id: PanelId) => boolean;
       isScrolling: boolean;
       totalCount: number;
       viewportHeightPx: number;

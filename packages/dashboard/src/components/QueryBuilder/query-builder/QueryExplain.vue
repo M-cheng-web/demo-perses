@@ -127,26 +127,15 @@
   import { Tag, Divider } from '@grafana-fast/component';
   import { DatabaseOutlined } from '@ant-design/icons-vue';
   import { computed, ref } from 'vue';
-  import { promQueryModeller } from '@grafana-fast/utils';
-  import type { PromVisualQuery, QueryBuilderOperationParamValue } from '@grafana-fast/utils';
+  import type { PromVisualQuery } from '@grafana-fast/utils';
   import { createNamespace } from '/#/utils';
+  import { buildBaseExplainStep, buildOperationExplainSteps, getOperationColor, renderExplainMarkdown, type ExplainStep } from './queryExplainLogic';
 
   const [_, bem] = createNamespace('query-explain');
 
   interface Props {
     query: PromVisualQuery;
     codePromQL?: string;
-  }
-
-  interface ExplainStep {
-    stepNumber: number;
-    title: string;
-    promqlFragment: string;
-    description: string;
-    category: string;
-    categoryLabel: string;
-    operationIndex: number;
-    params?: Array<{ name: string; value: QueryBuilderOperationParamValue }>;
   }
 
   const props = defineProps<Props>();
@@ -157,170 +146,11 @@
   const highlightedStepIndex = ref<number | null>(null);
 
   // 基础步骤（指标 + 标签）
-  const baseStep = computed(() => {
-    if (!props.query.metric && props.query.labels.length === 0) {
-      return null;
-    }
-
-    let promql = props.query.metric || '';
-    let description = '获取匹配指标名称的所有时间序列';
-
-    if (props.query.labels.length > 0) {
-      promql += promQueryModeller.renderLabels(props.query.labels);
-      description = `获取匹配指标名称和 ${props.query.labels.length} 个标签过滤条件的所有时间序列。标签过滤器用于精确筛选需要查询的数据。`;
-    }
-
-    return {
-      stepNumber: 1,
-      promql,
-      description,
-    };
-  });
+  const baseStep = computed(() => buildBaseExplainStep(props.query));
 
   // 操作步骤
-  const operationSteps = computed<ExplainStep[]>(() => {
-    const steps: ExplainStep[] = [];
-    let stepNumber = 2; // 从 2 开始，因为 1 是基础查询
-
-    // 累积构建查询，每一步都基于前一步
-    let currentQuery: PromVisualQuery = {
-      ...props.query,
-      operations: [],
-    };
-
-    for (const [index, operation] of props.query.operations.entries()) {
-      // 添加当前操作到累积查询
-      currentQuery = {
-        ...currentQuery,
-        operations: [...currentQuery.operations, operation],
-      };
-
-      const opDef = promQueryModeller.getOperationDef(operation.id);
-      if (!opDef) {
-        steps.push({
-          stepNumber,
-          title: `未知操作: ${operation.id}`,
-          promqlFragment: operation.id,
-          description: '操作定义未找到',
-          category: 'unknown',
-          categoryLabel: '未知',
-          operationIndex: index,
-        });
-        stepNumber++;
-        continue;
-      }
-
-      // 使用 renderer 生成此步骤的 PromQL 片段
-      const promqlFragment = opDef.renderer(operation, opDef, '<expr>');
-
-      // 使用 explainHandler 或 documentation 生成说明
-      let description = '应用此操作到查询结果';
-      if (opDef.explainHandler) {
-        description = opDef.explainHandler(operation, opDef);
-      } else if (opDef.documentation) {
-        description = opDef.documentation;
-      }
-
-      // 提取参数信息（正确处理 Rest 参数，如多个 Label）
-      const params: Array<{ name: string; value: QueryBuilderOperationParamValue }> = [];
-      if (operation.params && opDef.params) {
-        let paramIndex = 0;
-
-        opDef.params.forEach((paramDef) => {
-          // 检查是否还有参数值可用
-          if (paramIndex >= operation.params.length) {
-            return;
-          }
-
-          // 如果是 Rest 参数（如 sum by 的多个 label），收集所有剩余参数
-          if (paramDef.restParam) {
-            const restValues: QueryBuilderOperationParamValue[] = [];
-            while (paramIndex < operation.params.length) {
-              const value = operation.params[paramIndex];
-              if (value !== undefined && value !== '') {
-                restValues.push(value);
-              }
-              paramIndex++;
-            }
-
-            // 如果有多个值，为每个值创建一个参数项
-            if (restValues.length > 0) {
-              restValues.forEach((value, index) => {
-                params.push({
-                  name: `${paramDef.name || 'Label'} ${index + 1}`,
-                  value: value,
-                });
-              });
-            }
-          } else {
-            // 普通参数，只取一个值
-            const value = operation.params[paramIndex];
-            if (value !== undefined && value !== '') {
-              params.push({
-                name: paramDef.name || `参数 ${paramIndex + 1}`,
-                value: value,
-              });
-            }
-            paramIndex++;
-          }
-        });
-      }
-
-      // 确定操作类别
-      const category = opDef.category || 'other';
-      const categoryLabels: Record<string, string> = {
-        aggregations: '聚合',
-        'range functions': '范围函数',
-        functions: '函数',
-        'trigonometric functions': '三角函数',
-        'time functions': '时间函数',
-        'binary operations': '二元运算',
-        other: '其他',
-      };
-
-      steps.push({
-        stepNumber,
-        title: opDef.name || operation.id,
-        promqlFragment,
-        description,
-        category,
-        categoryLabel: categoryLabels[category.toLowerCase()] || category,
-        operationIndex: index,
-        params: params.length > 0 ? params : undefined,
-      });
-
-      stepNumber++;
-    }
-
-    return steps;
-  });
-
-  // 获取操作类别的颜色
-  function getOperationColor(category: string): string {
-    const colors: Record<string, string> = {
-      aggregations: 'blue',
-      'range functions': 'green',
-      functions: 'cyan',
-      'trigonometric functions': 'purple',
-      'time functions': 'orange',
-      'binary operations': 'red',
-      other: 'default',
-    };
-    return colors[category.toLowerCase()] || 'default';
-  }
-
-  // 简化的 Markdown 渲染（实际应使用 marked 或 markdown-it 库）
-  function renderDescription(text: string): string {
-    if (!text) return '';
-
-    // 简单处理一些 Markdown 语法
-    return text
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') // 粗体
-      .replace(/\*(.+?)\*/g, '<em>$1</em>') // 斜体
-      .replace(/`(.+?)`/g, '<code>$1</code>') // 行内代码
-      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>') // 链接
-      .replace(/\n/g, '<br>'); // 换行
-  }
+  const operationSteps = computed<ExplainStep[]>(() => buildOperationExplainSteps(props.query));
+  const renderDescription = (text: string) => renderExplainMarkdown(text);
 
   const handleMouseEnter = (stepIndex: number, operationIndex: number) => {
     highlightedStepIndex.value = stepIndex;

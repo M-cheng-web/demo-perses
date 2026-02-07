@@ -7,7 +7,7 @@ type DashboardStoreLike = {
   applyDashboardFromJson: (dashboard: DashboardContent, rawText: string) => void | Promise<void>;
 };
 
-type DashboardJsonEditorExpose = {
+export type DashboardJsonEditorExpose = {
   getDraftText?: () => string;
   getDashboard: () => DashboardContent;
 };
@@ -19,6 +19,12 @@ interface Options {
   rootEl: Ref<HTMLElement | null>;
   contentEl: Ref<HTMLElement | null>;
   dashboardStore: DashboardStoreLike;
+  /**
+   * 可选：外部传入 template refs（用于避免 build 模式下的 noUnusedLocals 误判）
+   * - 若不传，hook 内部会自行创建
+   */
+  dashboardJsonEditorRef?: Ref<DashboardJsonEditorExpose | null>;
+  jsonFileInputRef?: Ref<HTMLInputElement | undefined>;
 }
 
 export function useDashboardJsonModal(options: Options) {
@@ -31,8 +37,8 @@ export function useDashboardJsonModal(options: Options) {
   const isGeneratingJson = ref(false);
   let generateJsonSeq = 0;
 
-  const dashboardJsonEditorRef = ref<DashboardJsonEditorExpose | null>(null);
-  const jsonFileInputRef = ref<HTMLInputElement>();
+  const dashboardJsonEditorRef = options.dashboardJsonEditorRef ?? ref<DashboardJsonEditorExpose | null>(null);
+  const jsonFileInputRef = options.jsonFileInputRef ?? ref<HTMLInputElement>();
 
   const lockScrollEl = computed(() => options.contentEl.value ?? options.rootEl.value ?? null);
   const lockScrollEnabled = computed(() => lockScrollEl.value != null);

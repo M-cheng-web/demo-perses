@@ -137,153 +137,153 @@ export interface PromQueryModellerInterface {
 // ==================== 枚举 ====================
 
 // 查询编辑器模式
-// @ts-ignore
-export enum QueryEditorMode {
-  Code = 'code',
-  Builder = 'builder',
-}
+export const QueryEditorMode = {
+  Code: 'code',
+  Builder: 'builder',
+} as const;
+export type QueryEditorMode = (typeof QueryEditorMode)[keyof typeof QueryEditorMode];
 
 // 操作分类
-// @ts-ignore
-export enum PromVisualQueryOperationCategory {
-  Aggregations = 'Aggregations',
-  RangeFunctions = 'Range functions',
-  Functions = 'Functions',
-  BinaryOps = 'Binary operations',
-  Trigonometric = 'Trigonometric',
-  Time = 'Time Functions',
-}
+export const PromVisualQueryOperationCategory = {
+  Aggregations: 'Aggregations',
+  RangeFunctions: 'Range functions',
+  Functions: 'Functions',
+  BinaryOps: 'Binary operations',
+  Trigonometric: 'Trigonometric',
+  Time: 'Time Functions',
+} as const;
+export type PromVisualQueryOperationCategory = (typeof PromVisualQueryOperationCategory)[keyof typeof PromVisualQueryOperationCategory];
 
 // Prometheus 操作 ID
-// @ts-ignore
-export enum PromOperationId {
+export const PromOperationId = {
   // Aggregations
-  Sum = 'sum',
-  Avg = 'avg',
-  Min = 'min',
-  Max = 'max',
-  Count = 'count',
-  Group = 'group',
-  Stddev = 'stddev',
-  Stdvar = 'stdvar',
-  TopK = 'topk',
-  BottomK = 'bottomk',
-  CountValues = 'count_values',
-  Quantile = 'quantile',
-  LimitK = 'limitk',
-  LimitRatio = 'limit_ratio',
+  Sum: 'sum',
+  Avg: 'avg',
+  Min: 'min',
+  Max: 'max',
+  Count: 'count',
+  Group: 'group',
+  Stddev: 'stddev',
+  Stdvar: 'stdvar',
+  TopK: 'topk',
+  BottomK: 'bottomk',
+  CountValues: 'count_values',
+  Quantile: 'quantile',
+  LimitK: 'limitk',
+  LimitRatio: 'limit_ratio',
 
   // Range Functions
-  Rate = 'rate',
-  Irate = 'irate',
-  Increase = 'increase',
-  Delta = 'delta',
-  Idelta = 'idelta',
-  Changes = 'changes',
-  Deriv = 'deriv',
-  Resets = 'resets',
-  PredictLinear = 'predict_linear',
-  HoltWinters = 'holt_winters',
-  QuantileOverTime = 'quantile_over_time',
-  AvgOverTime = 'avg_over_time',
-  SumOverTime = 'sum_over_time',
-  MinOverTime = 'min_over_time',
-  MaxOverTime = 'max_over_time',
-  CountOverTime = 'count_over_time',
-  LastOverTime = 'last_over_time',
-  PresentOverTime = 'present_over_time',
-  AbsentOverTime = 'absent_over_time',
-  StddevOverTime = 'stddev_over_time',
+  Rate: 'rate',
+  Irate: 'irate',
+  Increase: 'increase',
+  Delta: 'delta',
+  Idelta: 'idelta',
+  Changes: 'changes',
+  Deriv: 'deriv',
+  Resets: 'resets',
+  PredictLinear: 'predict_linear',
+  HoltWinters: 'holt_winters',
+  QuantileOverTime: 'quantile_over_time',
+  AvgOverTime: 'avg_over_time',
+  SumOverTime: 'sum_over_time',
+  MinOverTime: 'min_over_time',
+  MaxOverTime: 'max_over_time',
+  CountOverTime: 'count_over_time',
+  LastOverTime: 'last_over_time',
+  PresentOverTime: 'present_over_time',
+  AbsentOverTime: 'absent_over_time',
+  StddevOverTime: 'stddev_over_time',
 
   // Functions
-  Abs = 'abs',
-  Absent = 'absent',
-  Ceil = 'ceil',
-  Floor = 'floor',
-  Round = 'round',
-  Sqrt = 'sqrt',
-  Exp = 'exp',
-  Ln = 'ln',
-  Log2 = 'log2',
-  Log10 = 'log10',
-  Clamp = 'clamp',
-  ClampMax = 'clamp_max',
-  ClampMin = 'clamp_min',
-  Sgn = 'sgn',
-  Deg = 'deg',
-  Rad = 'rad',
-  Scalar = 'scalar',
-  Sort = 'sort',
-  SortDesc = 'sort_desc',
-  Pi = 'pi',
-  Vector = 'vector',
+  Abs: 'abs',
+  Absent: 'absent',
+  Ceil: 'ceil',
+  Floor: 'floor',
+  Round: 'round',
+  Sqrt: 'sqrt',
+  Exp: 'exp',
+  Ln: 'ln',
+  Log2: 'log2',
+  Log10: 'log10',
+  Clamp: 'clamp',
+  ClampMax: 'clamp_max',
+  ClampMin: 'clamp_min',
+  Sgn: 'sgn',
+  Deg: 'deg',
+  Rad: 'rad',
+  Scalar: 'scalar',
+  Sort: 'sort',
+  SortDesc: 'sort_desc',
+  Pi: 'pi',
+  Vector: 'vector',
 
   // Time Functions
-  Time = 'time',
-  Timestamp = 'timestamp',
-  Hour = 'hour',
-  Minute = 'minute',
-  DayOfMonth = 'day_of_month',
-  DayOfWeek = 'day_of_week',
-  DayOfYear = 'day_of_year',
-  DaysInMonth = 'days_in_month',
-  Month = 'month',
-  Year = 'year',
+  Time: 'time',
+  Timestamp: 'timestamp',
+  Hour: 'hour',
+  Minute: 'minute',
+  DayOfMonth: 'day_of_month',
+  DayOfWeek: 'day_of_week',
+  DayOfYear: 'day_of_year',
+  DaysInMonth: 'days_in_month',
+  Month: 'month',
+  Year: 'year',
 
   // Trigonometric Functions
-  Acos = 'acos',
-  Acosh = 'acosh',
-  Asin = 'asin',
-  Asinh = 'asinh',
-  Atan = 'atan',
-  Atanh = 'atanh',
-  Cos = 'cos',
-  Cosh = 'cosh',
-  Sin = 'sin',
-  Sinh = 'sinh',
-  Tan = 'tan',
-  Tanh = 'tanh',
+  Acos: 'acos',
+  Acosh: 'acosh',
+  Asin: 'asin',
+  Asinh: 'asinh',
+  Atan: 'atan',
+  Atanh: 'atanh',
+  Cos: 'cos',
+  Cosh: 'cosh',
+  Sin: 'sin',
+  Sinh: 'sinh',
+  Tan: 'tan',
+  Tanh: 'tanh',
 
   // Histogram Functions
-  HistogramQuantile = 'histogram_quantile',
-  HistogramAvg = 'histogram_avg',
-  HistogramCount = 'histogram_count',
-  HistogramSum = 'histogram_sum',
-  HistogramFraction = 'histogram_fraction',
-  HistogramStddev = 'histogram_stddev',
-  HistogramStdvar = 'histogram_stdvar',
+  HistogramQuantile: 'histogram_quantile',
+  HistogramAvg: 'histogram_avg',
+  HistogramCount: 'histogram_count',
+  HistogramSum: 'histogram_sum',
+  HistogramFraction: 'histogram_fraction',
+  HistogramStddev: 'histogram_stddev',
+  HistogramStdvar: 'histogram_stdvar',
 
   // Label manipulation
-  LabelReplace = 'label_replace',
-  LabelJoin = 'label_join',
+  LabelReplace: 'label_replace',
+  LabelJoin: 'label_join',
 
   // Binary ops - Arithmetic
-  Addition = '__addition',
-  Subtraction = '__subtraction',
-  MultiplyBy = '__multiply_by',
-  DivideBy = '__divide_by',
-  Modulo = '__modulo',
-  Exponent = '__exponent',
+  Addition: '__addition',
+  Subtraction: '__subtraction',
+  MultiplyBy: '__multiply_by',
+  DivideBy: '__divide_by',
+  Modulo: '__modulo',
+  Exponent: '__exponent',
 
   // Binary ops - Comparison
-  EqualTo = '__equal_to',
-  NotEqualTo = '__not_equal_to',
-  GreaterThan = '__greater_than',
-  LessThan = '__less_than',
-  GreaterOrEqual = '__greater_or_equal',
-  LessOrEqual = '__less_or_equal',
+  EqualTo: '__equal_to',
+  NotEqualTo: '__not_equal_to',
+  GreaterThan: '__greater_than',
+  LessThan: '__less_than',
+  GreaterOrEqual: '__greater_or_equal',
+  LessOrEqual: '__less_or_equal',
 
   // Nested Query
-  NestedQuery = '__nested_query',
-}
+  NestedQuery: '__nested_query',
+} as const;
+export type PromOperationId = (typeof PromOperationId)[keyof typeof PromOperationId];
 
 // 查询模式类型
-// @ts-ignore
-export enum PromQueryPatternType {
-  Rate = 'rate',
-  Histogram = 'histogram',
-  Binary = 'binary',
-}
+export const PromQueryPatternType = {
+  Rate: 'rate',
+  Histogram: 'histogram',
+  Binary: 'binary',
+} as const;
+export type PromQueryPatternType = (typeof PromQueryPatternType)[keyof typeof PromQueryPatternType];
 
 // 查询模式
 export interface PromQueryPattern {

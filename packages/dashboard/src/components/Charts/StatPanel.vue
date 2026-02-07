@@ -1,8 +1,6 @@
 <!-- 统计图 -->
 <template>
   <div :class="bem()">
-    <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
-
     <div :class="bem('wrapper')">
       <div :class="bem('content')" :style="contentStyle">
         <div :class="bem('value')">{{ formattedValue }}</div>
@@ -18,7 +16,6 @@
 
 <script setup lang="ts">
   import { computed, h } from 'vue';
-  import { Spin } from '@grafana-fast/component';
   import { ArrowUpOutlined, ArrowDownOutlined, MinusOutlined } from '@ant-design/icons-vue';
   import type { Panel, QueryResult } from '@grafana-fast/types';
   import { formatValue, createNamespace } from '/#/utils';
@@ -32,11 +29,6 @@
 
   const specificOptions = computed(() => props.panel.options.specific as any);
   const formatOptions = computed(() => props.panel.options.format || {});
-
-  // 判断是否正在加载
-  const isLoading = computed(() => {
-    return !props.queryResults || props.queryResults.length === 0;
-  });
 
   // 获取当前值
   const currentValue = computed(() => {
@@ -130,14 +122,6 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-
-    &__loading {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 10;
-    }
 
     &__wrapper {
       flex: 1;

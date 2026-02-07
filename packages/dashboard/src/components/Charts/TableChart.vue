@@ -1,8 +1,6 @@
 <!-- 表格 -->
 <template>
   <div :class="bem()">
-    <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
-
     <div ref="wrapperRef" :class="bem('wrapper')">
       <Table
         ref="tableRef"
@@ -28,7 +26,7 @@
 
 <script setup lang="ts">
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-  import { Spin, Table } from '@grafana-fast/component';
+  import { Table } from '@grafana-fast/component';
   import type { TableColumnType } from '@grafana-fast/component';
   import type { Panel, QueryResult, TableOptions } from '@grafana-fast/types';
   import { formatValue, formatTime, createNamespace } from '/#/utils';
@@ -45,11 +43,6 @@
   const tableRef = ref<any>(null);
   const tableBodyHeight = ref(240);
   let resizeObserver: ResizeObserver | null = null;
-
-  // 判断是否正在加载
-  const isLoading = computed(() => {
-    return !props.queryResults || props.queryResults.length === 0;
-  });
 
   const columns = computed<TableColumnType[]>(() => {
     if (!props.queryResults.length || !props.queryResults[0]?.data?.length) {
@@ -200,18 +193,6 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-
-    &__loading {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 10;
-      background: var(--gf-color-surface);
-      border-radius: var(--gf-radius-sm);
-      padding: 16px;
-      box-shadow: var(--gf-shadow-1);
-    }
 
     &__wrapper {
       flex: 1;

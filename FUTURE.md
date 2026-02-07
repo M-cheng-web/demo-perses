@@ -20,6 +20,27 @@
 - **Query Inspector**：不做；错误展示保持“简短摘要”（够排障，不占心智）。
 - **Transformations**：保留执行层口子，但不开放 UI 配置入口（作为内部数据修饰能力使用）。
 
+## 0.2 路线图状态（2026-02）
+
+### 已完成（文件级）
+
+- 查询调度器拆分与调试快照：`packages/dashboard/src/query/scheduler/createQueryScheduler.ts`、`packages/dashboard/src/runtime/piniaAttachments.ts`
+- Dashboard 状态提示 hook 化：`packages/dashboard/src/components/Dashboard/useDashboardStatus.ts`
+- Toolbar 模式拆分：`packages/dashboard/src/components/Dashboard/DashboardToolbarHeaderContent.vue`、`packages/dashboard/src/components/Dashboard/DashboardToolbarSidebarContent.vue`
+- Overlay 行为复用：`packages/component/src/composables/useFloatingOverlay.ts`（已接入 Select/Cascader/Dropdown/Popconfirm）
+- 构建与类型链路加固：`package.json`、`packages/dashboard/package.json`、`scripts/assert-dashboard-dts.ts`
+
+### 进行中
+
+- 图表层 `any` 收敛（已覆盖 tooltip formatter 入口）：`packages/dashboard/src/components/Charts/tooltipFormatterTypes.ts`
+- SDK 输入契约与错误边界收敛：`packages/hook/src/useDashboardSdk.ts`
+
+### 待推进
+
+- QueryScheduler 状态机测试与 e2e 回归（导入 -> 编辑 -> 导出 -> 再导入一致性）
+- QueryRunner 负缓存 TTL 细化（错误缓存与成功缓存分离策略）
+- 变量系统的依赖可视化与插值预览 UI
+
 ## 1. 现状盘点：当前项目的“业务闭环”已经长什么样了
 
 ### 1.1 包结构与职责边界（当前已形成的架构）

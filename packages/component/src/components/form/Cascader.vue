@@ -63,13 +63,14 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { computed, inject, nextTick, ref, watch } from 'vue';
   import { RightOutlined, DownOutlined, CheckOutlined } from '@ant-design/icons-vue';
-  import { subscribeWindowEvent, subscribeWindowResize, type Unsubscribe } from '@grafana-fast/utils';
   import { createNamespace } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
+  import { resolveCascaderPath } from './cascader/cascaderLogic';
+  import { useCascaderDropdownPositioning } from './cascader/useCascaderDropdownPositioning';
 
   defineOptions({ name: 'GfCascader' });
 
@@ -130,31 +131,14 @@
   const triggerRef = ref<HTMLElement>();
   const dropdownRef = ref<HTMLElement>();
   const open = ref(false);
-  const dropdownStyle = ref<Record<string, string>>({});
 
-  let unsubscribeOutside: Unsubscribe | null = null;
-  let unsubscribeResize: Unsubscribe | null = null;
-  let unsubscribeScroll: Unsubscribe | null = null;
   const controlSizeClass = computed(() => {
     if (props.size === 'small') return 'gf-control--size-small';
     if (props.size === 'large') return 'gf-control--size-large';
     return undefined;
   });
 
-  const resolvePath = (values: any[] | undefined) => {
-    const pathValues = Array.isArray(values) ? values : [];
-    const out: CascaderOption[] = [];
-    let current = props.options;
-    for (const val of pathValues) {
-      const found = current.find((o) => o.value === val);
-      if (!found) break;
-      out.push(found);
-      current = found.children ?? [];
-    }
-    return out;
-  };
-
-  const selectedPath = computed(() => resolvePath(props.value));
+  const selectedPath = computed(() => resolveCascaderPath(props.options ?? [], props.value));
   const selectedLabel = computed(() => selectedPath.value.map((o) => o.label).join(' / '));
 
   const activePath = ref<CascaderOption[]>([]);
@@ -238,117 +222,16 @@
     close();
   };
 
-  const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
-  const MENU_COLUMN_WIDTH = 168;
-  const VIEWPORT_PADDING = 8;
-  const DROPDOWN_OFFSET = 6;
-  let rafId: number | null = null;
-
-  const resolveDropdownMetrics = (columnCount: number) => {
-    const viewportMaxWidth = Math.max(220, window.innerWidth - VIEWPORT_PADDING * 2);
-    const configMaxWidth = typeof props.dropdownMaxWidth === 'number' ? Math.max(220, props.dropdownMaxWidth) : viewportMaxWidth;
-    const maxWidth = Math.min(configMaxWidth, viewportMaxWidth);
-    const rawMin = typeof props.dropdownMinWidth === 'number' ? props.dropdownMinWidth : MENU_COLUMN_WIDTH;
-    const minWidth = clamp(rawMin, MENU_COLUMN_WIDTH, maxWidth);
-    const menuWidth = clamp(MENU_COLUMN_WIDTH * Math.max(1, columnCount), minWidth, maxWidth);
-    return {
-      minWidth,
-      maxWidth,
-      menuWidth,
-    };
-  };
-
-  const placeDropdown = (rect: DOMRect, menuWidth: number, menuHeight: number) => {
-    let left = rect.left;
-    let top = rect.bottom + DROPDOWN_OFFSET;
-
-    left = clamp(left, VIEWPORT_PADDING, window.innerWidth - menuWidth - VIEWPORT_PADDING);
-    if (top + menuHeight > window.innerHeight - VIEWPORT_PADDING) {
-      top = rect.top - menuHeight - DROPDOWN_OFFSET;
-      if (top < VIEWPORT_PADDING) top = VIEWPORT_PADDING;
-    }
-
-    return {
-      left,
-      top,
-    };
-  };
-
-  const primeDropdownPosition = () => {
-    const trigger = triggerRef.value;
-    if (!trigger) return;
-    const rect = trigger.getBoundingClientRect();
-    const { minWidth, maxWidth, menuWidth } = resolveDropdownMetrics(1);
-    const { left, top } = placeDropdown(rect, menuWidth, 0);
-    dropdownStyle.value = {
-      width: `${menuWidth}px`,
-      minWidth: `${minWidth}px`,
-      maxWidth: `${maxWidth}px`,
-      left: `${left}px`,
-      top: `${top}px`,
-    };
-  };
-
-  const scheduleSyncDropdownPosition = () => {
-    if (!open.value) return;
-    if (rafId != null) return;
-    rafId = requestAnimationFrame(() => {
-      rafId = null;
-      syncDropdownPosition();
-    });
-  };
-
-  const syncDropdownPosition = async () => {
-    const trigger = triggerRef.value;
-    if (!trigger) return;
-    const rect = trigger.getBoundingClientRect();
-    await nextTick();
-    const menu = dropdownRef.value;
-    const { minWidth, maxWidth, menuWidth } = resolveDropdownMetrics(menus.value.length);
-    const menuHeight = menu?.offsetHeight || 0;
-    const { left, top } = placeDropdown(rect, menuWidth, menuHeight);
-
-    dropdownStyle.value = {
-      width: `${menuWidth}px`,
-      minWidth: `${minWidth}px`,
-      maxWidth: `${maxWidth}px`,
-      left: `${left}px`,
-      top: `${top}px`,
-    };
-  };
-
-  const handleOutside = (evt: MouseEvent) => {
-    if (!rootRef.value) return;
-    if (rootRef.value.contains(evt.target as Node)) return;
-    if (dropdownRef.value?.contains(evt.target as Node)) return;
-    close();
-  };
-
-  onMounted(() => {
-    unsubscribeOutside = subscribeWindowEvent('click', handleOutside);
-    unsubscribeResize = subscribeWindowResize(() => void syncDropdownPosition());
+  const { dropdownStyle, primeDropdownPosition, syncDropdownPosition, scheduleSyncDropdownPosition } = useCascaderDropdownPositioning({
+    openRef: open,
+    rootRef,
+    triggerRef,
+    dropdownRef,
+    close,
+    getColumnCount: () => menus.value.length,
+    dropdownMinWidth: () => props.dropdownMinWidth,
+    dropdownMaxWidth: () => props.dropdownMaxWidth,
   });
-
-  onBeforeUnmount(() => {
-    unsubscribeOutside?.();
-    unsubscribeOutside = null;
-    unsubscribeResize?.();
-    unsubscribeResize = null;
-    unsubscribeScroll?.();
-    unsubscribeScroll = null;
-    if (rafId != null) cancelAnimationFrame(rafId);
-  });
-
-  watch(
-    () => open.value,
-    (val) => {
-      unsubscribeScroll?.();
-      unsubscribeScroll = null;
-      if (val) {
-        unsubscribeScroll = subscribeWindowEvent('scroll', () => scheduleSyncDropdownPosition(), { capture: true, passive: true });
-      }
-    }
-  );
 
   watch(
     () => activeValues.value.join('|'),

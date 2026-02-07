@@ -119,11 +119,14 @@
 <script setup lang="ts">
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { CheckOutlined, CloseOutlined, CloseCircleFilled, DownOutlined } from '@ant-design/icons-vue';
-  import { subscribeWindowEvent, subscribeWindowResize, type Unsubscribe } from '@grafana-fast/utils';
   import { createNamespace, debounceCancellable } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
+  import { useSelectDropdownPositioning } from './select/useSelectDropdownPositioning';
+  import { useSelectKeyboard } from './select/useSelectKeyboard';
+  import { useSelectResponsiveTagCount } from './select/useSelectResponsiveTagCount';
+  import { findFirstEnabledIndex } from './select/selectLogic';
 
   defineOptions({ name: 'GfSelect' });
 
@@ -230,17 +233,12 @@
   const open = ref(false);
   const search = ref('');
   const activeIndex = ref(0);
-  const responsiveTagCount = ref<number>(Number.POSITIVE_INFINITY);
   const isFocused = ref(false);
   let openedByFocusIn = false;
   let pointerDownInside = false;
   const clearPointerDownInside = debounceCancellable(() => {
     pointerDownInside = false;
   }, 0);
-
-  let unsubscribeOutside: Unsubscribe | null = null;
-  let unsubscribeResize: Unsubscribe | null = null;
-  let unsubscribeScroll: Unsubscribe | null = null;
 
   const isMultiple = computed(() => props.mode === 'multiple' || props.mode === 'tags');
   const isTags = computed(() => props.mode === 'tags');
@@ -274,6 +272,15 @@
     if (raw.length <= maxLen) return raw;
     return `${raw.slice(0, maxLen)}…`;
   };
+
+  const { responsiveTagCount, scheduleSyncTagCount } = useSelectResponsiveTagCount({
+    isMultiple,
+    maxTagCount: computed(() => props.maxTagCount),
+    showSearch: computed(() => props.showSearch),
+    controlRef,
+    selectionClass: bem('selection'),
+    getSelectedValuesKey: () => selectedOptions.value.map((v) => v.value).join('|'),
+  });
 
   const visibleTagCount = computed(() => {
     if (!isMultiple.value) return Number.POSITIVE_INFINITY;
@@ -332,13 +339,15 @@
     }
   };
 
-  const findFirstEnabledIndex = () => {
-    const opts = filteredOptions.value;
-    return Math.max(
-      0,
-      opts.findIndex((o) => !o.disabled)
-    );
-  };
+  const findFirstEnabledIndexInFiltered = () => findFirstEnabledIndex(filteredOptions.value);
+
+  const { dropdownStyle, syncDropdownPosition, scheduleSyncDropdownPosition } = useSelectDropdownPositioning({
+    openRef: open,
+    rootRef,
+    controlRef,
+    dropdownRef,
+    close: () => close(),
+  });
 
   const openDropdown = async (source: 'click' | 'focusin-pointer' | 'focusin' = 'click') => {
     if (props.disabled) return;
@@ -346,8 +355,8 @@
     openedByFocusIn = source === 'focusin-pointer';
     open.value = true;
     search.value = '';
-    activeIndex.value = findFirstEnabledIndex();
-    syncDropdownPosition();
+    activeIndex.value = findFirstEnabledIndexInFiltered();
+    void syncDropdownPosition();
     if (props.showSearch) await focusSearch();
   };
 
@@ -414,44 +423,6 @@
     void openDropdown('click');
   };
 
-  const handleKeydown = (evt: KeyboardEvent) => {
-    if (props.disabled) return;
-    if (!open.value && (evt.key === 'ArrowDown' || evt.key === 'Enter' || evt.key === ' ')) {
-      evt.preventDefault();
-      openDropdown();
-      return;
-    }
-
-    if (!open.value) return;
-
-    if (evt.key === 'Escape') {
-      close();
-      return;
-    }
-
-    if (evt.key === 'ArrowDown' || evt.key === 'ArrowUp') {
-      evt.preventDefault();
-      const dir = evt.key === 'ArrowDown' ? 1 : -1;
-      const opts = filteredOptions.value;
-      if (!opts.length) return;
-      let idx = activeIndex.value;
-      for (let i = 0; i < opts.length; i++) {
-        idx = idx + dir;
-        if (idx < 0) idx = opts.length - 1;
-        if (idx >= opts.length) idx = 0;
-        if (!opts[idx]?.disabled) break;
-      }
-      activeIndex.value = idx;
-      return;
-    }
-
-    if (evt.key === 'Enter') {
-      evt.preventDefault();
-      const opt = filteredOptions.value[activeIndex.value];
-      if (opt) selectOption(opt);
-    }
-  };
-
   const updateValue = (val: any) => {
     emit('update:value', val);
     emit('change', val);
@@ -499,173 +470,25 @@
     updateValue(current.filter((v) => v !== val));
   };
 
-  const handleSearchKeydown = (evt: KeyboardEvent) => {
-    if (evt.key === 'Escape') {
-      close();
-      return;
-    }
+  const { handleKeydown, handleSearchKeydown } = useSelectKeyboard<Option>({
+    disabled: computed(() => props.disabled),
+    open,
+    search,
+    activeIndex,
+    filteredOptions,
+    isMultiple,
+    isTags,
+    openDropdown: () => openDropdown(),
+    close,
+    selectOption,
+    removeValue,
+    updateValue,
+    getValue: () => props.value,
+  });
 
-    if (evt.key === 'Backspace' && isMultiple.value && !search.value) {
-      const values: any[] = Array.isArray(props.value) ? props.value : [];
-      const last = values[values.length - 1];
-      if (last !== undefined) removeValue(last);
-      return;
-    }
-
-    if (evt.key === 'Enter' && isTags.value && search.value.trim()) {
-      const raw = search.value.trim();
-      const values: any[] = Array.isArray(props.value) ? props.value : [];
-      if (!values.includes(raw)) updateValue([...values, raw]);
-      search.value = '';
-    }
-
-    // Pass arrow keys to main keydown handler
-    if (evt.key === 'ArrowDown' || evt.key === 'ArrowUp' || evt.key === 'Enter') {
-      handleKeydown(evt);
-    }
-  };
-
-  const dropdownStyle = ref<Record<string, string>>({});
-
-  const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
-  let rafId: number | null = null;
-  let tagRafId: number | null = null;
   let resizeObserver: ResizeObserver | null = null;
-  const tagWidthCache = new Map<string, number>();
-
-  const estimateTagWidth = (tagEl: HTMLElement) => {
-    const text = (tagEl.textContent ?? '').trim();
-    const perChar = 7;
-    const base = 34;
-    const estimated = text.length * perChar + base;
-    return clamp(estimated, 36, 260);
-  };
-
-  const scheduleSyncDropdownPosition = () => {
-    if (!open.value) return;
-    if (rafId != null) return;
-    rafId = requestAnimationFrame(() => {
-      rafId = null;
-      syncDropdownPosition();
-    });
-  };
-
-  const scheduleSyncTagCount = () => {
-    if (!isMultiple.value) return;
-    if (props.maxTagCount !== 'responsive') return;
-    if (tagRafId != null) return;
-    tagRafId = requestAnimationFrame(() => {
-      tagRafId = null;
-      syncResponsiveTagCount();
-    });
-  };
-
-  const syncResponsiveTagCount = async () => {
-    if (!isMultiple.value) return;
-    if (props.maxTagCount !== 'responsive') return;
-    const control = controlRef.value;
-    if (!control) return;
-
-    await nextTick();
-
-    const tagsWrap = control.querySelector(`.${bem('selection')}`) as HTMLElement | null;
-    if (!tagsWrap) return;
-
-    const allTags = Array.from(tagsWrap.querySelectorAll(`.${bem('item')}`)).filter(
-      (el) => !(el as HTMLElement).classList.contains(bem('item-rest'))
-    ) as HTMLElement[];
-    const total = allTags.length;
-    if (!total) {
-      responsiveTagCount.value = Number.POSITIVE_INFINITY;
-      return;
-    }
-
-    const wrapWidth = tagsWrap.clientWidth;
-    const suffixWidth = 0;
-    const inputReserve = props.showSearch ? 50 : 0;
-    const paddingReserve = 12;
-    const summaryReserve = 44;
-
-    const available = Math.max(0, wrapWidth - suffixWidth - inputReserve - paddingReserve);
-
-    let used = 0;
-    let fit = 0;
-    for (let i = 0; i < allTags.length; i++) {
-      const el = allTags[i];
-      if (!el) break;
-      const key = el?.dataset?.gfValue;
-      const measured = el?.offsetWidth ?? 0;
-      const w = measured > 0 ? measured : ((key ? tagWidthCache.get(key) : undefined) ?? estimateTagWidth(el));
-      if (measured > 0 && key) tagWidthCache.set(key, measured);
-      if (used + w <= available) {
-        used += w;
-        fit++;
-      } else {
-        break;
-      }
-    }
-
-    if (fit >= total) {
-      responsiveTagCount.value = total;
-      return;
-    }
-
-    used = 0;
-    fit = 0;
-    const availableWithSummary = Math.max(0, available - summaryReserve);
-    for (let i = 0; i < allTags.length; i++) {
-      const el = allTags[i];
-      if (!el) break;
-      const key = el?.dataset?.gfValue;
-      const measured = el?.offsetWidth ?? 0;
-      const w = measured > 0 ? measured : ((key ? tagWidthCache.get(key) : undefined) ?? estimateTagWidth(el));
-      if (measured > 0 && key) tagWidthCache.set(key, measured);
-      if (used + w <= availableWithSummary) {
-        used += w;
-        fit++;
-      } else {
-        break;
-      }
-    }
-    responsiveTagCount.value = Math.max(0, fit);
-  };
-
-  const syncDropdownPosition = async () => {
-    const trigger = controlRef.value ?? rootRef.value;
-    if (!trigger) return;
-    const rect = trigger.getBoundingClientRect();
-    await nextTick();
-    const menu = dropdownRef.value;
-    const menuWidth = menu?.offsetWidth || rect.width;
-    const menuHeight = menu?.offsetHeight || 0;
-    const padding = 4;
-    let left = rect.left;
-    let top = rect.bottom + 4;
-
-    left = clamp(left, padding, window.innerWidth - menuWidth - padding);
-    if (top + menuHeight > window.innerHeight - padding) {
-      top = rect.top - menuHeight - 4;
-      if (top < padding) top = padding;
-    }
-
-    dropdownStyle.value = {
-      minWidth: `${rect.width}px`,
-      left: `${left}px`,
-      top: `${top}px`,
-    };
-  };
-
-  const handleClickOutside = (evt: MouseEvent) => {
-    if (!rootRef.value) return;
-    if (rootRef.value.contains(evt.target as Node)) return;
-    if (dropdownRef.value?.contains(evt.target as Node)) return;
-    close();
-  };
 
   onMounted(() => {
-    unsubscribeOutside = subscribeWindowEvent('click', handleClickOutside);
-    unsubscribeResize = subscribeWindowResize(() => void syncDropdownPosition());
-
     if (typeof window !== 'undefined' && 'ResizeObserver' in window) {
       resizeObserver = new ResizeObserver(() => {
         scheduleSyncDropdownPosition();
@@ -677,32 +500,10 @@
   });
 
   onBeforeUnmount(() => {
-    unsubscribeOutside?.();
-    unsubscribeOutside = null;
-    unsubscribeResize?.();
-    unsubscribeResize = null;
-    unsubscribeScroll?.();
-    unsubscribeScroll = null;
     if (resizeObserver) resizeObserver.disconnect();
     resizeObserver = null;
-    if (rafId != null) cancelAnimationFrame(rafId);
-    if (tagRafId != null) cancelAnimationFrame(tagRafId);
     clearPointerDownInside.cancel();
   });
-
-  watch(
-    () => open.value,
-    (val) => {
-      if (val) {
-        syncDropdownPosition();
-        unsubscribeScroll?.();
-        unsubscribeScroll = subscribeWindowEvent('scroll', () => scheduleSyncDropdownPosition(), { capture: true, passive: true });
-      } else {
-        unsubscribeScroll?.();
-        unsubscribeScroll = null;
-      }
-    }
-  );
 
   watch(
     () => filteredOptions.value,
@@ -713,7 +514,7 @@
         return;
       }
       if (activeIndex.value >= opts.length || opts[activeIndex.value]?.disabled) {
-        activeIndex.value = findFirstEnabledIndex();
+        activeIndex.value = findFirstEnabledIndexInFiltered();
       }
     }
   );
@@ -726,14 +527,6 @@
       scheduleSyncDropdownPosition();
     },
     { deep: true }
-  );
-
-  watch(
-    () => selectedOptions.value.map((v) => v.value).join('|'),
-    async () => {
-      await nextTick();
-      scheduleSyncTagCount();
-    }
   );
 </script>
 

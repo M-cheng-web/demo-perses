@@ -1,5 +1,7 @@
 import type { Component } from 'vue';
 import type { CorePanelType } from '@grafana-fast/types';
+import { isBuiltInPanelType } from './builtInPanelTypes';
+export { isBuiltInPanelType, listBuiltInPanelTypes } from './builtInPanelTypes';
 
 import TimeSeriesChart from '/#/components/Charts/TimeSeriesChart.vue';
 import PieChart from '/#/components/Charts/PieChart.vue';
@@ -86,14 +88,6 @@ export const BUILTIN_PANELS: BuiltInPanelDefinition[] = [
 ];
 
 const byType = new Map<CorePanelType, BuiltInPanelDefinition>(BUILTIN_PANELS.map((p) => [p.type, p]));
-
-export function listBuiltInPanelTypes(): CorePanelType[] {
-  return BUILTIN_PANELS.map((p) => p.type);
-}
-
-export function isBuiltInPanelType(type: unknown): type is CorePanelType {
-  return typeof type === 'string' && byType.has(type as CorePanelType);
-}
 
 export function getBuiltInPanelTypeOptions(): Array<{ label: string; value: CorePanelType }> {
   return BUILTIN_PANELS.map((p) => ({ label: p.label, value: p.type }));

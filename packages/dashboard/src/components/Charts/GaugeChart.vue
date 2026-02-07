@@ -1,8 +1,6 @@
 <!-- 仪表盘 -->
 <template>
   <div :class="bem()">
-    <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
-
     <div :class="bem('wrapper')">
       <div ref="chartRef" :class="bem('chart')"></div>
     </div>
@@ -10,13 +8,11 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, nextTick } from 'vue';
-  import { Spin } from '@grafana-fast/component';
+  import { ref, computed } from 'vue';
   import type { EChartsOption, ECharts } from 'echarts';
   import type { Panel, QueryResult, GaugeOptions } from '@grafana-fast/types';
   import { formatValue, createNamespace } from '/#/utils';
-  import { useChartResize } from '/#/composables/useChartResize';
-  import { useChartInit } from '/#/composables/useChartInit';
+  import { useChartPanelLifecycle } from '/#/composables/useChartPanelLifecycle';
   import { getEChartsTheme } from '/#/utils/echartsTheme';
 
   const [_, bem] = createNamespace('gauge-chart');
@@ -70,46 +66,17 @@
     return calculateValue(timeSeries.values, gaugeOptions.value.calculation || 'last');
   });
 
-  /**
-   * 使用图表初始化 Hook
-   * 等待 queryResults 和 panel.options 都有效后才初始化一次
-   */
-  const { getInstance, isLoading } = useChartInit<ECharts>({
+  useChartPanelLifecycle<ECharts>({
     chartRef,
-    dependencies: [
-      {
-        value: computed(() => props.queryResults),
-        isValid: (val: unknown) => {
-          const results = Array.isArray(val) ? (val as QueryResult[]) : [];
-          return results.length > 0 && results.some((r) => Array.isArray(r.data) && r.data.length > 0);
-        },
-      },
-      {
-        value: computed(() => props.panel.options),
-        // Options can be an empty object; charts should still render with defaults.
-        isValid: (val: unknown) => val != null,
-      },
-    ],
+    queryResults: computed(() => props.queryResults),
+    panelOptions: computed(() => props.panel.options),
     onChartCreated: (instance) => {
-      nextTick(() => {
-        updateChart(instance);
-        initChartResize();
-      });
+      updateChart(instance);
     },
-    onUpdate: (instance) => {
-      nextTick(() => {
-        updateChart(instance);
-      });
+    onChartUpdated: (instance) => {
+      updateChart(instance);
     },
   });
-
-  /**
-   * 使用图表 resize Hook
-   */
-  const { initChartResize } = useChartResize(
-    computed(() => getInstance()),
-    chartRef
-  );
 
   /**
    * 更新图表配置和数据
@@ -214,7 +181,7 @@
 
     return {
       ...theme.baseOption,
-      // 禁用动画，依赖 loading 遮罩的过渡效果
+      // 禁用动画，减少高频刷新时的视觉抖动
       animation: false,
       series: [
         {
@@ -285,18 +252,6 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-
-    &__loading {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 10;
-      background: var(--gf-color-surface);
-      border-radius: var(--gf-radius-sm);
-      padding: 16px;
-      box-shadow: var(--gf-shadow-1);
-    }
 
     &__wrapper {
       flex: 1;

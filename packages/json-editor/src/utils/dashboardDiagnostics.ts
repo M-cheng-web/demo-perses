@@ -34,10 +34,15 @@ export interface DashboardTextDiagnostics {
   issues?: string[];
 }
 
-function looksLikeDashboard(value: any): value is DashboardContent {
+type DashboardLike = Partial<DashboardContent> & {
+  panelGroups?: unknown;
+  variables?: unknown;
+};
+
+function looksLikeDashboard(value: unknown): value is DashboardLike {
   if (!value || typeof value !== 'object') return false;
   if (!('panelGroups' in value)) return false;
-  return Array.isArray((value as any).panelGroups);
+  return Array.isArray((value as DashboardLike).panelGroups);
 }
 
 function safeStr(v: unknown): string {
@@ -49,9 +54,9 @@ function safeStr(v: unknown): string {
 function collectPanelTypeCounts(dashboard: DashboardContent): Record<string, number> {
   const counts: Record<string, number> = {};
   const groups = dashboard.panelGroups ?? [];
-  for (const g of groups as any[]) {
-    const panels = Array.isArray(g?.panels) ? g.panels : [];
-    for (const p of panels as any[]) {
+  for (const g of groups as Array<{ panels?: unknown }>) {
+    const panels = Array.isArray(g?.panels) ? (g.panels as Array<{ type?: unknown }>) : [];
+    for (const p of panels) {
       const type = safeStr(p?.type).trim();
       if (!type) continue;
       counts[type] = (counts[type] ?? 0) + 1;
@@ -67,7 +72,7 @@ function diagnoseStructure(dashboard: DashboardContent): string[] {
   // Duplicate group ids
   const groupIdSeen = new Set<string>();
   const dupGroupIds = new Set<string>();
-  for (const g of groups as any[]) {
+  for (const g of groups as Array<{ id?: unknown }>) {
     const id = safeStr(g?.id).trim();
     if (!id) continue;
     if (groupIdSeen.has(id)) dupGroupIds.add(id);
@@ -80,9 +85,9 @@ function diagnoseStructure(dashboard: DashboardContent): string[] {
   // Duplicate panel ids (global)
   const panelIdSeen = new Set<string>();
   const dupPanelIds = new Set<string>();
-  for (const g of groups as any[]) {
-    const panels = Array.isArray(g?.panels) ? g.panels : [];
-    for (const p of panels as any[]) {
+  for (const g of groups as Array<{ panels?: unknown }>) {
+    const panels = Array.isArray(g?.panels) ? (g.panels as Array<{ id?: unknown }>) : [];
+    for (const p of panels) {
       const id = safeStr(p?.id).trim();
       if (!id) continue;
       if (panelIdSeen.has(id)) dupPanelIds.add(id);
@@ -94,13 +99,13 @@ function diagnoseStructure(dashboard: DashboardContent): string[] {
   }
 
   // Layout consistency (per group)
-  for (const g of groups as any[]) {
+  for (const g of groups as Array<{ id?: unknown; title?: unknown; panels?: unknown; layout?: unknown }>) {
     const groupId = safeStr(g?.id).trim() || 'unknown';
     const groupTitle = safeStr(g?.title).trim();
     const label = groupTitle ? `${groupTitle}（${groupId}）` : groupId;
 
-    const panels = Array.isArray(g?.panels) ? g.panels : [];
-    const layout = Array.isArray(g?.layout) ? g.layout : null;
+    const panels = Array.isArray(g?.panels) ? (g.panels as Array<{ id?: unknown }>) : [];
+    const layout = Array.isArray(g?.layout) ? (g.layout as Array<{ i?: unknown }>) : null;
     if (!layout) {
       // layout 允许为空，但如果 panels 不为空，很可能会导致渲染异常
       if (panels.length > 0) issues.push(`面板组 ${label} 缺少 layout（可能导致面板不显示或布局异常）`);
@@ -108,13 +113,13 @@ function diagnoseStructure(dashboard: DashboardContent): string[] {
     }
 
     const panelIds = new Set<string>();
-    for (const p of panels as any[]) {
+    for (const p of panels) {
       const id = safeStr(p?.id).trim();
       if (id) panelIds.add(id);
     }
 
     const layoutIds = new Set<string>();
-    for (const it of layout as any[]) {
+    for (const it of layout) {
       const id = safeStr(it?.i).trim();
       if (id) layoutIds.add(id);
     }
@@ -154,7 +159,7 @@ export function analyzeDashboardText(text: string): DashboardTextDiagnostics {
   const dashboard = value as DashboardContent;
   const panelGroupCount = dashboard.panelGroups?.length ?? 0;
   const panelCount = (dashboard.panelGroups ?? []).reduce((acc, g) => acc + (g.panels?.length ?? 0), 0);
-  const variableCount = (dashboard as any).variables?.length ?? 0;
+  const variableCount = Array.isArray(dashboard.variables) ? dashboard.variables.length : 0;
   const panelTypeCounts = collectPanelTypeCounts(dashboard);
   const issues = diagnoseStructure(dashboard);
 

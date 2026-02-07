@@ -1,8 +1,6 @@
 <!-- 热力图 -->
 <template>
   <div :class="bem()">
-    <Spin v-if="isLoading" :class="bem('loading')" :spinning="true" />
-
     <div :class="bem('wrapper')">
       <div ref="chartRef" :class="bem('chart')"></div>
     </div>
@@ -10,13 +8,13 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, nextTick } from 'vue';
-  import { Spin } from '@grafana-fast/component';
+  import { ref, computed } from 'vue';
   import type { EChartsOption, ECharts } from 'echarts';
   import type { Panel, QueryResult, HeatmapOptions } from '@grafana-fast/types';
   import { formatValue, formatTime, createNamespace } from '/#/utils';
-  import { useChartResize } from '/#/composables/useChartResize';
-  import { useChartInit } from '/#/composables/useChartInit';
+  import { createNoDataOption, hasQuerySeriesData } from '/#/components/Charts/chartOptionHelpers';
+  import { getHeatmapTriplet, normalizeNumericValue, toCssColor, toItemTooltipParam } from '/#/components/Charts/tooltipFormatterTypes';
+  import { useChartPanelLifecycle } from '/#/composables/useChartPanelLifecycle';
   import { useChartTooltip, type TooltipData } from '/#/composables/useChartTooltip';
   import { getEChartsTheme } from '/#/utils/echartsTheme';
 
@@ -43,48 +41,19 @@
     purple: ['#f3e5f5', '#6a1b9a'],
   };
 
-  /**
-   * 使用图表初始化 Hook
-   * 等待 queryResults 和 panel.options 都有效后才初始化一次
-   */
-  const { getInstance, isLoading } = useChartInit<ECharts>({
+  const { getInstance } = useChartPanelLifecycle<ECharts>({
     chartRef,
-    dependencies: [
-      {
-        value: computed(() => props.queryResults),
-        isValid: (val: unknown) => {
-          const results = Array.isArray(val) ? (val as QueryResult[]) : [];
-          return results.length > 0 && results.some((r) => Array.isArray(r.data) && r.data.length > 0);
-        },
-      },
-      {
-        value: computed(() => props.panel.options),
-        // Options can be an empty object; charts should still render with defaults.
-        isValid: (val: unknown) => val != null,
-      },
-    ],
+    queryResults: computed(() => props.queryResults),
+    panelOptions: computed(() => props.panel.options),
     onChartCreated: (instance) => {
-      nextTick(() => {
-        updateChart(instance);
-        registerTooltip();
-        initChartResize();
-      });
+      updateChart(instance);
+      registerTooltip();
     },
-    onUpdate: (instance) => {
-      nextTick(() => {
-        updateChart(instance);
-        updateTooltip();
-      });
+    onChartUpdated: (instance) => {
+      updateChart(instance);
+      updateTooltip();
     },
   });
-
-  /**
-   * 使用图表 resize Hook
-   */
-  const { initChartResize } = useChartResize(
-    computed(() => getInstance()),
-    chartRef
-  );
 
   /**
    * 使用 Tooltip 注册管理 Hook
@@ -123,18 +92,8 @@
 
   function getChartOption(): EChartsOption {
     const theme = getEChartsTheme(chartRef.value);
-    if (!props.queryResults.length || props.queryResults.every((r) => !r.data || r.data.length === 0)) {
-      return {
-        title: {
-          text: '暂无数据',
-          left: 'center',
-          top: 'center',
-          textStyle: {
-            color: theme.textSecondary,
-            fontSize: 14,
-          },
-        },
-      };
+    if (!hasQuerySeriesData(props.queryResults)) {
+      return createNoDataOption(theme);
     }
 
     // 准备数据
@@ -186,7 +145,7 @@
 
     return {
       ...theme.baseOption,
-      // 禁用动画，依赖 loading 遮罩的过渡效果
+      // 禁用动画，减少高频刷新时的视觉抖动
       animation: false,
       // 启用 ECharts 原生 tooltip，用于获取准确的数据
       tooltip: {
@@ -196,18 +155,23 @@
         triggerOn: 'mousemove',
         padding: 10,
         // renderMode: 'text',
-        formatter: (params: any): any => {
-          if (!params || !params.data) {
+        formatter: (params) => {
+          const itemParam = toItemTooltipParam(params);
+          if (!itemParam) {
             updateTooltipData(null);
-            return null;
+            return '';
           }
 
-          const { data } = params;
-          const [xIndex, yIndex, value] = data;
+          const triplet = getHeatmapTriplet(itemParam.data);
+          if (!triplet) {
+            updateTooltipData(null);
+            return '';
+          }
+          const [xIndex, yIndex, value] = triplet;
           const timestamp = timePoints[xIndex];
           if (timestamp === undefined) {
             updateTooltipData(null);
-            return null;
+            return '';
           }
 
           const time = formatTime(timestamp, 'YYYY-MM-DD HH:mm:ss');
@@ -220,7 +184,7 @@
               {
                 id: `series-${yIndex}`,
                 label: seriesName,
-                color: params.color,
+                color: toCssColor(itemParam.color),
                 value: value,
                 formattedValue: formattedValue,
               },
@@ -228,7 +192,7 @@
           };
 
           updateTooltipData(tooltipData);
-          return null; // 返回空字符串，我们使用自定义 Tooltip 展示
+          return ''; // 返回空字符串，我们使用自定义 Tooltip 展示
         },
       },
       grid: {
@@ -295,8 +259,10 @@
           label: {
             show: heatmapOptions.value.showValue ?? false,
             fontSize: 10,
-            formatter: (params: any) => {
-              return formatValue(params.data[2], props.panel.options.format || {});
+            formatter: (params) => {
+              const triplet = getHeatmapTriplet(params.data);
+              if (!triplet) return '';
+              return formatValue(normalizeNumericValue(triplet[2]), props.panel.options.format || {});
             },
           },
           emphasis: {
@@ -320,18 +286,6 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-
-    &__loading {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 10;
-      background: var(--gf-color-surface);
-      border-radius: var(--gf-radius-sm);
-      padding: 16px;
-      box-shadow: var(--gf-shadow-1);
-    }
 
     &__wrapper {
       flex: 1;

@@ -12,16 +12,16 @@
         <Empty description="未配置查询" />
       </div>
       <div v-else-if="chartComponent" :class="bem('content')">
-        <div v-if="queryErrorText && !loading" :class="bem('warning')">
+        <div v-if="queryErrorText && !showBlockingLoading" :class="bem('warning')">
           <Alert type="warning" show-icon :message="queryErrorText" />
         </div>
         <div :class="bem('chart')">
-          <!-- Loading 遮罩：使用过渡动画 -->
-          <Transition name="gf-loading-fade">
-            <div v-if="loading" :class="bem('loading')">
-              <div :class="bem('loading-spinner')"></div>
-            </div>
-          </Transition>
+          <div :class="[bem('loading'), { 'is-visible': showBlockingLoading }]">
+            <div :class="bem('loading-spinner')"></div>
+          </div>
+          <div :class="[bem('refreshing'), { 'is-visible': showRefreshing }]">
+            <div :class="bem('refreshing-spinner')"></div>
+          </div>
           <component :is="chartComponent" :panel="panel" :query-results="displayResults" />
         </div>
       </div>
@@ -33,13 +33,14 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onErrorCaptured, ref, watch } from 'vue';
+  import { computed, onErrorCaptured, onUnmounted, ref, watch } from 'vue';
   import { Alert, Empty } from '@grafana-fast/component';
   import type { Panel } from '@grafana-fast/types';
   import { createNamespace } from '/#/utils';
   import { getPiniaQueryScheduler } from '/#/runtime/piniaAttachments';
   import { useDashboardRuntime } from '/#/runtime/useInjected';
   import UnsupportedPanel from '/#/components/Panel/UnsupportedPanel.vue';
+  import { usePanelQueryViewState } from '/#/components/Panel/usePanelQueryViewState';
   import { getBuiltInPanelComponent } from '/#/panels/builtInPanels';
   import { applyTransformations } from '/#/transformations';
 
@@ -54,10 +55,25 @@
   const panelRef = computed<Panel>(() => props.panel);
   // QueryScheduler 内部使用的 panelId 需要做实例隔离（同页多 dashboard + shared pinia 时避免串台）
   const schedulerPanelId = `${runtime.id}:${String(props.panel.id)}`;
-  const { loading, error, results: queryResults } = scheduler.registerPanel(schedulerPanelId, panelRef);
+  const { phase, loadingKind, hasSnapshot, error, results: queryResults } = scheduler.registerPanel(schedulerPanelId, panelRef);
   const displayResults = computed(() => applyTransformations(queryResults.value, props.panel.transformations));
 
   const hasVisibleQueries = computed(() => (props.panel.queries ?? []).some((q) => !q.hide));
+
+  // 根据面板类型选择组件
+  const chartComponent = computed(() => {
+    const type = props.panel.type;
+    if (!type) return null;
+    return getBuiltInPanelComponent(type) ?? UnsupportedPanel;
+  });
+
+  const { showBlockingLoading, showRefreshing } = usePanelQueryViewState({
+    hasVisibleQueries,
+    hasChartComponent: computed(() => Boolean(chartComponent.value)),
+    phase,
+    loadingKind,
+    hasSnapshot,
+  });
 
   const fatalError = computed(() => error.value);
   const panelRuntimeError = ref<string | null>(null);
@@ -81,9 +97,9 @@
   const queryErrorText = computed(() => {
     const errors = displayResults.value
       .map((r) => {
-        const msg = (r as any)?.error;
+        const msg = r.error;
         if (!msg) return '';
-        const refId = (r as any)?.refId || (r as any)?.queryId || 'query';
+        const refId = r.refId || String(r.queryId) || 'query';
         return `${refId}: ${String(msg)}`;
       })
       .filter(Boolean);
@@ -93,14 +109,11 @@
     return uniq.length === 1 ? uniq[0]! : `${uniq[0]} 等 ${uniq.length} 个错误`;
   });
 
-  // 根据面板类型选择组件
-  const chartComponent = computed(() => {
-    const type = props.panel.type;
-    if (!type) return null;
-    return getBuiltInPanelComponent(type) ?? UnsupportedPanel;
-  });
-
   // 查询执行由中心调度器统一管理（timeRange + variables + panel queries）。
+
+  onUnmounted(() => {
+    scheduler.unregisterPanel(schedulerPanelId);
+  });
 </script>
 
 <style scoped lang="less">
@@ -131,11 +144,56 @@
       justify-content: center;
       background: var(--gf-color-surface);
       pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 0.12s var(--gf-easing),
+        visibility 0.12s var(--gf-easing);
+
+      &.is-visible {
+        opacity: 1;
+        visibility: visible;
+      }
     }
 
     &__loading-spinner {
       width: 24px;
       height: 24px;
+      border: 2px solid var(--gf-color-fill-tertiary);
+      border-top-color: var(--gf-color-primary);
+      border-radius: 50%;
+      animation: gf-spin 0.8s linear infinite;
+    }
+
+    &__refreshing {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 11;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--gf-color-surface) 92%, transparent);
+      border: 1px solid var(--gf-color-border-muted);
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 0.12s var(--gf-easing),
+        visibility 0.12s var(--gf-easing);
+
+      &.is-visible {
+        opacity: 1;
+        visibility: visible;
+      }
+    }
+
+    &__refreshing-spinner {
+      width: 12px;
+      height: 12px;
       border: 2px solid var(--gf-color-fill-tertiary);
       border-top-color: var(--gf-color-primary);
       border-radius: 50%;
@@ -175,20 +233,6 @@
       height: 100%;
       padding: 16px;
     }
-  }
-
-  // Loading 过渡动画
-  .gf-loading-fade-enter-active {
-    transition: opacity 0.15s var(--gf-easing);
-  }
-
-  .gf-loading-fade-leave-active {
-    transition: opacity 0.3s var(--gf-easing);
-  }
-
-  .gf-loading-fade-enter-from,
-  .gf-loading-fade-leave-to {
-    opacity: 0;
   }
 
   @keyframes gf-spin {

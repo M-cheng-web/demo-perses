@@ -30,13 +30,13 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+  import { computed, inject, nextTick, ref } from 'vue';
   import { ExclamationCircleFilled } from '@ant-design/icons-vue';
-  import { subscribeWindowEvent, subscribeWindowResize, type Unsubscribe } from '@grafana-fast/utils';
   import { createNamespace } from '../../utils';
   import Button from '../base/Button.vue';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
+  import { useFloatingOverlay } from '../../composables/useFloatingOverlay';
 
   defineOptions({ name: 'GfPopconfirm' });
 
@@ -81,9 +81,6 @@
   const open = ref(false);
   const popupStyle = ref<Record<string, string>>({});
 
-  let unsubscribeOutside: Unsubscribe | null = null;
-  let unsubscribeResize: Unsubscribe | null = null;
-
   const toggle = () => {
     open.value = !open.value;
     if (open.value) updatePosition();
@@ -117,22 +114,14 @@
     };
   };
 
-  const handleOutside = (evt: MouseEvent) => {
-    if (!triggerRef.value) return;
-    if (triggerRef.value.contains(evt.target as Node)) return;
-    close();
-  };
-
-  onMounted(() => {
-    unsubscribeOutside = subscribeWindowEvent('click', handleOutside);
-    unsubscribeResize = subscribeWindowResize(() => void updatePosition());
-  });
-
-  onBeforeUnmount(() => {
-    unsubscribeOutside?.();
-    unsubscribeOutside = null;
-    unsubscribeResize?.();
-    unsubscribeResize = null;
+  useFloatingOverlay({
+    openRef: open,
+    triggerRef,
+    overlayRef: popupRef,
+    close,
+    updatePosition,
+    enableScrollSync: false,
+    ignoreOverlayOnOutside: true,
   });
 
   const handleConfirm = () => {

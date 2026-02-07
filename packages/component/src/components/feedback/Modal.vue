@@ -6,7 +6,7 @@
         <div :class="bem('mask')" @click="handleMaskClick"></div>
         <Transition name="gf-zoom">
           <div v-if="open" :class="[bem('wrap'), { 'is-centered': centered }]" @click.self="handleMaskClick">
-            <div :class="bem('content')" :style="panelStyle" ref="modalRef">
+            <div :class="bem('content')" :style="panelStyle">
               <button v-if="closable" :class="bem('close')" type="button" aria-label="Close" @click="handleCancel">
                 <CloseOutlined />
               </button>
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, inject, onBeforeUnmount, ref, watch } from 'vue';
+  import { computed, inject, onBeforeUnmount, watch } from 'vue';
   import { CloseOutlined } from '@ant-design/icons-vue';
   import { acquireScrollLock, createNamespace } from '../../utils';
   import Button from '../base/Button.vue';
@@ -106,7 +106,6 @@
   const colorScheme = computed(() => themeContext?.colorScheme.value);
   const portalContext = inject(GF_PORTAL_CONTEXT_KEY, null);
   const portalTarget = computed(() => portalContext?.target.value ?? 'body');
-  const modalRef = ref<HTMLElement>();
   let releaseScrollLock: (() => void) | null = null;
 
   const releaseIfNeeded = () => {

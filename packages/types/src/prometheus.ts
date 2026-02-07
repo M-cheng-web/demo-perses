@@ -101,14 +101,14 @@ export interface PrometheusDatasource {
 // ==================== 查询提示相关 ====================
 
 // 查询提示类型
-// @ts-ignore
-export enum QueryHintType {
-  APPLY_RATE = 'APPLY_RATE',
-  APPLY_HISTOGRAM_QUANTILE = 'APPLY_HISTOGRAM_QUANTILE',
-  CONSIDER_RATE = 'CONSIDER_RATE',
-  ADD_RATE_BEFORE_AGGREGATION = 'ADD_RATE_BEFORE_AGGREGATION',
-  EXPAND_RANGE_INTERVAL = 'EXPAND_RANGE_INTERVAL',
-}
+export const QueryHintType = {
+  APPLY_RATE: 'APPLY_RATE',
+  APPLY_HISTOGRAM_QUANTILE: 'APPLY_HISTOGRAM_QUANTILE',
+  CONSIDER_RATE: 'CONSIDER_RATE',
+  ADD_RATE_BEFORE_AGGREGATION: 'ADD_RATE_BEFORE_AGGREGATION',
+  EXPAND_RANGE_INTERVAL: 'EXPAND_RANGE_INTERVAL',
+} as const;
+export type QueryHintType = (typeof QueryHintType)[keyof typeof QueryHintType];
 
 // 查询提示
 export interface QueryHint {
