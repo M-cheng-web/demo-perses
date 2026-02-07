@@ -80,6 +80,10 @@
               <Select v-model:value="form.env" :options="envOptions" placeholder="选择环境" allow-clear />
             </FormItem>
 
+            <FormItem label="选择器（单选 + 搜索）">
+              <Select v-model:value="form.searchEnv" :options="envOptions" show-search placeholder="支持单选搜索" allow-clear />
+            </FormItem>
+
             <FormItem label="选择器（多选 + 搜索）">
               <Select v-model:value="form.tags" mode="multiple" show-search :options="tagOptions" placeholder="选择标签" allow-clear />
             </FormItem>
@@ -391,6 +395,7 @@
     name: '',
     desc: '',
     env: 'prod',
+    searchEnv: undefined as string | undefined,
     tags: ['core'],
     threshold: 42 as number | undefined,
     opacity: 60,

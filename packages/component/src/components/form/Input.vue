@@ -146,8 +146,8 @@
     display: inline-flex;
     align-items: center;
     width: 100%;
-    height: var(--gf-control-height-md);
-    min-height: var(--gf-control-height-md);
+    height: var(--gf-control-height-md, 32px);
+    min-height: var(--gf-control-height-md, 32px);
     padding: 0 11px;
     border-radius: var(--gf-radius-md);
     border: 1px solid var(--gf-color-border);
@@ -156,6 +156,7 @@
     font-size: var(--gf-font-size-md);
     line-height: 1.5714285714;
     transition: all var(--gf-motion-normal) var(--gf-easing);
+    box-sizing: border-box;
 
     // Hover state
     &:hover:not(.is-disabled) {
@@ -257,8 +258,8 @@
 
     // Size variants
     &--size-small {
-      height: var(--gf-control-height-sm);
-      min-height: var(--gf-control-height-sm);
+      height: var(--gf-control-height-sm, 24px);
+      min-height: var(--gf-control-height-sm, 24px);
       padding: 0 7px;
       border-radius: var(--gf-radius-sm);
       font-size: var(--gf-font-size-sm);
@@ -284,8 +285,8 @@
     }
 
     &--size-large {
-      height: var(--gf-control-height-lg);
-      min-height: var(--gf-control-height-lg);
+      height: var(--gf-control-height-lg, 40px);
+      min-height: var(--gf-control-height-lg, 40px);
       padding: 0 11px;
       border-radius: var(--gf-radius-lg);
       font-size: var(--gf-font-size-lg);

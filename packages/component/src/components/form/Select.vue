@@ -50,17 +50,22 @@
         <span :class="bem('selection')">
           <template v-if="selectedOptions[0]">
             <slot name="value" :option="selectedOptions[0]" :value="selectedOptions[0].value" :label="selectedOptions[0].label" :open="open">
-              <span :class="bem('selection-item')">{{ selectedOptions[0].label }}</span>
+              <span
+                :class="bem('selection-item')"
+                :style="{ opacity: open && showSearch && search ? 0 : (open && showSearch ? 0.4 : 1) }"
+              >
+                {{ selectedOptions[0].label }}
+              </span>
             </slot>
           </template>
-          <span v-else :class="bem('placeholder')">{{ placeholder }}</span>
+          <span v-else :class="bem('placeholder')" :style="{ opacity: open && showSearch && search ? 0 : 1 }">{{ placeholder }}</span>
           <input
             v-if="showSearch && !isMultiple"
             ref="searchInputRef"
             v-model="search"
             :class="bem('search')"
             type="text"
-            :style="{ opacity: open ? 1 : 0, width: open ? '100%' : 0 }"
+            :style="{ opacity: open ? 1 : 0, position: 'absolute', inset: 0, width: '100%', height: '100%' }"
             @click.stop
             @keydown.stop="handleSearchKeydown"
           />
@@ -81,16 +86,6 @@
     <Teleport :to="portalTarget">
       <Transition name="gf-slide-up">
         <div v-if="open" :class="[bem('dropdown'), themeClass]" :data-gf-theme="colorScheme" :style="dropdownStyle" ref="dropdownRef">
-          <div v-if="showSearch && !isMultiple" :class="bem('dropdown-search')" @click.stop>
-            <input
-              ref="dropdownSearchRef"
-              v-model="search"
-              :class="bem('dropdown-search-input')"
-              type="text"
-              :placeholder="'搜索...'"
-              @keydown.stop="handleSearchKeydown"
-            />
-          </div>
           <div :class="bem('dropdown-content')" :style="optionsStyle">
             <div
               v-for="(option, idx) in filteredOptions"
@@ -332,11 +327,7 @@
 
   const focusSearch = async () => {
     await nextTick();
-    if (isMultiple.value) {
-      searchInputRef.value?.focus?.();
-    } else {
-      dropdownSearchRef.value?.focus?.();
-    }
+    searchInputRef.value?.focus?.();
   };
 
   const findFirstEnabledIndexInFiltered = () => findFirstEnabledIndex(filteredOptions.value);
@@ -538,14 +529,15 @@
     font-size: var(--gf-font-size-md);
     min-width: 0;
     flex: 1 1 auto;
+    box-sizing: border-box;
 
     &__selector {
       position: relative;
       display: flex;
       align-items: center;
       width: 100%;
-      height: var(--gf-control-height-md);
-      min-height: var(--gf-control-height-md);
+      height: var(--gf-control-height-md, 32px);
+      min-height: var(--gf-control-height-md, 32px);
       padding: 0 11px;
       padding-right: 30px;
       border-radius: var(--gf-radius-md);
@@ -553,6 +545,7 @@
       background: var(--gf-color-surface);
       cursor: pointer;
       transition: all var(--gf-motion-normal) var(--gf-easing);
+      box-sizing: border-box;
 
       &:hover:not(.is-disabled) {
         border-color: var(--gf-color-primary-hover);
@@ -861,8 +854,8 @@
       font-size: var(--gf-font-size-sm);
 
       .gf-select__selector {
-        height: var(--gf-control-height-sm);
-        min-height: var(--gf-control-height-sm);
+        height: var(--gf-control-height-sm, 24px);
+        min-height: var(--gf-control-height-sm, 24px);
         padding: 0 7px;
         padding-right: 24px;
         border-radius: var(--gf-radius-sm);
@@ -891,8 +884,8 @@
       font-size: var(--gf-font-size-lg);
 
       .gf-select__selector {
-        height: var(--gf-control-height-lg);
-        min-height: var(--gf-control-height-lg);
+        height: var(--gf-control-height-lg, 40px);
+        min-height: var(--gf-control-height-lg, 40px);
         padding: 0 11px;
         padding-right: 34px;
         border-radius: var(--gf-radius-lg);

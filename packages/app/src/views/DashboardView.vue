@@ -23,39 +23,30 @@
         </div>
       </div>
 
-      <div class="dp-dashboard-view__stats" :class="{ 'is-placeholder': !state.dashboard }">
-        <Tag size="small" color="var(--gf-color-primary)">面板组 {{ state.dashboard?.groupCount ?? '-' }}</Tag>
-        <Tag size="small" variant="neutral">dashboardId: {{ state.dashboard?.id ?? '-' }}</Tag>
-        <Tag size="small" :color="state.mounted ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
-          {{ state.mounted ? '已挂载' : '未挂载' }}
-        </Tag>
-        <Tag size="small" :color="state.ready ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
-          {{ state.ready ? 'Ready' : 'Not Ready' }}
-        </Tag>
-        <Tag size="small" variant="neutral">Theme: {{ themeModel }}</Tag>
-        <Tag size="small" variant="neutral">Boot: {{ state.bootStage }}</Tag>
-        <Tag size="small" variant="neutral">View: {{ state.viewMode }}</Tag>
-        <Tag size="small" variant="neutral">容器: {{ state.containerSize.width }} × {{ state.containerSize.height }}</Tag>
-      </div>
-
-      <div class="dp-dashboard-view__command-grid" :class="{ 'is-placeholder': !state.dashboard }">
-        <div class="dp-dashboard-view__group">
-          <div class="dp-dashboard-view__group-title">Dashboard</div>
-          <div class="dp-dashboard-view__group-actions">
-            <Button size="small" type="primary" @click="reloadDashboard">重新加载</Button>
-            <Button size="small" type="ghost" :disabled="!state.dashboard" @click="handleRefresh">刷新时间范围</Button>
-            <Button size="small" type="ghost" :disabled="!state.dashboard" @click="setQuickRange">最近 5 分钟</Button>
-            <Button size="small" type="ghost" :disabled="!state.dashboard" @click="toggleReadOnly">
-              {{ state.readOnly ? '切换为可编辑' : '切换为只读' }}
-            </Button>
-          </div>
+      <div class="dp-dashboard-view__controls">
+        <div class="dp-dashboard-view__status-group" :class="{ 'is-placeholder': !state.dashboard }">
+          <Tag size="small" color="var(--gf-color-primary)">面板组 {{ state.dashboard?.groupCount ?? '-' }}</Tag>
+          <Tag size="small" variant="neutral">dashboardId: {{ state.dashboard?.id ?? '-' }}</Tag>
+          <Tag size="small" :color="state.mounted ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
+            {{ state.mounted ? '已挂载' : '未挂载' }}
+          </Tag>
+          <Tag size="small" :color="state.ready ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
+            {{ state.ready ? 'Ready' : 'Not Ready' }}
+          </Tag>
+          <Tag size="small" variant="neutral">Theme: {{ themeModel }}</Tag>
+          <Tag size="small" variant="neutral">Boot: {{ state.bootStage }}</Tag>
+          <Tag size="small" variant="neutral">View: {{ state.viewMode }}</Tag>
+          <Tag size="small" variant="neutral">容器: {{ state.containerSize.width }} × {{ state.containerSize.height }}</Tag>
         </div>
 
-        <div class="dp-dashboard-view__group">
-          <div class="dp-dashboard-view__group-title">Debug</div>
-          <div class="dp-dashboard-view__group-actions">
-            <Button size="small" type="ghost" @click="debugOpen = true">调试信息</Button>
-          </div>
+        <div class="dp-dashboard-view__action-group">
+          <Button size="small" type="primary" @click="reloadDashboard">重新加载</Button>
+          <Button size="small" type="ghost" :disabled="!state.dashboard" @click="handleRefresh">刷新时间范围</Button>
+          <Button size="small" type="ghost" :disabled="!state.dashboard" @click="setQuickRange">最近 5 分钟</Button>
+          <Button size="small" type="ghost" :disabled="!state.dashboard" @click="toggleReadOnly">
+            {{ state.readOnly ? '切换为可编辑' : '切换为只读' }}
+          </Button>
+          <Button size="small" type="ghost" @click="debugOpen = true">调试信息</Button>
         </div>
       </div>
     </div>
@@ -242,19 +233,33 @@
       flex-wrap: wrap;
     }
 
-    &__stats {
+    &__controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 8px;
+      margin-top: 8px;
+      border-top: 1px solid var(--gf-color-border-muted);
+      flex-wrap: wrap;
+    }
+
+    &__status-group {
       display: flex;
       align-items: center;
       gap: 6px;
       flex-wrap: wrap;
-      padding-top: 8px;
-      margin-top: 8px;
-      border-top: 1px solid var(--gf-color-border-muted);
     }
 
-    &__stats.is-placeholder,
-    &__command-grid.is-placeholder {
-      opacity: 0.96;
+    &__action-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    &__status-group.is-placeholder {
+      opacity: 0.8;
     }
 
     &__mono {
@@ -272,44 +277,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-
-    &__command-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    &__group {
-      padding: 8px;
-      border-radius: var(--gf-radius-md);
-      border: 1px solid var(--gf-color-border-muted);
-      background: var(--gf-color-surface);
-      transition:
-        border-color var(--gf-motion-normal) var(--gf-easing),
-        box-shadow var(--gf-motion-normal) var(--gf-easing);
-    }
-
-    &__group:hover {
-      border-color: var(--gf-color-border-strong);
-      box-shadow: 0 0 0 1px var(--gf-color-border-muted) inset;
-    }
-
-    &__group-title {
-      font-size: 11px;
-      font-weight: 760;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--gf-color-text-tertiary);
-      padding-bottom: 6px;
-    }
-
-    &__group-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
     }
 
     &__canvas {

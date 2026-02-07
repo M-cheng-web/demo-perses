@@ -143,6 +143,7 @@
     touch-action: manipulation;
     transition: all var(--gf-motion-normal) var(--gf-easing);
     box-shadow: var(--gf-btn-shadow);
+    box-sizing: border-box;
 
     // Primary button - Ant Design style
     &--type-primary {
