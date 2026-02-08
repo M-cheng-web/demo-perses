@@ -16,6 +16,7 @@ export * from './composables/usePagination';
 export * from './composables/useFloatingOverlay';
 export * from './context/theme';
 export * from './context/portal';
+export * from './context/size';
 export { gfAntdTokensCssVar } from './theme/antdTokens';
 export { default as gfAntdTokensCssVarJson } from './theme/antdTokens.cssvar.json';
 

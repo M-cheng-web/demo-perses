@@ -1,6 +1,6 @@
 <!-- 组件说明：选项卡容器，管理 TabPane 的切换与注册 (AntD-inspired) -->
 <template>
-  <div :class="[bem(), bem({ [`type-${type}`]: true, [`size-${size}`]: true })]">
+  <div :class="[bem(), bem({ [`type-${type}`]: true, [`size-${resolvedSize}`]: true })]">
     <div :class="bem('nav')" ref="navRef">
       <div
         v-for="tab in panes"
@@ -23,8 +23,9 @@
 </template>
 
 <script setup lang="ts">
-  import { provide, reactive, ref, watch, nextTick, onMounted } from 'vue';
+  import { provide, reactive, ref, watch, nextTick, onMounted, computed } from 'vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
 
   defineOptions({ name: 'GfTabs' });
 
@@ -40,7 +41,7 @@
     {
       activeKey: undefined,
       type: 'line',
-      size: 'middle',
+      size: undefined,
     }
   );
 
@@ -50,6 +51,7 @@
   }>();
 
   const [_, bem] = createNamespace('tabs');
+  const resolvedSize = useComponentSize(computed(() => props.size));
   const panes = reactive<{ key: string; label: string; icon?: any; disabled?: boolean }[]>([]);
   const current = ref(props.activeKey || '');
   const navRef = ref<HTMLElement>();

@@ -24,7 +24,6 @@
     @change="handleChange"
     @dropdown-visible-change="handleDropdownVisibleChange"
     :dropdown-max-height="200"
-    size="small"
     style="min-width: 120px"
   />
 </template>

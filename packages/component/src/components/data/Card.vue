@@ -1,7 +1,11 @@
 <!-- 组件说明：卡片容器，支持标题、额外区域、悬浮阴影与边框控制 (AntD-inspired) -->
 <template>
   <div
-    :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-hoverable': hoverable, 'is-borderless': bordered === false, 'is-loading': loading }]"
+    :class="[
+      bem(),
+      bem({ [`size-${resolvedSize}`]: true }),
+      { 'is-hoverable': hoverable, 'is-borderless': bordered === false, 'is-loading': loading },
+    ]"
     @click="emit('click')"
   >
     <div v-if="title || $slots.title || $slots.extra" :class="bem('header')">
@@ -32,11 +36,13 @@
 </template>
 
 <script setup lang="ts">
+  import { computed } from 'vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
 
   defineOptions({ name: 'GfCard' });
 
-  withDefaults(
+  const props = withDefaults(
     defineProps<{
       /** 卡片标题文本 */
       title?: string;
@@ -53,7 +59,7 @@
     }>(),
     {
       title: '',
-      size: 'default',
+      size: undefined,
       hoverable: false,
       bordered: true,
       loading: false,
@@ -66,6 +72,9 @@
   }>();
 
   const [_, bem] = createNamespace('card');
+  const globalSize = useComponentSize(computed(() => props.size));
+  // Card only supports 'small' | 'default'; map 'middle'/'large' → 'default'
+  const resolvedSize = computed(() => (globalSize.value === 'small' ? 'small' : 'default'));
 </script>
 
 <style scoped lang="less">

@@ -7,7 +7,7 @@
   - 处理多实例隔离：鼠标跟踪、依赖注入与 pinia 附加依赖绑定
 -->
 <template>
-  <ConfigProvider :theme="props.theme" :portal-target="props.portalTarget">
+  <ConfigProvider :theme="props.theme" :portal-target="props.portalTarget" component-size="middle">
     <div ref="rootEl" :class="bem()" :style="rootStyle">
       <!-- 右侧透明设置按钮：打开侧边栏工具面板 -->
       <div ref="settingsEl" :class="[bem('settings'), { 'is-dragging': isSettingsDragging, 'is-peek': isSettingsPeek }]" :style="settingsStyle">
@@ -24,32 +24,34 @@
       </div>
 
       <!-- 工具栏侧边栏（复用 DashboardToolbar 内容） -->
-      <Drawer
-        v-model:open="settingsOpen"
-        title="全局设置"
-        :subtitle="settingsSubtitle"
-        :width="520"
-        :confirmable="true"
-        :mask="true"
-        :mask-closable="false"
-        :lock-scroll="contentEl != null"
-        :lock-scroll-el="contentEl"
-        @confirm="handleSettingsConfirm"
-        @cancel="handleSettingsCancel"
-      >
-        <DashboardToolbar
-          ref="toolbarRef"
-          variant="sidebar"
-          :api-mode="props.apiMode"
-          :api-mode-options="props.apiModeOptions"
-          :api-mode-switching="props.apiModeSwitching"
-          @create-group="handleCreateGroup"
-          @view-json="() => openJsonModal('view')"
-          @import-json="handleImportJson"
-          @export-json="toolbarApi.exportJson"
-          @api-mode-change="handleApiModeChange"
-        />
-      </Drawer>
+      <ConfigProvider :theme="props.theme" :portal-target="props.portalTarget" component-size="middle" style="display: contents">
+        <Drawer
+          v-model:open="settingsOpen"
+          title="全局设置"
+          :subtitle="settingsSubtitle"
+          :width="520"
+          :confirmable="true"
+          :mask="true"
+          :mask-closable="false"
+          :lock-scroll="contentEl != null"
+          :lock-scroll-el="contentEl"
+          @confirm="handleSettingsConfirm"
+          @cancel="handleSettingsCancel"
+        >
+          <DashboardToolbar
+            ref="toolbarRef"
+            variant="sidebar"
+            :api-mode="props.apiMode"
+            :api-mode-options="props.apiModeOptions"
+            :api-mode-switching="props.apiModeSwitching"
+            @create-group="handleCreateGroup"
+            @view-json="() => openJsonModal('view')"
+            @import-json="handleImportJson"
+            @export-json="toolbarApi.exportJson"
+            @api-mode-change="handleApiModeChange"
+          />
+        </Drawer>
+      </ConfigProvider>
 
       <!-- 面板组列表 -->
       <div ref="contentEl" :class="[bem('content'), { 'is-locked': isFocusLayerActive }]" :style="contentStyle">
@@ -86,7 +88,15 @@
       />
 
       <!-- 面板编辑器 -->
-      <PanelEditorDrawer v-if="panelEditorDrawerLoaded" />
+      <ConfigProvider
+        v-if="panelEditorDrawerLoaded"
+        :theme="props.theme"
+        :portal-target="props.portalTarget"
+        component-size="middle"
+        style="display: contents"
+      >
+        <PanelEditorDrawer />
+      </ConfigProvider>
 
       <!-- 全屏查看面板 -->
       <PanelFullscreenModal ref="fullscreenModalRef" />

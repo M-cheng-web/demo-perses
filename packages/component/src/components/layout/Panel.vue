@@ -8,7 +8,7 @@
   <div
     :class="[
       bem(),
-      bem({ [`size-${size}`]: true }),
+      bem({ [`size-${resolvedSize}`]: true }),
       bem({ [`header-${headerVariant}`]: headerVariant !== 'default' }),
       {
         'is-hoverable': hoverable,
@@ -68,6 +68,7 @@
   import { RightOutlined, InfoCircleOutlined } from '@ant-design/icons-vue';
   import Tooltip from '../feedback/Tooltip.vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
 
   defineOptions({ name: 'GfPanel' });
 
@@ -104,7 +105,7 @@
       headerVariant: 'default',
       collapsible: false,
       collapsed: false,
-      size: 'middle',
+      size: undefined,
       bordered: true,
       ghost: false,
       hoverable: false,
@@ -119,6 +120,7 @@
   }>();
 
   const [_, bem] = createNamespace('panel');
+  const resolvedSize = useComponentSize(computed(() => props.size));
 
   const slots = useSlots();
   const hasHeader = computed(() => Boolean(props.title || props.description || props.collapsible || !!slots.right));

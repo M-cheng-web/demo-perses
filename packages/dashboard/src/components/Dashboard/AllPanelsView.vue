@@ -31,21 +31,20 @@
               v-if="panelById.get(String(layoutItem.i))"
               :title="panelById.get(String(layoutItem.i))?.name"
               :description="panelDescriptions.get(String(layoutItem.i))"
-              size="small"
               :hoverable="true"
               :body-padding="false"
               :style="{ height: '100%' }"
             >
               <template #right>
                 <Tooltip title="全屏查看">
-                  <Button icon-only type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen(String(layoutItem.i))" />
+                  <Button icon-only type="text" :icon="h(FullscreenOutlined)" @click="handleFullscreen(String(layoutItem.i))" />
                 </Tooltip>
               </template>
 
               <PanelContent :panel="panelById.get(String(layoutItem.i))!" />
             </Panel>
 
-            <Panel v-else size="small" :hoverable="false" :body-padding="true" title="面板加载失败" :style="{ height: '100%' }">
+            <Panel v-else :hoverable="false" :body-padding="true" title="面板加载失败" :style="{ height: '100%' }">
               <div :class="bem('panel-error')">
                 <Alert type="error" show-icon message="面板加载失败" description="未找到面板数据" />
               </div>

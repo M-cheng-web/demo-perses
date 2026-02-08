@@ -2,7 +2,7 @@
   <div :class="bem('header')">
     <h2 :class="bem('title')">{{ dashboardName }}</h2>
     <div :class="bem('actions')">
-      <Button size="small" :disabled="isBooting" @click="emit('toggle-panels-view')">
+      <Button :disabled="isBooting" @click="emit('toggle-panels-view')">
         {{ isAllPanelsView ? '分组视图' : '全部面板' }}
       </Button>
 
@@ -13,10 +13,10 @@
         @change="(value: string) => emit('time-range-change', value)"
       />
 
-      <Button size="small" type="primary" :loading="isSaving" :disabled="isBooting || isReadOnly" @click="emit('save')"> 保存 </Button>
+      <Button type="primary" :loading="isSaving" :disabled="isBooting || isReadOnly" @click="emit('save')"> 保存 </Button>
 
       <Dropdown>
-        <Button :icon="h(MoreOutlined)" size="small" :disabled="isBooting" />
+        <Button :icon="h(MoreOutlined)" :disabled="isBooting" />
         <template #overlay>
           <Menu
             :items="[

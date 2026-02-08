@@ -10,7 +10,7 @@
           <div :class="bem('section-content')">
             <div :class="bem('row')">
               <span :class="bem('label')">缩写数值</span>
-              <Switch v-model:checked="localOptions.format.shortValues" size="small" />
+              <Switch v-model:checked="localOptions.format.shortValues" />
             </div>
 
             <div :class="bem('row')">
@@ -25,7 +25,6 @@
                   { label: '秒', value: 'seconds' },
                 ]"
                 v-model:value="localOptions.format.unit"
-                size="small"
                 style="width: 200px"
               />
             </div>
@@ -42,7 +41,6 @@
                   { label: '4', value: 4 },
                 ]"
                 v-model:value="localOptions.format.decimals"
-                size="small"
                 style="width: 200px"
               />
             </div>
@@ -58,7 +56,6 @@
                   { label: '最大值', value: 'max' },
                 ]"
                 v-model:value="localOptions.specific.calculation"
-                size="small"
                 style="width: 200px"
               />
             </div>
@@ -71,12 +68,12 @@
           <div :class="bem('section-content')">
             <div :class="bem('row')">
               <span :class="bem('label')">最小值</span>
-              <InputNumber v-model:value="localOptions.specific.min" size="small" style="width: 200px" placeholder="0" />
+              <InputNumber v-model:value="localOptions.specific.min" style="width: 200px" placeholder="0" />
             </div>
 
             <div :class="bem('row')">
               <span :class="bem('label')">最大值</span>
-              <InputNumber v-model:value="localOptions.specific.max" size="small" style="width: 200px" placeholder="100" />
+              <InputNumber v-model:value="localOptions.specific.max" style="width: 200px" placeholder="100" />
             </div>
 
             <div :class="bem('row')">
@@ -85,7 +82,6 @@
                 v-model:value="localOptions.specific.startAngle"
                 :min="-360"
                 :max="360"
-                size="small"
                 style="width: 200px"
                 placeholder="225"
               />
@@ -97,7 +93,6 @@
                 v-model:value="localOptions.specific.endAngle"
                 :min="-360"
                 :max="360"
-                size="small"
                 style="width: 200px"
                 placeholder="-45"
               />
@@ -105,12 +100,12 @@
 
             <div :class="bem('row')">
               <span :class="bem('label')">刻度数量</span>
-              <InputNumber v-model:value="localOptions.specific.splitNumber" :min="2" :max="20" size="small" style="width: 200px" placeholder="10" />
+              <InputNumber v-model:value="localOptions.specific.splitNumber" :min="2" :max="20" style="width: 200px" placeholder="10" />
             </div>
 
             <div :class="bem('row')">
               <span :class="bem('label')">显示指针</span>
-              <Switch v-model:checked="localOptions.specific.pointer.show" size="small" />
+              <Switch v-model:checked="localOptions.specific.pointer.show" />
             </div>
 
             <div v-if="localOptions.specific.pointer.show" :class="bem('row')">
@@ -124,14 +119,13 @@
                   { label: '80%', value: '80%' },
                 ]"
                 v-model:value="localOptions.specific.pointer.length"
-                size="small"
                 style="width: 200px"
               />
             </div>
 
             <div v-if="localOptions.specific.pointer.show" :class="bem('row')">
               <span :class="bem('label')">指针宽度</span>
-              <InputNumber v-model:value="localOptions.specific.pointer.width" :min="2" :max="20" size="small" style="width: 200px" placeholder="8" />
+              <InputNumber v-model:value="localOptions.specific.pointer.width" :min="2" :max="20" style="width: 200px" placeholder="8" />
             </div>
           </div>
         </div>
@@ -150,7 +144,6 @@
                   { label: '绝对值', value: 'absolute' },
                   { label: '百分比', value: 'percent' },
                 ]"
-                size="small"
               />
             </div>
 
@@ -164,23 +157,22 @@
               </div>
               <div v-for="(threshold, index) in localOptions.thresholds.steps" :key="index" :class="bem('threshold-item')">
                 <span :class="bem('threshold-color')" :style="{ backgroundColor: threshold.color }"></span>
-                <Input v-model:value="threshold.name" size="small" placeholder="阈值名称" style="width: 80px" :class="bem('threshold-control')" />
-                <Input v-model:value="threshold.color" size="small" placeholder="#52c41a" style="width: 110px" :class="bem('threshold-control')" />
+                <Input v-model:value="threshold.name" placeholder="阈值名称" style="width: 80px" :class="bem('threshold-control')" />
+                <Input v-model:value="threshold.color" placeholder="#52c41a" style="width: 110px" :class="bem('threshold-control')" />
                 <InputNumber
                   :value="threshold.value ?? undefined"
-                  size="small"
                   style="width: 110px"
                   :class="bem('threshold-control')"
                   placeholder="0"
                   @update:value="(v: number | null | undefined) => (threshold.value = v ?? null)"
                 />
-                <Button v-if="localOptions.thresholds.steps.length > 1" type="text" size="small" danger @click="removeThreshold(index)">
+                <Button v-if="localOptions.thresholds.steps.length > 1" type="text" danger @click="removeThreshold(index)">
                   <template #icon><DeleteOutlined /></template>
                 </Button>
               </div>
             </div>
 
-            <Button type="dashed" size="small" block @click="addThreshold">
+            <Button type="dashed" block @click="addThreshold">
               <template #icon><PlusOutlined /></template>
               添加阈值
             </Button>

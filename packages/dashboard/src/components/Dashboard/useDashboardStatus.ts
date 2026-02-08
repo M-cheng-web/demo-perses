@@ -24,7 +24,7 @@ interface UseDashboardStatusOptions {
 }
 
 export function useDashboardStatus(options: UseDashboardStatusOptions) {
-  const { dashboardId, currentDashboard, isBooting, bootStage, bootStats, isLargeDashboard, isSaving, isSyncing, lastError } = options;
+  const { currentDashboard, isBooting, bootStage, bootStats, isLargeDashboard, isSaving, isSyncing, lastError } = options;
 
   // ---------------------------
   // 乐观同步的反馈提示
@@ -63,31 +63,20 @@ export function useDashboardStatus(options: UseDashboardStatusOptions) {
     message.error(err);
   });
 
-  const bootTitle = computed(() => {
-    switch (bootStage.value) {
-      case 'fetching':
-        return '正在加载仪表盘配置...';
-      case 'parsing':
-        return '正在解析仪表盘 JSON...';
-      case 'initializing':
-        return '正在初始化面板...';
-      default:
-        return '正在加载...';
-    }
+  const loadingTitle = computed(() => {
+    if (bootStats.value.source === 'import') return '正在导入仪表盘...';
+    return '正在加载仪表盘...';
   });
 
-  const bootDetail = computed(() => {
-    const parts: string[] = [];
-    const src = bootStats.value.source === 'import' ? '导入' : '加载';
-    parts.push(`来源：${src}`);
-    if (dashboardId.value) parts.push(`dashboardId：${String(dashboardId.value)}`);
-    if (typeof bootStats.value.groupCount === 'number') parts.push(`面板组：${bootStats.value.groupCount}`);
-    if (typeof bootStats.value.panelCount === 'number') parts.push(`面板：${bootStats.value.panelCount}`);
-    if (typeof bootStats.value.jsonBytes === 'number') {
-      const mb = (bootStats.value.jsonBytes / 1024 / 1024).toFixed(2);
-      parts.push(`JSON：${mb}MB`);
+  const loadingDetail = computed(() => {
+    switch (bootStage.value) {
+      case 'parsing':
+        return '正在处理配置，请稍候。';
+      case 'initializing':
+        return '正在准备面板，请稍候。';
+      default:
+        return '请稍候，马上就好。';
     }
-    return parts.join(' / ');
   });
 
   const statusKind = computed<DashboardStatusKind | null>(() => {
@@ -101,13 +90,13 @@ export function useDashboardStatus(options: UseDashboardStatusOptions) {
   const statusTitle = computed(() => {
     switch (statusKind.value) {
       case 'loading':
-        return bootTitle.value;
+        return loadingTitle.value;
       case 'error':
         if (bootStats.value.source === 'import') return '导入失败';
         if (bootStats.value.source === 'remote') return '加载失败';
         return '初始化失败';
       case 'waiting':
-        return '正在准备仪表盘...';
+        return '正在加载仪表盘...';
       default:
         return '';
     }
@@ -116,15 +105,13 @@ export function useDashboardStatus(options: UseDashboardStatusOptions) {
   const statusDetail = computed(() => {
     switch (statusKind.value) {
       case 'loading':
-        return bootDetail.value;
+        return loadingDetail.value;
       case 'error': {
-        const idText = dashboardId.value ? `dashboardId：${String(dashboardId.value)}` : '';
         const errText = lastError.value ? `错误：${String(lastError.value)}` : '错误：未知错误';
-        const hint = '可稍后重试或导入 JSON';
-        return idText ? `${idText} / ${errText}（${hint}）` : `${errText}（${hint}）`;
+        return `${errText}，请稍后重试。`;
       }
       case 'waiting':
-        return '等待宿主获取 dashboardId 并调用 loadDashboard(dashboardId) 后加载远端 JSON...';
+        return '正在连接数据，请稍候。';
       default:
         return '';
     }
@@ -132,7 +119,7 @@ export function useDashboardStatus(options: UseDashboardStatusOptions) {
 
   const statusHint = computed(() => {
     if (statusKind.value === 'loading' && isLargeDashboard.value) {
-      return '检测到数据量较大，首次加载可能需要更久，请耐心等待';
+      return '数据量较大，首次加载可能会慢一些。';
     }
     return '';
   });

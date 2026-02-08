@@ -18,24 +18,23 @@
                   { label: '紫色', value: 'purple' },
                 ]"
                 v-model:value="localOptions.specific.colorScheme"
-                size="small"
                 style="width: 200px"
               />
             </div>
 
             <div :class="bem('row')">
               <span :class="bem('label')">显示数值</span>
-              <Switch v-model:checked="localOptions.specific.showValue" size="small" />
+              <Switch v-model:checked="localOptions.specific.showValue" />
             </div>
 
             <div :class="bem('row')">
               <span :class="bem('label')">最小值颜色</span>
-              <Input v-model:value="localOptions.specific.minColor" size="small" style="width: 200px" placeholder="#e3f2fd" />
+              <Input v-model:value="localOptions.specific.minColor" style="width: 200px" placeholder="#e3f2fd" />
             </div>
 
             <div :class="bem('row')">
               <span :class="bem('label')">最大值颜色</span>
-              <Input v-model:value="localOptions.specific.maxColor" size="small" style="width: 200px" placeholder="#1565c0" />
+              <Input v-model:value="localOptions.specific.maxColor" style="width: 200px" placeholder="#1565c0" />
             </div>
           </div>
         </div>
@@ -58,7 +57,6 @@
                   { label: '秒', value: 'seconds' },
                 ]"
                 v-model:value="localOptions.format.unit"
-                size="small"
                 style="width: 200px"
               />
             </div>
@@ -75,7 +73,6 @@
                   { label: '4', value: 4 },
                 ]"
                 v-model:value="localOptions.format.decimals"
-                size="small"
                 style="width: 200px"
               />
             </div>

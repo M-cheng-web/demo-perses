@@ -31,7 +31,7 @@
     {
       value: 'now-1h',
       options: undefined,
-      size: 'small',
+      size: undefined,
       style: () => ({ width: '160px' }),
     }
   );

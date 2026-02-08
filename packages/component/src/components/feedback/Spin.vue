@@ -1,6 +1,6 @@
 <!-- 组件说明：加载指示器包装，可配合表格等场景 (AntD-inspired) -->
 <template>
-  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-nested': hasContent, 'is-spinning': spinning }]">
+  <div :class="[bem(), bem({ [`size-${resolvedSize}`]: true }), { 'is-nested': hasContent, 'is-spinning': spinning }]">
     <div v-if="spinning" :class="bem('spinning')">
       <span :class="bem('dot')">
         <i :class="bem('dot-item')"></i>
@@ -19,10 +19,11 @@
 <script setup lang="ts">
   import { useSlots, computed } from 'vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
 
   defineOptions({ name: 'GfSpin' });
 
-  withDefaults(
+  const props = withDefaults(
     defineProps<{
       /** 是否处于加载状态 */
       spinning?: boolean;
@@ -34,11 +35,18 @@
     {
       spinning: true,
       tip: '',
-      size: 'default',
+      size: undefined,
     }
   );
 
   const [_, bem] = createNamespace('spin');
+  const globalSize = useComponentSize(computed(() => props.size));
+  // Spin supports 'small' | 'default' | 'large'; map 'middle' → 'default'
+  const resolvedSize = computed(() => {
+    const s = globalSize.value;
+    if (s === 'middle') return 'default';
+    return s;
+  });
   const slots = useSlots();
   const hasContent = computed(() => !!slots.default);
 </script>

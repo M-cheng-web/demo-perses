@@ -5,7 +5,7 @@
       bem(),
       bem({
         [`type-${type}`]: true,
-        [`size-${size}`]: true,
+        [`size-${resolvedSize}`]: true,
         [`shape-${effectiveShape}`]: effectiveShape !== 'default',
         block,
         danger,
@@ -34,6 +34,7 @@
 <script setup lang="ts">
   import { computed, type VNodeChild } from 'vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
 
   type ButtonType = 'primary' | 'default' | 'ghost' | 'text' | 'dashed' | 'link';
   type ButtonSize = 'small' | 'middle' | 'large';
@@ -72,7 +73,7 @@
     }>(),
     {
       type: 'default',
-      size: 'middle',
+      size: undefined,
       block: false,
       loading: false,
       disabled: false,
@@ -89,6 +90,7 @@
   }>();
 
   const [_, bem] = createNamespace('button');
+  const resolvedSize = useComponentSize(computed(() => props.size));
 
   const effectiveShape = computed<ButtonShape>(() => {
     if (props.shape && props.shape !== 'default') return props.shape;

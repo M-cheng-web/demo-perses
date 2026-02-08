@@ -49,7 +49,6 @@
               v-if="panelById.get(layoutItem.i as ID)"
               :title="panelById.get(layoutItem.i as ID)?.name"
               :description="panelById.get(layoutItem.i as ID)?.description"
-              size="small"
               :hoverable="true"
               :body-padding="false"
             >
@@ -60,7 +59,7 @@
               <PanelContent :panel="panelById.get(layoutItem.i as ID)!" />
             </Panel>
 
-            <Panel v-else size="small" :hoverable="false" :body-padding="true" title="面板加载失败">
+            <Panel v-else :hoverable="false" :body-padding="true" title="面板加载失败">
               <div :class="bem('panel-error')">
                 <Alert type="error" show-icon message="面板加载失败" description="未找到面板数据" />
               </div>

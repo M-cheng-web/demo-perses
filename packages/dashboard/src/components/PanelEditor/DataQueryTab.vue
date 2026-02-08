@@ -3,31 +3,28 @@
   <div :class="bem()">
     <!-- 顶部操作栏 -->
     <div :class="bem('header')">
-      <div :class="bem('header-left')">
-        <div :class="bem('title-block')">
-          <div :class="bem('title')">数据查询</div>
-          <div :class="bem('controls')">
-            <!-- 模式切换 -->
-            <div :class="bem('control-chip')">
-              <span :class="bem('chip-label')">模式</span>
-              <Tabs :class="bem('mode-tabs')" :activeKey="queryMode" @update:active-key="(key: string) => (queryMode = key as any)">
-                <TabPane name="builder" tab="QueryBuilder" />
-                <TabPane name="code" tab="Code" />
-              </Tabs>
-            </div>
+      <div :class="bem('controls')">
+        <!-- 模式切换 -->
+        <div :class="[bem('control-chip'), bem('control-chip--mode')]">
+          <span :class="bem('chip-label')">模式</span>
+          <Segmented
+            :class="bem('mode-segmented')"
+            :value="queryMode"
+            size="small"
+            :options="queryModeOptions"
+            @update:value="(value: unknown) => (queryMode = value as QueryMode)"
+          />
+        </div>
 
-            <!-- 查询解释开关 -->
-            <div v-if="queryMode === 'builder'" :class="bem('control-chip')">
-              <span :class="bem('chip-label')">解释</span>
-              <Switch v-model:checked="showExplain" size="small" checked-children="开" un-checked-children="关" />
-            </div>
-          </div>
+        <!-- 查询解释开关 -->
+        <div v-if="queryMode === 'builder'" :class="[bem('control-chip'), bem('control-chip--explain')]">
+          <span :class="bem('chip-label')">解释</span>
+          <Switch v-model:checked="showExplain" size="small" />
         </div>
       </div>
 
-      <!-- 执行查询按钮 -->
       <div :class="bem('header-actions')">
-        <Button type="primary" size="middle" :class="bem('run-btn')" @click="handleExecuteQuery">
+        <Button type="primary" :class="bem('run-btn')" @click="handleExecuteQuery">
           <template #icon><SearchOutlined /></template>
           执行查询
         </Button>
@@ -53,7 +50,6 @@
                   <Button
                     icon-only
                     type="text"
-                    size="small"
                     :class="bem('icon-btn')"
                     :icon="h(draft.hide ? EyeInvisibleOutlined : EyeOutlined)"
                     @click="toggleQueryVisibility(index)"
@@ -64,7 +60,6 @@
                   <Button
                     icon-only
                     type="text"
-                    size="small"
                     :class="bem('icon-btn')"
                     :icon="h(draft.collapsed ? DownOutlined : UpOutlined)"
                     @click="togglePanelCollapsed(index)"
@@ -72,19 +67,12 @@
                 </Tooltip>
 
                 <Tooltip v-if="queryMode === 'builder' && draft.builder.status === 'ok'" title="模版填充">
-                  <Button
-                    icon-only
-                    type="text"
-                    size="small"
-                    :class="bem('icon-btn')"
-                    :icon="h(ThunderboltOutlined)"
-                    @click="openQueryPatterns(index)"
-                  />
+                  <Button icon-only type="text" :class="bem('icon-btn')" :icon="h(ThunderboltOutlined)" @click="openQueryPatterns(index)" />
                 </Tooltip>
 
                 <Popconfirm v-if="queryDrafts.length > 1" title="确认删除该查询？" @confirm="removeQuery(index)">
                   <Tooltip title="删除查询">
-                    <Button icon-only danger type="text" size="small" :class="bem('icon-btn')" :icon="h(DeleteOutlined)" />
+                    <Button icon-only danger type="text" :class="bem('icon-btn')" :icon="h(DeleteOutlined)" />
                   </Tooltip>
                 </Popconfirm>
               </div>
@@ -102,7 +90,6 @@
                     v-for="v in availableVariables"
                     :key="v.id"
                     type="text"
-                    size="small"
                     :class="bem('var-chip')"
                     :title="`${v.label || v.name} ($${v.name})`"
                     @click="handleUseVariable(index, v.name)"
@@ -148,7 +135,7 @@
                       <template #description>
                         <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
                           <span>点击“接受转换”后才能编辑，并会用 Builder 生成的 PromQL 覆盖当前表达式（未识别片段将被过滤）。</span>
-                          <Button size="small" type="primary" @click="acceptPartialConversion(index)">接受转换</Button>
+                          <Button type="primary" @click="acceptPartialConversion(index)">接受转换</Button>
                         </div>
                       </template>
                     </Alert>
@@ -234,9 +221,12 @@
                       <div :class="bem('section')">
                         <div :class="bem('section-header')">
                           <span :class="bem('section-title')">查询预览</span>
+                          <Button type="text" :icon="h(CopyOutlined)" :class="bem('section-copy-btn')" @click="handleCopyPreview(index)">
+                            复制
+                          </Button>
                         </div>
                         <div :class="bem('section-content')">
-                          <QueryPreview :class="bem('query-preview')" :promql="getPromQLForDraft(draft)" />
+                          <QueryPreview :class="bem('query-preview')" :promql="getPromQLForDraft(draft)" :show-copy-button="false" />
                         </div>
                       </div>
 
@@ -311,15 +301,15 @@
     InputNumber,
     message,
     Popconfirm,
+    Segmented,
     Space,
     Switch,
-    TabPane,
-    Tabs,
     Tag,
     Textarea,
     Tooltip,
   } from '@grafana-fast/component';
   import {
+    CopyOutlined,
     DeleteOutlined,
     DownOutlined,
     EyeInvisibleOutlined,
@@ -372,6 +362,10 @@
   }>();
 
   const queryMode = ref<QueryMode>('builder');
+  const queryModeOptions = [
+    { label: 'QueryBuilder', value: 'builder' },
+    { label: 'Code', value: 'code' },
+  ] as const;
   const showExplain = ref(false);
   const patternsModalOpen = ref(false);
   const currentPatternQueryIndex = ref<number>(0);
@@ -473,10 +467,22 @@
     updateBuilderQuery(index, updatedQuery);
   };
 
+  const handleCopyPreview = async (index: number) => {
+    const draft = queryDrafts.value[index];
+    if (!draft) return;
+    const promql = getPromQLForDraft(draft);
+    if (!promql) {
+      message.warning('没有可复制的查询');
+      return;
+    }
+    const ok = await copyToClipboard(promql);
+    if (ok) message.success('已复制到剪贴板');
+    else message.error('复制失败');
+  };
+
   const handleExecuteQuery = () => {
     const v = validateDrafts('execute');
     if (!v.ok) {
-      // 展开第一个错误项，帮助用户快速定位
       const first = v.errors[0];
       if (first) {
         const idx = queryDrafts.value.findIndex((d) => d.refId === first.refId);
@@ -509,8 +515,8 @@
 
 <style scoped lang="less">
   .dp-data-query-tab {
-    --dp-section-gap: 16px;
-    --dp-inner-gap: 12px;
+    --dp-section-gap: 14px;
+    --dp-inner-gap: 10px;
     --dp-card-radius: var(--gf-radius-lg);
 
     display: flex;
@@ -522,40 +528,11 @@
     // ===== 顶部操作栏 =====
     &__header {
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      padding: 14px 16px;
-      border-radius: var(--dp-card-radius);
-      background: linear-gradient(135deg, var(--gf-color-surface) 0%, var(--gf-color-surface-muted) 100%);
-      border: 1px solid var(--gf-color-border);
-      box-shadow: var(--gf-shadow-1);
-      gap: 16px;
+      padding: 0;
+      gap: 8px;
       flex-wrap: wrap;
-    }
-
-    &__header-left {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 16px;
-      min-width: 0;
-      flex: 1;
-    }
-
-    &__title-block {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-
-    &__title {
-      font-weight: 700;
-      font-size: 16px;
-      color: var(--gf-color-text-heading);
-      letter-spacing: 0.02em;
-      line-height: 1.4;
-      white-space: nowrap;
     }
 
     &__controls {
@@ -568,35 +545,60 @@
     &__control-chip {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      border: 1px solid var(--gf-color-border);
+      gap: 10px;
+      min-height: 34px;
+      padding: 4px 10px;
+      border: 1px solid var(--gf-color-border-secondary);
       border-radius: var(--gf-radius-md);
       background: var(--gf-color-surface);
     }
 
     &__chip-label {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--gf-color-text-secondary);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    &__control-chip--mode {
+      padding-right: 6px;
+    }
+
+    &__control-chip--explain {
+      padding-right: 8px;
+      min-width: 104px;
+      justify-content: space-between;
+    }
+
+    &__mode-segmented {
+      :deep(.gf-segmented) {
+        padding: 2px;
+        background: var(--gf-color-fill-secondary);
+      }
+
+      :deep(.gf-segmented__item) {
+        min-width: 88px;
+        height: 24px;
+        padding: 2px 10px;
+        font-size: 12px;
+      }
+
+      :deep(.gf-segmented__item.is-active) {
+        font-weight: 600;
+      }
     }
 
     &__header-actions {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 10px;
     }
 
     &__run-btn {
+      height: 32px;
+      padding: 0 14px;
       border-radius: var(--gf-radius-md);
-      padding: 8px 20px;
       font-weight: 600;
-      height: 36px;
-      box-shadow: var(--gf-shadow-1);
-
-      &:hover {
-        box-shadow: var(--gf-shadow-2);
-      }
     }
 
     // ===== 查询列表区域 =====
@@ -608,17 +610,17 @@
 
     &__add-btn {
       margin-top: 4px;
-      height: 40px;
-      font-weight: 600;
+      height: 34px;
+      font-weight: 500;
       border-radius: var(--gf-radius-md);
-      border: 2px dashed var(--gf-color-border);
-      background: var(--gf-color-surface-muted);
-      color: var(--gf-color-primary);
+      border: 1px dashed var(--gf-color-border);
+      background: transparent;
+      color: var(--gf-color-text-secondary);
       transition: all var(--gf-motion-fast) var(--gf-easing);
 
       &:hover {
-        border-color: var(--gf-color-primary-border);
-        background: var(--gf-color-primary-bg);
+        border-color: var(--gf-color-primary);
+        color: var(--gf-color-primary);
         box-shadow: none;
       }
     }
@@ -631,17 +633,9 @@
     &__query-wrapper {
       border-radius: var(--dp-card-radius);
       overflow: hidden;
-      background: var(--gf-color-surface);
-      border: 1px solid var(--gf-color-border);
-      box-shadow: var(--gf-shadow-1);
-      transition:
-        box-shadow var(--gf-motion-fast) var(--gf-easing),
-        border-color var(--gf-motion-fast) var(--gf-easing);
-
-      &:hover {
-        box-shadow: var(--gf-shadow-2);
-        border-color: var(--gf-color-border-strong);
-      }
+      background: color-mix(in srgb, var(--gf-color-surface-muted), transparent 8%);
+      border: none;
+      box-shadow: none;
 
       &.collapsed {
         .dp-data-query-tab__query-header {
@@ -655,8 +649,8 @@
       align-items: center;
       justify-content: space-between;
       padding: 12px 16px;
-      background: linear-gradient(90deg, var(--gf-color-primary-bg) 0%, var(--gf-color-surface) 100%);
-      border-bottom: 1px solid var(--gf-color-border-muted);
+      background: transparent;
+      border-bottom: 1px solid var(--gf-color-border-secondary);
       gap: 16px;
     }
 
@@ -689,12 +683,12 @@
       height: 28px;
       padding: 0 8px;
       border-radius: var(--gf-radius-md);
-      background: var(--gf-color-primary);
-      color: #fff;
-      font-weight: 700;
+      background: var(--gf-color-fill-tertiary);
+      color: var(--gf-color-text-secondary);
+      font-weight: 600;
       font-size: 13px;
       flex-shrink: 0;
-      box-shadow: 0 2px 4px rgba(22, 119, 255, 0.2);
+      box-shadow: none;
     }
 
     &__query-actions {
@@ -707,13 +701,13 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding: 2px;
-      border-radius: var(--gf-radius-md);
-      background: var(--gf-color-surface);
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
     }
 
     &__icon-btn.gf-button--type-text.gf-button--icon-only:not(.gf-button--danger) {
-      --gf-btn-color: var(--gf-color-text-tertiary);
+      --gf-btn-color: var(--gf-color-text-secondary);
       --gf-btn-bg-hover: var(--gf-color-fill-secondary);
       --gf-btn-bg-active: var(--gf-color-fill-tertiary);
       --gf-btn-shadow-hover: none;
@@ -726,8 +720,8 @@
 
     // ===== 查询内容区 =====
     &__query-content {
-      padding: 16px;
-      background: var(--gf-color-surface);
+      padding: 14px;
+      background: transparent;
     }
 
     // ===== 变量栏 =====
@@ -739,8 +733,8 @@
       padding: 10px 12px;
       margin-bottom: var(--dp-inner-gap);
       border-radius: var(--gf-radius-md);
-      background: var(--gf-color-surface-muted);
-      border: 1px solid var(--gf-color-border-muted);
+      background: var(--gf-color-surface);
+      border: none;
     }
 
     &__vars-label {
@@ -803,30 +797,23 @@
       border-radius: var(--gf-radius-md);
       overflow: hidden;
       background: var(--gf-color-surface);
-      border: 1px solid var(--gf-color-border-muted);
-      transition:
-        border-color var(--gf-motion-fast) var(--gf-easing),
-        box-shadow var(--gf-motion-fast) var(--gf-easing);
+      border: none;
+      box-shadow: none;
 
-      &:hover {
-        border-color: var(--gf-color-border);
-      }
-
-      // 不同区块的顶部强调色
       &--metric {
-        border-top: 3px solid var(--gf-color-primary);
+        box-shadow: inset 3px 0 0 var(--gf-color-primary);
       }
 
       &--filters {
-        border-top: 3px solid var(--gf-color-success);
+        box-shadow: inset 3px 0 0 var(--gf-color-success);
       }
 
       &--operations {
-        border-top: 3px solid var(--gf-color-warning);
+        box-shadow: inset 3px 0 0 var(--gf-color-warning);
       }
 
       &--binary {
-        border-top: 3px solid #722ed1;
+        box-shadow: inset 3px 0 0 #722ed1;
       }
     }
 
@@ -834,9 +821,9 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 14px;
-      background: var(--gf-color-surface-muted);
-      border-bottom: 1px solid var(--gf-color-border-muted);
+      padding: 10px 12px 8px 14px;
+      background: transparent;
+      border-bottom: none;
     }
 
     &__section-title {
@@ -846,28 +833,25 @@
       line-height: 1.5;
     }
 
+    &__section-copy-btn.gf-button--type-text {
+      --gf-btn-color: var(--gf-color-text-secondary);
+      --gf-btn-bg-hover: var(--gf-color-fill-secondary);
+      --gf-btn-bg-active: var(--gf-color-fill-tertiary);
+      height: 24px;
+      padding: 0 8px;
+      border-radius: var(--gf-radius-sm);
+    }
+
     &__section-content {
-      padding: 14px;
+      padding: 0 12px 12px 14px;
     }
 
     // ===== Code 模式 =====
     &__code-mode {
-      background: var(--gf-color-surface);
-      border: 1px solid var(--gf-color-border);
+      background: var(--gf-color-surface-muted);
+      border: none;
       border-radius: var(--gf-radius-md);
-      padding: 16px;
-    }
-
-    &__mode-tabs {
-      min-width: 180px;
-      --gf-tabs-border: 1px solid var(--gf-color-border);
-      --gf-tabs-radius: var(--gf-radius-md);
-      --gf-tabs-bg: var(--gf-color-surface);
-      --gf-tabs-nav-padding: 3px;
-      --gf-tabs-nav-border: none;
-      --gf-tabs-content-display: none;
-      --gf-tabs-tab-min-width: 88px;
-      --gf-tabs-tab-padding: 6px 12px;
+      padding: 12px;
     }
 
     &__code-grid {

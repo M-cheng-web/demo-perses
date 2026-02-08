@@ -151,13 +151,13 @@
 
     &__textarea {
       width: 100%;
-      min-height: 80px;
+      min-height: var(--gf-control-height-md, 32px);
       padding: 4px 11px;
-      border-radius: var(--gf-radius-sm);
+      border-radius: var(--gf-radius-md);
       border: 1px solid var(--gf-control-border-color, var(--gf-border));
       background: var(--gf-control-bg, var(--gf-color-surface));
       color: var(--gf-text);
-      font-size: var(--gf-font-size-sm);
+      font-size: var(--gf-font-size-md);
       line-height: 1.5714285714285714;
       resize: vertical;
       outline: none;
@@ -166,7 +166,7 @@
         box-shadow var(--gf-motion-fast) var(--gf-easing);
 
       &::placeholder {
-        color: var(--gf-color-text-tertiary);
+        color: var(--gf-color-text-placeholder);
         opacity: 1;
       }
 
@@ -206,7 +206,7 @@
       background: var(--gf-color-fill);
 
       &:hover {
-        border-color: var(--gf-border);
+        border-color: var(--gf-color-border);
       }
     }
 

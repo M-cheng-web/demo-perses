@@ -2,7 +2,7 @@
 <template>
   <div
     ref="rootRef"
-    :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-disabled': disabled, 'is-block': block }]"
+    :class="[bem(), bem({ [`size-${resolvedSize}`]: true }), { 'is-disabled': disabled, 'is-block': block }]"
     role="radiogroup"
     @keydown="handleKeydown"
   >
@@ -30,6 +30,7 @@
   import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { subscribeWindowResize, type Unsubscribe } from '@grafana-fast/utils';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfSegmented' });
@@ -59,7 +60,7 @@
     }>(),
     {
       value: '',
-      size: 'middle',
+      size: undefined,
       disabled: false,
       block: false,
     }
@@ -71,6 +72,7 @@
   }>();
 
   const [_, bem] = createNamespace('segmented');
+  const resolvedSize = useComponentSize(computed(() => props.size));
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
 
   const normalizedOptions = computed(() => {

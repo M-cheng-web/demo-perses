@@ -1,6 +1,6 @@
 <!-- 组件说明：分页器（AntD-inspired） -->
 <template>
-  <div v-if="!hidePager" :class="[bem(), bem({ [`size-${size}`]: true })]">
+  <div v-if="!hidePager" :class="[bem(), bem({ [`size-${resolvedSize}`]: true })]">
     <span v-if="showTotal" :class="bem('total')">{{ showTotal(total) }}</span>
     <ul :class="bem('pager')">
       <li :class="[bem('item'), bem('item-prev'), { 'is-disabled': disabled || currentPage <= 1 }]" @click="prevPage">
@@ -39,6 +39,7 @@
   import { computed, ref } from 'vue';
   import { LeftOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
   import Select from '../form/Select.vue';
 
   export interface PaginationConfig {
@@ -78,7 +79,7 @@
       hideOnSinglePage: true,
       disabled: false,
       showQuickJumper: false,
-      size: 'default',
+      size: undefined,
     }
   );
 
@@ -89,6 +90,9 @@
   }>();
 
   const [_, bem] = createNamespace('pagination');
+  const globalSize = useComponentSize(computed(() => props.size));
+  // Pagination only supports 'small' | 'default'; map 'middle'/'large' → 'default'
+  const resolvedSize = computed(() => (globalSize.value === 'small' ? 'small' : 'default'));
 
   const pageCount = computed(() => Math.max(1, Math.ceil(Math.max(0, props.total) / Math.max(1, props.pageSize))));
   const hidePager = computed(() => Boolean(props.hideOnSinglePage && pageCount.value <= 1));

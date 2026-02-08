@@ -56,7 +56,6 @@
       :loading="loading"
       :pagination="paginationConfig"
       :row-key="(record: MetricInfo) => record.name"
-      size="small"
       :scroll="{ y: 'calc(60vh - 100px)' }"
       :class="bem('table')"
       @change="handleTableChange"
@@ -67,7 +66,7 @@
           <code :class="bem('metric-name')">{{ record.name }}</code>
         </template>
         <template v-else-if="column.key === 'type'">
-          <Tag v-if="record.type" size="small" :color="getTypeColor(record.type)">
+          <Tag v-if="record.type" :color="getTypeColor(record.type)">
             {{ record.type }}
           </Tag>
           <span v-else :class="bem('no-type')">未知</span>
@@ -76,7 +75,7 @@
           <span :class="bem('description')">{{ record.help || '-' }}</span>
         </template>
         <template v-else-if="column.key === 'action'">
-          <Button type="link" size="small" @click="handleSelectMetric(record.name)"> 选择 </Button>
+          <Button type="link" @click="handleSelectMetric(record.name)"> 选择 </Button>
         </template>
       </template>
     </Table>

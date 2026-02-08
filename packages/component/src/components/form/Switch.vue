@@ -1,7 +1,7 @@
 <!-- 组件说明：开关切换，支持禁用与受控 checked 状态 (AntD-inspired) -->
 <template>
   <button
-    :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-checked': checked, 'is-disabled': disabled, 'is-loading': loading }]"
+    :class="[bem(), bem({ [`size-${resolvedSize}`]: true }), { 'is-checked': checked, 'is-disabled': disabled, 'is-loading': loading }]"
     type="button"
     role="switch"
     :aria-checked="checked"
@@ -29,8 +29,9 @@
 </template>
 
 <script setup lang="ts">
-  import { inject } from 'vue';
+  import { inject, computed } from 'vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfSwitch' });
@@ -50,7 +51,7 @@
       checked: false,
       disabled: false,
       loading: false,
-      size: 'default',
+      size: undefined,
     }
   );
 
@@ -60,6 +61,9 @@
   }>();
 
   const [_, bem] = createNamespace('switch');
+  const globalSize = useComponentSize(computed(() => props.size));
+  // Switch only supports 'small' | 'default'; map 'middle'/'large' → 'default'
+  const resolvedSize = computed(() => (globalSize.value === 'small' ? 'small' : 'default'));
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
 
   const toggle = () => {

@@ -3,7 +3,7 @@
   <Transition name="gf-slide-up">
     <div
       v-if="visible"
-      :class="[bem(), bem({ [`size-${size}`]: true }), `gf-alert--${type}`, { 'is-with-description': hasDescription, 'is-banner': banner }]"
+      :class="[bem(), bem({ [`size-${resolvedSize}`]: true }), `gf-alert--${type}`, { 'is-with-description': hasDescription, 'is-banner': banner }]"
     >
       <span v-if="showIcon" :class="bem('icon')">
         <InfoCircleFilled v-if="type === 'info'" />
@@ -30,6 +30,7 @@
   import { computed, ref, useSlots, watch } from 'vue';
   import { InfoCircleFilled, CheckCircleFilled, ExclamationCircleFilled, CloseCircleFilled, CloseOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
 
   type AlertType = 'info' | 'success' | 'warning' | 'error';
 
@@ -54,7 +55,7 @@
     }>(),
     {
       type: 'info',
-      size: 'middle',
+      size: undefined,
       message: '',
       description: '',
       showIcon: false,
@@ -68,6 +69,9 @@
   }>();
 
   const [_, bem] = createNamespace('alert');
+  const globalSize = useComponentSize(computed(() => props.size));
+  // Alert only supports 'small' | 'middle'; map 'large' → 'middle'
+  const resolvedSize = computed(() => (globalSize.value === 'small' ? 'small' : 'middle'));
   const visible = ref(true);
   const slots = useSlots();
   const hasDescription = computed(() => !!(props.description || slots.description));

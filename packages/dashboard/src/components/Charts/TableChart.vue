@@ -8,7 +8,6 @@
         :data-source="dataSource"
         :pagination="paginationConfig"
         :scroll="tableScroll"
-        size="small"
         style="height: 100%"
       >
         <template #bodyCell="{ column, text }">

@@ -1,6 +1,6 @@
 <!-- 组件说明：数字输入框，带增减按钮与边界控制 (AntD-inspired) -->
 <template>
-  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-disabled': disabled, 'is-focused': isFocused }]">
+  <div :class="[bem(), bem({ [`size-${resolvedSize}`]: true }), { 'is-disabled': disabled, 'is-focused': isFocused }]">
     <div :class="bem('handler-wrap')">
       <span :class="[bem('handler'), bem('handler-up'), { 'is-disabled': disabled || !canIncrease }]" @click="increase">
         <UpOutlined :class="bem('handler-icon')" />
@@ -32,6 +32,7 @@
   import { computed, inject, ref, watch } from 'vue';
   import { DownOutlined, UpOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfInputNumber' });
@@ -64,7 +65,7 @@
       step: 1,
       precision: undefined,
       placeholder: '',
-      size: 'middle',
+      size: undefined,
       disabled: false,
       keyboard: true,
     }
@@ -78,6 +79,7 @@
   }>();
 
   const [_, bem] = createNamespace('input-number');
+  const resolvedSize = useComponentSize(computed(() => props.size));
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
   const inputRef = ref<HTMLInputElement>();
   const innerValue = ref<number | undefined>(props.value);

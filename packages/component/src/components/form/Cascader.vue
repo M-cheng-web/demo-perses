@@ -1,6 +1,6 @@
 <!-- 组件说明：级联选择器（多级面板），用于逐级选择路径 (AntD-inspired) -->
 <template>
-  <div :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-open': open, 'is-disabled': disabled }]" ref="rootRef">
+  <div :class="[bem(), bem({ [`size-${resolvedSize}`]: true }), { 'is-open': open, 'is-disabled': disabled }]" ref="rootRef">
     <div v-if="$slots.default" ref="triggerRef" :class="bem('trigger')" tabindex="0" @click="toggle" @keydown="handleKeydown">
       <slot></slot>
     </div>
@@ -24,7 +24,7 @@
       <Transition name="gf-slide-up">
         <div
           v-if="open"
-          :class="[bem('dropdown'), bem({ [`size-${size}`]: true }), themeClass]"
+          :class="[bem('dropdown'), bem({ [`size-${resolvedSize}`]: true }), themeClass]"
           :data-gf-theme="colorScheme"
           :style="dropdownStyle"
           ref="dropdownRef"
@@ -68,6 +68,7 @@
   import { createNamespace } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
+  import { useComponentSize } from '../../context/size';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
   import { resolveCascaderPath } from './cascader/cascaderLogic';
   import { useCascaderDropdownPositioning } from './cascader/useCascaderDropdownPositioning';
@@ -108,7 +109,7 @@
     {
       options: () => [],
       placeholder: '请选择',
-      size: 'middle',
+      size: undefined,
       dropdownMinWidth: undefined,
       dropdownMaxWidth: 640,
       disabled: false,
@@ -121,6 +122,7 @@
   }>();
 
   const [_, bem] = createNamespace('cascader');
+  const resolvedSize = useComponentSize(computed(() => props.size));
   const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
   const themeClass = computed(() => themeContext?.themeClass.value);
   const colorScheme = computed(() => themeContext?.colorScheme.value);
@@ -133,8 +135,8 @@
   const open = ref(false);
 
   const controlSizeClass = computed(() => {
-    if (props.size === 'small') return 'gf-control--size-small';
-    if (props.size === 'large') return 'gf-control--size-large';
+    if (resolvedSize.value === 'small') return 'gf-control--size-small';
+    if (resolvedSize.value === 'large') return 'gf-control--size-large';
     return undefined;
   });
 

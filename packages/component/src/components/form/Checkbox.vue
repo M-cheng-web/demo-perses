@@ -1,6 +1,8 @@
 <!-- 组件说明：复选框，支持半选、受控选中与禁用 (AntD-inspired) -->
 <template>
-  <label :class="[bem(), bem({ [`size-${size}`]: true }), { 'is-checked': isChecked, 'is-disabled': disabled, 'is-indeterminate': indeterminate }]">
+  <label
+    :class="[bem(), bem({ [`size-${resolvedSize}`]: true }), { 'is-checked': isChecked, 'is-disabled': disabled, 'is-indeterminate': indeterminate }]"
+  >
     <span :class="bem('input')">
       <input ref="inputRef" type="checkbox" :checked="isChecked" :disabled="disabled" :value="value" @change="handleChange" />
       <span :class="bem('inner')">
@@ -23,6 +25,7 @@
 <script setup lang="ts">
   import { createNamespace } from '../../utils';
   import { ref, onMounted, watch, computed, inject } from 'vue';
+  import { useComponentSize } from '../../context/size';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfCheckbox' });
@@ -48,7 +51,7 @@
       disabled: false,
       value: undefined,
       indeterminate: false,
-      size: 'middle',
+      size: undefined,
     }
   );
 
@@ -59,6 +62,7 @@
   }>();
 
   const [_, bem] = createNamespace('checkbox');
+  const resolvedSize = useComponentSize(computed(() => props.size));
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
   const inputRef = ref<HTMLInputElement>();
 

@@ -31,8 +31,8 @@
       >
         <template #right>
           <div v-if="group && !isBooting" :class="bem('actions')">
-            <Button type="text" size="small" :icon="h(ReloadOutlined)" :disabled="isBooting" @click="handleRefresh">刷新</Button>
-            <Button v-if="canEditGroup" size="small" :type="isGroupEditing ? 'ghost' : 'primary'" :disabled="isBooting" @click="handleToggleEditing">
+            <Button type="text" :icon="h(ReloadOutlined)" :disabled="isBooting" @click="handleRefresh">刷新</Button>
+            <Button v-if="canEditGroup" :type="isGroupEditing ? 'ghost' : 'primary'" :disabled="isBooting" @click="handleToggleEditing">
               {{ isGroupEditing ? '退出编辑' : '编辑' }}
             </Button>
           </div>
@@ -53,7 +53,6 @@
 
         <div v-if="showContent && pagedGroup && pagedGroup.total > pagerThreshold" :class="bem('pagination')">
           <Pagination
-            size="small"
             :current="pagedGroup.currentPage"
             :page-size="pagedGroup.pageSize"
             :page-size-options="pageSizeOptions"

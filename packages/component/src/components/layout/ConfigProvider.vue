@@ -10,6 +10,7 @@
   import { createNamespace } from '../../utils';
   import { GF_THEME_CONTEXT_KEY, type GfTheme } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
+  import { GF_SIZE_CONTEXT_KEY, type GfComponentSize } from '../../context/size';
 
   defineOptions({ name: 'GfConfigProvider' });
 
@@ -19,6 +20,15 @@
       theme?: GfTheme;
       /** 语言配置（预留） */
       locale?: any;
+      /**
+       * 全局组件尺寸预设
+       *
+       * 设置后，所有未显式传入 size 的子组件将使用此值。
+       * - `'small'`  – 紧凑模式（24px 控件高度）
+       * - `'middle'` – 默认模式（32px 控件高度，默认值）
+       * - `'large'`  – 宽松模式（40px 控件高度）
+       */
+      componentSize?: GfComponentSize;
       /**
        * Portal 挂载点（Teleport 目标容器）
        *
@@ -32,6 +42,7 @@
     {
       theme: 'light',
       locale: undefined,
+      componentSize: undefined,
       portalTarget: null,
     }
   );
@@ -47,6 +58,12 @@
     theme: computed(() => props.theme),
     colorScheme,
     themeClass,
+  });
+
+  // Global component size – always provide so descendants can inject it.
+  // When componentSize is not set, the context value falls back to 'middle'.
+  provide(GF_SIZE_CONTEXT_KEY, {
+    size: computed(() => props.componentSize ?? 'middle'),
   });
 
   // ------------------------------------------------------------

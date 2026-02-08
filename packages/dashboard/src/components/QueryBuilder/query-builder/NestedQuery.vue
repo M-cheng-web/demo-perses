@@ -18,28 +18,27 @@
   <div class="nested-query">
     <div class="nested-query-header">
       <span class="header-label">运算符</span>
-      <Select v-model:value="localQuery.operator" :options="operatorOptions" style="width: 80px" size="small" @change="handleOperatorChange" />
+      <Select v-model:value="localQuery.operator" :options="operatorOptions" style="width: 80px" @change="handleOperatorChange" />
 
       <span class="header-label" style="margin-left: 16px">向量匹配</span>
-      <Select v-model:value="vectorMatchType" :options="vectorMatchTypeOptions" style="width: 100px" size="small" @change="handleChange" />
+      <Select v-model:value="vectorMatchType" :options="vectorMatchTypeOptions" style="width: 100px" @change="handleChange" />
 
       <Input
         v-model:value="vectorMatchLabels"
         placeholder="label1, label2"
-        size="small"
         style="width: 200px; margin-left: 8px"
         @change="handleChange"
       />
 
       <div style="flex: 1"></div>
 
-      <Button type="text" size="small" danger @click="handleRemove">
+      <Button type="text" danger @click="handleRemove">
         <template #icon><CloseOutlined /></template>
       </Button>
     </div>
 
     <div class="nested-query-body">
-      <Card size="small" :bordered="false">
+      <Card :bordered="false">
         <!-- 指标选择 -->
         <div class="section">
           <div class="section-label">指标</div>

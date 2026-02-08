@@ -9,8 +9,8 @@
 <template>
   <div :class="bem()">
     <div :class="bem('content')">
-      <pre :class="bem('code')">{{ promql || '(无查询)' }}</pre>
-      <Button type="text" size="small" :class="bem('copy-btn')" @click="copyToClipboard">
+      <pre :class="bem('code')" :style="showCopyButton ? { paddingRight: '70px' } : undefined">{{ promql || '(无查询)' }}</pre>
+      <Button v-if="showCopyButton" type="text" :class="bem('copy-btn')" @click="copyToClipboard">
         <CopyOutlined />
         复制
       </Button>
@@ -33,9 +33,12 @@
   interface Props {
     promql: string;
     errors?: string[];
+    showCopyButton?: boolean;
   }
 
-  const props = defineProps<Props>();
+  const props = withDefaults(defineProps<Props>(), {
+    showCopyButton: true,
+  });
 
   const copyToClipboard = async () => {
     if (!props.promql) {
@@ -105,7 +108,6 @@
     &__code {
       margin: 0;
       padding: 8px 10px;
-      padding-right: 70px;
       background: var(--gf-color-surface-muted);
       border: 1px solid var(--gf-color-border-muted);
       border-radius: var(--gf-radius-sm);

@@ -3,7 +3,7 @@
   <div
     :class="[
       bem(),
-      bem({ [`size-${size}`]: true }),
+      bem({ [`size-${resolvedSize}`]: true }),
       { 'is-open': open, 'is-disabled': disabled, 'is-clearable': showClear, 'is-multiple': isMultiple, 'is-focused': isFocused },
     ]"
     ref="rootRef"
@@ -50,10 +50,7 @@
         <span :class="bem('selection')">
           <template v-if="selectedOptions[0]">
             <slot name="value" :option="selectedOptions[0]" :value="selectedOptions[0].value" :label="selectedOptions[0].label" :open="open">
-              <span
-                :class="bem('selection-item')"
-                :style="{ opacity: open && showSearch && search ? 0 : (open && showSearch ? 0.4 : 1) }"
-              >
+              <span :class="bem('selection-item')" :style="{ opacity: open && showSearch && search ? 0 : open && showSearch ? 0.4 : 1 }">
                 {{ selectedOptions[0].label }}
               </span>
             </slot>
@@ -117,6 +114,7 @@
   import { createNamespace, debounceCancellable } from '../../utils';
   import { GF_THEME_CONTEXT_KEY } from '../../context/theme';
   import { GF_PORTAL_CONTEXT_KEY } from '../../context/portal';
+  import { useComponentSize } from '../../context/size';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
   import { useSelectDropdownPositioning } from './select/useSelectDropdownPositioning';
   import { useSelectKeyboard } from './select/useSelectKeyboard';
@@ -124,6 +122,19 @@
   import { findFirstEnabledIndex } from './select/selectLogic';
 
   defineOptions({ name: 'GfSelect' });
+
+  interface SelectRegistry {
+    token: symbol | null;
+    close: (() => void) | null;
+  }
+
+  const getSelectRegistry = (): SelectRegistry => {
+    const g = globalThis as typeof globalThis & { __gfSelectRegistry?: SelectRegistry };
+    if (!g.__gfSelectRegistry) {
+      g.__gfSelectRegistry = { token: null, close: null };
+    }
+    return g.__gfSelectRegistry;
+  };
 
   interface Option {
     label: string;
@@ -193,7 +204,7 @@
       disabled: false,
       allowClear: false,
       mode: undefined,
-      size: 'middle',
+      size: undefined,
       showSearch: false,
       filterOption: true,
       maxTagCount: undefined,
@@ -212,6 +223,7 @@
   }>();
 
   const [_, bem] = createNamespace('select');
+  const resolvedSize = useComponentSize(computed(() => props.size));
   const themeContext = inject(GF_THEME_CONTEXT_KEY, null);
   const themeClass = computed(() => themeContext?.themeClass.value);
   const colorScheme = computed(() => themeContext?.colorScheme.value);
@@ -223,7 +235,6 @@
   const controlRef = ref<HTMLElement>();
   const dropdownRef = ref<HTMLElement>();
   const searchInputRef = ref<HTMLInputElement>();
-  const dropdownSearchRef = ref<HTMLInputElement>();
   const searchMirrorRef = ref<HTMLElement>();
   const open = ref(false);
   const search = ref('');
@@ -343,6 +354,14 @@
   const openDropdown = async (source: 'click' | 'focusin-pointer' | 'focusin' = 'click') => {
     if (props.disabled) return;
     if (open.value) return;
+
+    const registry = getSelectRegistry();
+    if (registry.token !== selectToken && registry.close) {
+      registry.close();
+    }
+    registry.token = selectToken;
+    registry.close = close;
+
     openedByFocusIn = source === 'focusin-pointer';
     open.value = true;
     search.value = '';
@@ -394,6 +413,11 @@
     open.value = false;
     openedByFocusIn = false;
     search.value = '';
+    const registry = getSelectRegistry();
+    if (registry.token === selectToken) {
+      registry.token = null;
+      registry.close = null;
+    }
     // Treat "dropdown closed" as finishing interaction (AntD-ish blur validation).
     formItem?.onFieldBlur();
   };
@@ -478,6 +502,7 @@
   });
 
   let resizeObserver: ResizeObserver | null = null;
+  const selectToken = Symbol('gf-select');
 
   onMounted(() => {
     if (typeof window !== 'undefined' && 'ResizeObserver' in window) {
@@ -494,6 +519,11 @@
     if (resizeObserver) resizeObserver.disconnect();
     resizeObserver = null;
     clearPointerDownInside.cancel();
+    const registry = getSelectRegistry();
+    if (registry.token === selectToken) {
+      registry.token = null;
+      registry.close = null;
+    }
   });
 
   watch(

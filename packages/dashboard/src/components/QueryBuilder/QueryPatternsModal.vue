@@ -70,7 +70,7 @@
             </div>
           </div>
 
-          <Button type="primary" block style="margin-top: 12px" size="small" @click.stop="handleSelectPattern(pattern)"> 使用此模板 </Button>
+          <Button type="primary" block style="margin-top: 12px" @click.stop="handleSelectPattern(pattern)"> 使用此模板 </Button>
         </div>
       </Card>
     </div>

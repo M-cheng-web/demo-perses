@@ -1,6 +1,6 @@
 <!-- 组件说明：小型加载指示器，可附带文字 (AntD-inspired) -->
 <template>
-  <div :class="[bem(), bem({ [`size-${size}`]: true })]">
+  <div :class="[bem(), bem({ [`size-${resolvedSize}`]: true })]">
     <span :class="bem('dot')">
       <i :class="bem('dot-item')"></i>
       <i :class="bem('dot-item')"></i>
@@ -12,11 +12,13 @@
 </template>
 
 <script setup lang="ts">
+  import { computed } from 'vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
 
   defineOptions({ name: 'GfLoading' });
 
-  withDefaults(
+  const props = withDefaults(
     defineProps<{
       /** 加载提示文字 */
       text?: string;
@@ -25,11 +27,18 @@
     }>(),
     {
       text: '',
-      size: 'default',
+      size: undefined,
     }
   );
 
   const [_, bem] = createNamespace('loading');
+  const globalSize = useComponentSize(computed(() => props.size));
+  // Loading supports 'small' | 'default' | 'large'; map 'middle' → 'default'
+  const resolvedSize = computed(() => {
+    const s = globalSize.value;
+    if (s === 'middle') return 'default';
+    return s;
+  });
 </script>
 
 <style scoped lang="less">

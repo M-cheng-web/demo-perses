@@ -13,7 +13,7 @@
       <div :class="bem('header')">
         <span :class="bem('time')">{{ formattedTime }}</span>
         <div :class="bem('actions')">
-          <Button v-if="isPinned" icon-only type="text" size="small" :class="[bem('action-btn'), bem('unpin-btn')]" @click="handleUnpin">
+          <Button v-if="isPinned" icon-only type="text" :class="[bem('action-btn'), bem('unpin-btn')]" @click="handleUnpin">
             <template #icon>
               <PushpinFilled />
             </template>
@@ -22,7 +22,6 @@
           <Button
             v-if="totalSeries > visibleSeriesCount && !showAllSeries"
             type="text"
-            size="small"
             :class="bem('action-btn')"
             @click="showAllSeries = true"
           >

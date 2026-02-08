@@ -20,12 +20,12 @@
     </div>
     <div :class="bem('content')">
       <div v-for="(hint, index) in hints" :key="index" :class="bem('card')">
-        <Alert size="small" :type="hint.type" :message="hint.title" show-icon>
+        <Alert :type="hint.type" :message="hint.title" show-icon>
           <template #description>
             <div :class="bem('hint-content')">
               <p>{{ hint.description }}</p>
               <div v-if="hint.suggestion" :class="bem('suggestion')">{{ hint.suggestion }}</div>
-              <Button v-if="hint.fix" type="link" size="small" @click="applyFix(hint)">
+              <Button v-if="hint.fix" type="link" @click="applyFix(hint)">
                 <ThunderboltOutlined />
                 应用修复
               </Button>

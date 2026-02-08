@@ -34,11 +34,12 @@ export function useDashboardSettingsUi(options: Options) {
   // - 用户拖动后，如果贴到右侧边缘，也自动半隐藏（减少遮挡内容）
   const SETTINGS_PEEK_EDGE_PX = 10;
   const SETTINGS_SNAP_EDGE_PX = 10;
+  const SETTINGS_BUTTON_FALLBACK_SIZE = 44;
 
   const getSettingsButtonSize = (): { w: number; h: number } => {
     const rect = options.settingsEl.value?.getBoundingClientRect();
-    const w = rect?.width ?? 34;
-    const h = rect?.height ?? 34;
+    const w = rect?.width ?? SETTINGS_BUTTON_FALLBACK_SIZE;
+    const h = rect?.height ?? SETTINGS_BUTTON_FALLBACK_SIZE;
     return { w: Math.max(1, Math.floor(w)), h: Math.max(1, Math.floor(h)) };
   };
 

@@ -44,17 +44,17 @@
               <HolderOutlined />
             </div>
             <div :class="bem('card-header-content')">
-              <Button size="small" type="text" :class="bem('name-button')">
+              <Button type="text" :class="bem('name-button')">
                 {{ getOperationName(operation.id) }}
               </Button>
             </div>
             <div :class="bem('card-header-actions')">
               <Tooltip v-if="getOperationDoc(operation)" :title="getOperationDoc(operation)">
-                <Button type="text" size="small">
+                <Button type="text">
                   <template #icon><InfoCircleOutlined /></template>
                 </Button>
               </Tooltip>
-              <Button type="text" size="small" @click="removeOperation(index)">
+              <Button type="text" @click="removeOperation(index)">
                 <template #icon><CloseOutlined /></template>
               </Button>
             </div>
@@ -87,7 +87,6 @@
                       v-else-if="param.type === 'string' && !param.options"
                       v-model:value="operation.params[paramIndex] as string"
                       :placeholder="param.placeholder || param.name"
-                      size="small"
                       style="width: 200px"
                       @change="handleParamChange(index, paramIndex, operation.params[paramIndex])"
                     />
@@ -97,7 +96,6 @@
                       v-else-if="param.type === 'number' && !param.options"
                       v-model:value="operation.params[paramIndex] as number"
                       :placeholder="param.placeholder || param.name"
-                      size="small"
                       style="width: 120px"
                       @change="handleParamChange(index, paramIndex, operation.params[paramIndex])"
                     />
@@ -116,7 +114,6 @@
                       v-else-if="param.options"
                       v-model:value="operation.params[paramIndex] as string | number"
                       :placeholder="param.placeholder || param.name"
-                      size="small"
                       style="width: 200px"
                       :options="formatParamOptions(param.options)"
                       @change="handleParamChange(index, paramIndex, operation.params[paramIndex])"
@@ -127,7 +124,6 @@
                       v-if="param.restParam && canRemoveRestParam(operation, paramIndex)"
                       type="text"
                       danger
-                      size="small"
                       @click="removeRestParam(index, paramIndex)"
                     >
                       <template #icon><CloseOutlined /></template>
@@ -141,7 +137,7 @@
             <div v-if="shouldShowAddButton(operation)" :class="[bem('param-row'), bem('param-row--rest')]">
               <div :class="bem('param-name')"></div>
               <div :class="bem('param-value')">
-                <Button size="small" type="dashed" @click="addRestParam(index)"> <PlusOutlined /> {{ getRestParamName(operation) }} </Button>
+                <Button type="dashed" @click="addRestParam(index)"> <PlusOutlined /> {{ getRestParamName(operation) }} </Button>
               </div>
             </div>
           </div>
@@ -158,12 +154,11 @@
             v-model:value="selectedNewOperation"
             :options="cascaderOptions"
             placeholder="选择操作"
-            size="small"
             :dropdownMinWidth="160"
             :class="bem('add-cascader')"
             @change="handleAddOperation"
           >
-            <Button size="small">
+            <Button>
               <PlusOutlined />
               添加操作
             </Button>

@@ -17,7 +17,7 @@
 <template>
   <div :class="bem()">
     <div v-if="filters.length === 0" :class="bem('empty')">
-      <Button size="small" block :class="bem('add-btn')" @click="addFilter">
+      <Button block :class="bem('add-btn')" @click="addFilter">
         <PlusOutlined />
         添加过滤条件
       </Button>
@@ -29,13 +29,12 @@
           v-model:value="filter.label"
           placeholder="标签名"
           show-search
-          size="small"
           style="width: 140px"
           :options="labelOptions"
           @change="() => handleLabelChange(index)"
         />
 
-        <Select v-model:value="filter.op" size="small" style="width: 124px" :options="operatorOptions" @change="handleFilterChange" />
+        <Select v-model:value="filter.op" style="width: 124px" :options="operatorOptions" @change="handleFilterChange" />
 
         <Select
           :value="filter.value ? [filter.value] : []"
@@ -43,7 +42,6 @@
           :max-tag-count="1"
           placeholder="标签值（可输入 $var）"
           show-search
-          size="small"
           style="width: 180px"
           :loading="loadingValues[index]"
           :options="labelValueOptions[index] || []"
@@ -51,12 +49,12 @@
           @update:value="handleValueChange(index, $event)"
         />
 
-        <Button type="text" danger size="small" @click="removeFilter(index)">
+        <Button type="text" danger @click="removeFilter(index)">
           <CloseOutlined />
         </Button>
       </div>
 
-      <Button size="small" :class="bem('add-btn')" @click="addFilter">
+      <Button :class="bem('add-btn')" @click="addFilter">
         <PlusOutlined />
         添加过滤条件
       </Button>

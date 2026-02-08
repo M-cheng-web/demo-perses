@@ -10,7 +10,7 @@
           <div :class="bem('section-content')">
             <div :class="bem('row')">
               <span :class="bem('label')">显示</span>
-              <Switch v-model:checked="localOptions.legend.show" size="small" />
+              <Switch v-model:checked="localOptions.legend.show" />
             </div>
 
             <div :class="bem('row')">
@@ -21,7 +21,6 @@
                   { label: '右侧', value: 'right' },
                 ]"
                 v-model:value="localOptions.legend.position"
-                size="small"
                 style="width: 200px"
               />
             </div>
@@ -34,7 +33,6 @@
                   { label: '列表', value: 'list' },
                   { label: '表格', value: 'table' },
                 ]"
-                size="small"
               />
             </div>
 
@@ -51,7 +49,6 @@
                 ]"
                 v-model:value="localOptions.legend.values"
                 mode="multiple"
-                size="small"
                 style="width: 200px"
                 placeholder="请选择"
               />
@@ -71,7 +68,6 @@
                   { label: '饼图', value: 'pie' },
                   { label: '环形图', value: 'doughnut' },
                 ]"
-                size="small"
               />
             </div>
 
@@ -85,7 +81,7 @@
 
             <div :class="bem('row')">
               <span :class="bem('label')">显示百分比</span>
-              <Switch v-model:checked="localOptions.specific.showPercentage" size="small" />
+              <Switch v-model:checked="localOptions.specific.showPercentage" />
             </div>
           </div>
         </div>
@@ -108,7 +104,6 @@
                   { label: '秒', value: 'seconds' },
                 ]"
                 v-model:value="localOptions.format.unit"
-                size="small"
                 style="width: 200px"
               />
             </div>
@@ -125,7 +120,6 @@
                   { label: '4', value: 4 },
                 ]"
                 v-model:value="localOptions.format.decimals"
-                size="small"
                 style="width: 200px"
               />
             </div>

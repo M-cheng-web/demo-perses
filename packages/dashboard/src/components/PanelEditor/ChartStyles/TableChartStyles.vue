@@ -9,14 +9,13 @@
           <div :class="bem('section-content')">
             <div :class="bem('row')">
               <span :class="bem('label')">显示分页</span>
-              <Switch v-model:checked="localOptions.specific.showPagination" size="small" />
+              <Switch v-model:checked="localOptions.specific.showPagination" />
             </div>
 
             <div v-if="localOptions.specific.showPagination" :class="bem('row')">
               <span :class="bem('label')">每页行数</span>
               <Select
                 v-model:value="localOptions.specific.pageSize"
-                size="small"
                 style="width: 200px"
                 :options="[
                   { label: '10', value: 10 },
@@ -29,7 +28,7 @@
 
             <div :class="bem('row')">
               <span :class="bem('label')">可排序</span>
-              <Switch v-model:checked="localOptions.specific.sortable" size="small" />
+              <Switch v-model:checked="localOptions.specific.sortable" />
             </div>
           </div>
         </div>
@@ -44,7 +43,6 @@
               <span :class="bem('label')">单位</span>
               <Select
                 v-model:value="localOptions.format.unit"
-                size="small"
                 style="width: 200px"
                 :options="[
                   { label: '无', value: 'none' },
@@ -61,7 +59,6 @@
               <span :class="bem('label')">小数位数</span>
               <Select
                 v-model:value="localOptions.format.decimals"
-                size="small"
                 style="width: 200px"
                 :options="[
                   { label: '默认', value: 'default' },

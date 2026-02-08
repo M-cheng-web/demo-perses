@@ -1,6 +1,6 @@
 <!-- 组件说明：用于展示状态/标记的小标签，可自定义颜色 (AntD-inspired) -->
 <template>
-  <span :class="[bem(), bem({ [`size-${size}`]: true, bordered: bordered }), `gf-tag--${actualColor}`]" :style="customColorStyle">
+  <span :class="[bem(), bem({ [`size-${resolvedSize}`]: true, bordered: bordered }), `gf-tag--${actualColor}`]" :style="customColorStyle">
     <span v-if="$slots.icon || icon" :class="bem('icon')">
       <slot name="icon">
         <component :is="icon" v-if="icon" />
@@ -19,6 +19,7 @@
   import { computed, type Component } from 'vue';
   import { CloseOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
 
   defineOptions({ name: 'GfTag' });
 
@@ -75,7 +76,7 @@
     {
       color: 'default',
       closable: false,
-      size: 'middle',
+      size: undefined,
       bordered: true,
       icon: undefined,
     }
@@ -86,6 +87,7 @@
   }>();
 
   const [_, bem] = createNamespace('tag');
+  const resolvedSize = useComponentSize(computed(() => props.size));
 
   const isPresetColor = computed(() => presetColors.includes(props.color as PresetColor));
 

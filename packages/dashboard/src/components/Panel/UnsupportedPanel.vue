@@ -28,7 +28,7 @@
         <div :class="bem('label')">原始配置</div>
         <div :class="bem('value')">
           <pre :class="bem('code')">{{ optionsJson }}</pre>
-          <Button size="small" type="ghost" :class="bem('copy')" @click="copyOptions">复制配置（options）JSON</Button>
+          <Button type="ghost" :class="bem('copy')" @click="copyOptions">复制配置（options）JSON</Button>
         </div>
       </div>
     </div>

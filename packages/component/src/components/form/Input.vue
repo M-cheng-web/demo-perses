@@ -3,7 +3,7 @@
   <div
     :class="[
       bem(),
-      bem({ [`size-${size}`]: true }),
+      bem({ [`size-${resolvedSize}`]: true }),
       { 'is-disabled': disabled, 'is-focused': isFocused, 'has-prefix': $slots.prefix, 'has-suffix': $slots.suffix || (allowClear && innerValue) },
     ]"
   >
@@ -38,8 +38,9 @@
 
 <script setup lang="ts">
   import { CloseCircleFilled } from '@ant-design/icons-vue';
-  import { inject, ref, watch } from 'vue';
+  import { inject, ref, watch, computed } from 'vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
   import { gfFormItemContextKey, type GfFormItemContext } from './context';
 
   defineOptions({ name: 'GfInput' });
@@ -68,7 +69,7 @@
       placeholder: '',
       disabled: false,
       allowClear: false,
-      size: 'middle',
+      size: undefined,
       type: 'text',
       readonly: false,
       autocomplete: 'off',
@@ -85,6 +86,7 @@
   }>();
 
   const [_, bem] = createNamespace('input');
+  const resolvedSize = useComponentSize(computed(() => props.size));
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
   const inputRef = ref<HTMLInputElement>();
   const innerValue = ref<string | number>(props.value ?? '');

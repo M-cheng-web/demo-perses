@@ -15,7 +15,6 @@
                   { label: '仅值', value: 'value-only' },
                   { label: '值和名称', value: 'value-and-name' },
                 ]"
-                size="small"
               />
             </div>
 
@@ -27,7 +26,6 @@
                   { label: '垂直', value: 'vertical' },
                   { label: '水平', value: 'horizontal' },
                 ]"
-                size="small"
               />
             </div>
 
@@ -40,13 +38,12 @@
                   { label: '中', value: 'center' },
                   { label: '右', value: 'right' },
                 ]"
-                size="small"
               />
             </div>
 
             <div :class="bem('row')">
               <span :class="bem('label')">显示趋势</span>
-              <Switch v-model:checked="localOptions.specific.showTrend" size="small" />
+              <Switch v-model:checked="localOptions.specific.showTrend" />
             </div>
           </div>
         </div>
@@ -69,7 +66,6 @@
                   { label: '秒', value: 'seconds' },
                 ]"
                 v-model:value="localOptions.format.unit"
-                size="small"
                 style="width: 200px"
               />
             </div>
@@ -86,7 +82,6 @@
                   { label: '4', value: 4 },
                 ]"
                 v-model:value="localOptions.format.decimals"
-                size="small"
                 style="width: 200px"
               />
             </div>

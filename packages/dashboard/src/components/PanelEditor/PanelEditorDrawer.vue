@@ -16,10 +16,6 @@
         <div :class="bem('section')">
           <div :class="bem('section-header')">
             <div :class="bem('section-title')">基础信息</div>
-            <div :class="bem('section-extra')">
-              <span v-if="editingMode === 'create'" :class="bem('badge', 'create')">新建</span>
-              <span v-else :class="bem('badge', 'edit')">编辑</span>
-            </div>
           </div>
           <div :class="bem('section-body')">
             <Row :gutter="16">
@@ -53,9 +49,6 @@
         <div :class="bem('section')">
           <div :class="bem('section-header')">
             <div :class="bem('section-title')">预览</div>
-            <div :class="bem('section-actions')">
-              <Button type="ghost" size="small" @click="handleExecuteQuery">执行查询</Button>
-            </div>
           </div>
           <div :class="bem('section-body')">
             <PanelPreview ref="panelPreviewRef" :panel="formData" :auto-execute="false" :show-header="false" />
@@ -66,7 +59,6 @@
         <div :class="bem('section')">
           <div :class="bem('section-header')">
             <div :class="bem('section-title')">配置</div>
-            <div :class="bem('section-extra')"></div>
           </div>
           <div :class="bem('section-body')">
             <Tabs v-model:activeKey="activeTab" :class="bem('tabs')">
@@ -290,7 +282,6 @@
     ].join('::');
   });
 
-  // 执行查询
   const handleExecuteQuery = () => {
     const result = dataQueryTabRef.value?.validateAndGetQueriesForExecute?.();
     if (!result) {
@@ -312,18 +303,14 @@
       return;
     }
 
-    // 更新 formData.queries 用于查询执行（不会自动请求；仅供预览组件读取）
     formData.queries = queries;
 
-    // 执行查询并更新预览
     message.loading({ content: '正在执行查询...', key: 'executeQuery', duration: 0 });
 
-    // 调用预览组件的查询方法
     panelPreviewRef.value
       ?.executeQueries()
       .then(() => {
         message.success({ content: '查询执行成功', key: 'executeQuery', duration: 2 });
-        // 查询成功后，保留更新的 queries
       })
       .catch((error) => {
         message.error({ content: `查询执行失败: ${error.message || '未知错误'}`, key: 'executeQuery', duration: 3 });
@@ -368,7 +355,7 @@
       return;
     }
 
-    // 保存前：强制校验并同步 DataQueryTab 的最新编辑结果（不依赖是否点过“执行查询”）
+    // 保存前：强制校验并同步 DataQueryTab 的最新编辑结果（不依赖额外手动触发）
     const qres = dataQueryTabRef.value?.validateAndGetQueriesForSave?.();
     if (!qres) {
       message.error('查询编辑器未就绪，请稍后重试');
@@ -415,78 +402,65 @@
   .dp-panel-editor-drawer {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 4px;
+    gap: 22px;
+    padding: 0 2px 6px;
 
     &__section {
-      background: var(--gf-color-surface);
-      border: 1px solid var(--gf-color-border-muted);
-      border-radius: var(--gf-radius-lg);
-      overflow: hidden;
-      transition: border-color var(--gf-motion-fast) var(--gf-easing);
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      overflow: visible;
+    }
 
-      &:hover {
-        border-color: var(--gf-color-border);
-      }
+    &__section + &__section {
+      padding-top: 16px;
+      border-top: 1px solid var(--gf-color-border-secondary);
     }
 
     &__section-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 16px;
-      background: var(--gf-color-surface-muted);
-      border-bottom: 1px solid var(--gf-color-border-muted);
+      justify-content: flex-start;
+      gap: 8px;
+      padding: 0;
+      margin-bottom: 12px;
+      background: transparent;
+      border-bottom: none;
     }
 
     &__section-title {
       font-weight: 600;
-      font-size: 14px;
-      color: var(--gf-color-text);
-      letter-spacing: 0.01em;
-      line-height: 1.5714285714285714;
+      font-size: 15px;
+      color: var(--gf-color-text-heading);
+      letter-spacing: 0;
+      line-height: 1.5;
     }
 
     &__section-body {
-      padding: 16px;
+      padding: 0;
     }
 
-    &__section-actions {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+    :deep(.gf-row) {
+      row-gap: 8px;
     }
 
-    &__hint {
-      color: var(--gf-color-text-tertiary);
-      font-size: 13px;
-      line-height: 1.6;
-      white-space: nowrap;
+    :deep(.gf-form-item) {
+      margin-bottom: 16px;
     }
 
-    &__badge {
-      display: inline-flex;
-      align-items: center;
-      height: 24px;
-      padding: 0 10px;
-      border-radius: var(--gf-radius-sm);
-      border: 1px solid var(--gf-color-border-muted);
-      background: var(--gf-color-surface);
-      color: var(--gf-color-text-secondary);
-      font-size: 13px;
-      font-weight: 500;
-      line-height: 1;
+    :deep(.gf-form-item:last-child) {
+      margin-bottom: 0;
     }
 
-    &__badge--create {
-      border-color: var(--gf-color-primary-border);
-      background: var(--gf-color-primary-soft);
-      color: var(--gf-color-primary);
+    :deep(.dp-panel-preview__content) {
+      border: none;
+      border-radius: var(--gf-radius-md);
+      background: transparent;
+      box-shadow: none;
     }
 
-    &__badge--edit {
-      border-color: var(--gf-color-border-muted);
+    :deep(.dp-panel-preview__content:hover) {
+      border: none;
     }
 
     // Tabs styling
@@ -494,6 +468,7 @@
       .gf-tabs__nav {
         padding: 0;
         background: transparent;
+        margin-bottom: 14px;
       }
     }
   }

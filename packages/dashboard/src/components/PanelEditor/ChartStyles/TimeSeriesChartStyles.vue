@@ -10,14 +10,13 @@
           <div :class="bem('section-content')">
             <div :class="bem('row')">
               <span :class="bem('label')">显示</span>
-              <Switch v-model:checked="localOptions.legend.show" size="small" />
+              <Switch v-model:checked="localOptions.legend.show" />
             </div>
 
             <div :class="bem('row')">
               <span :class="bem('label')">位置</span>
               <Select
                 v-model:value="localOptions.legend.position"
-                size="small"
                 style="width: 200px"
                 :options="[
                   { label: '底部', value: 'bottom' },
@@ -34,7 +33,6 @@
                   { label: '列表', value: 'list' },
                   { label: '表格', value: 'table' },
                 ]"
-                size="small"
               />
             </div>
 
@@ -44,7 +42,6 @@
               <Select
                 v-model:value="localOptions.legend.values"
                 mode="multiple"
-                size="small"
                 style="width: 200px"
                 placeholder="请选择"
                 :options="[
@@ -72,7 +69,6 @@
                   { label: '折线', value: 'line' },
                   { label: '柱状', value: 'bar' },
                 ]"
-                size="small"
               />
             </div>
 
@@ -83,7 +79,6 @@
                 <Switch
                   :checked="localOptions.specific.stackMode !== 'none'"
                   @change="(checked: any) => (localOptions.specific.stackMode = checked ? 'normal' : 'none')"
-                  size="small"
                 />
               </div>
             </template>
@@ -107,7 +102,6 @@
                     { label: '虚线', value: 'dashed' },
                     { label: '点线', value: 'dotted' },
                   ]"
-                  size="small"
                 />
               </div>
 
@@ -121,7 +115,7 @@
 
               <div :class="bem('row')">
                 <span :class="bem('label')">连接空值</span>
-                <Switch v-model:checked="localOptions.chart.connectNulls" size="small" />
+                <Switch v-model:checked="localOptions.chart.connectNulls" />
               </div>
             </template>
           </div>
@@ -135,14 +129,13 @@
           <div :class="bem('section-content')">
             <div :class="bem('row')">
               <span :class="bem('label')">显示</span>
-              <Switch v-model:checked="localOptions.axis.yAxis.show" size="small" />
+              <Switch v-model:checked="localOptions.axis.yAxis.show" />
             </div>
 
             <div :class="bem('row')">
               <span :class="bem('label')">单位</span>
               <Select
                 v-model:value="localOptions.format.unit"
-                size="small"
                 style="width: 200px"
                 :options="[
                   { label: '无', value: 'none' },
@@ -159,7 +152,6 @@
               <span :class="bem('label')">小数位数</span>
               <Select
                 v-model:value="localOptions.format.decimals"
-                size="small"
                 style="width: 200px"
                 :options="[
                   { label: '默认', value: 'default' },
@@ -174,17 +166,17 @@
 
             <div :class="bem('row')">
               <span :class="bem('label')">标签</span>
-              <Input v-model:value="localOptions.axis.yAxis.name" size="small" placeholder="Y 轴标签" style="width: 200px" />
+              <Input v-model:value="localOptions.axis.yAxis.name" placeholder="Y 轴标签" style="width: 200px" />
             </div>
 
             <div :class="bem('row')">
               <span :class="bem('label')">最小值</span>
-              <InputNumber v-model:value="localOptions.axis.yAxis.min" size="small" style="width: 200px" placeholder="自动" />
+              <InputNumber v-model:value="localOptions.axis.yAxis.min" style="width: 200px" placeholder="自动" />
             </div>
 
             <div :class="bem('row')">
               <span :class="bem('label')">最大值</span>
-              <InputNumber v-model:value="localOptions.axis.yAxis.max" size="small" style="width: 200px" placeholder="自动" />
+              <InputNumber v-model:value="localOptions.axis.yAxis.max" style="width: 200px" placeholder="自动" />
             </div>
           </div>
         </div>

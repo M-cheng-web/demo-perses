@@ -9,23 +9,23 @@
   <div :class="[bem(), { 'is-visible': isVisible }]">
     <template v-if="!isEditing">
       <Tooltip title="全屏查看">
-        <Button icon-only type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen" />
+        <Button icon-only type="text" :icon="h(FullscreenOutlined)" @click="handleFullscreen" />
       </Tooltip>
     </template>
 
     <template v-else>
       <Tooltip title="编辑">
-        <Button icon-only type="text" size="small" :icon="h(EditOutlined)" @click="handleEdit" />
+        <Button icon-only type="text" :icon="h(EditOutlined)" @click="handleEdit" />
       </Tooltip>
       <Tooltip title="复制">
-        <Button icon-only type="text" size="small" :icon="h(CopyOutlined)" @click="handleDuplicate" />
+        <Button icon-only type="text" :icon="h(CopyOutlined)" @click="handleDuplicate" />
       </Tooltip>
       <Tooltip title="全屏查看">
-        <Button icon-only type="text" size="small" :icon="h(FullscreenOutlined)" @click="handleFullscreen" />
+        <Button icon-only type="text" :icon="h(FullscreenOutlined)" @click="handleFullscreen" />
       </Tooltip>
       <Popconfirm title="确定要删除这个面板吗？" ok-text="确定" cancel-text="取消" @confirm="handleDelete">
         <Tooltip title="删除">
-          <Button icon-only type="text" size="small" :class="bem('delete-btn')" :icon="h(DeleteOutlined)" />
+          <Button icon-only type="text" :class="bem('delete-btn')" :icon="h(DeleteOutlined)" />
         </Tooltip>
       </Popconfirm>
     </template>

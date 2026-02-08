@@ -3,7 +3,7 @@
   <div
     :class="[
       bem(),
-      bem({ [`size-${size}`]: true, bordered }),
+      bem({ [`size-${resolvedSize}`]: true, bordered }),
       { 'has-scroll-y': hasScrollY, 'has-scroll-x': hasScrollX, 'use-body-scroll': useBodyScroll },
     ]"
   >
@@ -57,7 +57,7 @@
         :show-quick-jumper="mergedPagination.showQuickJumper"
         :show-total="mergedPagination.showTotal"
         :page-size-options="mergedPagination.pageSizeOptions"
-        :size="size === 'small' ? 'small' : 'default'"
+        :size="resolvedSize === 'small' ? 'small' : 'default'"
         @update:current="handlePageChange"
         @update:page-size="handlePageSizeChange"
       />
@@ -69,6 +69,7 @@
   import { computed, ref, watch } from 'vue';
   import { CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons-vue';
   import { createNamespace } from '../../utils';
+  import { useComponentSize } from '../../context/size';
   import Spin from '../feedback/Spin.vue';
   import Empty from '../base/Empty.vue';
   import Pagination from '../navigation/Pagination.vue';
@@ -122,7 +123,7 @@
       columns: () => [],
       dataSource: () => [],
       pagination: undefined,
-      size: 'middle',
+      size: undefined,
       loading: false,
       loadingTip: '',
       bordered: false,
@@ -133,6 +134,7 @@
   );
 
   const [_, bem] = createNamespace('table');
+  const resolvedSize = useComponentSize(computed(() => props.size));
   const emit = defineEmits<{
     (e: 'change', pagination: PaginationConfig): void;
   }>();
