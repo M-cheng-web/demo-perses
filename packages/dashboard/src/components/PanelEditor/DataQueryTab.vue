@@ -10,7 +10,6 @@
           <Segmented
             :class="bem('mode-segmented')"
             :value="queryMode"
-            size="small"
             :options="queryModeOptions"
             @update:value="(value: unknown) => (queryMode = value as QueryMode)"
           />
@@ -19,7 +18,7 @@
         <!-- 查询解释开关 -->
         <div v-if="queryMode === 'builder'" :class="[bem('control-chip'), bem('control-chip--explain')]">
           <span :class="bem('chip-label')">解释</span>
-          <Switch v-model:checked="showExplain" size="small" />
+          <Switch v-model:checked="showExplain" />
         </div>
       </div>
 

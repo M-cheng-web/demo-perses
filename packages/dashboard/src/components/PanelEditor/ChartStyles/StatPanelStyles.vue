@@ -92,7 +92,7 @@
         <div :class="bem('section')">
           <div :class="bem('section-header')">重置设置</div>
           <div :class="bem('section-content')">
-            <Button type="default" size="middle" block @click="resetToDefaults"> 恢复默认设置 </Button>
+            <Button type="default" block @click="resetToDefaults"> 恢复默认设置 </Button>
           </div>
         </div>
       </div>

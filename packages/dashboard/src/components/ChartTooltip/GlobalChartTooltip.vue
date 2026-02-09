@@ -19,12 +19,7 @@
             </template>
           </Button>
           <span v-else :class="bem('hint')">点击图表固定</span>
-          <Button
-            v-if="totalSeries > visibleSeriesCount && !showAllSeries"
-            type="text"
-            :class="bem('action-btn')"
-            @click="showAllSeries = true"
-          >
+          <Button v-if="totalSeries > visibleSeriesCount && !showAllSeries" type="text" :class="bem('action-btn')" @click="showAllSeries = true">
             显示全部 ({{ totalSeries }})
           </Button>
         </div>

@@ -1,94 +1,160 @@
-<!--
-	  文件说明：Dashboard 工具栏
-
-	  职责：
-	  - 视图切换（分组/全部面板）
-	  - 时间范围选择（变更会触发可视面板刷新）
-	  - 保存
-	  - JSON 导入/导出（严格模式：非法 JSON 不会污染外部状态）
-	-->
 <template>
-  <div :class="[bem(), bem({ sidebar: variant === 'sidebar' })]">
-    <DashboardToolbarSidebarContent
-      v-if="variant === 'sidebar'"
-      :api-mode-options="props.apiModeOptions"
-      :api-mode-switching="props.apiModeSwitching"
-      :draft-api-mode="draftApiMode"
-      :draft-view-mode="draftViewMode"
-      :view-mode-options="viewModeOptions"
-      :is-all-panels-view-draft="isAllPanelsViewDraft"
-      :draft-time-range="draftTimeRange"
-      :draft-refresh-interval="draftRefreshInterval"
-      :refresh-interval-options="refreshIntervalOptions"
-      :is-booting="isBooting"
-      :is-read-only="isReadOnly"
-      :variable-defs="variableDefs"
-      :is-resolving-variable-options="isResolvingVariableOptions"
-      :variable-last-error="variableLastError"
-      :draft-variable-values="draftVariableValues"
-      :format-variable-token="formatVariableToken"
-      :get-variable-help-lines="getVariableHelpLines"
-      :is-select-like-variable="isSelectLikeVariable"
-      :get-variable-select-options="getVariableSelectOptions"
-      :get-variable-placeholder="getVariablePlaceholder"
-      @create-group="handleCreateGroup"
-      @view-json="handleViewJson"
-      @import-json="handleImport"
-      @export-json="handleExport"
-      @update:draft-api-mode="(value) => (draftApiMode = value)"
-      @update:draft-view-mode="(value) => (draftViewMode = value)"
-      @update:draft-time-range="(value) => (draftTimeRange = value)"
-      @update:draft-refresh-interval="(value) => (draftRefreshInterval = value)"
-      @update:draft-variable-value="({ name, value }) => (draftVariableValues[name] = value ?? '')"
-    />
+  <div :class="bem()">
+    <div :class="bem('sidebar')">
+      <div v-if="apiModeOptions?.length" :class="bem('section')">
+        <div :class="bem('section-header')">
+          <div :class="bem('section-title')">数据源模式</div>
+        </div>
+        <div :class="bem('section-body')">
+          <Alert type="info" show-icon :message="'更改将在点击底部“确定”后生效；远程模式需要宿主提供 apiClient。'" :class="bem('tip')" />
+          <Segmented
+            :value="draftApiMode"
+            block
+            :options="apiModeOptions"
+            :disabled="isBooting || apiModeSwitching"
+            @update:value="(value: unknown) => (draftApiMode = value as 'remote' | 'mock')"
+          />
+        </div>
+      </div>
 
-    <DashboardToolbarHeaderContent
-      v-else
-      :dashboard-name="dashboardName"
-      :is-all-panels-view="isAllPanelsView"
-      :is-booting="isBooting"
-      :is-read-only="isReadOnly"
-      :is-saving="isSaving"
-      :selected-time-range="selectedTimeRange"
-      @toggle-panels-view="handleTogglePanelsView"
-      @update:selected-time-range="(value) => (selectedTimeRange = value)"
-      @time-range-change="handleTimeRangeChange"
-      @save="handleSave"
-      @menu-click="handleMenuClick"
-    />
+      <div :class="bem('section')">
+        <div :class="bem('section-header')">
+          <div :class="bem('section-title')">操作</div>
+        </div>
+        <div :class="bem('section-body')">
+          <Flex gap="8" wrap>
+            <Button type="ghost" :disabled="isBooting || isReadOnly" @click="handleCreateGroup">创建面板组</Button>
+          </Flex>
+          <div :class="bem('divider')"></div>
+          <Flex gap="8" wrap>
+            <Button type="ghost" :icon="h(FileTextOutlined)" :disabled="isBooting" @click="handleViewJson">查看</Button>
+            <Button type="ghost" :icon="h(UploadOutlined)" :disabled="isBooting || isReadOnly" @click="handleImport">导入</Button>
+            <Button type="ghost" :icon="h(DownloadOutlined)" :disabled="isBooting" @click="handleExport">导出</Button>
+          </Flex>
+          <Alert type="info" show-icon :message="'导入会先进行严格校验；非法 JSON 不会污染当前状态。'" :class="bem('tip')" />
+        </div>
+      </div>
+
+      <div :class="bem('section')">
+        <div :class="bem('section-header')">
+          <div :class="bem('section-title')">视图与时间</div>
+        </div>
+        <div :class="bem('section-body')">
+          <Alert type="info" show-icon :message="'更改将在点击底部“确定”后生效。'" :class="bem('tip')" />
+          <Segmented
+            :value="draftViewMode"
+            block
+            :options="viewModeOptions"
+            :disabled="isBooting"
+            @update:value="(value: unknown) => (draftViewMode = value as 'grouped' | 'allPanels')"
+          />
+          <Alert v-if="isAllPanelsViewDraft" type="warning" show-icon :message="'全部面板视图为只读，不支持拖拽/编辑。'" :class="bem('tip')" />
+          <div :class="bem('field')">
+            <div :class="bem('label')">范围</div>
+            <TimeRangePicker
+              :value="draftTimeRange"
+              :style="{ width: '100%' }"
+              :disabled="isBooting"
+              @update:value="(value: string) => (draftTimeRange = value)"
+            />
+          </div>
+          <div :class="bem('field')">
+            <div :class="bem('label')">自动刷新</div>
+            <Select
+              :value="draftRefreshInterval"
+              :disabled="isBooting"
+              :options="refreshIntervalOptions"
+              @update:value="(value: unknown) => (draftRefreshInterval = Number(value ?? 0))"
+            />
+          </div>
+          <Alert
+            type="info"
+            show-icon
+            :message="'自动刷新仅影响当前页面运行时；保存/导出时会写入 Dashboard JSON 的 refreshInterval。'"
+            :class="bem('tip')"
+          />
+        </div>
+      </div>
+
+      <div :class="bem('section')">
+        <div :class="bem('section-header')">
+          <div :class="bem('section-title')">变量</div>
+        </div>
+        <div :class="bem('section-body')">
+          <Alert type="info" show-icon :class="bem('tip')">
+            <template #description> 更改将在点击底部“确定”后生效；仅当查询 expr 中使用了 <code>$变量名</code> 才会影响面板。 </template>
+          </Alert>
+
+          <div v-if="variableDefs.length > 0" :class="bem('var-help-list')">
+            <div :class="bem('var-help-title')">当前仪表盘变量说明：</div>
+            <div v-for="v in variableDefs" :key="v.id" :class="bem('var-help-item')">
+              <div :class="bem('var-help-name')">
+                <code>{{ formatVariableToken(v.name) }}</code>
+                <span style="margin-left: 6px">{{ v.label || v.name }}</span>
+              </div>
+              <template v-for="(line, idx) in getVariableHelpLines(v)" :key="`${v.id}-${idx}`">
+                <div :class="bem('var-help-line')">- {{ line }}</div>
+              </template>
+            </div>
+          </div>
+
+          <Alert v-if="variableDefs.length === 0" type="info" show-icon :message="'当前仪表盘未定义 variables。'" :class="bem('tip')" />
+
+          <template v-else>
+            <Alert v-if="isResolvingVariableOptions" type="info" show-icon :message="'选项加载中...'" :class="bem('tip')" />
+            <Alert v-if="variableLastError" type="warning" show-icon :message="`上次刷新失败：${variableLastError}`" :class="bem('tip')" />
+
+            <div v-for="v in variableDefs" :key="v.id" :class="bem('field')">
+              <div :class="bem('var-label')" :title="v.label || v.name">{{ v.label || v.name }}</div>
+              <div :class="bem('var-control')">
+                <Select
+                  v-if="isSelectLikeVariable(v)"
+                  :value="draftVariableValues[v.name]"
+                  :mode="v.multi ? 'multiple' : undefined"
+                  show-search
+                  allow-clear
+                  style="width: 100%"
+                  :disabled="isBooting || v.type === 'constant'"
+                  :options="getVariableSelectOptions(v)"
+                  :placeholder="getVariablePlaceholder(v)"
+                  @update:value="(value: string | string[] | undefined) => (draftVariableValues[v.name] = value ?? '')"
+                />
+                <Input
+                  v-else
+                  :value="formatPlainVariableDraftValue(draftVariableValues[v.name])"
+                  allow-clear
+                  style="width: 100%"
+                  :disabled="isBooting || v.type === 'constant'"
+                  :placeholder="v.type === 'constant' ? '常量' : '请输入'"
+                  @update:value="(value: string | number) => (draftVariableValues[v.name] = parsePlainVariableDraftValue(v, value) ?? '')"
+                />
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch } from 'vue';
+  import { h, ref, computed, watch } from 'vue';
   import { storeToRefs } from '@grafana-fast/store';
+  import { Alert, Button, Flex, Input, Segmented, Select, TimeRangePicker } from '@grafana-fast/component';
+  import { DownloadOutlined, FileTextOutlined, UploadOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useTimeRangeStore, useVariablesStore } from '/#/stores';
-  import { message } from '@grafana-fast/component';
   import { createNamespace } from '/#/utils';
   import type { DashboardVariable, VariableOption } from '@grafana-fast/types';
-  import DashboardToolbarHeaderContent from './DashboardToolbarHeaderContent.vue';
-  import DashboardToolbarSidebarContent from './DashboardToolbarSidebarContent.vue';
 
   const [_, bem] = createNamespace('dashboard-toolbar');
 
   const props = withDefaults(
     defineProps<{
-      /** 展示形态：header=原头部样式；sidebar=侧边栏样式 */
-      variant?: 'header' | 'sidebar';
-      /**
-       * （可选）当前 API 模式：remote/mock
-       * - 仅用于“本地开发/演示”时在全局设置中切换
-       */
       apiMode?: 'remote' | 'mock';
-      /**
-       * （可选）API 模式可选项
-       * - 未提供则不展示“数据源模式”卡片
-       */
       apiModeOptions?: Array<{ label: string; value: 'remote' | 'mock'; disabled?: boolean }>;
-      /** 切换中：用于禁用控件，避免重复触发 */
       apiModeSwitching?: boolean;
     }>(),
-    { variant: 'header', apiMode: undefined, apiModeOptions: undefined, apiModeSwitching: false }
+    { apiMode: undefined, apiModeOptions: undefined, apiModeSwitching: false }
   );
 
   const emit = defineEmits<{
@@ -99,25 +165,20 @@
     (e: 'api-mode-change', mode: 'remote' | 'mock'): void;
   }>();
 
-  const variant = computed(() => props.variant ?? 'header');
-
   const dashboardStore = useDashboardStore();
   const timeRangeStore = useTimeRangeStore();
   const variablesStore = useVariablesStore();
 
-  const { currentDashboard, viewMode, isSaving, isBooting, isReadOnly } = storeToRefs(dashboardStore);
+  const { viewMode, isBooting, isReadOnly } = storeToRefs(dashboardStore);
   const { variables: variableDefsRef, isResolvingOptions: isResolvingVariableOptions, lastError: variableLastError } = storeToRefs(variablesStore);
 
-  const dashboardName = computed(() => currentDashboard.value?.name || '仪表盘');
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
-
   const variableDefs = computed(() => variableDefsRef.value ?? []);
-  const draftVariableValues = ref<Record<string, string | string[]>>({});
 
+  const draftVariableValues = ref<Record<string, string | string[]>>({});
   const selectedTimeRange = ref('now-1h');
   const { timeRange, refreshInterval } = storeToRefs(timeRangeStore);
 
-  // 外部可能通过 SDK/暴露 API 修改 timeRange：这里让 UI 始终反映 store 的真实值
   watch(
     () => String(timeRange.value.from ?? ''),
     (from) => {
@@ -127,9 +188,6 @@
     { immediate: true }
   );
 
-  // ---------------------------
-  // Sidebar draft (view & time)
-  // ---------------------------
   const draftViewMode = ref<'grouped' | 'allPanels'>('grouped');
   const draftTimeRange = ref('now-1h');
   const draftRefreshInterval = ref<number>(0);
@@ -226,7 +284,6 @@
   }
 
   function formatVariableToken(name: string): string {
-    // UI 展示用：用 `$name` 表达变量引用（与插值层保持一致）
     return `$${name}`;
   }
 
@@ -235,7 +292,6 @@
     const token = name ? formatVariableToken(name) : '$变量名';
     const multi = !!v.multi;
 
-    // window 类变量：强调和 timeRange 的区别 + 推荐用法
     if (isWindowLikeVariable(v)) {
       const example = name ? `rate(x[${token}])` : 'rate(x[$window])';
       return [
@@ -244,7 +300,6 @@
       ];
     }
 
-    // select / query / input / constant：给出“替换形态 + 推荐写法”
     if (v.type === 'constant') {
       return [`常量：值固定（只读），用于 expr 中的 ${token}`];
     }
@@ -266,7 +321,6 @@
       ];
     }
 
-    // 兜底：保证每个变量都有“含义对齐”说明
     return [`用法：在查询 expr 中使用 ${token}（支持 ${token} / \${${name || 'var'}} / [[${name || 'var'}]]）`];
   }
 
@@ -291,11 +345,9 @@
     }
     if (Object.keys(patch).length > 0) variablesStore.setValues(patch);
 
-    // 约定：variables 的 query options 刷新不单独暴露按钮，跟随 Drawer 的“确定”动作触发。
     void variablesStore.resolveOptions();
   };
 
-  // JSON actions are handled by Dashboard.vue (single source of truth).
   const handleViewJson = () => {
     if (isBooting.value) return;
     emit('view-json');
@@ -311,12 +363,10 @@
     emit('export-json');
   };
 
-  const handleTimeRangeChange = (value: string) => {
+  const handleCreateGroup = () => {
     if (isBooting.value) return;
-    timeRangeStore.setTimeRange({
-      from: value,
-      to: 'now',
-    });
+    if (isReadOnly.value) return;
+    emit('create-group');
   };
 
   const viewModeOptions = computed<Array<{ label: string; value: 'grouped' | 'allPanels'; disabled?: boolean }>>(() => [
@@ -324,43 +374,19 @@
     { label: '全部面板', value: 'allPanels', disabled: false },
   ]);
 
-  const handleTogglePanelsView = () => {
-    if (isBooting.value) return;
-    dashboardStore.togglePanelsView();
+  const formatPlainVariableDraftValue = (value: string | string[] | undefined): string => {
+    if (Array.isArray(value)) return value.join(', ');
+    return String(value ?? '');
   };
 
-  const handleSave = async () => {
-    if (isBooting.value) return;
-    if (isReadOnly.value) {
-      message.warning('当前为只读模式，无法保存');
-      return;
-    }
-    try {
-      await dashboardStore.saveDashboard();
-      message.success('保存成功');
-    } catch (error) {
-      console.error('保存失败', error);
-    }
-  };
-
-  const handleCreateGroup = () => {
-    if (isBooting.value) return;
-    if (isReadOnly.value) return;
-    emit('create-group');
-  };
-
-  const handleMenuClick = ({ key }: { key: string | number }) => {
-    switch (String(key)) {
-      case 'export':
-        handleExport();
-        break;
-      case 'import':
-        handleImport();
-        break;
-      case 'viewJson':
-        handleViewJson();
-        break;
-    }
+  const parsePlainVariableDraftValue = (def: DashboardVariable, value: string | number): string | string[] | undefined => {
+    const text = String(value ?? '').trim();
+    if (!def.multi) return text;
+    if (!text) return [];
+    return text
+      .split(',')
+      .map((token) => token.trim())
+      .filter(Boolean);
   };
 
   defineExpose({
@@ -371,68 +397,66 @@
 
 <style lang="less">
   .dp-dashboard-toolbar {
-    position: sticky;
-    top: 0;
-    z-index: 30;
-    background-color: color-mix(in srgb, var(--gf-color-surface), transparent 8%);
-    border-bottom: 1px solid var(--gf-color-border-muted);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-    isolation: isolate;
+    position: static;
+    top: auto;
+    border-bottom: none;
+    box-shadow: none;
+    background-color: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 4px 0;
 
     &::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: -1px;
-      height: 1px;
-      background: linear-gradient(to right, transparent, var(--gf-color-primary-border-strong), transparent);
-      opacity: 0.5;
-      pointer-events: none;
+      display: none;
     }
 
-    &__header {
+    &__sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      padding: 0 2px 6px;
+    }
+
+    &__section {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+    }
+
+    &__section + &__section {
+      padding-top: 16px;
+      border-top: 1px solid var(--gf-color-border-secondary);
+    }
+
+    &__section-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 10px 16px;
-      min-height: 48px;
-      background-color: transparent;
-      transition: background-color var(--gf-motion-normal) var(--gf-easing);
-
-      &.dp-dashboard-toolbar__header--edit-mode {
-        background-color: color-mix(in srgb, var(--gf-color-primary-soft), transparent 25%);
-      }
-    }
-
-    &__title {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-      letter-spacing: 0.01em;
-      color: var(--gf-color-text);
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      line-height: 1.5714285714285714;
-    }
-
-    &__actions {
-      display: flex;
-      align-items: center;
+      justify-content: flex-start;
       gap: 8px;
-      margin-left: auto;
+      padding: 0;
+      margin-bottom: 12px;
+      background: transparent;
+      border-bottom: none;
     }
 
-    &__json-loading {
-      padding: 24px;
-      font-size: 14px;
-      color: var(--gf-color-text-tertiary);
-      line-height: 1.5714285714285714;
+    &__section-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--gf-color-text-heading);
+      letter-spacing: 0;
+      line-height: 1.5;
+    }
+
+    &__section-body {
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    &__section-body :deep(.gf-row) {
+      row-gap: 8px;
     }
 
     &__divider {
@@ -443,172 +467,101 @@
       align-self: stretch;
     }
 
-    &--sidebar {
-      position: static;
-      top: auto;
-      border-bottom: none;
-      box-shadow: none;
-      background-color: transparent;
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      padding: 4px 0;
+    &__field {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
 
-      &::after {
-        display: none;
+    &__label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gf-color-text-secondary);
+      line-height: 1.5;
+    }
+
+    &__var-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gf-color-text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: 1.5;
+    }
+
+    &__var-control {
+      width: 100%;
+    }
+
+    &__var-help-list {
+      padding: 12px;
+      border-radius: var(--gf-radius-md);
+      border: 1px solid var(--gf-color-border-secondary);
+      background: transparent;
+    }
+
+    &__var-help-title {
+      font-size: 14px;
+      line-height: 1.5714285714285714;
+      color: var(--gf-color-text-secondary);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    &__var-help-item {
+      margin-bottom: 12px;
+
+      &:last-child {
+        margin-bottom: 0;
       }
+    }
 
-      .dp-dashboard-toolbar__sidebar {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
+    &__var-help-name {
+      font-size: 14px;
+      line-height: 1.5714285714285714;
+      color: var(--gf-color-text);
+      margin-bottom: 4px;
 
-      .dp-dashboard-toolbar__sidebar-title {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 8px 4px;
-      }
-
-      .dp-dashboard-toolbar__sidebar-name {
-        font-size: 16px;
-        font-weight: 600;
-        letter-spacing: 0.01em;
-        color: var(--gf-color-text);
-        line-height: 1.5;
-      }
-
-      .dp-dashboard-toolbar__sidebar-subtitle {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        color: var(--gf-color-text-secondary);
-        font-size: 14px;
-        line-height: 1.5714285714285714;
-      }
-
-      .dp-dashboard-toolbar__card {
-        width: 100%;
-
-        :deep(.gf-card) {
-          background: transparent;
-          box-shadow: none;
-        }
-
-        :deep(.gf-card__header) {
-          min-height: auto;
-          padding: 0 0 10px;
-          border-bottom: none;
-        }
-
-        :deep(.gf-card__title) {
-          font-size: 15px;
-          font-weight: 600;
-          line-height: 1.5;
-          color: var(--gf-color-text-heading);
-        }
-
-        :deep(.gf-card__body) {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          padding: 0;
-        }
-      }
-
-      .dp-dashboard-toolbar__row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .dp-dashboard-toolbar__field {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-      }
-
-      .dp-dashboard-toolbar__label {
+      code {
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
         font-size: 13px;
-        font-weight: 500;
-        color: var(--gf-color-text-secondary);
-        line-height: 1.5;
+        padding: 2px 6px;
+        background: var(--gf-color-fill-tertiary);
+        border-radius: var(--gf-radius-xs);
+        color: var(--gf-color-primary);
       }
+    }
 
-      .dp-dashboard-toolbar__var-label {
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--gf-color-text-secondary);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        line-height: 1.5;
-      }
+    &__var-help-line {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--gf-color-text-tertiary);
+      padding-left: 0;
+    }
 
-      .dp-dashboard-toolbar__var-control {
-        width: 100%;
-      }
+    &__tip {
+      margin: 0;
+      border-radius: var(--gf-radius-md);
 
-      .dp-dashboard-toolbar__var-help-list {
-        padding: 12px;
+      :deep(.gf-alert) {
+        padding: 6px 10px;
         border-radius: var(--gf-radius-md);
-        border: 1px solid var(--gf-color-border-muted);
-        background: color-mix(in srgb, var(--gf-color-surface-muted), transparent 15%);
       }
 
-      .dp-dashboard-toolbar__var-help-title {
-        font-size: 14px;
-        line-height: 1.5714285714285714;
-        color: var(--gf-color-text-secondary);
-        margin-bottom: 8px;
-        font-weight: 500;
+      :deep(.gf-alert--info) {
+        background: color-mix(in srgb, var(--gf-color-surface-muted), transparent 10%);
+        border-color: var(--gf-color-border-secondary);
       }
 
-      .dp-dashboard-toolbar__var-help-item {
-        margin-bottom: 12px;
-
-        &:last-child {
-          margin-bottom: 0;
-        }
-      }
-
-      .dp-dashboard-toolbar__var-help-name {
-        font-size: 14px;
-        line-height: 1.5714285714285714;
-        color: var(--gf-color-text);
-        margin-bottom: 4px;
-
-        code {
-          font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-          font-size: 13px;
-          padding: 2px 6px;
-          background: var(--gf-color-fill-tertiary);
-          border-radius: var(--gf-radius-xs);
-          color: var(--gf-color-primary);
-        }
-      }
-
-      .dp-dashboard-toolbar__var-help-line {
-        font-size: 13px;
-        line-height: 1.6;
-        color: var(--gf-color-text-tertiary);
-        padding-left: 0;
-      }
-
-      .dp-dashboard-toolbar__tip {
-        margin: 0;
-        border-radius: var(--gf-radius-md);
-
-        :deep(code) {
-          font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-          font-size: 12px;
-          padding: 1px 4px;
-          background: var(--gf-color-fill-tertiary);
-          border-radius: var(--gf-radius-xs);
-        }
+      :deep(code) {
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        font-size: 12px;
+        padding: 1px 4px;
+        background: var(--gf-color-fill-tertiary);
+        border-radius: var(--gf-radius-xs);
       }
     }
   }
