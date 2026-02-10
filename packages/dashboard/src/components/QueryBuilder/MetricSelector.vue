@@ -22,7 +22,9 @@
         placeholder="选择指标"
         :class="bem('select')"
         :options="metricOptions"
+        :loading="loading"
         @change="handleSelectChange"
+        @search="handleSearch"
         :filter-option="filterOption"
       />
       <Button :class="bem('btn')" @click="openMetricsModal">
@@ -38,11 +40,11 @@
 
 <script setup lang="ts">
   import { Button, Select } from '@grafana-fast/component';
-  import { ref, computed, onMounted, watch } from 'vue';
+  import { ref, computed, onBeforeUnmount, onMounted, watch } from 'vue';
   import { AppstoreOutlined } from '@ant-design/icons-vue';
   import { useApiClient } from '/#/runtime/useInjected';
   import MetricsModal from './MetricsModal.vue';
-  import { createNamespace } from '/#/utils';
+  import { createNamespace, debounceCancellable } from '/#/utils';
 
   const [_, bem] = createNamespace('metric-selector');
 
@@ -62,6 +64,7 @@
   const loading = ref(false);
   const modalOpen = ref(false);
   const api = useApiClient();
+  let requestToken = 0;
 
   const metricOptions = computed(() => {
     return metrics.value.map((metric) => ({
@@ -85,14 +88,26 @@
   };
 
   const loadMetrics = async (search?: string) => {
+    const token = (requestToken = requestToken + 1);
     loading.value = true;
     try {
-      metrics.value = await api.query.fetchMetrics(search);
+      const list = await api.query.fetchMetrics(search);
+      if (token !== requestToken) return;
+      metrics.value = list;
     } catch (error) {
       console.error('Failed to load metrics:', error);
     } finally {
-      loading.value = false;
+      if (token === requestToken) loading.value = false;
     }
+  };
+
+  const debouncedLoadMetrics = debounceCancellable((search?: string) => {
+    const q = typeof search === 'string' ? search.trim() : undefined;
+    void loadMetrics(q || undefined);
+  }, 260);
+
+  const handleSearch = (value: string) => {
+    debouncedLoadMetrics(value);
   };
 
   watch(
@@ -113,6 +128,10 @@
 
   onMounted(() => {
     loadMetrics();
+  });
+
+  onBeforeUnmount(() => {
+    debouncedLoadMetrics.cancel();
   });
 </script>
 

@@ -42,7 +42,16 @@ export interface DashboardState {
   viewMode: DashboardViewMode;
   /** 是否正在保存 */
   isSaving: boolean;
-  /** 是否正在同步（乐观更新：后台自动保存） */
+  /**
+   * 是否正在同步（保留字段）
+   *
+   * 说明：
+   * - 早期版本用于“全量 JSON auto-save”（saveDashboard）
+   * - 产品化版本推荐走“局部接口”（layout patch / panel CRUD / group CRUD）
+   * - 这里仍保留用于：
+   *   1) JSON 导入后手动保存
+   *   2) 作为兜底的全量持久化
+   */
   isSyncing: boolean;
   /** 最近一次 load/save 的错误（用于 UI 展示与宿主接管） */
   lastError: string | null;
@@ -77,4 +86,21 @@ export interface DashboardState {
   _syncQueued: boolean;
   _syncSeq: number;
   _syncInFlightSeq: number | null;
+
+  // ---- UI coordination (cross-component) ----
+  /**
+   * UI 请求跳转某个面板组的分页（例如创建面板后自动跳到最后一页展示）
+   * - 由 store 发出请求
+   * - 由持有 pagination state 的组件（Dashboard.vue）消费并清空
+   */
+  uiPageJumpRequest: { groupId: ID; page: number; nonce: number } | null;
+  _uiPageJumpNonce: number;
+
+  // ---- Internal partial-persist state (per store instance) ----
+  /** 局部布局 patch：按 groupId 记录 in-flight，避免并发乱序 */
+  _layoutPatchInFlightByGroupId: Record<string, boolean>;
+  /** 局部布局 patch：若 in-flight，缓存最后一次提交的当前页 items（最多 20 条） */
+  _layoutPatchQueuedItemsByGroupId: Record<string, Array<{ i: ID; x: number; y: number; w: number; h: number }> | null>;
+  /** 用于使 “dashboard 发生替换” 时，让旧请求的回写失效 */
+  _remoteOpSeq: number;
 }

@@ -68,7 +68,7 @@
   import { Button, Card, ConfigProvider, Flex, Segmented, Space, Switch, Tag, message } from '@grafana-fast/component';
   import { getAppliedDashboardTheme, setDashboardThemePreference, validateDashboardStrict, type DashboardTheme } from '@grafana-fast/dashboard';
   import { DashboardJsonEditor, JsonEditorLite } from '@grafana-fast/json-editor';
-  import { createMockApiClient } from '@grafana-fast/api';
+  import { createMockApiClient } from '@grafana-fast/api/mock';
 
   const router = useRouter();
 

@@ -34,6 +34,24 @@ export const HttpApiEndpointKey = {
   AllDashboards: 'AllDashboards',
   /** GET /dashboards/default - 获取默认 Dashboard */
   DefaultDashboard: 'DefaultDashboard',
+  /** PATCH /dashboards/:id/panel-groups/:groupId/layout - 更新当前页面板布局（分页） */
+  PatchPanelGroupLayoutPage: 'PatchPanelGroupLayoutPage',
+  /** POST /dashboards/:id/panel-groups/:groupId/panels - 创建面板 */
+  CreatePanel: 'CreatePanel',
+  /** PUT /dashboards/:id/panel-groups/:groupId/panels/:panelId - 更新面板 */
+  UpdatePanel: 'UpdatePanel',
+  /** DELETE /dashboards/:id/panel-groups/:groupId/panels/:panelId - 删除面板 */
+  DeletePanel: 'DeletePanel',
+  /** POST /dashboards/:id/panel-groups/:groupId/panels/:panelId/duplicate - 复制面板 */
+  DuplicatePanel: 'DuplicatePanel',
+  /** PATCH /dashboards/:id/panel-groups/:groupId - 更新面板组元信息 */
+  UpdatePanelGroup: 'UpdatePanelGroup',
+  /** POST /dashboards/:id/panel-groups - 创建面板组 */
+  CreatePanelGroup: 'CreatePanelGroup',
+  /** DELETE /dashboards/:id/panel-groups/:groupId - 删除面板组 */
+  DeletePanelGroup: 'DeletePanelGroup',
+  /** PATCH /dashboards/:id/panel-groups/order - 更新面板组排序 */
+  ReorderPanelGroups: 'ReorderPanelGroups',
 
   // --- Query ---
   /** POST /queries/execute - 执行多条查询（推荐：面板通常包含多条 query） */
@@ -81,6 +99,15 @@ export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
   [HttpApiEndpointKey.DeleteDashboard]: '/dashboards/:id',
   [HttpApiEndpointKey.AllDashboards]: '/dashboards',
   [HttpApiEndpointKey.DefaultDashboard]: '/dashboards/default',
+  [HttpApiEndpointKey.PatchPanelGroupLayoutPage]: '/dashboards/:id/panel-groups/:groupId/layout',
+  [HttpApiEndpointKey.CreatePanel]: '/dashboards/:id/panel-groups/:groupId/panels',
+  [HttpApiEndpointKey.UpdatePanel]: '/dashboards/:id/panel-groups/:groupId/panels/:panelId',
+  [HttpApiEndpointKey.DeletePanel]: '/dashboards/:id/panel-groups/:groupId/panels/:panelId',
+  [HttpApiEndpointKey.DuplicatePanel]: '/dashboards/:id/panel-groups/:groupId/panels/:panelId/duplicate',
+  [HttpApiEndpointKey.UpdatePanelGroup]: '/dashboards/:id/panel-groups/:groupId',
+  [HttpApiEndpointKey.CreatePanelGroup]: '/dashboards/:id/panel-groups',
+  [HttpApiEndpointKey.DeletePanelGroup]: '/dashboards/:id/panel-groups/:groupId',
+  [HttpApiEndpointKey.ReorderPanelGroups]: '/dashboards/:id/panel-groups/order',
 
   // --- Query ---
   [HttpApiEndpointKey.ExecuteQueries]: '/queries/execute',

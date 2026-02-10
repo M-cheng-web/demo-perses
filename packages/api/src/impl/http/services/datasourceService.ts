@@ -9,6 +9,7 @@
 import type { DatasourceService } from '../../../contracts/datasource';
 import type { Datasource, ID } from '@grafana-fast/types';
 import type { FetchHttpClient } from '../fetchClient';
+import { isHttpError } from '../fetchClient';
 import type { HttpApiEndpointKey } from '../endpoints';
 import { HttpApiEndpointKey as EndpointKey, getEndpointPath } from '../endpoints';
 import { normalizeArrayResponse } from './responseUtils';
@@ -30,9 +31,15 @@ export function createHttpDatasourceService(_deps: HttpDatasourceServiceDeps): D
       return _deps.http.get<Datasource>(path);
     },
 
-    async getDatasourceById(id: ID): Promise<Datasource> {
+    async getDatasourceById(id: ID): Promise<Datasource | null> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.GetDatasource, { id });
-      return _deps.http.get<Datasource>(path);
+      try {
+        return await _deps.http.get<Datasource>(path);
+      } catch (err) {
+        // contract 语义：找不到返回 null（而不是抛错）
+        if (isHttpError(err) && err.status === 404) return null;
+        throw err;
+      }
     },
 
     async listDatasources(): Promise<Datasource[]> {

@@ -48,6 +48,7 @@
   const isOpen = ref(false);
   const isEditMode = ref(false);
   const editingGroupId = ref<string>();
+  const isSubmitting = ref(false);
 
   const formData = ref<Pick<PanelGroup, 'title' | 'description'>>({
     title: '',
@@ -83,30 +84,40 @@
     isOpen.value = true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (isReadOnly.value) {
       message.warning('当前为只读模式，无法保存面板组');
       return;
     }
+    if (isSubmitting.value) return;
     if (!formData.value.title?.trim()) {
       message.error('请输入面板组标题');
       return;
     }
 
-    if (isEditMode.value && editingGroupId.value) {
-      // 更新
-      dashboardStore.updatePanelGroup(editingGroupId.value, formData.value);
-      message.success('面板组已更新');
-    } else {
-      // 创建
-      dashboardStore.addPanelGroup({
-        title: formData.value.title,
-        description: formData.value.description || '',
-      });
-      message.success('面板组已创建');
+    const toastKey = isEditMode.value ? `pg-save:${String(editingGroupId.value ?? '')}` : 'pg-create';
+    message.loading({ content: '正在保存...', key: toastKey, duration: 0 });
+    isSubmitting.value = true;
+    try {
+      if (isEditMode.value && editingGroupId.value) {
+        // 更新
+        await dashboardStore.updatePanelGroup(editingGroupId.value, formData.value);
+        message.success({ content: '面板组已更新', key: toastKey, duration: 2 });
+      } else {
+        // 创建
+        await dashboardStore.addPanelGroup({
+          title: formData.value.title,
+          description: formData.value.description || '',
+        });
+        message.success({ content: '面板组已创建', key: toastKey, duration: 2 });
+      }
+      handleCancel();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '保存失败';
+      message.error({ content: msg, key: toastKey, duration: 3 });
+    } finally {
+      isSubmitting.value = false;
     }
-
-    handleCancel();
   };
 
   const handleCancel = () => {

@@ -83,7 +83,8 @@ export function addPanelGroup(this: DashboardMutationThis, group: Partial<PanelG
   if (!dashboard) return;
 
   const newGroup: PanelGroup = {
-    id: createPrefixedId('pg'),
+    // 支持外部传入 id（用于“先乐观插入，再由后端回写最终 id”的流程）
+    id: group.id != null ? String(group.id) : createPrefixedId('pg'),
     title: group.title || '新面板组',
     description: group.description,
     isCollapsed: true,
@@ -219,7 +220,7 @@ export function updatePanelGroupLayout(this: DashboardMutationThis, groupId: ID,
  * 分页编辑模式：只更新当前页的 layout items（按 i 合并回全量 layout）
  *
  * 注意：
- * - 不会删除/新增 layout 项，仅更新已存在的项
+ * - 不会删除 layout 项；若 patch 中出现缺失项会补齐（避免“缺 layout 导致展示/编辑跳变”）
  * - 仅作用于当前 group
  */
 export function patchPanelGroupLayoutItems(this: DashboardMutationThis, groupId: ID, patch: PanelLayout[]) {
@@ -227,15 +228,22 @@ export function patchPanelGroupLayoutItems(this: DashboardMutationThis, groupId:
   if (!dashboard) return;
 
   const group = dashboard.panelGroups.find((g) => g.id === groupId);
-  if (!group || !Array.isArray(group.layout) || group.layout.length === 0) return;
+  if (!group) return;
+  group.layout ??= [];
 
   const byId = new Map<string, PanelLayout>();
   for (const it of group.layout) byId.set(String(it.i), it);
 
   for (const next of patch) {
-    const existing = byId.get(String(next.i));
-    if (!existing) continue;
-    Object.assign(existing, next);
+    const key = String(next.i);
+    const existing = byId.get(key);
+    if (existing) {
+      Object.assign(existing, next);
+      continue;
+    }
+    const created: PanelLayout = { ...(next as any) };
+    group.layout.push(created);
+    byId.set(key, created);
   }
   this.requestAutoSync();
 }

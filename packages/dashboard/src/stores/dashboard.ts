@@ -4,28 +4,27 @@
 
 import { defineStore } from '@grafana-fast/store';
 import { markRaw, toRaw } from 'vue';
-import type { DashboardContent, DashboardId, PanelGroup, Panel, ID, DashboardVariable, VariableOption } from '@grafana-fast/types';
-import { deepCloneStructured } from '/#/utils';
+import type { DashboardContent, DashboardId, PanelGroup, Panel, PanelLayout, ID, DashboardVariable, VariableOption } from '@grafana-fast/types';
+import { createPrefixedId, deepCloneStructured } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
-import { AUTO_SYNC_DEBOUNCE_MS, BIG_DASHBOARD_JSON_BYTES_THRESHOLD, BIG_DASHBOARD_PANEL_THRESHOLD } from './dashboard/constants';
+import { BIG_DASHBOARD_JSON_BYTES_THRESHOLD, BIG_DASHBOARD_PANEL_THRESHOLD } from './dashboard/constants';
 import {
-  addPanel,
-  addPanelGroup,
-  deletePanel,
-  deletePanelGroup,
-  duplicatePanel,
-  movePanelGroup,
-  patchPanelGroupLayoutItems,
-  reorderPanelGroups,
+  addPanel as addPanelLocal,
+  addPanelGroup as addPanelGroupLocal,
+  deletePanel as deletePanelLocal,
+  deletePanelGroup as deletePanelGroupLocal,
+  movePanelGroup as movePanelGroupLocal,
+  patchPanelGroupLayoutItems as patchPanelGroupLayoutItemsLocal,
+  reorderPanelGroups as reorderPanelGroupsLocal,
   setEditingGroup,
   setViewMode,
   setViewPanel,
   toggleGroupEditing,
   togglePanelView,
   togglePanelsView,
-  updatePanel,
-  updatePanelGroup,
-  updatePanelGroupLayout,
+  updatePanel as updatePanelLocal,
+  updatePanelGroup as updatePanelGroupLocal,
+  updatePanelGroupLayout as updatePanelGroupLayoutLocal,
 } from './dashboard/mutations';
 import {
   countDashboardStats,
@@ -62,6 +61,11 @@ export const useDashboardStore = defineStore('dashboard', {
     _syncQueued: false,
     _syncSeq: 0,
     _syncInFlightSeq: null,
+    uiPageJumpRequest: null,
+    _uiPageJumpNonce: 0,
+    _layoutPatchInFlightByGroupId: {},
+    _layoutPatchQueuedItemsByGroupId: {},
+    _remoteOpSeq: 0,
   }),
 
   getters: {
@@ -291,6 +295,12 @@ export const useDashboardStore = defineStore('dashboard', {
       this._syncSeq++;
       this._syncInFlightSeq = null;
       this.isSyncing = false;
+
+      // 同时使“局部持久化”（layout patch / panel CRUD / group CRUD）的旧请求回写失效
+      this._remoteOpSeq++;
+      this._layoutPatchInFlightByGroupId = {};
+      this._layoutPatchQueuedItemsByGroupId = {};
+      this.uiPageJumpRequest = null;
     },
 
     markSyncedFromCurrent() {
@@ -319,22 +329,45 @@ export const useDashboardStore = defineStore('dashboard', {
       this._bumpDashboardContentRevision();
     },
 
+    /**
+     * 标记 Dashboard 内容已变更（用于触发 UI 更新 + 记录“未确认态”）
+     *
+     * 说明：
+     * - currentDashboard 大对象使用 markRaw，深层字段变更不会自动触发响应式更新
+     * - 任何会修改 dashboard JSON 的操作都应调用该方法 bump revision
+     * - 产品化编辑流：变更通常会走“局部接口”持久化；失败则回滚到 syncedDashboard
+     */
+    markDashboardDirty(options?: { hasUnsyncedChanges?: boolean }) {
+      if (this.isBooting) return;
+      this._bumpDashboardContentRevision();
+      if (options?.hasUnsyncedChanges === false) return;
+      this.hasUnsyncedChanges = true;
+    },
+
     requestAutoSync() {
+      // NOTE: 保留该方法作为兼容入口，但不再做“全量 JSON auto-save”。
+      // 新版本编辑流要求：
+      // - 首次进入：后端返回完整 dashboard JSON
+      // - 之后：仅通过局部接口（layout patch / panel CRUD / group CRUD）持久化变更
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
       if (this.isReadOnly) return;
+      this.markDashboardDirty();
+    },
 
-      this._bumpDashboardContentRevision();
-      this.hasUnsyncedChanges = true;
+    requestPanelGroupPageJump(groupId: ID, page: number) {
+      const g = String(groupId ?? '');
+      if (!g) return;
+      const p = Number(page);
+      const nextPage = Number.isFinite(p) ? Math.max(1, Math.floor(p)) : 1;
+      this.uiPageJumpRequest = { groupId, page: nextPage, nonce: ++this._uiPageJumpNonce };
+    },
 
-      if (this._syncTimerId != null) {
-        window.clearTimeout(this._syncTimerId);
-        this._syncTimerId = null;
-      }
-      this._syncTimerId = window.setTimeout(() => {
-        this._syncTimerId = null;
-        void this.syncDashboard({ mode: 'auto' });
-      }, AUTO_SYNC_DEBOUNCE_MS);
+    consumePanelGroupPageJump(nonce: number) {
+      const current = this.uiPageJumpRequest;
+      if (!current) return;
+      if (Number(current.nonce) !== Number(nonce)) return;
+      this.uiPageJumpRequest = null;
     },
 
     async waitForSyncIdle(timeoutMs = 8_000) {
@@ -424,6 +457,559 @@ export const useDashboardStore = defineStore('dashboard', {
           // 自动同步：继续尝试保存最新状态（不向上抛错）。
           void this.syncDashboard({ mode: 'auto' });
         }
+      }
+    },
+
+    // ---------------------------
+    // 局部持久化（产品化编辑流）
+    // ---------------------------
+    _getGroupFromDashboard(dashboard: DashboardContent | null, groupId: ID): PanelGroup | null {
+      if (!dashboard) return null;
+      const groups = dashboard.panelGroups ?? [];
+      const key = String(groupId);
+      return groups.find((g) => String(g.id) === key) ?? null;
+    },
+
+    _upsertLayoutItemsOnDashboard(dashboard: DashboardContent | null, groupId: ID, items: PanelLayout[]) {
+      const group = this._getGroupFromDashboard(dashboard, groupId);
+      if (!group) return;
+      group.layout ??= [];
+      const byId = new Map<string, PanelLayout>();
+      for (const it of group.layout) byId.set(String(it.i), it);
+      for (const next of items) {
+        const key = String(next.i);
+        const existing = byId.get(key);
+        if (existing) {
+          Object.assign(existing, next);
+          continue;
+        }
+        const created: PanelLayout = { ...(next as any) };
+        group.layout.push(created);
+        byId.set(key, created);
+      }
+    },
+
+    _removePanelFromDashboard(dashboard: DashboardContent | null, groupId: ID, panelId: ID) {
+      const group = this._getGroupFromDashboard(dashboard, groupId);
+      if (!group) return;
+      const pid = String(panelId);
+      group.panels = (group.panels ?? []).filter((p) => String(p.id) !== pid);
+      group.layout = (group.layout ?? []).filter((it) => String(it.i) !== pid);
+    },
+
+    _upsertPanelOnDashboard(dashboard: DashboardContent | null, groupId: ID, panel: Panel) {
+      const group = this._getGroupFromDashboard(dashboard, groupId);
+      if (!group) return;
+      group.panels ??= [];
+      const safe = deepCloneStructured(panel) as Panel;
+      const pid = String(safe.id);
+      const idx = group.panels.findIndex((p) => String(p.id) === pid);
+      if (idx >= 0) {
+        group.panels[idx] = safe;
+        return;
+      }
+      group.panels.push(safe);
+    },
+
+    _replaceTempPanelIdOnCurrent(groupId: ID, tempId: ID, panel: Panel, layout?: PanelLayout) {
+      if (!this.currentDashboard) return;
+      const group = this._getGroupFromDashboard(this.currentDashboard, groupId);
+      if (!group) return;
+
+      group.panels ??= [];
+      group.layout ??= [];
+
+      const tmp = String(tempId);
+      const nextId = String(panel.id);
+
+      // Replace panel entry (keep array order stable)
+      const panelIdx = group.panels.findIndex((p) => String(p.id) === tmp);
+      if (panelIdx >= 0) {
+        group.panels[panelIdx] = panel;
+      } else {
+        group.panels.push(panel);
+      }
+
+      // Replace layout entry id + apply backend layout if provided
+      const layoutIdx = group.layout.findIndex((it) => String(it.i) === tmp);
+      if (layoutIdx >= 0) {
+        const existing = group.layout[layoutIdx]!;
+        if (layout) {
+          Object.assign(existing, layout);
+          existing.i = nextId;
+        } else {
+          existing.i = nextId;
+        }
+      } else if (layout) {
+        group.layout.push(layout);
+      } else {
+        // Fallback: keep a minimal layout entry so the new panel is renderable
+        const maxY = Math.max(...(group.layout ?? []).map((l) => Number(l.y ?? 0) + Number(l.h ?? 0)), 0);
+        group.layout.push({ i: nextId, x: 0, y: maxY, w: 24, h: 8, minW: 6, minH: 4 });
+      }
+
+      // Ensure no leftover temp layout entries
+      group.layout = (group.layout ?? []).filter((it) => String(it.i) !== tmp);
+
+      this.markDashboardDirty({ hasUnsyncedChanges: false });
+    },
+
+    _getPanelGroupPageCount(groupId: ID, pageSize = 20): number {
+      const group = this._getGroupFromDashboard(this.currentDashboard, groupId);
+      const total = group?.panels?.length ?? 0;
+      const size = Math.max(1, Math.floor(Number(pageSize) || 20));
+      return Math.max(1, Math.ceil(total / size));
+    },
+
+    _queuePanelGroupLayoutPatch(groupId: ID, items: Array<{ i: ID; x: number; y: number; w: number; h: number }>) {
+      const key = String(groupId ?? '');
+      if (!key) return;
+      const safeItems = (Array.isArray(items) ? items : [])
+        .slice(0, 20)
+        .map((it) => ({ i: it.i, x: Number(it.x ?? 0), y: Number(it.y ?? 0), w: Number(it.w ?? 0), h: Number(it.h ?? 0) }));
+      this._layoutPatchQueuedItemsByGroupId[key] = safeItems;
+      void this._flushPanelGroupLayoutPatchQueue(groupId, this._remoteOpSeq);
+    },
+
+    async _flushPanelGroupLayoutPatchQueue(groupId: ID, opSeq: number) {
+      const key = String(groupId ?? '');
+      if (!key) return;
+      if (this._layoutPatchInFlightByGroupId[key]) return;
+
+      this._layoutPatchInFlightByGroupId[key] = true;
+      try {
+        while (opSeq === this._remoteOpSeq) {
+          const queued = this._layoutPatchQueuedItemsByGroupId[key];
+          if (!queued || queued.length === 0) break;
+          this._layoutPatchQueuedItemsByGroupId[key] = null;
+
+          const dashboardId = this.dashboardId;
+          if (!dashboardId) throw new Error('Missing dashboardId');
+
+          const api = getPiniaApiClient(this.$pinia);
+          const patchFn = api.dashboard.patchPanelGroupLayoutPage;
+          if (!patchFn) throw new Error('DashboardService.patchPanelGroupLayoutPage is not implemented');
+
+          const res = await patchFn({ dashboardId, groupId, items: queued });
+          if (opSeq !== this._remoteOpSeq) return;
+
+          // 后端可选返回最终 layout（例如 compact 后的结果）；若返回，则回写 current+synced
+          const serverItems = Array.isArray(res?.items) && res.items.length > 0 ? res.items : null;
+          if (serverItems) {
+            // 回写当前态（避免“后端调整过但前端还用旧布局”）
+            patchPanelGroupLayoutItemsLocal.call(this, groupId, serverItems);
+          }
+
+          const applyItems: PanelLayout[] = serverItems ?? queued.map((it) => ({ i: it.i, x: it.x, y: it.y, w: it.w, h: it.h } as PanelLayout));
+          this._upsertLayoutItemsOnDashboard(this.syncedDashboard, groupId, applyItems);
+          this.hasUnsyncedChanges = false;
+          this.lastError = null;
+        }
+      } catch (error) {
+        if (opSeq !== this._remoteOpSeq) return;
+        const msg = error instanceof Error ? error.message : 'Failed to patch layout';
+        this.lastError = `布局更新失败，已回滚：${msg}`;
+        // 清空队列，避免回滚后继续发送旧 patch
+        this._layoutPatchQueuedItemsByGroupId[key] = null;
+        this.resetToSynced();
+      } finally {
+        if (opSeq !== this._remoteOpSeq) return;
+        this._layoutPatchInFlightByGroupId[key] = false;
+      }
+    },
+
+    /**
+     * 分页布局 patch（产品化要求：一次提交当前页全部 items，最多 20 条）
+     *
+     * 说明：
+     * - 该 action 由 GridLayout 提交（debounced），已包含当前页全部面板的布局
+     * - 本地先乐观更新，再调用后端局部接口
+     * - 若接口失败：回滚到 syncedDashboard
+     */
+    patchPanelGroupLayoutItems(groupId: ID, patch: PanelLayout[]) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+      if (this.isReadOnly) return;
+      if (!Array.isArray(patch) || patch.length === 0) return;
+
+      patchPanelGroupLayoutItemsLocal.call(this, groupId, patch);
+      const items = patch.slice(0, 20).map((it) => ({
+        i: it.i,
+        x: Number(it.x ?? 0),
+        y: Number(it.y ?? 0),
+        w: Number(it.w ?? 0),
+        h: Number(it.h ?? 0),
+      }));
+      this._queuePanelGroupLayoutPatch(groupId, items);
+    },
+
+    /**
+     * 创建面板（乐观更新 + 后端返回最终 panel/id）
+     */
+    async addPanel(groupId: ID, panel: Panel) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+      if (this.isReadOnly) throw new Error('Dashboard is read-only');
+
+      const dashboardId = this.dashboardId;
+      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+
+      // optimistic insert with a temp id (backend generates the final id)
+      const tempId = createPrefixedId('p_tmp');
+      const optimistic: Panel = { ...(deepCloneStructured(panel) as Panel), id: tempId };
+      addPanelLocal.call(this, groupId, optimistic);
+
+      const opSeq = this._remoteOpSeq;
+      try {
+        const api = getPiniaApiClient(this.$pinia);
+        const createFn = api.dashboard.createPanel;
+        if (!createFn) throw new Error('DashboardService.createPanel is not implemented');
+
+        const payload = deepCloneStructured(panel) as any;
+        delete payload.id;
+
+        const res = await createFn({ dashboardId, groupId, panel: payload });
+        if (opSeq !== this._remoteOpSeq) return;
+
+        const createdPanel = deepCloneStructured(res.panel) as Panel;
+        const createdLayout = res.layout ? (deepCloneStructured(res.layout) as PanelLayout) : undefined;
+
+        this._replaceTempPanelIdOnCurrent(groupId, tempId, createdPanel, createdLayout);
+        this._upsertPanelOnDashboard(this.syncedDashboard, groupId, createdPanel);
+        if (createdLayout) this._upsertLayoutItemsOnDashboard(this.syncedDashboard, groupId, [createdLayout]);
+
+        // 创建后默认跳到最后一页（固定 20/页）
+        this.requestPanelGroupPageJump(groupId, this._getPanelGroupPageCount(groupId, 20));
+        this.hasUnsyncedChanges = false;
+        this.lastError = null;
+      } catch (error) {
+        if (opSeq !== this._remoteOpSeq) return;
+        const msg = error instanceof Error ? error.message : 'Failed to create panel';
+        this.lastError = `新增面板失败，已回滚：${msg}`;
+        this.resetToSynced();
+        throw error;
+      }
+    },
+
+    /**
+     * 更新面板（编辑器保存）
+     */
+    async updatePanel(groupId: ID, panelId: ID, updates: Partial<Panel>) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+      if (this.isReadOnly) throw new Error('Dashboard is read-only');
+
+      const dashboardId = this.dashboardId;
+      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+
+      updatePanelLocal.call(this, groupId, panelId, updates);
+
+      const opSeq = this._remoteOpSeq;
+      try {
+        const api = getPiniaApiClient(this.$pinia);
+        const updateFn = api.dashboard.updatePanel;
+        if (!updateFn) throw new Error('DashboardService.updatePanel is not implemented');
+
+        const current = this.getPanelById(groupId, panelId);
+        if (!current) throw new Error('Panel not found');
+        const payload = deepCloneStructured(current) as any;
+        delete payload.id;
+
+        const res = await updateFn({ dashboardId, groupId, panelId, panel: payload });
+        if (opSeq !== this._remoteOpSeq) return;
+
+        const saved = deepCloneStructured(res.panel) as Panel;
+        updatePanelLocal.call(this, groupId, panelId, saved);
+        this._upsertPanelOnDashboard(this.syncedDashboard, groupId, saved);
+        this.hasUnsyncedChanges = false;
+        this.lastError = null;
+      } catch (error) {
+        if (opSeq !== this._remoteOpSeq) return;
+        const msg = error instanceof Error ? error.message : 'Failed to update panel';
+        this.lastError = `保存面板失败，已回滚：${msg}`;
+        this.resetToSynced();
+        throw error;
+      }
+    },
+
+    /**
+     * 删除面板
+     */
+    async deletePanel(groupId: ID, panelId: ID) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+      if (this.isReadOnly) throw new Error('Dashboard is read-only');
+
+      const dashboardId = this.dashboardId;
+      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+
+      deletePanelLocal.call(this, groupId, panelId);
+
+      const opSeq = this._remoteOpSeq;
+      try {
+        const api = getPiniaApiClient(this.$pinia);
+        const delFn = api.dashboard.deletePanel;
+        if (!delFn) throw new Error('DashboardService.deletePanel is not implemented');
+
+        await delFn({ dashboardId, groupId, panelId });
+        if (opSeq !== this._remoteOpSeq) return;
+
+        this._removePanelFromDashboard(this.syncedDashboard, groupId, panelId);
+        this.hasUnsyncedChanges = false;
+        this.lastError = null;
+      } catch (error) {
+        if (opSeq !== this._remoteOpSeq) return;
+        const msg = error instanceof Error ? error.message : 'Failed to delete panel';
+        this.lastError = `删除面板失败，已回滚：${msg}`;
+        this.resetToSynced();
+        throw error;
+      }
+    },
+
+    /**
+     * 复制面板（后端生成新 id 并返回）
+     */
+    async duplicatePanel(groupId: ID, panelId: ID) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+      if (this.isReadOnly) throw new Error('Dashboard is read-only');
+
+      const dashboardId = this.dashboardId;
+      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+
+      const src = this.getPanelById(groupId, panelId);
+      if (!src) throw new Error('Panel not found');
+
+      const tempId = createPrefixedId('p_tmp');
+      const optimistic: Panel = { ...(deepCloneStructured(src) as Panel), id: tempId, name: `${src.name} (副本)` };
+      addPanelLocal.call(this, groupId, optimistic);
+
+      const opSeq = this._remoteOpSeq;
+      try {
+        const api = getPiniaApiClient(this.$pinia);
+        const dupFn = api.dashboard.duplicatePanel;
+        if (!dupFn) throw new Error('DashboardService.duplicatePanel is not implemented');
+
+        const res = await dupFn({ dashboardId, groupId, panelId });
+        if (opSeq !== this._remoteOpSeq) return;
+
+        const duplicated = deepCloneStructured(res.panel) as Panel;
+        const duplicatedLayout = res.layout ? (deepCloneStructured(res.layout) as PanelLayout) : undefined;
+
+        this._replaceTempPanelIdOnCurrent(groupId, tempId, duplicated, duplicatedLayout);
+        this._upsertPanelOnDashboard(this.syncedDashboard, groupId, duplicated);
+        if (duplicatedLayout) this._upsertLayoutItemsOnDashboard(this.syncedDashboard, groupId, [duplicatedLayout]);
+
+        this.requestPanelGroupPageJump(groupId, this._getPanelGroupPageCount(groupId, 20));
+        this.hasUnsyncedChanges = false;
+        this.lastError = null;
+      } catch (error) {
+        if (opSeq !== this._remoteOpSeq) return;
+        const msg = error instanceof Error ? error.message : 'Failed to duplicate panel';
+        this.lastError = `复制面板失败，已回滚：${msg}`;
+        this.resetToSynced();
+        throw error;
+      }
+    },
+
+    /**
+     * 创建面板组（后端生成新 id 并返回）
+     */
+    async addPanelGroup(group: Partial<PanelGroup>) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+      if (this.isReadOnly) throw new Error('Dashboard is read-only');
+
+      const dashboardId = this.dashboardId;
+      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+
+      const tempId = createPrefixedId('pg_tmp');
+      addPanelGroupLocal.call(this, { ...(group as any), id: tempId });
+
+      const opSeq = this._remoteOpSeq;
+      try {
+        const api = getPiniaApiClient(this.$pinia);
+        const createFn = api.dashboard.createPanelGroup;
+        if (!createFn) throw new Error('DashboardService.createPanelGroup is not implemented');
+
+        const res = await createFn({
+          dashboardId,
+          group: {
+            title: String(group?.title ?? '新面板组'),
+            description: group?.description,
+          },
+        });
+        if (opSeq !== this._remoteOpSeq) return;
+
+        const created = deepCloneStructured(res.group) as PanelGroup;
+        // Replace temp group id with backend-generated id (keep array order stable)
+        const dash = this.currentDashboard;
+        const idx = dash.panelGroups.findIndex((g) => String(g.id) === String(tempId));
+        if (idx >= 0) {
+          dash.panelGroups[idx] = created;
+        } else {
+          dash.panelGroups.push(created);
+        }
+        // Normalize order fields to match current array order
+        dash.panelGroups.forEach((g, i) => (g.order = i));
+
+        if (this.syncedDashboard) {
+          this.syncedDashboard.panelGroups ??= [];
+          this.syncedDashboard.panelGroups.push(deepCloneStructured(created) as PanelGroup);
+          this.syncedDashboard.panelGroups.forEach((g, i) => (g.order = i));
+        }
+
+        this.markDashboardDirty({ hasUnsyncedChanges: false });
+        this.hasUnsyncedChanges = false;
+        this.lastError = null;
+      } catch (error) {
+        if (opSeq !== this._remoteOpSeq) return;
+        const msg = error instanceof Error ? error.message : 'Failed to create panel group';
+        this.lastError = `创建面板组失败，已回滚：${msg}`;
+        this.resetToSynced();
+        throw error;
+      }
+    },
+
+    /**
+     * 更新面板组（标题/描述）
+     */
+    async updatePanelGroup(id: ID, updates: Partial<PanelGroup>) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+      if (this.isReadOnly) throw new Error('Dashboard is read-only');
+
+      const dashboardId = this.dashboardId;
+      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+
+      updatePanelGroupLocal.call(this, id, updates);
+
+      const opSeq = this._remoteOpSeq;
+      try {
+        const api = getPiniaApiClient(this.$pinia);
+        const updateFn = api.dashboard.updatePanelGroup;
+        if (!updateFn) throw new Error('DashboardService.updatePanelGroup is not implemented');
+
+        const title = String(updates.title ?? this._getGroupFromDashboard(this.currentDashboard, id)?.title ?? '');
+        const description = updates.description ?? this._getGroupFromDashboard(this.currentDashboard, id)?.description;
+
+        const res = await updateFn({ dashboardId, groupId: id, group: { title, description } });
+        if (opSeq !== this._remoteOpSeq) return;
+
+        const saved = deepCloneStructured(res.group) as PanelGroup;
+        // 仅更新元信息（title/description），避免把 current 的 panels/layout 引用写进 syncedSnapshot
+        updatePanelGroupLocal.call(this, id, { title: saved.title, description: saved.description } as any);
+
+        if (this.syncedDashboard) {
+          const sg = this._getGroupFromDashboard(this.syncedDashboard, id);
+          if (sg) {
+            sg.title = saved.title ?? sg.title;
+            sg.description = saved.description ?? sg.description;
+          }
+        }
+        this.hasUnsyncedChanges = false;
+        this.lastError = null;
+      } catch (error) {
+        if (opSeq !== this._remoteOpSeq) return;
+        const msg = error instanceof Error ? error.message : 'Failed to update panel group';
+        this.lastError = `更新面板组失败，已回滚：${msg}`;
+        this.resetToSynced();
+        throw error;
+      }
+    },
+
+    /**
+     * 删除面板组
+     */
+    async deletePanelGroup(id: ID) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+      if (this.isReadOnly) throw new Error('Dashboard is read-only');
+
+      const dashboardId = this.dashboardId;
+      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+
+      deletePanelGroupLocal.call(this, id);
+
+      const opSeq = this._remoteOpSeq;
+      try {
+        const api = getPiniaApiClient(this.$pinia);
+        const delFn = api.dashboard.deletePanelGroup;
+        if (!delFn) throw new Error('DashboardService.deletePanelGroup is not implemented');
+
+        await delFn({ dashboardId, groupId: id });
+        if (opSeq !== this._remoteOpSeq) return;
+
+        if (this.syncedDashboard) {
+          this.syncedDashboard.panelGroups = (this.syncedDashboard.panelGroups ?? []).filter((g) => String(g.id) !== String(id));
+          (this.syncedDashboard.panelGroups ?? []).forEach((g, idx) => (g.order = idx));
+        }
+        this.hasUnsyncedChanges = false;
+        this.lastError = null;
+      } catch (error) {
+        if (opSeq !== this._remoteOpSeq) return;
+        const msg = error instanceof Error ? error.message : 'Failed to delete panel group';
+        this.lastError = `删除面板组失败，已回滚：${msg}`;
+        this.resetToSynced();
+        throw error;
+      }
+    },
+
+    /**
+     * 面板组重排（拖拽排序）
+     */
+    async reorderPanelGroups(nextOrder: ID[]) {
+      if (!this.currentDashboard) return;
+      if (this.isBooting) return;
+      if (this.isReadOnly) throw new Error('Dashboard is read-only');
+
+      const dashboardId = this.dashboardId;
+      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+
+      reorderPanelGroupsLocal.call(this, nextOrder);
+
+      const opSeq = this._remoteOpSeq;
+      try {
+        const api = getPiniaApiClient(this.$pinia);
+        const reorderFn = api.dashboard.reorderPanelGroups;
+        if (!reorderFn) throw new Error('DashboardService.reorderPanelGroups is not implemented');
+
+        await reorderFn({ dashboardId, order: nextOrder });
+        if (opSeq !== this._remoteOpSeq) return;
+
+        if (this.syncedDashboard) {
+          // apply the same reorder logic to synced snapshot
+          const groups = this.syncedDashboard.panelGroups ?? [];
+          const byId = new Map<string, PanelGroup>();
+          for (const g of groups) byId.set(String(g.id), g);
+
+          const used = new Set<string>();
+          const next: PanelGroup[] = [];
+          for (const rawId of nextOrder ?? []) {
+            const key = String(rawId);
+            const g = byId.get(key);
+            if (!g) continue;
+            if (used.has(key)) continue;
+            used.add(key);
+            next.push(g);
+          }
+          for (const g of groups) {
+            const key = String(g.id);
+            if (used.has(key)) continue;
+            used.add(key);
+            next.push(g);
+          }
+          next.forEach((g, idx) => (g.order = idx));
+          this.syncedDashboard.panelGroups = next;
+        }
+        this.hasUnsyncedChanges = false;
+        this.lastError = null;
+      } catch (error) {
+        if (opSeq !== this._remoteOpSeq) return;
+        const msg = error instanceof Error ? error.message : 'Failed to reorder panel groups';
+        this.lastError = `面板组排序失败，已回滚：${msg}`;
+        this.resetToSynced();
+        throw error;
       }
     },
 
@@ -566,23 +1152,16 @@ export const useDashboardStore = defineStore('dashboard', {
       }
     },
 
-    // ---- Dashboard mutations (group/panel/view) ----
+    // ---- Dashboard view/UI state mutations ----
     setEditingGroup,
     toggleGroupEditing,
     setViewMode,
     togglePanelsView,
-    addPanelGroup,
-    updatePanelGroup,
-    deletePanelGroup,
-    movePanelGroup,
-    reorderPanelGroups,
-    updatePanelGroupLayout,
-    patchPanelGroupLayoutItems,
-    addPanel,
-    updatePanel,
-    deletePanel,
-    duplicatePanel,
     setViewPanel,
     togglePanelView,
+
+    // ---- (Optional) local-only helpers kept for compatibility ----
+    movePanelGroup: movePanelGroupLocal,
+    updatePanelGroupLayout: updatePanelGroupLayoutLocal,
   },
 });

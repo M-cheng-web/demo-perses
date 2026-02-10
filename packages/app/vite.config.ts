@@ -29,6 +29,7 @@ export default defineConfig({
             '@grafana-fast/component': resolveFromRoot('../component/src/index.ts'),
             '@grafana-fast/store': resolveFromRoot('../store/src/index.ts'),
             '@grafana-fast/hooks': resolveFromRoot('../hook/src/index.ts'),
+            '@grafana-fast/api/mock': resolveFromRoot('../api/src/mock.ts'),
             '@grafana-fast/api': resolveFromRoot('../api/src/index.ts'),
             '@grafana-fast/json-editor': resolveFromRoot('../json-editor/src/index.ts'),
             '@grafana-fast/types': resolveFromRoot('../types/src/index.ts'),

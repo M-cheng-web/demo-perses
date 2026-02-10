@@ -7,6 +7,23 @@
  */
 
 import type { DashboardService } from '../../../contracts/dashboard';
+import type {
+  CreatePanelGroupRequest,
+  CreatePanelGroupResponse,
+  CreatePanelRequest,
+  CreatePanelResponse,
+  DeletePanelRequest,
+  DeletePanelGroupRequest,
+  DuplicatePanelRequest,
+  DuplicatePanelResponse,
+  PatchPanelGroupLayoutPageRequest,
+  PatchPanelGroupLayoutPageResponse,
+  ReorderPanelGroupsRequest,
+  UpdatePanelGroupRequest,
+  UpdatePanelGroupResponse,
+  UpdatePanelRequest,
+  UpdatePanelResponse,
+} from '../../../contracts/dashboard';
 import type { DashboardContent, DashboardListItem, DashboardId } from '@grafana-fast/types';
 import type { FetchHttpClient } from '../fetchClient';
 import type { HttpApiEndpointKey } from '../endpoints';
@@ -56,6 +73,51 @@ export function createHttpDashboardService(_deps: HttpDashboardServiceDeps): Das
     async getDefaultDashboard(): Promise<DashboardContent> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.DefaultDashboard);
       return _deps.http.get<DashboardContent>(path);
+    },
+
+    async patchPanelGroupLayoutPage(req: PatchPanelGroupLayoutPageRequest): Promise<PatchPanelGroupLayoutPageResponse> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.PatchPanelGroupLayoutPage, { id: req.dashboardId, groupId: req.groupId });
+      return _deps.http.patch<PatchPanelGroupLayoutPageResponse>(path, { items: req.items });
+    },
+
+    async createPanel(req: CreatePanelRequest): Promise<CreatePanelResponse> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.CreatePanel, { id: req.dashboardId, groupId: req.groupId });
+      return _deps.http.post<CreatePanelResponse>(path, { panel: req.panel });
+    },
+
+    async updatePanel(req: UpdatePanelRequest): Promise<UpdatePanelResponse> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.UpdatePanel, { id: req.dashboardId, groupId: req.groupId, panelId: req.panelId });
+      return _deps.http.put<UpdatePanelResponse>(path, { panel: req.panel });
+    },
+
+    async deletePanel(req: DeletePanelRequest): Promise<void> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.DeletePanel, { id: req.dashboardId, groupId: req.groupId, panelId: req.panelId });
+      await _deps.http.delete(path);
+    },
+
+    async duplicatePanel(req: DuplicatePanelRequest): Promise<DuplicatePanelResponse> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.DuplicatePanel, { id: req.dashboardId, groupId: req.groupId, panelId: req.panelId });
+      return _deps.http.post<DuplicatePanelResponse>(path);
+    },
+
+    async updatePanelGroup(req: UpdatePanelGroupRequest): Promise<UpdatePanelGroupResponse> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.UpdatePanelGroup, { id: req.dashboardId, groupId: req.groupId });
+      return _deps.http.patch<UpdatePanelGroupResponse>(path, { group: req.group });
+    },
+
+    async createPanelGroup(req: CreatePanelGroupRequest): Promise<CreatePanelGroupResponse> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.CreatePanelGroup, { id: req.dashboardId });
+      return _deps.http.post<CreatePanelGroupResponse>(path, { group: req.group });
+    },
+
+    async deletePanelGroup(req: DeletePanelGroupRequest): Promise<void> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.DeletePanelGroup, { id: req.dashboardId, groupId: req.groupId });
+      await _deps.http.delete(path);
+    },
+
+    async reorderPanelGroups(req: ReorderPanelGroupsRequest): Promise<void> {
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.ReorderPanelGroups, { id: req.dashboardId });
+      await _deps.http.patch(path, { order: req.order });
     },
   };
 }

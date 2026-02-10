@@ -9,9 +9,8 @@
  * - UI/核心包只依赖 contracts 暴露的能力（通过 createXxxApiClient() 得到 client）
  *
  * 说明：
- * - mock 能力既可通过子入口 `@grafana-fast/api/mock` 引入，也可从主入口直接 import。
- * - 若你不希望生产构建打入 mock，请避免在生产代码中引用 `createMockApiClient`。
+ * - 主入口仅导出 contracts + http 实现，避免生产构建意外打入 mock。
+ * - mock 请通过子入口 `@grafana-fast/api/mock` 显式引入（用于本地演示/回归）。
  */
 export * from './contracts';
 export * from './impl/http';
-export * from './impl/mock';

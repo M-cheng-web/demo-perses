@@ -16,7 +16,7 @@ const { on, getState, actions } = useDashboardSdk(container, {
   // 本地开发/演示可开启 mock；生产建议直接提供 apiClient（remote）
   enableMock: true,
   defaultApiMode: 'mock',
-  createMockApiClient: async () => (await import('@grafana-fast/api')).createMockApiClient(),
+  createMockApiClient: async () => (await import('@grafana-fast/api/mock')).createMockApiClient(),
 });
 
 // 读取：拿到一个“可安全修改的快照”（外部改不会影响内部）

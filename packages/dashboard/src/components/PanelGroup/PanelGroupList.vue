@@ -198,7 +198,9 @@
 
   const handleDeleteGroup = (groupId: PanelGroup['id']) => {
     if (!canManageGroups.value) return;
-    dashboardStore.deletePanelGroup(groupId);
+    void dashboardStore.deletePanelGroup(groupId).catch(() => {
+      // 错误提示与回滚由 store.lastError + 全局 status toast 负责
+    });
   };
 
   const handleLayoutUpdated = () => {
@@ -217,7 +219,9 @@
       .sort((a, b) => a.y - b.y || a.x - b.x)
       .map((it) => it.i);
     if (nextOrder.join('|') === currentOrder.join('|')) return;
-    dashboardStore.reorderPanelGroups(nextOrder);
+    void dashboardStore.reorderPanelGroups(nextOrder).catch(() => {
+      // 同上：避免未捕获 Promise，错误提示交给 store
+    });
   };
 
   onMounted(() => {

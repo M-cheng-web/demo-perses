@@ -69,20 +69,34 @@
     editorStore.openEditEditor(props.groupId, props.panel);
   };
 
-  const handleDuplicate = () => {
+  const handleDuplicate = async () => {
     if (isReadOnly.value) return;
-    dashboardStore.duplicatePanel(props.groupId, props.panel.id);
-    message.success('面板已复制');
+    const toastKey = `panel-dup:${String(props.panel.id)}`;
+    message.loading({ content: '正在复制面板...', key: toastKey, duration: 0 });
+    try {
+      await dashboardStore.duplicatePanel(props.groupId, props.panel.id);
+      message.success({ content: '面板已复制', key: toastKey, duration: 2 });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '复制失败';
+      message.error({ content: msg, key: toastKey, duration: 3 });
+    }
   };
 
   const handleFullscreen = () => {
     dashboardStore.togglePanelView(props.groupId, props.panel.id);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (isReadOnly.value) return;
-    dashboardStore.deletePanel(props.groupId, props.panel.id);
-    message.success('面板已删除');
+    const toastKey = `panel-del:${String(props.panel.id)}`;
+    message.loading({ content: '正在删除面板...', key: toastKey, duration: 0 });
+    try {
+      await dashboardStore.deletePanel(props.groupId, props.panel.id);
+      message.success({ content: '面板已删除', key: toastKey, duration: 2 });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '删除失败';
+      message.error({ content: msg, key: toastKey, duration: 3 });
+    }
   };
 </script>
 

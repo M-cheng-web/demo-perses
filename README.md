@@ -22,6 +22,10 @@ pnpm docs  # 打开 VitePress 文档
 
 演示站点默认运行在 http://localhost:5173 ，文档运行在 http://localhost:4173 。
 
+## 🔌 后端接口对接
+
+- 接口清单（逐项入参/出参 + 约定）：`API_REQUIREMENTS.md`
+
 ## 🧰 命令说明（根目录 `package.json#scripts`）
 
 > 说明：本仓库的脚本组织方式参考 morehook：常用入口尽量少，组合用 `nr xxx && esno scripts/*.ts` 串起来。

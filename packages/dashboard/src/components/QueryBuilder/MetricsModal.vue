@@ -84,11 +84,11 @@
 
 <script setup lang="ts">
   import { Button, Input, Modal, Select, Table, Tag } from '@grafana-fast/component';
-  import { ref, computed, watch, onMounted } from 'vue';
+  import { ref, computed, watch, onBeforeUnmount, onMounted } from 'vue';
   import { SearchOutlined, FilterOutlined } from '@ant-design/icons-vue';
   import { message } from '@grafana-fast/component';
   import { useApiClient, useDashboardRuntime } from '/#/runtime/useInjected';
-  import { createNamespace } from '/#/utils';
+  import { createNamespace, debounceCancellable } from '/#/utils';
   import type { TableProps, TableColumnType } from '@grafana-fast/component';
 
   const [_, bem] = createNamespace('metrics-modal');
@@ -119,6 +119,7 @@
   const currentPage = ref(1);
   const pageSize = ref(20);
   const api = useApiClient();
+  let requestToken = 0;
   const runtime = useDashboardRuntime();
   const lockScrollEl = computed(() => runtime.scrollEl?.value ?? runtime.rootEl?.value ?? null);
   const lockScrollEnabled = computed(() => lockScrollEl.value != null);
@@ -210,10 +211,12 @@
   }));
 
   // 加载指标
-  const loadMetrics = async () => {
+  const loadMetrics = async (search?: string) => {
+    const token = (requestToken = requestToken + 1);
     loading.value = true;
     try {
-      const metricNames = await api.query.fetchMetrics();
+      const metricNames = await api.query.fetchMetrics(search);
+      if (token !== requestToken) return;
 
       // 转换为 MetricInfo 格式并添加模拟的类型和描述
       allMetrics.value = metricNames.map((name) => ({
@@ -225,7 +228,7 @@
       message.error('加载指标失败');
       console.error('Failed to load metrics:', error);
     } finally {
-      loading.value = false;
+      if (token === requestToken) loading.value = false;
     }
   };
 
@@ -277,6 +280,7 @@
   // 处理搜索
   const handleSearch = () => {
     currentPage.value = 1; // 重置到第一页
+    debouncedSearch(searchText.value);
   };
 
   // 处理类型过滤变化
@@ -308,6 +312,15 @@
     if (props.open) {
       loadMetrics();
     }
+  });
+
+  const debouncedSearch = debounceCancellable((value: string) => {
+    const q = String(value ?? '').trim();
+    void loadMetrics(q || undefined);
+  }, 320);
+
+  onBeforeUnmount(() => {
+    debouncedSearch.cancel();
   });
 </script>
 

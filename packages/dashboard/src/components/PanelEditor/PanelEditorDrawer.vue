@@ -21,7 +21,7 @@
             <Row :gutter="16">
               <Col :span="12">
                 <FormItem label="面板组" required>
-                  <Select :options="panelGroupOptions" v-model:value="selectedGroupId" placeholder="请选择面板组" />
+                  <Select :options="panelGroupOptions" v-model:value="selectedGroupId" placeholder="请选择面板组" :disabled="editingMode === 'edit'" />
                 </FormItem>
               </Col>
               <Col :span="12">
@@ -96,7 +96,7 @@
     <template #footer>
       <Flex :gap="12" justify="end">
         <Button @click="handleClose">取消</Button>
-        <Button type="primary" :disabled="isReadOnly" @click="handleSave">保存</Button>
+        <Button type="primary" :disabled="isReadOnly || isSaving" :loading="isSaving" @click="handleSave">保存</Button>
       </Flex>
     </template>
   </Drawer>
@@ -109,7 +109,7 @@
   import { Button, Tabs, TabPane, Empty } from '@grafana-fast/component';
   import { useDashboardStore, useEditorStore } from '/#/stores';
   import { useDashboardRuntime } from '/#/runtime/useInjected';
-  import { createPrefixedId, debounceCancellable, deepClone, createNamespace } from '/#/utils';
+  import { debounceCancellable, deepClone, createNamespace } from '/#/utils';
   import { getBuiltInPanelDefaultOptions, getBuiltInPanelStyleComponent, getBuiltInPanelTypeOptions } from '/#/panels/builtInPanels';
   import type { CanonicalQuery, Panel } from '@grafana-fast/types';
   import { validatePanelStrict } from '/#/utils/strictJsonValidators';
@@ -153,6 +153,7 @@
   };
   const dataQueryTabRef = ref<DataQueryTabExpose | null>(null);
   const jsonDraft = ref<string>('');
+  const isSaving = ref(false);
 
   // 获取面板组列表
   const panelGroupOptions = computed(() => {
@@ -334,11 +335,12 @@
   );
 
   // 保存
-  const handleSave = () => {
+  const handleSave = async () => {
     if (isReadOnly.value) {
       message.warning('当前为只读模式，无法保存面板');
       return;
     }
+    if (isSaving.value) return;
     // 验证
     if (!formData.name) {
       message.error('请输入面板名称');
@@ -375,25 +377,28 @@
       message.warning('建议至少添加一个查询');
     }
 
+    const toastKey = 'panel-save';
+    message.loading({ content: '正在保存...', key: toastKey, duration: 0 });
+    isSaving.value = true;
     try {
       if (editingMode.value === 'create') {
         // 创建新面板
-        const newPanel: Panel = {
-          ...deepClone(formData),
-          id: createPrefixedId('p'),
-        };
-        dashboardStore.addPanel(selectedGroupId.value, newPanel);
-        message.success('面板创建成功');
+        const newPanel: Panel = { ...deepClone(formData), id: '' };
+        await dashboardStore.addPanel(selectedGroupId.value, newPanel);
+        message.success({ content: '面板创建成功', key: toastKey, duration: 2 });
       } else if (originalPanelId?.value) {
         // 更新面板
-        dashboardStore.updatePanel(selectedGroupId.value, originalPanelId.value, formData);
-        message.success('面板更新成功');
+        await dashboardStore.updatePanel(selectedGroupId.value, originalPanelId.value, deepClone(formData));
+        message.success({ content: '面板更新成功', key: toastKey, duration: 2 });
       }
 
       handleClose();
     } catch (error) {
-      message.error('保存失败');
+      const msg = error instanceof Error ? error.message : '保存失败';
+      message.error({ content: msg, key: toastKey, duration: 3 });
       console.error(error);
+    } finally {
+      isSaving.value = false;
     }
   };
 </script>

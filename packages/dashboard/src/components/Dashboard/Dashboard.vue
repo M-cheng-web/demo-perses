@@ -281,6 +281,7 @@
     isSaving,
     isSyncing,
     lastError,
+    uiPageJumpRequest,
   } = storeToRefs(dashboardStore);
   const fullscreenModalRef = ref<InstanceType<typeof PanelFullscreenModal>>();
   const panelGroupDialogRef = ref<InstanceType<typeof PanelGroupDialog>>();
@@ -401,7 +402,7 @@
     setPageSize: baseSetPageSize,
   } = usePanelGroupPagination(() => panelGroups.value, {
     defaultPageSize: 20,
-    pageSizeOptions: [20, 30],
+    pageSizeOptions: [20],
     resetPageOnPageSizeChange: true,
   });
   const pagerThreshold = computed(() => Math.min(...pageSizeOptions.value, 20));
@@ -420,10 +421,18 @@
     baseSetCurrentPage(groupId, page);
   };
 
-  const setPageSize = (groupId: PanelGroup['id'], pageSize: number) => {
+  const setPageSize = (groupId: PanelGroup['id']) => {
     if (isEditingActive.value) editorStore.closeEditor();
-    baseSetPageSize(groupId, pageSize);
+    // 产品要求：固定 20 条/页，不允许修改 pageSize
+    baseSetPageSize(groupId, 20);
   };
+
+  // store 发起的“跳页请求”（例如创建面板后跳到最后一页展示新面板）
+  watch(uiPageJumpRequest, (req) => {
+    if (!req) return;
+    baseSetCurrentPage(req.groupId, req.page);
+    dashboardStore.consumePanelGroupPageJump(req.nonce);
+  });
 
   // ---------------------------
   // 聚焦层（打开单个组，不影响背景滚动位置）
@@ -593,7 +602,10 @@
     },
     addPanelGroup: () => {
       if (isBooting.value) return;
-      dashboardStore.addPanelGroup({ title: '新面板组', description: '' });
+      void dashboardStore.addPanelGroup({ title: '新面板组', description: '' }).catch((error) => {
+        const msg = error instanceof Error ? error.message : '创建面板组失败';
+        message.error(msg);
+      });
     },
 
     // JSON 导入/导出（导出可无界面；导入/查看/应用依赖工具条）

@@ -38,7 +38,7 @@
     enableMock: true,
     defaultApiMode: 'mock',
     createMockApiClient: async () => {
-      const { createMockApiClient } = await import('@grafana-fast/api');
+      const { createMockApiClient } = await import('@grafana-fast/api/mock');
       const api = createMockApiClient();
       const originalLoad = api.dashboard.loadDashboard.bind(api.dashboard);
       api.dashboard.loadDashboard = async (id) => {

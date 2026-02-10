@@ -80,7 +80,7 @@
     autoLoad: false,
     enableMock: true,
     defaultApiMode: 'mock',
-    createMockApiClient: async () => (await import('@grafana-fast/api')).createMockApiClient(),
+    createMockApiClient: async () => (await import('@grafana-fast/api/mock')).createMockApiClient(),
   });
 
   const state = ref(getState());

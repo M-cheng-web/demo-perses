@@ -7,10 +7,51 @@
  * - 未来接后端时，只需要替换 dashboard.load/save 实现，不应影响 UI 调用
  */
 import type { DashboardService } from '../../contracts';
+import type {
+  CreatePanelGroupRequest,
+  CreatePanelGroupResponse,
+  CreatePanelRequest,
+  CreatePanelResponse,
+  DeletePanelGroupRequest,
+  DeletePanelRequest,
+  DuplicatePanelRequest,
+  DuplicatePanelResponse,
+  PatchPanelGroupLayoutPageRequest,
+  PatchPanelGroupLayoutPageResponse,
+  ReorderPanelGroupsRequest,
+  UpdatePanelGroupRequest,
+  UpdatePanelGroupResponse,
+  UpdatePanelRequest,
+  UpdatePanelResponse,
+} from '../../contracts/dashboard';
 import type { CorePanelType, DashboardContent, DashboardId, DashboardListItem, Panel, PanelGroup, PanelLayout } from '@grafana-fast/types';
+import { deepCloneStructured } from '@grafana-fast/utils';
 
 function nowTs() {
   return Date.now();
+}
+
+let idSeq = 0;
+function createMockId(prefix: string): string {
+  idSeq += 1;
+  return `${prefix}-mock-${idSeq}`;
+}
+
+function getGroupOrThrow(content: DashboardContent, groupId: string): PanelGroup {
+  const g = (content.panelGroups ?? []).find((it) => String(it.id) === String(groupId));
+  if (!g) throw new Error(`[mockDashboardService] PanelGroup not found: ${String(groupId)}`);
+  return g;
+}
+
+function getPanelOrThrow(group: PanelGroup, panelId: string): Panel {
+  const p = (group.panels ?? []).find((it) => String(it.id) === String(panelId));
+  if (!p) throw new Error(`[mockDashboardService] Panel not found: ${String(panelId)}`);
+  return p;
+}
+
+function computeNewPanelLayout(group: PanelGroup, panelId: string): PanelLayout {
+  const maxY = Math.max(...(group.layout ?? []).map((l) => Number(l.y ?? 0) + Number(l.h ?? 0)), 0);
+  return { i: panelId, x: 0, y: maxY, w: 24, h: 8, minW: 6, minH: 4 };
 }
 
 function createRng(seed: number) {
@@ -495,6 +536,190 @@ export function createMockDashboardService(): DashboardService {
     },
     async getDefaultDashboard(): Promise<DashboardContent> {
       return getOrCreate('default').content;
+    },
+
+    async patchPanelGroupLayoutPage(req: PatchPanelGroupLayoutPageRequest): Promise<PatchPanelGroupLayoutPageResponse> {
+      const entry = getOrCreate(req.dashboardId);
+      const content = entry.content;
+      const group = getGroupOrThrow(content, String(req.groupId));
+
+      // merge by i
+      const byId = new Map<string, PanelLayout>();
+      (group.layout ?? []).forEach((it) => byId.set(String(it.i), it));
+
+      for (const it of req.items ?? []) {
+        const key = String(it.i);
+        const existing = byId.get(key);
+        if (existing) {
+          existing.x = Number(it.x ?? existing.x);
+          existing.y = Number(it.y ?? existing.y);
+          existing.w = Number(it.w ?? existing.w);
+          existing.h = Number(it.h ?? existing.h);
+          continue;
+        }
+        const created: PanelLayout = {
+          i: it.i,
+          x: Number(it.x ?? 0),
+          y: Number(it.y ?? 0),
+          w: Number(it.w ?? 24),
+          h: Number(it.h ?? 8),
+          minW: 6,
+          minH: 4,
+        };
+        group.layout ??= [];
+        group.layout.push(created);
+        byId.set(key, created);
+      }
+
+      entry.updatedAt = nowTs();
+      dashboards.set(req.dashboardId, entry);
+      return { items: deepCloneStructured(group.layout ?? []) };
+    },
+
+    async createPanel(req: CreatePanelRequest): Promise<CreatePanelResponse> {
+      const entry = getOrCreate(req.dashboardId);
+      const content = entry.content;
+      const group = getGroupOrThrow(content, String(req.groupId));
+
+      const panelId = createMockId('panel');
+      const base: Panel = {
+        id: panelId,
+        name: '新面板',
+        type: 'timeseries',
+        queries: [],
+        options: {},
+      };
+      const panel: Panel = { ...base, ...(req.panel as any), id: panelId };
+      group.panels ??= [];
+      group.layout ??= [];
+      group.panels.push(panel);
+
+      const layout = computeNewPanelLayout(group, panelId);
+      group.layout.push(layout);
+
+      entry.updatedAt = nowTs();
+      dashboards.set(req.dashboardId, entry);
+      return { panel: deepCloneStructured(panel), layout: deepCloneStructured(layout) };
+    },
+
+    async updatePanel(req: UpdatePanelRequest): Promise<UpdatePanelResponse> {
+      const entry = getOrCreate(req.dashboardId);
+      const content = entry.content;
+      const group = getGroupOrThrow(content, String(req.groupId));
+
+      const idx = (group.panels ?? []).findIndex((p) => String(p.id) === String(req.panelId));
+      if (idx < 0) throw new Error(`[mockDashboardService] Panel not found: ${String(req.panelId)}`);
+
+      const next: Panel = { ...(group.panels[idx] as Panel), ...(req.panel as any), id: String(req.panelId) };
+      group.panels[idx] = next;
+
+      entry.updatedAt = nowTs();
+      dashboards.set(req.dashboardId, entry);
+      return { panel: deepCloneStructured(next) };
+    },
+
+    async deletePanel(req: DeletePanelRequest): Promise<void> {
+      const entry = getOrCreate(req.dashboardId);
+      const content = entry.content;
+      const group = getGroupOrThrow(content, String(req.groupId));
+
+      group.panels = (group.panels ?? []).filter((p) => String(p.id) !== String(req.panelId));
+      group.layout = (group.layout ?? []).filter((it) => String(it.i) !== String(req.panelId));
+
+      entry.updatedAt = nowTs();
+      dashboards.set(req.dashboardId, entry);
+    },
+
+    async duplicatePanel(req: DuplicatePanelRequest): Promise<DuplicatePanelResponse> {
+      const entry = getOrCreate(req.dashboardId);
+      const content = entry.content;
+      const group = getGroupOrThrow(content, String(req.groupId));
+
+      const src = getPanelOrThrow(group, String(req.panelId));
+      const nextId = createMockId('panel');
+      const copied: Panel = { ...deepCloneStructured(src), id: nextId, name: `${src.name} (副本)` };
+      group.panels ??= [];
+      group.layout ??= [];
+      group.panels.push(copied);
+
+      const layout = computeNewPanelLayout(group, nextId);
+      group.layout.push(layout);
+
+      entry.updatedAt = nowTs();
+      dashboards.set(req.dashboardId, entry);
+      return { panel: deepCloneStructured(copied), layout: deepCloneStructured(layout) };
+    },
+
+    async updatePanelGroup(req: UpdatePanelGroupRequest): Promise<UpdatePanelGroupResponse> {
+      const entry = getOrCreate(req.dashboardId);
+      const content = entry.content;
+      const group = getGroupOrThrow(content, String(req.groupId));
+      group.title = String(req.group.title ?? group.title);
+      group.description = req.group.description ?? group.description;
+      entry.updatedAt = nowTs();
+      dashboards.set(req.dashboardId, entry);
+      return { group: deepCloneStructured(group) };
+    },
+
+    async createPanelGroup(req: CreatePanelGroupRequest): Promise<CreatePanelGroupResponse> {
+      const entry = getOrCreate(req.dashboardId);
+      const content = entry.content;
+      content.panelGroups ??= [];
+      const next: PanelGroup = {
+        id: createMockId('group'),
+        title: String(req.group.title ?? '新面板组'),
+        description: req.group.description,
+        isCollapsed: true,
+        order: content.panelGroups.length,
+        panels: [],
+        layout: [],
+      };
+      content.panelGroups.push(next);
+      entry.updatedAt = nowTs();
+      dashboards.set(req.dashboardId, entry);
+      return { group: deepCloneStructured(next) };
+    },
+
+    async deletePanelGroup(req: DeletePanelGroupRequest): Promise<void> {
+      const entry = getOrCreate(req.dashboardId);
+      const content = entry.content;
+      content.panelGroups = (content.panelGroups ?? []).filter((g) => String(g.id) !== String(req.groupId));
+      // re-index order
+      (content.panelGroups ?? []).forEach((g, idx) => (g.order = idx));
+      entry.updatedAt = nowTs();
+      dashboards.set(req.dashboardId, entry);
+    },
+
+    async reorderPanelGroups(req: ReorderPanelGroupsRequest): Promise<void> {
+      const entry = getOrCreate(req.dashboardId);
+      const content = entry.content;
+      const groups = content.panelGroups ?? [];
+
+      const byId = new Map<string, PanelGroup>();
+      for (const g of groups) byId.set(String(g.id), g);
+
+      const used = new Set<string>();
+      const next: PanelGroup[] = [];
+      for (const id of req.order ?? []) {
+        const key = String(id);
+        const g = byId.get(key);
+        if (!g) continue;
+        if (used.has(key)) continue;
+        used.add(key);
+        next.push(g);
+      }
+      for (const g of groups) {
+        const key = String(g.id);
+        if (used.has(key)) continue;
+        used.add(key);
+        next.push(g);
+      }
+
+      next.forEach((g, idx) => (g.order = idx));
+      content.panelGroups = next;
+
+      entry.updatedAt = nowTs();
+      dashboards.set(req.dashboardId, entry);
     },
   };
 }

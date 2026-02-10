@@ -139,9 +139,10 @@
     return 60;
   });
 
-  const layoutItems = computed<PanelLayout[]>(() => (canEditLayout.value ? localLayout.value : props.layout));
-
-  const localLayout = ref<PanelLayout[]>([...props.layout]);
+  // 统一从 localLayout 渲染：这样可以在非编辑态也接收 vue-grid-layout-v3 的 compact 输出
+  //（仅影响展示，不回写 store），避免“进入编辑才突然上移”的跳变。
+  const localLayout = ref<PanelLayout[]>((props.layout ?? []).map((it) => ({ ...it })));
+  const layoutItems = computed<PanelLayout[]>(() => localLayout.value);
   const layoutBaseYRef = ref<number>(Math.max(0, Math.floor(props.layoutBaseY ?? 0)));
 
   // 监听 props.layout 变化
@@ -154,13 +155,9 @@
       }
 
       layoutBaseYRef.value = Math.max(0, Math.floor(props.layoutBaseY ?? 0));
-      // 编辑模式下：避免直接替换 array 引用导致 VirtualList 中的 dataList 引用失效
-      // 使用 in-place 同步保持对象引用稳定（grid-item props 才能实时更新）
-      if (canEditLayout.value) {
-        handleLayoutModelUpdate(newLayout);
-        return;
-      }
-      localLayout.value = [...newLayout];
+      // 统一用 in-place 同步保持对象引用稳定（grid-item props 才能实时更新）
+      // 同时允许在非编辑态接收 grid-layout 的 compact 输出，避免“进入编辑才突然上移”的跳变。
+      handleLayoutModelUpdate(newLayout);
     },
     { deep: true }
   );
@@ -191,7 +188,6 @@
   };
 
   const handleGridLayoutModelUpdate = (nextLayout: PanelLayout[]) => {
-    if (!canEditLayout.value) return;
     handleLayoutModelUpdate(nextLayout);
   };
 
