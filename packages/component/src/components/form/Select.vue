@@ -34,6 +34,7 @@
         </span>
         <span v-if="collapsedTagCount > 0" :class="[bem('item'), bem('item-rest')]"> +{{ collapsedTagCount }} </span>
         <span :class="bem('search-mirror')" ref="searchMirrorRef">{{ search }}&nbsp;</span>
+        <span v-if="!showSearch && selectedOptions.length === 0" :class="bem('placeholder')">{{ placeholder }}</span>
         <input
           v-if="showSearch"
           ref="searchInputRef"

@@ -23,7 +23,7 @@
       </div>
 
       <div :class="bem('header-actions')">
-        <Button type="primary" :class="bem('run-btn')" @click="handleExecuteQuery">
+        <Button size="small" :class="bem('run-btn')" @click="handleExecuteQuery">
           <template #icon><SearchOutlined /></template>
           执行查询
         </Button>
@@ -34,44 +34,38 @@
     <div :class="bem('queries')">
       <div v-for="(draft, index) in queryDrafts" :key="draft.refId" :class="bem('query-item')">
         <div :class="bem('query-wrapper', { collapsed: draft.collapsed })">
-          <!-- 查询标题区 -->
-          <div :class="bem('query-header')">
+          <!-- 查询标题区 - 点击标题区域折叠/展开 -->
+          <div :class="bem('query-header')" @click="togglePanelCollapsed(index)">
             <div :class="bem('query-title')">
+              <span :class="bem('query-collapse-icon', { expanded: !draft.collapsed })">
+                <RightOutlined />
+              </span>
               <span :class="bem('query-pill')">{{ draft.refId }}</span>
               <div :class="bem('query-text')">
                 <div :class="bem('query-label')">查询 {{ draft.refId }}</div>
               </div>
               <Tag v-if="draft.hide" color="orange">已隐藏</Tag>
             </div>
-            <div :class="bem('query-actions')">
+            <div :class="bem('query-actions')" @click.stop>
               <div :class="bem('action-buttons')">
                 <Tooltip :title="draft.hide ? '已隐藏，点击显示' : '可见，点击隐藏'">
-                  <Button
-                    icon-only
-                    type="text"
-                    :class="bem('icon-btn')"
-                    :icon="h(draft.hide ? EyeInvisibleOutlined : EyeOutlined)"
-                    @click="toggleQueryVisibility(index)"
-                  />
-                </Tooltip>
-
-                <Tooltip :title="draft.collapsed ? '展开' : '折叠'">
-                  <Button
-                    icon-only
-                    type="text"
-                    :class="bem('icon-btn')"
-                    :icon="h(draft.collapsed ? DownOutlined : UpOutlined)"
-                    @click="togglePanelCollapsed(index)"
-                  />
+                  <span :class="bem('action-icon')" style="color: #1677ff" @click="toggleQueryVisibility(index)">
+                    <EyeInvisibleOutlined v-if="draft.hide" />
+                    <EyeOutlined v-else />
+                  </span>
                 </Tooltip>
 
                 <Tooltip v-if="queryMode === 'builder' && draft.builder.status === 'ok'" title="模版填充">
-                  <Button icon-only type="text" :class="bem('icon-btn')" :icon="h(ThunderboltOutlined)" @click="openQueryPatterns(index)" />
+                  <span :class="bem('action-icon')" style="color: #fa8c16" @click="openQueryPatterns(index)">
+                    <ThunderboltOutlined />
+                  </span>
                 </Tooltip>
 
                 <Popconfirm v-if="queryDrafts.length > 1" title="确认删除该查询？" @confirm="removeQuery(index)">
                   <Tooltip title="删除查询">
-                    <Button icon-only danger type="text" :class="bem('icon-btn')" :icon="h(DeleteOutlined)" />
+                    <span :class="bem('action-icon')" style="color: #ff4d4f">
+                      <DeleteOutlined />
+                    </span>
                   </Tooltip>
                 </Popconfirm>
               </div>
@@ -89,6 +83,7 @@
                     v-for="v in availableVariables"
                     :key="v.id"
                     type="text"
+                    size="small"
                     :class="bem('var-chip')"
                     :title="`${v.label || v.name} ($${v.name})`"
                     @click="handleUseVariable(index, v.name)"
@@ -134,7 +129,7 @@
                       <template #description>
                         <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
                           <span>点击“接受转换”后才能编辑，并会用 Builder 生成的 PromQL 覆盖当前表达式（未识别片段将被过滤）。</span>
-                          <Button type="primary" @click="acceptPartialConversion(index)">接受转换</Button>
+                          <Button size="small" type="primary" @click="acceptPartialConversion(index)">接受转换</Button>
                         </div>
                       </template>
                     </Alert>
@@ -209,18 +204,25 @@
                       </div>
 
                       <!-- 查询提示 -->
-                      <QueryHints
-                        v-if="draft.builder.visualQuery.metric"
-                        :query="draft.builder.visualQuery"
-                        :datasource="datasource"
-                        @apply-fix="handleApplyFix(index, $event)"
-                      />
+                      <div v-if="draft.builder.visualQuery.metric" :class="[bem('section'), bem('section--hints')]">
+                        <div :class="bem('section-header')">
+                          <span :class="bem('section-title')">查询提示</span>
+                        </div>
+                        <div :class="bem('section-content')">
+                          <QueryHints
+                            :class="bem('query-hints')"
+                            :query="draft.builder.visualQuery"
+                            :datasource="datasource"
+                            @apply-fix="handleApplyFix(index, $event)"
+                          />
+                        </div>
+                      </div>
 
                       <!-- 查询预览 -->
                       <div :class="bem('section')">
                         <div :class="bem('section-header')">
                           <span :class="bem('section-title')">查询预览</span>
-                          <Button type="text" :icon="h(CopyOutlined)" :class="bem('section-copy-btn')" @click="handleCopyPreview(index)">
+                          <Button size="small" type="text" :icon="h(CopyOutlined)" :class="bem('section-copy-btn')" @click="handleCopyPreview(index)">
                             复制
                           </Button>
                         </div>
@@ -279,7 +281,7 @@
       </div>
 
       <!-- 添加查询按钮 -->
-      <Button type="primary" :class="bem('add-btn')" block @click="addQuery">
+      <Button size="small" type="primary" :class="bem('add-btn')" block @click="addQuery">
         <template #icon><PlusOutlined /></template>
         添加查询
       </Button>
@@ -310,13 +312,12 @@
   import {
     CopyOutlined,
     DeleteOutlined,
-    DownOutlined,
     EyeInvisibleOutlined,
     EyeOutlined,
     PlusOutlined,
+    RightOutlined,
     SearchOutlined,
     ThunderboltOutlined,
-    UpOutlined,
   } from '@ant-design/icons-vue';
   import MetricSelector from '/#/components/QueryBuilder/MetricSelector.vue';
   import LabelFilters from '/#/components/QueryBuilder/LabelFilters.vue';
@@ -514,77 +515,85 @@
 
 <style scoped lang="less">
   .dp-data-query-tab {
-    --dp-section-gap: 14px;
-    --dp-inner-gap: 10px;
+    --dp-section-gap: 16px;
+    --dp-inner-gap: 12px;
     --dp-card-radius: var(--gf-radius-lg);
 
     display: flex;
     flex-direction: column;
     gap: var(--dp-section-gap);
     color: var(--gf-color-text);
-    padding: 4px 0;
+    padding: 0;
 
     // ===== 顶部操作栏 =====
     &__header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0;
-      gap: 8px;
+      padding: 8px 12px;
+      gap: 10px;
       flex-wrap: wrap;
+      background: var(--gf-color-surface);
+      border-radius: var(--gf-radius-md);
+      border: 1px solid var(--gf-color-border-secondary);
     }
 
     &__controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
     }
 
     &__control-chip {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      min-height: 34px;
-      padding: 4px 10px;
-      border: 1px solid var(--gf-color-border-secondary);
-      border-radius: var(--gf-radius-md);
-      background: var(--gf-color-surface);
+      gap: 6px;
+      height: 28px;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
     }
 
     &__chip-label {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--gf-color-text-secondary);
+      font-size: 11px;
+      font-weight: 600;
       line-height: 1;
       white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
 
     &__control-chip--mode {
-      padding-right: 6px;
+      padding-right: 0;
+
+      .dp-data-query-tab__chip-label {
+        color: var(--gf-color-primary);
+      }
     }
 
     &__control-chip--explain {
-      padding-right: 8px;
-      min-width: 104px;
-      justify-content: space-between;
+      min-width: auto;
+
+      .dp-data-query-tab__chip-label {
+        color: #fa8c16;
+      }
     }
 
     &__mode-segmented {
       :deep(.gf-segmented) {
         padding: 2px;
-        background: var(--gf-color-fill-secondary);
+        background: var(--gf-color-surface);
+        border: 1px solid var(--gf-color-border-secondary);
       }
 
       :deep(.gf-segmented__item) {
-        min-width: 88px;
-        height: 24px;
-        padding: 2px 10px;
+        min-width: 90px;
+        height: 26px;
+        padding: 2px 12px;
         font-size: 12px;
-      }
-
-      :deep(.gf-segmented__item.is-active) {
-        font-weight: 600;
+        font-weight: 500;
       }
     }
 
@@ -594,23 +603,34 @@
     }
 
     &__run-btn {
-      height: 32px;
-      padding: 0 14px;
+      height: 28px;
+      padding: 0 12px;
       border-radius: var(--gf-radius-md);
-      font-weight: 600;
+      font-weight: 500;
+      font-size: 12px;
+      background: transparent;
+      border: 1px dashed var(--gf-color-primary);
+      color: var(--gf-color-primary);
+      box-shadow: none;
+
+      &:hover {
+        background: var(--gf-color-primary-bg);
+        border-style: solid;
+      }
     }
 
     // ===== 查询列表区域 =====
     &__queries {
       display: flex;
       flex-direction: column;
-      gap: var(--dp-section-gap);
+      gap: 10px;
     }
 
     &__add-btn {
-      margin-top: 4px;
-      height: 34px;
+      margin-top: 2px;
+      height: 32px;
       font-weight: 500;
+      font-size: 12px;
       border-radius: var(--gf-radius-md);
       border: 1px dashed var(--gf-color-border);
       background: transparent;
@@ -620,6 +640,7 @@
       &:hover {
         border-color: var(--gf-color-primary);
         color: var(--gf-color-primary);
+        background: var(--gf-color-primary-bg);
         box-shadow: none;
       }
     }
@@ -627,14 +648,35 @@
     // ===== 单个查询项 =====
     &__query-item {
       width: 100%;
+
+      // 每个查询的主题色
+      --dp-query-accent: #1677ff;
+
+      &:nth-child(6n + 1) {
+        --dp-query-accent: #1677ff;
+      }
+      &:nth-child(6n + 2) {
+        --dp-query-accent: #52c41a;
+      }
+      &:nth-child(6n + 3) {
+        --dp-query-accent: #fa8c16;
+      }
+      &:nth-child(6n + 4) {
+        --dp-query-accent: #722ed1;
+      }
+      &:nth-child(6n + 5) {
+        --dp-query-accent: #13c2c2;
+      }
+      &:nth-child(6n + 6) {
+        --dp-query-accent: #eb2f96;
+      }
     }
 
     &__query-wrapper {
-      border-radius: var(--dp-card-radius);
+      border-radius: var(--gf-radius-md);
+      background: var(--gf-color-surface);
+      border: 1px solid color-mix(in srgb, var(--dp-query-accent), transparent 60%);
       overflow: hidden;
-      background: color-mix(in srgb, var(--gf-color-surface-muted), transparent 8%);
-      border: none;
-      box-shadow: none;
 
       &.collapsed {
         .dp-data-query-tab__query-header {
@@ -647,53 +689,75 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
-      background: transparent;
-      border-bottom: 1px solid var(--gf-color-border-secondary);
-      gap: 16px;
+      padding: 6px 10px;
+      background: color-mix(in srgb, var(--dp-query-accent), transparent 96%);
+      border-bottom: 1px solid color-mix(in srgb, var(--dp-query-accent), transparent 80%);
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: background var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        background: color-mix(in srgb, var(--dp-query-accent), transparent 92%);
+      }
     }
 
     &__query-title {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
       min-width: 0;
       flex: 1;
     }
 
+    // 折叠箭头
+    &__query-collapse-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      font-size: 9px;
+      color: var(--gf-color-text-quaternary);
+      transition: transform var(--gf-motion-fast) var(--gf-easing);
+      flex-shrink: 0;
+
+      &--expanded {
+        transform: rotate(90deg);
+      }
+    }
+
     &__query-text {
       display: flex;
-      flex-direction: column;
-      gap: 2px;
+      align-items: center;
       min-width: 0;
     }
 
     &__query-label {
-      font-weight: 600;
-      font-size: 14px;
-      color: var(--gf-color-text-heading);
+      font-weight: 500;
+      font-size: 12px;
+      color: var(--gf-color-text);
     }
 
     &__query-pill {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 28px;
-      height: 28px;
-      padding: 0 8px;
-      border-radius: var(--gf-radius-md);
-      background: var(--gf-color-fill-tertiary);
-      color: var(--gf-color-text-secondary);
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: var(--gf-radius-xs);
+      background: color-mix(in srgb, var(--dp-query-accent), transparent 88%);
+      color: var(--dp-query-accent);
       font-weight: 600;
-      font-size: 13px;
+      font-size: 11px;
       flex-shrink: 0;
-      box-shadow: none;
     }
 
     &__query-actions {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
     }
 
     &__action-buttons {
@@ -701,26 +765,32 @@
       align-items: center;
       gap: 4px;
       padding: 0;
-      border-radius: 0;
       background: transparent;
     }
 
-    &__icon-btn.gf-button--type-text.gf-button--icon-only:not(.gf-button--danger) {
-      --gf-btn-color: var(--gf-color-text-secondary);
-      --gf-btn-bg-hover: var(--gf-color-fill-secondary);
-      --gf-btn-bg-active: var(--gf-color-fill-tertiary);
-      --gf-btn-shadow-hover: none;
+    // 图标操作按钮 - 直接用 span 包裹图标
+    &__action-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      font-size: 13px;
       border-radius: var(--gf-radius-sm);
-    }
+      cursor: pointer;
+      transition: all var(--gf-motion-fast) var(--gf-easing);
+      opacity: 0.7;
 
-    &__icon-btn.gf-button--type-text.gf-button--icon-only:not(.gf-button--danger):hover:not(.is-disabled) {
-      --gf-btn-color: var(--gf-color-primary);
+      &:hover {
+        opacity: 1;
+        background: var(--gf-color-fill-secondary);
+      }
     }
 
     // ===== 查询内容区 =====
     &__query-content {
-      padding: 14px;
-      background: transparent;
+      padding: 12px;
+      background: var(--gf-color-surface);
     }
 
     // ===== 变量栏 =====
@@ -728,37 +798,40 @@
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 10px;
-      padding: 10px 12px;
-      margin-bottom: var(--dp-inner-gap);
-      border-radius: var(--gf-radius-md);
-      background: var(--gf-color-surface);
-      border: none;
+      gap: 4px;
+      padding: 4px 8px;
+      margin-bottom: 8px;
+      border-radius: var(--gf-radius-sm);
+      background: var(--gf-color-fill-quaternary);
+      border: 1px dashed var(--gf-color-border-secondary);
     }
 
     &__vars-label {
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 600;
-      color: var(--gf-color-text-secondary);
+      color: var(--gf-color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
 
     &__vars-list {
       display: inline-flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 4px;
       min-width: 0;
     }
 
     &__var-chip.gf-button--type-text {
-      height: 24px;
-      padding: 0 10px;
-      border-radius: var(--gf-radius-sm);
+      height: 18px;
+      padding: 0 6px;
+      border-radius: var(--gf-radius-xs);
       border: 1px solid var(--gf-color-primary-border);
       background: var(--gf-color-primary-bg);
       color: var(--gf-color-primary);
-      font-weight: 600;
-      font-size: 12px;
+      font-weight: 500;
+      font-size: 10px;
+      line-height: 16px;
 
       &:hover {
         background: var(--gf-color-primary-bg-hover);
@@ -767,7 +840,7 @@
 
     &__vars-hint {
       margin-left: auto;
-      font-size: 11px;
+      font-size: 10px;
       color: var(--gf-color-text-quaternary);
       white-space: nowrap;
     }
@@ -790,67 +863,95 @@
       }
     }
 
-    // ===== Section 卡片样式 =====
+    // ===== Section 样式（无包裹，纯标题+内容） =====
     &__section {
       width: 100%;
-      border-radius: var(--gf-radius-md);
-      overflow: hidden;
-      background: var(--gf-color-surface);
+      background: transparent;
       border: none;
-      box-shadow: none;
-
-      &--metric {
-        box-shadow: inset 3px 0 0 var(--gf-color-primary);
-      }
-
-      &--filters {
-        box-shadow: inset 3px 0 0 var(--gf-color-success);
-      }
-
-      &--operations {
-        box-shadow: inset 3px 0 0 var(--gf-color-warning);
-      }
-
-      &--binary {
-        box-shadow: inset 3px 0 0 #722ed1;
-      }
+      border-radius: 0;
+      overflow: visible;
     }
 
     &__section-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 12px 8px 14px;
+      padding: 0 0 6px 0;
       background: transparent;
       border-bottom: none;
     }
 
     &__section-title {
       font-weight: 600;
-      font-size: 13px;
-      color: var(--gf-color-text-heading);
-      line-height: 1.5;
+      font-size: 11px;
+      color: var(--gf-color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      // 小圆点标识
+      &::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--gf-color-text-quaternary);
+        flex-shrink: 0;
+      }
+
+      .dp-data-query-tab__section--metric & {
+        &::before {
+          background: var(--gf-color-primary);
+        }
+      }
+
+      .dp-data-query-tab__section--filters & {
+        &::before {
+          background: var(--gf-color-success);
+        }
+      }
+
+      .dp-data-query-tab__section--operations & {
+        &::before {
+          background: var(--gf-color-warning);
+        }
+      }
+
+      .dp-data-query-tab__section--binary & {
+        &::before {
+          background: #722ed1;
+        }
+      }
+
+      .dp-data-query-tab__section--hints & {
+        &::before {
+          background: #13c2c2;
+        }
+      }
     }
 
     &__section-copy-btn.gf-button--type-text {
-      --gf-btn-color: var(--gf-color-text-secondary);
+      --gf-btn-color: var(--gf-color-text-tertiary);
       --gf-btn-bg-hover: var(--gf-color-fill-secondary);
       --gf-btn-bg-active: var(--gf-color-fill-tertiary);
       height: 24px;
       padding: 0 8px;
       border-radius: var(--gf-radius-sm);
+      font-size: 12px;
     }
 
     &__section-content {
-      padding: 0 12px 12px 14px;
+      padding: 4px 0 0 0;
     }
 
     // ===== Code 模式 =====
     &__code-mode {
-      background: var(--gf-color-surface-muted);
+      background: var(--gf-color-fill-quaternary);
       border: none;
       border-radius: var(--gf-radius-md);
-      padding: 12px;
+      padding: 14px;
     }
 
     &__code-grid {

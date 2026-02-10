@@ -31,11 +31,17 @@
       >
         <template #right>
           <div v-if="group && !isBooting" :class="bem('actions')">
-            <Button type="text" :icon="h(ReloadOutlined)" :disabled="isBooting" @click="handleRefresh">刷新</Button>
-            <Button v-if="canEditGroup && isGroupEditing" type="text" :icon="h(PlusOutlined)" :disabled="isBooting" @click="handleAddPanel"
+            <Button size="small" type="text" :icon="h(ReloadOutlined)" :disabled="isBooting" @click="handleRefresh">刷新</Button>
+            <Button
+              size="small"
+              v-if="canEditGroup && isGroupEditing"
+              type="text"
+              :icon="h(PlusOutlined)"
+              :disabled="isBooting"
+              @click="handleAddPanel"
               >新增面板</Button
             >
-            <Button v-if="canEditGroup" :type="isGroupEditing ? 'ghost' : 'primary'" :disabled="isBooting" @click="handleToggleEditing">
+            <Button size="small" v-if="canEditGroup" :type="isGroupEditing ? 'ghost' : 'primary'" :disabled="isBooting" @click="handleToggleEditing">
               {{ isGroupEditing ? '退出编辑' : '编辑' }}
             </Button>
           </div>

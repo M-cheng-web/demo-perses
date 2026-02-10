@@ -1,12 +1,15 @@
 <template>
   <div :class="bem()">
     <div :class="bem('sidebar')">
-      <div v-if="apiModeOptions?.length" :class="bem('section')">
-        <div :class="bem('section-header')">
-          <div :class="bem('section-title')">数据源模式</div>
+      <!-- 数据源模式 -->
+      <div v-if="apiModeOptions?.length" :class="[bem('card'), bem('card--datasource')]">
+        <div :class="bem('card-header')">
+          <div :class="bem('card-icon')">
+            <DatabaseOutlined />
+          </div>
+          <div :class="bem('card-title')">数据源模式</div>
         </div>
-        <div :class="bem('section-body')">
-          <Alert type="info" show-icon :message="'更改将在点击底部“确定”后生效；远程模式需要宿主提供 apiClient。'" :class="bem('tip')" />
+        <div :class="bem('card-body')">
           <Segmented
             :value="draftApiMode"
             block
@@ -14,120 +17,178 @@
             :disabled="isBooting || apiModeSwitching"
             @update:value="(value: unknown) => (draftApiMode = value as 'remote' | 'mock')"
           />
-        </div>
-      </div>
-
-      <div :class="bem('section')">
-        <div :class="bem('section-header')">
-          <div :class="bem('section-title')">操作</div>
-        </div>
-        <div :class="bem('section-body')">
-          <Flex gap="8" wrap>
-            <Button type="ghost" :disabled="isBooting || isReadOnly" @click="handleCreateGroup">创建面板组</Button>
-          </Flex>
-          <div :class="bem('divider')"></div>
-          <Flex gap="8" wrap>
-            <Button type="ghost" :icon="h(FileTextOutlined)" :disabled="isBooting" @click="handleViewJson">查看</Button>
-            <Button type="ghost" :icon="h(UploadOutlined)" :disabled="isBooting || isReadOnly" @click="handleImport">导入</Button>
-            <Button type="ghost" :icon="h(DownloadOutlined)" :disabled="isBooting" @click="handleExport">导出</Button>
-          </Flex>
-          <Alert type="info" show-icon :message="'导入会先进行严格校验；非法 JSON 不会污染当前状态。'" :class="bem('tip')" />
-        </div>
-      </div>
-
-      <div :class="bem('section')">
-        <div :class="bem('section-header')">
-          <div :class="bem('section-title')">视图与时间</div>
-        </div>
-        <div :class="bem('section-body')">
-          <Alert type="info" show-icon :message="'更改将在点击底部“确定”后生效。'" :class="bem('tip')" />
-          <Segmented
-            :value="draftViewMode"
-            block
-            :options="viewModeOptions"
-            :disabled="isBooting"
-            @update:value="(value: unknown) => (draftViewMode = value as 'grouped' | 'allPanels')"
-          />
-          <Alert v-if="isAllPanelsViewDraft" type="warning" show-icon :message="'全部面板视图为只读，不支持拖拽/编辑。'" :class="bem('tip')" />
-          <div :class="bem('field')">
-            <div :class="bem('label')">范围</div>
-            <TimeRangePicker
-              :value="draftTimeRange"
-              :style="{ width: '100%' }"
-              :disabled="isBooting"
-              @update:value="(value: string) => (draftTimeRange = value)"
-            />
+          <div :class="bem('hint')">
+            <InfoCircleOutlined :class="bem('hint-icon')" />
+            <span>远程模式需要宿主提供 apiClient</span>
           </div>
-          <div :class="bem('field')">
-            <div :class="bem('label')">自动刷新</div>
-            <Select
-              :value="draftRefreshInterval"
-              :disabled="isBooting"
-              :options="refreshIntervalOptions"
-              @update:value="(value: unknown) => (draftRefreshInterval = Number(value ?? 0))"
-            />
-          </div>
-          <Alert
-            type="info"
-            show-icon
-            :message="'自动刷新仅影响当前页面运行时；保存/导出时会写入 Dashboard JSON 的 refreshInterval。'"
-            :class="bem('tip')"
-          />
         </div>
       </div>
 
-      <div :class="bem('section')">
-        <div :class="bem('section-header')">
-          <div :class="bem('section-title')">变量</div>
+      <!-- 操作区 -->
+      <div :class="[bem('card'), bem('card--actions')]">
+        <div :class="bem('card-header')">
+          <div :class="bem('card-icon')">
+            <ToolOutlined />
+          </div>
+          <div :class="bem('card-title')">操作</div>
         </div>
-        <div :class="bem('section-body')">
-          <Alert type="info" show-icon :class="bem('tip')">
-            <template #description> 更改将在点击底部“确定”后生效；仅当查询 expr 中使用了 <code>$变量名</code> 才会影响面板。 </template>
-          </Alert>
-
-          <div v-if="variableDefs.length > 0" :class="bem('var-help-list')">
-            <div :class="bem('var-help-title')">当前仪表盘变量说明：</div>
-            <div v-for="v in variableDefs" :key="v.id" :class="bem('var-help-item')">
-              <div :class="bem('var-help-name')">
-                <code>{{ formatVariableToken(v.name) }}</code>
-                <span style="margin-left: 6px">{{ v.label || v.name }}</span>
-              </div>
-              <template v-for="(line, idx) in getVariableHelpLines(v)" :key="`${v.id}-${idx}`">
-                <div :class="bem('var-help-line')">- {{ line }}</div>
-              </template>
+        <div :class="bem('card-body')">
+          <div :class="bem('action-group')">
+            <div :class="bem('action-label')">面板组</div>
+            <Button type="primary" :disabled="isBooting || isReadOnly" @click="handleCreateGroup">
+              <template #icon><PlusOutlined /></template>
+              创建面板组
+            </Button>
+          </div>
+          <div :class="bem('action-divider')"></div>
+          <div :class="bem('action-group')">
+            <div :class="bem('action-label')">JSON 配置</div>
+            <div :class="bem('action-buttons')">
+              <Tooltip title="查看当前 Dashboard JSON">
+                <Button type="ghost" :icon="h(FileTextOutlined)" :disabled="isBooting" @click="handleViewJson">查看</Button>
+              </Tooltip>
+              <Tooltip title="导入 JSON 配置（严格校验）">
+                <Button type="ghost" :icon="h(UploadOutlined)" :disabled="isBooting || isReadOnly" @click="handleImport">导入</Button>
+              </Tooltip>
+              <Tooltip title="导出当前配置为 JSON">
+                <Button type="ghost" :icon="h(DownloadOutlined)" :disabled="isBooting" @click="handleExport">导出</Button>
+              </Tooltip>
             </div>
           </div>
+        </div>
+      </div>
 
-          <Alert v-if="variableDefs.length === 0" type="info" show-icon :message="'当前仪表盘未定义 variables。'" :class="bem('tip')" />
+      <!-- 视图与时间 -->
+      <div :class="[bem('card'), bem('card--view')]">
+        <div :class="bem('card-header')">
+          <div :class="bem('card-icon')">
+            <ClockCircleOutlined />
+          </div>
+          <div :class="bem('card-title')">视图与时间</div>
+        </div>
+        <div :class="bem('card-body')">
+          <div :class="bem('field-group')">
+            <div :class="bem('field-label')">视图模式</div>
+            <Segmented
+              :value="draftViewMode"
+              block
+              :options="viewModeOptions"
+              :disabled="isBooting"
+              @update:value="(value: unknown) => (draftViewMode = value as 'grouped' | 'allPanels')"
+            />
+            <Transition name="fade-slide">
+              <div v-if="isAllPanelsViewDraft" :class="bem('field-warning')">
+                <ExclamationCircleOutlined />
+                <span>全部面板视图为只读模式</span>
+              </div>
+            </Transition>
+          </div>
+          <div :class="bem('field-row')">
+            <div :class="bem('field-col')">
+              <div :class="bem('field-label')">时间范围</div>
+              <TimeRangePicker
+                :value="draftTimeRange"
+                :style="{ width: '100%' }"
+                :disabled="isBooting"
+                @update:value="(value: string) => (draftTimeRange = value)"
+              />
+            </div>
+            <div :class="bem('field-col')">
+              <div :class="bem('field-label')">自动刷新</div>
+              <Select
+                :value="draftRefreshInterval"
+                :disabled="isBooting"
+                :options="refreshIntervalOptions"
+                @update:value="(value: unknown) => (draftRefreshInterval = Number(value ?? 0))"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <!-- 变量 -->
+      <div :class="[bem('card'), bem('card--variables')]">
+        <div :class="bem('card-header')">
+          <div :class="bem('card-icon')">
+            <CodeOutlined />
+          </div>
+          <div :class="bem('card-title')">变量</div>
+          <div v-if="variableDefs.length > 0" :class="bem('card-badge')">{{ variableDefs.length }}</div>
+        </div>
+        <div :class="bem('card-body')">
+          <!-- 无变量状态 -->
+          <div v-if="variableDefs.length === 0" :class="bem('empty-state')">
+            <div :class="bem('empty-icon')">
+              <InboxOutlined />
+            </div>
+            <div :class="bem('empty-text')">当前仪表盘未定义变量</div>
+          </div>
+
+          <!-- 有变量时 -->
           <template v-else>
-            <Alert v-if="isResolvingVariableOptions" type="info" show-icon :message="'选项加载中...'" :class="bem('tip')" />
-            <Alert v-if="variableLastError" type="warning" show-icon :message="`上次刷新失败：${variableLastError}`" :class="bem('tip')" />
+            <!-- 变量说明折叠面板 -->
+            <div :class="bem('var-docs')">
+              <div :class="bem('var-docs-header')" @click="toggleVarDocs">
+                <QuestionCircleOutlined :class="bem('var-docs-icon')" />
+                <span :class="bem('var-docs-title')">变量使用说明</span>
+                <DownOutlined :class="[bem('var-docs-arrow'), { 'is-expanded': varDocsExpanded }]" />
+              </div>
+              <Transition name="expand">
+                <div v-show="varDocsExpanded" :class="bem('var-docs-content')">
+                  <div v-for="v in variableDefs" :key="v.id" :class="bem('var-doc-item')">
+                    <div :class="bem('var-doc-header')">
+                      <code :class="bem('var-doc-token')">{{ formatVariableToken(v.name) }}</code>
+                      <span :class="bem('var-doc-name')">{{ v.label || v.name }}</span>
+                    </div>
+                    <div v-for="(line, idx) in getVariableHelpLines(v)" :key="`${v.id}-${idx}`" :class="bem('var-doc-line')">
+                      {{ line }}
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+            </div>
 
-            <div v-for="v in variableDefs" :key="v.id" :class="bem('field')">
-              <div :class="bem('var-label')" :title="v.label || v.name">{{ v.label || v.name }}</div>
-              <div :class="bem('var-control')">
-                <Select
-                  v-if="isSelectLikeVariable(v)"
-                  :value="draftVariableValues[v.name]"
-                  :mode="v.multi ? 'multiple' : undefined"
-                  show-search
-                  allow-clear
-                  style="width: 100%"
-                  :disabled="isBooting || v.type === 'constant'"
-                  :options="getVariableSelectOptions(v)"
-                  :placeholder="getVariablePlaceholder(v)"
-                  @update:value="(value: string | string[] | undefined) => (draftVariableValues[v.name] = value ?? '')"
-                />
-                <Input
-                  v-else
-                  :value="formatPlainVariableDraftValue(draftVariableValues[v.name])"
-                  allow-clear
-                  style="width: 100%"
-                  :disabled="isBooting || v.type === 'constant'"
-                  :placeholder="v.type === 'constant' ? '常量' : '请输入'"
-                  @update:value="(value: string | number) => (draftVariableValues[v.name] = parsePlainVariableDraftValue(v, value) ?? '')"
-                />
+            <!-- 加载/错误状态 -->
+            <div v-if="isResolvingVariableOptions" :class="bem('var-status')">
+              <LoadingOutlined spin :class="bem('var-status-icon')" />
+              <span>选项加载中...</span>
+            </div>
+            <div v-if="variableLastError" :class="[bem('var-status'), bem('var-status--error')]">
+              <WarningOutlined :class="bem('var-status-icon')" />
+              <span>{{ variableLastError }}</span>
+            </div>
+
+            <!-- 变量列表 -->
+            <div :class="bem('var-list')">
+              <div v-for="v in variableDefs" :key="v.id" :class="bem('var-item')">
+                <div :class="bem('var-item-label')">
+                  <span :class="bem('var-item-name')" :title="v.label || v.name">{{ v.label || v.name }}</span>
+                  <Tag v-if="v.type === 'constant'" :class="bem('var-item-tag')">常量</Tag>
+                  <Tag v-else-if="v.multi" color="blue" :class="bem('var-item-tag')">多选</Tag>
+                </div>
+                <div :class="bem('var-item-control')">
+                  <Select
+                    v-if="isSelectLikeVariable(v)"
+                    :value="draftVariableValues[v.name]"
+                    :mode="v.multi ? 'multiple' : undefined"
+                    show-search
+                    allow-clear
+                    style="width: 100%"
+                    :disabled="isBooting || v.type === 'constant'"
+                    :options="getVariableSelectOptions(v)"
+                    :placeholder="getVariablePlaceholder(v)"
+                    @update:value="(value: string | string[] | undefined) => (draftVariableValues[v.name] = value ?? '')"
+                  />
+                  <Input
+                    v-else
+                    :value="formatPlainVariableDraftValue(draftVariableValues[v.name])"
+                    allow-clear
+                    style="width: 100%"
+                    :disabled="isBooting || v.type === 'constant'"
+                    :placeholder="v.type === 'constant' ? '常量' : '请输入'"
+                    @update:value="(value: string | number) => (draftVariableValues[v.name] = parsePlainVariableDraftValue(v, value) ?? '')"
+                  />
+                </div>
               </div>
             </div>
           </template>
@@ -140,8 +201,24 @@
 <script setup lang="ts">
   import { h, ref, computed, watch } from 'vue';
   import { storeToRefs } from '@grafana-fast/store';
-  import { Alert, Button, Flex, Input, Segmented, Select, TimeRangePicker } from '@grafana-fast/component';
-  import { DownloadOutlined, FileTextOutlined, UploadOutlined } from '@ant-design/icons-vue';
+  import { Button, Input, Segmented, Select, Tag, TimeRangePicker, Tooltip } from '@grafana-fast/component';
+  import {
+    ClockCircleOutlined,
+    CodeOutlined,
+    DatabaseOutlined,
+    DownloadOutlined,
+    DownOutlined,
+    ExclamationCircleOutlined,
+    FileTextOutlined,
+    InboxOutlined,
+    InfoCircleOutlined,
+    LoadingOutlined,
+    PlusOutlined,
+    QuestionCircleOutlined,
+    ToolOutlined,
+    UploadOutlined,
+    WarningOutlined,
+  } from '@ant-design/icons-vue';
   import { useDashboardStore, useTimeRangeStore, useVariablesStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
   import type { DashboardVariable, VariableOption } from '@grafana-fast/types';
@@ -174,6 +251,11 @@
 
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
   const variableDefs = computed(() => variableDefsRef.value ?? []);
+
+  const varDocsExpanded = ref(false);
+  const toggleVarDocs = () => {
+    varDocsExpanded.value = !varDocsExpanded.value;
+  };
 
   const draftVariableValues = ref<Record<string, string | string[]>>({});
   const selectedTimeRange = ref('now-1h');
@@ -404,7 +486,7 @@
     background-color: transparent;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    padding: 4px 0;
+    padding: 0;
 
     &::after {
       display: none;
@@ -413,156 +495,416 @@
     &__sidebar {
       display: flex;
       flex-direction: column;
-      gap: 22px;
-      padding: 0 2px 6px;
+      gap: 16px;
+      padding: 0;
     }
 
-    &__section {
-      width: 100%;
-      background: transparent;
-      border: none;
-      border-radius: 0;
+    // ===== 卡片基础样式 =====
+    &__card {
+      position: relative;
+      background: var(--gf-color-surface);
+      border-radius: var(--gf-radius-lg);
+      overflow: hidden;
+      transition: box-shadow var(--gf-motion-normal) var(--gf-easing);
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--gf-color-border);
+        transition: background var(--gf-motion-normal) var(--gf-easing);
+      }
+
+      &:hover {
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--gf-color-text), transparent 94%);
+      }
+
+      // 不同类型卡片的左侧边条颜色
+      &--datasource::before {
+        background: linear-gradient(180deg, #722ed1 0%, #9254de 100%);
+      }
+
+      &--actions::before {
+        background: linear-gradient(180deg, var(--gf-color-primary) 0%, #69b1ff 100%);
+      }
+
+      &--view::before {
+        background: linear-gradient(180deg, #13c2c2 0%, #36cfc9 100%);
+      }
+
+      &--variables::before {
+        background: linear-gradient(180deg, #fa8c16 0%, #ffc53d 100%);
+      }
     }
 
-    &__section + &__section {
-      padding-top: 16px;
-      border-top: 1px solid var(--gf-color-border-secondary);
-    }
-
-    &__section-header {
+    &__card-header {
       display: flex;
       align-items: center;
-      justify-content: flex-start;
-      gap: 8px;
-      padding: 0;
-      margin-bottom: 12px;
-      background: transparent;
-      border-bottom: none;
+      gap: 10px;
+      padding: 14px 16px 10px 16px;
     }
 
-    &__section-title {
+    &__card-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--gf-radius-md);
+      background: var(--gf-color-fill-secondary);
+      color: var(--gf-color-text-secondary);
+      font-size: 14px;
+      flex-shrink: 0;
+
+      .dp-dashboard-toolbar__card--datasource & {
+        background: color-mix(in srgb, #722ed1, transparent 88%);
+        color: #722ed1;
+      }
+
+      .dp-dashboard-toolbar__card--actions & {
+        background: var(--gf-color-primary-bg);
+        color: var(--gf-color-primary);
+      }
+
+      .dp-dashboard-toolbar__card--view & {
+        background: color-mix(in srgb, #13c2c2, transparent 88%);
+        color: #13c2c2;
+      }
+
+      .dp-dashboard-toolbar__card--variables & {
+        background: color-mix(in srgb, #fa8c16, transparent 88%);
+        color: #fa8c16;
+      }
+    }
+
+    &__card-title {
       font-weight: 600;
-      font-size: 15px;
+      font-size: 14px;
       color: var(--gf-color-text-heading);
-      letter-spacing: 0;
       line-height: 1.5;
+      flex: 1;
     }
 
-    &__section-body {
-      padding: 0;
+    &__card-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 10px;
+      background: var(--gf-color-fill-tertiary);
+      color: var(--gf-color-text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    &__card-body {
+      padding: 0 16px 16px 16px;
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
 
-    &__section-body :deep(.gf-row) {
-      row-gap: 8px;
+    // ===== 提示样式 =====
+    &__hint {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: var(--gf-radius-md);
+      background: var(--gf-color-fill-quaternary);
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--gf-color-text-tertiary);
     }
 
-    &__divider {
-      width: 100%;
-      height: 1px;
-      background: var(--gf-color-border-muted);
-      margin: 8px 0;
-      align-self: stretch;
+    &__hint-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+      color: var(--gf-color-text-quaternary);
     }
 
-    &__field {
-      width: 100%;
+    // ===== 操作区样式 =====
+    &__action-group {
       display: flex;
       flex-direction: column;
-      align-items: stretch;
       gap: 8px;
     }
 
-    &__label {
+    &__action-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gf-color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    &__action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    &__action-divider {
+      width: 100%;
+      height: 1px;
+      background: var(--gf-color-border-secondary);
+      margin: 4px 0;
+    }
+
+    // ===== 字段样式 =====
+    &__field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    &__field-label {
       font-size: 13px;
       font-weight: 500;
       color: var(--gf-color-text-secondary);
       line-height: 1.5;
     }
 
-    &__var-label {
+    &__field-warning {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: var(--gf-radius-md);
+      background: color-mix(in srgb, var(--gf-color-warning), transparent 90%);
+      color: var(--gf-color-warning);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    &__field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    &__field-col {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    // ===== 空状态 =====
+    &__empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      gap: 8px;
+    }
+
+    &__empty-icon {
+      font-size: 32px;
+      color: var(--gf-color-text-quaternary);
+      opacity: 0.6;
+    }
+
+    &__empty-text {
+      font-size: 13px;
+      color: var(--gf-color-text-tertiary);
+    }
+
+    // ===== 变量文档折叠面板 =====
+    &__var-docs {
+      border-radius: var(--gf-radius-md);
+      background: var(--gf-color-fill-quaternary);
+      overflow: hidden;
+    }
+
+    &__var-docs-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: background var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        background: var(--gf-color-fill-tertiary);
+      }
+    }
+
+    &__var-docs-icon {
+      color: var(--gf-color-text-quaternary);
+      font-size: 14px;
+    }
+
+    &__var-docs-title {
+      flex: 1;
       font-size: 13px;
       font-weight: 500;
       color: var(--gf-color-text-secondary);
+    }
+
+    &__var-docs-arrow {
+      color: var(--gf-color-text-quaternary);
+      font-size: 12px;
+      transition: transform var(--gf-motion-normal) var(--gf-easing);
+
+      &.is-expanded {
+        transform: rotate(180deg);
+      }
+    }
+
+    &__var-docs-content {
+      padding: 0 12px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    &__var-doc-item {
+      padding: 10px 12px;
+      border-radius: var(--gf-radius-md);
+      background: var(--gf-color-surface);
+    }
+
+    &__var-doc-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    &__var-doc-token {
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      font-size: 12px;
+      padding: 2px 8px;
+      background: color-mix(in srgb, var(--gf-color-primary), transparent 88%);
+      border-radius: var(--gf-radius-sm);
+      color: var(--gf-color-primary);
+      font-weight: 600;
+    }
+
+    &__var-doc-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gf-color-text);
+    }
+
+    &__var-doc-line {
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--gf-color-text-tertiary);
+      padding-left: 4px;
+
+      &::before {
+        content: '•';
+        margin-right: 6px;
+        color: var(--gf-color-text-quaternary);
+      }
+    }
+
+    // ===== 变量状态 =====
+    &__var-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--gf-radius-md);
+      background: var(--gf-color-fill-quaternary);
+      font-size: 13px;
+      color: var(--gf-color-text-secondary);
+
+      &--error {
+        background: color-mix(in srgb, var(--gf-color-warning), transparent 90%);
+        color: var(--gf-color-warning);
+      }
+    }
+
+    &__var-status-icon {
+      font-size: 14px;
+    }
+
+    // ===== 变量列表 =====
+    &__var-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    &__var-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px 12px;
+      border-radius: var(--gf-radius-md);
+      background: var(--gf-color-fill-quaternary);
+      transition: background var(--gf-motion-fast) var(--gf-easing);
+
+      &:hover {
+        background: var(--gf-color-fill-tertiary);
+      }
+    }
+
+    &__var-item-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    &__var-item-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gf-color-text);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      line-height: 1.5;
     }
 
-    &__var-control {
+    &__var-item-tag {
+      flex-shrink: 0;
+      font-size: 11px;
+      padding: 0 6px;
+      height: 18px;
+      line-height: 18px;
+    }
+
+    &__var-item-control {
       width: 100%;
     }
+  }
 
-    &__var-help-list {
-      padding: 12px;
-      border-radius: var(--gf-radius-md);
-      border: 1px solid var(--gf-color-border-secondary);
-      background: transparent;
-    }
+  // ===== 过渡动画 =====
+  .fade-slide-enter-active,
+  .fade-slide-leave-active {
+    transition: all var(--gf-motion-normal) var(--gf-easing);
+  }
 
-    &__var-help-title {
-      font-size: 14px;
-      line-height: 1.5714285714285714;
-      color: var(--gf-color-text-secondary);
-      margin-bottom: 8px;
-      font-weight: 500;
-    }
+  .fade-slide-enter-from,
+  .fade-slide-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 
-    &__var-help-item {
-      margin-bottom: 12px;
+  .expand-enter-active,
+  .expand-leave-active {
+    transition: all var(--gf-motion-normal) var(--gf-easing);
+    overflow: hidden;
+  }
 
-      &:last-child {
-        margin-bottom: 0;
-      }
-    }
+  .expand-enter-from,
+  .expand-leave-to {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
 
-    &__var-help-name {
-      font-size: 14px;
-      line-height: 1.5714285714285714;
-      color: var(--gf-color-text);
-      margin-bottom: 4px;
-
-      code {
-        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-        font-size: 13px;
-        padding: 2px 6px;
-        background: var(--gf-color-fill-tertiary);
-        border-radius: var(--gf-radius-xs);
-        color: var(--gf-color-primary);
-      }
-    }
-
-    &__var-help-line {
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--gf-color-text-tertiary);
-      padding-left: 0;
-    }
-
-    &__tip {
-      margin: 0;
-      border-radius: var(--gf-radius-md);
-
-      :deep(.gf-alert) {
-        padding: 6px 10px;
-        border-radius: var(--gf-radius-md);
-      }
-
-      :deep(.gf-alert--info) {
-        background: color-mix(in srgb, var(--gf-color-surface-muted), transparent 10%);
-        border-color: var(--gf-color-border-secondary);
-      }
-
-      :deep(code) {
-        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-        font-size: 12px;
-        padding: 1px 4px;
-        background: var(--gf-color-fill-tertiary);
-        border-radius: var(--gf-radius-xs);
-      }
-    }
+  .expand-enter-to,
+  .expand-leave-from {
+    max-height: 500px;
   }
 </style>

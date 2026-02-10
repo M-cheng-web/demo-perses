@@ -23,16 +23,11 @@
       <span class="header-label" style="margin-left: 16px">向量匹配</span>
       <Select v-model:value="vectorMatchType" :options="vectorMatchTypeOptions" style="width: 100px" @change="handleChange" />
 
-      <Input
-        v-model:value="vectorMatchLabels"
-        placeholder="label1, label2"
-        style="width: 200px; margin-left: 8px"
-        @change="handleChange"
-      />
+      <Input v-model:value="vectorMatchLabels" placeholder="label1, label2" style="width: 200px; margin-left: 8px" @change="handleChange" />
 
       <div style="flex: 1"></div>
 
-      <Button type="text" danger @click="handleRemove">
+      <Button size="small" type="text" danger @click="handleRemove">
         <template #icon><CloseOutlined /></template>
       </Button>
     </div>

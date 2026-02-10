@@ -15,24 +15,19 @@
 -->
 <template>
   <div v-if="hints.length > 0" :class="bem()">
-    <div :class="bem('header')">
-      <span :class="bem('title')">查询提示</span>
-    </div>
-    <div :class="bem('content')">
-      <div v-for="(hint, index) in hints" :key="index" :class="bem('card')">
-        <Alert :type="hint.type" :message="hint.title" show-icon>
-          <template #description>
-            <div :class="bem('hint-content')">
-              <p>{{ hint.description }}</p>
-              <div v-if="hint.suggestion" :class="bem('suggestion')">{{ hint.suggestion }}</div>
-              <Button v-if="hint.fix" type="link" @click="applyFix(hint)">
-                <ThunderboltOutlined />
-                应用修复
-              </Button>
-            </div>
-          </template>
-        </Alert>
-      </div>
+    <div v-for="(hint, index) in hints" :key="index" :class="bem('card')">
+      <Alert :type="hint.type" :message="hint.title" show-icon>
+        <template #description>
+          <div :class="bem('hint-content')">
+            <p>{{ hint.description }}</p>
+            <div v-if="hint.suggestion" :class="bem('suggestion')">{{ hint.suggestion }}</div>
+            <Button v-if="hint.fix" type="link" @click="applyFix(hint)">
+              <ThunderboltOutlined />
+              应用修复
+            </Button>
+          </div>
+        </template>
+      </Alert>
     </div>
   </div>
 </template>
@@ -194,35 +189,9 @@
 <style scoped lang="less">
   .dp-query-hints {
     width: 100%;
-    border: 1px solid var(--gf-color-border-muted);
-    border-radius: var(--gf-radius-md);
-    overflow: hidden;
-    background: var(--gf-color-surface);
-    border-left: 3px solid var(--gf-color-warning);
-    transition: border-color var(--gf-motion-fast) var(--gf-easing);
-
-    &__header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--gf-color-border-muted);
-      background: var(--gf-color-surface-muted);
-    }
-
-    &__title {
-      font-weight: 600;
-      font-size: 12px;
-      color: var(--gf-color-text);
-      line-height: 1.5714285714285714;
-    }
-
-    &__content {
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 
     &__card {
       width: 100%;

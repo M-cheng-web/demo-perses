@@ -109,6 +109,13 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const dashboardViewRef = ref<DashboardViewExpose | null>(null);
   const isDashboardMounted = ref(false);
 
+  // apiReady: 保存 initializeApiClient 的 promise，供 actions 在调用 store 前 await，
+  // 避免宿主在 onMounted 中调用 loadDashboard 时 apiClient 尚未就绪的竞态。
+  let apiReadyResolve: (() => void) | null = null;
+  const apiReadyPromise = new Promise<void>((resolve) => {
+    apiReadyResolve = resolve;
+  });
+
   // 在首次渲染前应用 readOnly（仅写入 store；不走 props-driven 同步）。
   dashboardStore.setReadOnly(options.readOnly === true);
 
@@ -310,6 +317,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
 
       // Ensure the initial apiClient is attached to pinia before mounting/auto-load.
       await initializeApiClient();
+      apiReadyResolve?.();
 
       mountDashboard();
       if (options.autoLoad !== false && !dashboardStore.currentDashboard) {
@@ -371,11 +379,13 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     // Dashboard 数据加载/保存
     loadDashboard: async (id: ID) =>
       runAsyncWithError(async () => {
+        await apiReadyPromise;
         await dashboardStore.loadDashboard(id);
         scheduleChange();
       }),
     saveDashboard: async () =>
       runAsyncWithError(async () => {
+        await apiReadyPromise;
         await dashboardStore.saveDashboard();
         scheduleChange();
       }),

@@ -165,7 +165,7 @@
 
 <style scoped lang="less">
   .dp-pie-chart-styles {
-    padding: 16px;
+    padding: 12px;
     height: 100%;
     overflow-y: auto;
 
@@ -191,13 +191,13 @@
     &__grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 24px;
+      gap: 16px;
     }
 
     &__column {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 16px;
     }
 
     &__section {
@@ -213,7 +213,7 @@
     }
 
     &__section-header {
-      padding: 12px 16px;
+      padding: 8px 12px;
       border-bottom: 1px solid var(--gf-color-border-muted);
       font-weight: 600;
       font-size: 12px;
@@ -225,10 +225,10 @@
     }
 
     &__section-content {
-      padding: 16px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 10px;
     }
 
     &__row {
@@ -239,16 +239,16 @@
     }
 
     &__label {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--gf-color-text);
       flex-shrink: 0;
-      min-width: 90px;
+      min-width: 80px;
       font-weight: 500;
       line-height: 1.5714285714285714;
     }
 
     .slider-value {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--gf-color-text-secondary);
       min-width: 40px;
       text-align: right;

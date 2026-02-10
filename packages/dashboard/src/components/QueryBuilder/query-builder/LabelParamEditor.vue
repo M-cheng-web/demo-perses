@@ -30,7 +30,7 @@
 
 <script setup lang="ts">
   import { Select } from '@grafana-fast/component';
-  import { ref, watch } from 'vue';
+  import { ref, watch, onMounted } from 'vue';
   import { useApiClient } from '/#/runtime/useInjected';
   import { promQueryModeller } from '@grafana-fast/utils';
   import type { PromVisualQuery } from '@grafana-fast/utils';
@@ -63,12 +63,17 @@
     }
   );
 
-  // 当下拉框打开时加载标签
+  // 当下拉框打开时刷新标签
   const handleDropdownVisibleChange = async (visible: boolean) => {
     if (visible && !labelsLoaded.value) {
       await loadLabels();
     }
   };
+
+  // 组件挂载时立即加载标签，确保已选值能正确反显
+  onMounted(() => {
+    loadLabels();
+  });
 
   // 加载标签列表
   const loadLabels = async () => {

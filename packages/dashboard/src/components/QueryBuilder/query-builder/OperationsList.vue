@@ -44,17 +44,17 @@
               <HolderOutlined />
             </div>
             <div :class="bem('card-header-content')">
-              <Button type="text" :class="bem('name-button')">
+              <Button size="small" type="text" :class="bem('name-button')">
                 {{ getOperationName(operation.id) }}
               </Button>
             </div>
             <div :class="bem('card-header-actions')">
               <Tooltip v-if="getOperationDoc(operation)" :title="getOperationDoc(operation)">
-                <Button type="text">
+                <Button size="small" type="text">
                   <template #icon><InfoCircleOutlined /></template>
                 </Button>
               </Tooltip>
-              <Button type="text" @click="removeOperation(index)">
+              <Button size="small" type="text" @click="removeOperation(index)">
                 <template #icon><CloseOutlined /></template>
               </Button>
             </div>
@@ -122,6 +122,7 @@
                     <!-- 删除 rest 参数按钮（Grafana 条件：restParam && (params.length > def.params.length || optional)） -->
                     <Button
                       v-if="param.restParam && canRemoveRestParam(operation, paramIndex)"
+                      size="small"
                       type="text"
                       danger
                       @click="removeRestParam(index, paramIndex)"
@@ -137,7 +138,7 @@
             <div v-if="shouldShowAddButton(operation)" :class="[bem('param-row'), bem('param-row--rest')]">
               <div :class="bem('param-name')"></div>
               <div :class="bem('param-value')">
-                <Button type="dashed" @click="addRestParam(index)"> <PlusOutlined /> {{ getRestParamName(operation) }} </Button>
+                <Button size="small" type="dashed" @click="addRestParam(index)"> <PlusOutlined /> {{ getRestParamName(operation) }} </Button>
               </div>
             </div>
           </div>
@@ -158,7 +159,7 @@
             :class="bem('add-cascader')"
             @change="handleAddOperation"
           >
-            <Button>
+            <Button size="small">
               <PlusOutlined />
               添加操作
             </Button>

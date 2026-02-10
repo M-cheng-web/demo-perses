@@ -32,7 +32,12 @@
             </thead>
             <tbody ref="tbodyRef" :class="bem('tbody')" :style="tbodyStyle">
               <tr v-for="(row, rowIndex) in pagedData" :key="resolveRowKey(row, rowIndex)" :class="bem('row')">
-                <td v-for="col in columns" :key="col.key || col.dataIndex" :class="bem('cell')">
+                <td
+                  v-for="col in columns"
+                  :key="col.key || col.dataIndex"
+                  :class="bem('cell')"
+                  :style="{ width: col.width ? `${col.width}px` : undefined }"
+                >
                   <slot name="bodyCell" :column="col" :text="row[col.dataIndex || '']" :record="row" :index="rowIndex">
                     {{ row[col.dataIndex || ''] }}
                   </slot>
@@ -425,11 +430,17 @@
       table-layout: fixed;
     }
 
-    &.use-body-scroll &__thead,
+    &.use-body-scroll &__thead > tr,
     &.use-body-scroll &__tbody > tr {
       display: table;
       width: 100%;
       table-layout: fixed;
+    }
+
+    &.use-body-scroll &__thead {
+      display: block;
+      overflow-y: auto;
+      scrollbar-gutter: stable;
     }
 
     &.use-body-scroll &__tbody {
@@ -437,6 +448,7 @@
       overflow-y: auto;
       overflow-x: hidden;
       overscroll-behavior: contain;
+      scrollbar-gutter: stable;
     }
 
     &.use-body-scroll &__cell-header {

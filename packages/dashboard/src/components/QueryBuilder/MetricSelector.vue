@@ -27,7 +27,7 @@
         @search="handleSearch"
         :filter-option="filterOption"
       />
-      <Button :class="bem('btn')" @click="openMetricsModal">
+      <Button size="middle" :class="bem('btn')" @click="openMetricsModal">
         <AppstoreOutlined />
         浏览
       </Button>
@@ -144,18 +144,15 @@
     width: 100%;
     display: flex;
     align-items: stretch;
+    gap: 8px;
   }
 
   .dp-metric-selector__select {
     flex: 1;
     min-width: 0;
-    --gf-control-radius: var(--gf-radius-md) 0 0 var(--gf-radius-md);
   }
 
   .dp-metric-selector__btn {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    margin-left: -1px;
     flex-shrink: 0;
   }
 </style>

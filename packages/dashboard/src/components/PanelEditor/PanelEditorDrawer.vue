@@ -12,79 +12,96 @@
   >
     <div :class="bem()">
       <Form :model="formData" layout="vertical">
-        <!-- 基础信息 -->
-        <div :class="bem('section')">
-          <div :class="bem('section-header')">
-            <div :class="bem('section-title')">基础信息</div>
+        <!-- 基础信息卡片 -->
+        <div :class="[bem('card'), bem('card--info')]">
+          <div :class="bem('card-header')">
+            <div :class="bem('card-icon')">
+              <FormOutlined />
+            </div>
+            <div :class="bem('card-title')">基础信息</div>
           </div>
-          <div :class="bem('section-body')">
-            <Row :gutter="16">
-              <Col :span="12">
-                <FormItem label="面板组" required>
-                  <Select :options="panelGroupOptions" v-model:value="selectedGroupId" placeholder="请选择面板组" :disabled="editingMode === 'edit'" />
-                </FormItem>
-              </Col>
-              <Col :span="12">
-                <FormItem label="面板名称" required>
-                  <Input v-model:value="formData.name" placeholder="请输入面板名称" />
-                </FormItem>
-              </Col>
-            </Row>
-            <Row :gutter="16">
-              <Col :span="12">
-                <FormItem label="面板描述">
-                  <Textarea v-model:value="formData.description" placeholder="请输入面板描述" :rows="1" :auto-size="{ minRows: 1, maxRows: 4 }" />
-                </FormItem>
-              </Col>
-              <Col :span="12">
-                <FormItem label="图表类型" required>
-                  <Select :options="panelTypeOptions" v-model:value="formData.type" />
-                </FormItem>
-              </Col>
-            </Row>
+          <div :class="bem('card-body')">
+            <div :class="bem('form-grid')">
+              <FormItem label="面板组" required :class="bem('form-item')">
+                <Select :options="panelGroupOptions" v-model:value="selectedGroupId" placeholder="请选择面板组" :disabled="editingMode === 'edit'" />
+              </FormItem>
+              <FormItem label="面板名称" required :class="bem('form-item')">
+                <Input v-model:value="formData.name" placeholder="请输入面板名称" />
+              </FormItem>
+              <FormItem label="图表类型" required :class="bem('form-item')">
+                <Select :options="panelTypeOptions" v-model:value="formData.type" />
+              </FormItem>
+              <FormItem label="面板描述" :class="bem('form-item')">
+                <Textarea
+                  v-model:value="formData.description"
+                  placeholder="可选：简要描述面板用途"
+                  :rows="1"
+                  :auto-size="{ minRows: 1, maxRows: 3 }"
+                />
+              </FormItem>
+            </div>
           </div>
         </div>
 
-        <!-- 面板预览 -->
-        <div :class="bem('section')">
-          <div :class="bem('section-header')">
-            <div :class="bem('section-title')">预览</div>
+        <!-- 面板预览卡片 -->
+        <div :class="[bem('card'), bem('card--preview')]">
+          <div :class="bem('card-header')">
+            <div :class="bem('card-icon')">
+              <EyeOutlined />
+            </div>
+            <div :class="bem('card-title')">实时预览</div>
+            <div :class="bem('card-subtitle')">查询结果将在此处展示</div>
           </div>
-          <div :class="bem('section-body')">
-            <PanelPreview ref="panelPreviewRef" :panel="formData" :auto-execute="false" :show-header="false" />
+          <div :class="bem('card-body')">
+            <div :class="bem('preview-container')">
+              <PanelPreview ref="panelPreviewRef" :panel="formData" :auto-execute="false" :show-header="false" />
+            </div>
           </div>
         </div>
 
-        <!-- Tabs -->
-        <div :class="bem('section')">
-          <div :class="bem('section-header')">
-            <div :class="bem('section-title')">配置</div>
+        <!-- 配置 Tabs 卡片 -->
+        <div :class="[bem('card'), bem('card--config')]">
+          <div :class="bem('card-header')">
+            <div :class="bem('card-icon')">
+              <SettingOutlined />
+            </div>
+            <div :class="bem('card-title')">配置</div>
           </div>
-          <div :class="bem('section-body')">
+          <div :class="bem('card-body')">
             <Tabs v-model:activeKey="activeTab" :class="bem('tabs')">
               <!-- 数据查询 -->
               <TabPane name="query" tab="数据查询">
-                <DataQueryTab
-                  ref="dataQueryTabRef"
-                  :session-key="editorSessionKey"
-                  :queries="formData.queries"
-                  @update:queries="handleQueriesUpdate"
-                  @execute="handleExecuteQuery"
-                />
+                <div :class="bem('tab-content')">
+                  <DataQueryTab
+                    ref="dataQueryTabRef"
+                    :session-key="editorSessionKey"
+                    :queries="formData.queries"
+                    @update:queries="handleQueriesUpdate"
+                    @execute="handleExecuteQuery"
+                  />
+                </div>
               </TabPane>
 
               <!-- 图表样式 -->
               <TabPane name="style" tab="图表样式">
-                <!-- 根据面板类型显示不同的样式配置 -->
-                <component v-if="styleComponent" :is="styleComponent" v-model:options="formData.options" />
-                <div v-else>
-                  <Empty description="此面板类型暂无特定样式配置" />
+                <div :class="bem('tab-content')">
+                  <component v-if="styleComponent" :is="styleComponent" v-model:options="formData.options" />
+                  <div v-else :class="bem('empty-style')">
+                    <div :class="bem('empty-style-icon')">
+                      <AppstoreOutlined />
+                    </div>
+                    <div :class="bem('empty-style-text')">此面板类型暂无特定样式配置</div>
+                  </div>
                 </div>
               </TabPane>
 
               <!-- JSON 编辑器 -->
               <TabPane name="json" tab="JSON 编辑">
-                <JsonEditorLite v-model="jsonDraft" :height="360" :validate="validatePanelStrict" @validate="handleJsonValidate" />
+                <div :class="bem('tab-content')">
+                  <div :class="bem('json-editor-wrapper')">
+                    <JsonEditorLite v-model="jsonDraft" :height="380" :validate="validatePanelStrict" @validate="handleJsonValidate" />
+                  </div>
+                </div>
               </TabPane>
             </Tabs>
           </div>
@@ -94,10 +111,19 @@
 
     <!-- 底部按钮 -->
     <template #footer>
-      <Flex :gap="12" justify="end">
-        <Button @click="handleClose">取消</Button>
-        <Button type="primary" :disabled="isReadOnly || isSaving" :loading="isSaving" @click="handleSave">保存</Button>
-      </Flex>
+      <div :class="bem('footer')">
+        <div :class="bem('footer-hint')">
+          <InfoCircleOutlined />
+          <span>更改将在保存后生效</span>
+        </div>
+        <div :class="bem('footer-actions')">
+          <Button size="small" @click="handleClose">取消</Button>
+          <Button size="small" type="primary" :disabled="isReadOnly || isSaving" :loading="isSaving" @click="handleSave">
+            <template #icon><SaveOutlined /></template>
+            保存
+          </Button>
+        </div>
+      </div>
     </template>
   </Drawer>
 </template>
@@ -105,8 +131,9 @@
 <script setup lang="ts">
   import { computed, defineAsyncComponent, onBeforeUnmount, reactive, ref, watch } from 'vue';
   import { storeToRefs } from '@grafana-fast/store';
-  import { Drawer, Form, FormItem, Select, Input, Textarea, Row, Col, Flex, message } from '@grafana-fast/component';
-  import { Button, Tabs, TabPane, Empty } from '@grafana-fast/component';
+  import { Drawer, Form, FormItem, Select, Input, Textarea, message } from '@grafana-fast/component';
+  import { Button, Tabs, TabPane } from '@grafana-fast/component';
+  import { AppstoreOutlined, EyeOutlined, FormOutlined, InfoCircleOutlined, SaveOutlined, SettingOutlined } from '@ant-design/icons-vue';
   import { useDashboardStore, useEditorStore } from '/#/stores';
   import { useDashboardRuntime } from '/#/runtime/useInjected';
   import { debounceCancellable, deepClone, createNamespace } from '/#/utils';
@@ -407,74 +434,205 @@
   .dp-panel-editor-drawer {
     display: flex;
     flex-direction: column;
-    gap: 22px;
-    padding: 0 2px 6px;
+    gap: 12px;
+    padding: 0;
 
-    &__section {
-      background: transparent;
-      border: none;
-      border-radius: 0;
-      overflow: visible;
+    // ===== 卡片基础样式 =====
+    &__card {
+      position: relative;
+      background: var(--gf-color-surface);
+      border-radius: var(--gf-radius-lg);
+      overflow: hidden;
+      transition: box-shadow var(--gf-motion-normal) var(--gf-easing);
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--gf-color-border);
+        transition: background var(--gf-motion-normal) var(--gf-easing);
+      }
+
+      // 不同类型卡片的左侧边条颜色
+      &--info::before {
+        background: linear-gradient(180deg, var(--gf-color-primary) 0%, #69b1ff 100%);
+      }
+
+      &--preview::before {
+        background: linear-gradient(180deg, #52c41a 0%, #95de64 100%);
+      }
+
+      &--config::before {
+        background: linear-gradient(180deg, #722ed1 0%, #b37feb 100%);
+      }
     }
 
-    &__section + &__section {
-      padding-top: 16px;
-      border-top: 1px solid var(--gf-color-border-secondary);
-    }
-
-    &__section-header {
+    &__card-header {
       display: flex;
       align-items: center;
-      justify-content: flex-start;
-      gap: 8px;
-      padding: 0;
-      margin-bottom: 12px;
-      background: transparent;
-      border-bottom: none;
+      gap: 10px;
+      padding: 14px 16px 10px 16px;
     }
 
-    &__section-title {
+    &__card-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--gf-radius-md);
+      background: var(--gf-color-fill-secondary);
+      color: var(--gf-color-text-secondary);
+      font-size: 14px;
+      flex-shrink: 0;
+
+      .dp-panel-editor-drawer__card--info & {
+        background: var(--gf-color-primary-bg);
+        color: var(--gf-color-primary);
+      }
+
+      .dp-panel-editor-drawer__card--preview & {
+        background: color-mix(in srgb, #52c41a, transparent 88%);
+        color: #52c41a;
+      }
+
+      .dp-panel-editor-drawer__card--config & {
+        background: color-mix(in srgb, #722ed1, transparent 88%);
+        color: #722ed1;
+      }
+    }
+
+    &__card-title {
       font-weight: 600;
-      font-size: 15px;
+      font-size: 14px;
       color: var(--gf-color-text-heading);
-      letter-spacing: 0;
       line-height: 1.5;
     }
 
-    &__section-body {
-      padding: 0;
+    &__card-subtitle {
+      font-size: 12px;
+      color: var(--gf-color-text-tertiary);
+      margin-left: auto;
     }
 
-    :deep(.gf-row) {
-      row-gap: 8px;
+    &__card-body {
+      padding: 0 16px 12px 16px;
     }
 
-    :deep(.gf-form-item) {
-      margin-bottom: 16px;
+    // ===== 表单网格布局 =====
+    &__form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px 16px;
     }
 
-    :deep(.gf-form-item:last-child) {
-      margin-bottom: 0;
+    &__form-item {
+      margin-bottom: 0 !important;
     }
 
-    :deep(.dp-panel-preview__content) {
-      border: none;
+    // ===== 预览容器 =====
+    &__preview-container {
+      position: relative;
+      min-height: 200px;
       border-radius: var(--gf-radius-md);
       background: transparent;
-      box-shadow: none;
+      overflow: hidden;
+
+      :deep(.dp-panel-preview) {
+        position: relative;
+        z-index: 1;
+      }
+
+      :deep(.dp-panel-preview__content) {
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      :deep(.dp-panel-preview__content:hover) {
+        border: none;
+      }
     }
 
-    :deep(.dp-panel-preview__content:hover) {
-      border: none;
-    }
-
-    // Tabs styling
-    :deep(.gf-tabs) {
-      .gf-tabs__nav {
+    // ===== Tabs 样式 =====
+    &__tabs {
+      :deep(.gf-tabs__nav) {
         padding: 0;
         background: transparent;
-        margin-bottom: 14px;
+        margin-bottom: 0;
+        border-bottom: 1px solid var(--gf-color-border-secondary);
       }
+
+      :deep(.gf-tabs__nav-item) {
+        padding: 10px 16px;
+        font-weight: 500;
+
+        &.is-active {
+          font-weight: 600;
+        }
+      }
+
+      :deep(.gf-tabs__content) {
+        padding-top: 12px;
+      }
+    }
+
+    &__tab-content {
+      min-height: 200px;
+    }
+
+    // ===== 空样式状态 =====
+    &__empty-style {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      gap: 12px;
+    }
+
+    &__empty-style-icon {
+      font-size: 40px;
+      color: var(--gf-color-text-quaternary);
+      opacity: 0.6;
+    }
+
+    &__empty-style-text {
+      font-size: 14px;
+      color: var(--gf-color-text-tertiary);
+    }
+
+    // ===== JSON 编辑器包装 =====
+    &__json-editor-wrapper {
+      border-radius: var(--gf-radius-md);
+      overflow: hidden;
+      border: 1px solid var(--gf-color-border-secondary);
+    }
+
+    // ===== 底部区域 =====
+    &__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    &__footer-hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--gf-color-text-tertiary);
+    }
+
+    &__footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
   }
 </style>

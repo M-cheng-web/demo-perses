@@ -17,7 +17,7 @@
 <template>
   <div :class="bem()">
     <div v-if="filters.length === 0" :class="bem('empty')">
-      <Button block :class="bem('add-btn')" @click="addFilter">
+      <Button size="small" block :class="bem('add-btn')" @click="addFilter">
         <PlusOutlined />
         添加过滤条件
       </Button>
@@ -25,6 +25,7 @@
 
     <div v-else :class="bem('list')">
       <div v-for="(filter, index) in filters" :key="index" :class="bem('item')">
+        <span :class="bem('index')">{{ index + 1 }}</span>
         <Select
           v-model:value="filter.label"
           placeholder="标签名"
@@ -49,12 +50,12 @@
           @update:value="handleValueChange(index, $event)"
         />
 
-        <Button type="text" danger @click="removeFilter(index)">
+        <Button size="small" type="text" :class="bem('remove-btn')" @click="removeFilter(index)">
           <CloseOutlined />
         </Button>
       </div>
 
-      <Button :class="bem('add-btn')" @click="addFilter">
+      <Button size="small" :class="bem('add-btn')" @click="addFilter">
         <PlusOutlined />
         添加过滤条件
       </Button>
@@ -233,22 +234,38 @@
     &__list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 4px;
     }
 
     &__item {
       display: flex;
       gap: 8px;
       align-items: center;
-      padding: 8px 10px;
-      background: var(--gf-color-surface-muted);
-      border: 1px solid var(--gf-color-border-muted);
-      border-radius: var(--gf-radius-md);
-      transition: all var(--gf-motion-fast) var(--gf-easing);
+      padding: 2px 0;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+    }
+
+    &__index {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--gf-color-fill-tertiary);
+      color: var(--gf-color-text-tertiary);
+      font-size: 10px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    &__remove-btn.gf-button--type-text {
+      color: var(--gf-color-text-quaternary);
 
       &:hover {
-        background: var(--gf-color-fill);
-        border-color: var(--gf-color-border);
+        color: var(--gf-color-text-secondary);
       }
     }
 
