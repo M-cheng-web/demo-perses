@@ -15,6 +15,7 @@ import type { DashboardVariable, VariableOption, VariablesState } from '@grafana
 import { isPlainObject } from '@grafana-fast/utils';
 import { deepCloneStructured } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
+import { interpolateExpr } from '/#/query/interpolate';
 
 interface VariablesStoreState {
   /** Dashboard JSON 中的变量定义（深拷贝保存，避免外部引用污染） */
@@ -134,7 +135,20 @@ export const useVariablesStore = defineStore('variables', {
       const api = getPiniaApiClient(this.$pinia);
       this.isResolvingOptions = true;
       try {
-        const patch = await api.variable.resolveOptions(this.variables, this.state);
+        // 对 query 型变量的 expr 做一次变量插值（与面板查询一致）：
+        // - 前端完成 $var / ${var} / [[var]] 的替换后再交给后端/实现层解析
+        // - 后端无需实现变量语法，降低接入复杂度
+        const values = (this.state?.values ?? {}) as Record<string, string | string[]>;
+        const interpolatedVariables = this.variables.map((v) => {
+          if (v.type !== 'query') return v;
+          const raw = String(v.query ?? '').trim();
+          if (!raw) return v;
+          const expr = interpolateExpr(raw, values, { multiFormat: 'regex', unknown: 'keep' });
+          if (expr === raw) return v;
+          return { ...v, query: expr };
+        });
+
+        const patch = await api.variable.resolveOptions(interpolatedVariables, this.state);
         const next: Record<string, VariableOption[]> = { ...(this.state.options ?? {}) };
         for (const [name, opts] of Object.entries(patch ?? {})) {
           next[name] = normalizeVariableOptions(opts);

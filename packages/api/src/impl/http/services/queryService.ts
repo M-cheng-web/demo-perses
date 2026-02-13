@@ -43,27 +43,19 @@ export function createHttpQueryService(_deps: HttpQueryServiceDeps): QueryServic
 
     async fetchMetrics(search?: string, options?): Promise<string[]> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.FetchMetrics);
-      const res = await _deps.http.get<unknown>(path, { query: search ? { search } : undefined, signal: options?.signal });
+      const res = await _deps.http.post<unknown>(path, search ? { search } : {}, { signal: options?.signal });
       return normalizeArrayResponse<string>(res);
     },
 
     async fetchLabelKeys(metric: string, options?): Promise<string[]> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.FetchLabelKeys);
-      const res = await _deps.http.get<unknown>(path, { query: { metric }, signal: options?.signal });
+      const res = await _deps.http.post<unknown>(path, { metric }, { signal: options?.signal });
       return normalizeArrayResponse<string>(res);
     },
 
     async fetchLabelValues(metric: string, labelKey: string, otherLabels?: Record<string, string>, options?): Promise<string[]> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.FetchLabelValues);
-      const res = await _deps.http.get<unknown>(path, {
-        query: {
-          metric,
-          labelKey,
-          // 说明：otherLabels 的传输形态后端可能不同；这里先用“扁平化”方案，后续按文档调整
-          ...(otherLabels ?? {}),
-        },
-        signal: options?.signal,
-      });
+      const res = await _deps.http.post<unknown>(path, { metric, labelKey, otherLabels }, { signal: options?.signal });
       return normalizeArrayResponse<string>(res);
     },
 

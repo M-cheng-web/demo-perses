@@ -45,79 +45,84 @@ export function createHttpDashboardService(_deps: HttpDashboardServiceDeps): Das
    *
    * 1) 从 deps 拿到 http + endpoints
    * 2) 用 getEndpointPath(endpoints, key, params) 得到路径
-   * 3) 调用 http.get/post/... 发请求
+   * 3) 调用 http.post 发请求（本期约定：统一 POST + JSON body）
    * 4) 在这里完成 DTO → @grafana-fast/types 的转换（核心包不关心 DTO）
    */
   return {
     async loadDashboard(dashboardId: DashboardId): Promise<DashboardContent> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.LoadDashboard, { id: dashboardId });
-      return _deps.http.get<DashboardContent>(path);
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.LoadDashboard);
+      return _deps.http.post<DashboardContent>(path, { dashboardId });
     },
 
     async saveDashboard(dashboardId: DashboardId, content: DashboardContent): Promise<void> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.SaveDashboard, { id: dashboardId });
-      await _deps.http.put(path, content);
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.SaveDashboard);
+      await _deps.http.post(path, { dashboardId, content });
     },
 
     async deleteDashboard(dashboardId: DashboardId): Promise<void> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.DeleteDashboard, { id: dashboardId });
-      await _deps.http.delete(path);
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.DeleteDashboard);
+      await _deps.http.post(path, { dashboardId });
     },
 
     async listDashboards(): Promise<DashboardListItem[]> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.AllDashboards);
-      const res = await _deps.http.get<unknown>(path);
+      const res = await _deps.http.post<unknown>(path, {});
       return normalizeArrayResponse<DashboardListItem>(res);
     },
 
     async getDefaultDashboard(): Promise<DashboardContent> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.DefaultDashboard);
-      return _deps.http.get<DashboardContent>(path);
+      return _deps.http.post<DashboardContent>(path, {});
     },
 
     async patchPanelGroupLayoutPage(req: PatchPanelGroupLayoutPageRequest): Promise<PatchPanelGroupLayoutPageResponse> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.PatchPanelGroupLayoutPage, { id: req.dashboardId, groupId: req.groupId });
-      return _deps.http.patch<PatchPanelGroupLayoutPageResponse>(path, { items: req.items });
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.PatchPanelGroupLayoutPage);
+      return _deps.http.post<PatchPanelGroupLayoutPageResponse>(path, { dashboardId: req.dashboardId, groupId: req.groupId, items: req.items });
     },
 
     async createPanel(req: CreatePanelRequest): Promise<CreatePanelResponse> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.CreatePanel, { id: req.dashboardId, groupId: req.groupId });
-      return _deps.http.post<CreatePanelResponse>(path, { panel: req.panel });
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.CreatePanel);
+      return _deps.http.post<CreatePanelResponse>(path, { dashboardId: req.dashboardId, groupId: req.groupId, panel: req.panel });
     },
 
     async updatePanel(req: UpdatePanelRequest): Promise<UpdatePanelResponse> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.UpdatePanel, { id: req.dashboardId, groupId: req.groupId, panelId: req.panelId });
-      return _deps.http.put<UpdatePanelResponse>(path, { panel: req.panel });
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.UpdatePanel);
+      return _deps.http.post<UpdatePanelResponse>(path, {
+        dashboardId: req.dashboardId,
+        groupId: req.groupId,
+        panelId: req.panelId,
+        panel: req.panel,
+      });
     },
 
     async deletePanel(req: DeletePanelRequest): Promise<void> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.DeletePanel, { id: req.dashboardId, groupId: req.groupId, panelId: req.panelId });
-      await _deps.http.delete(path);
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.DeletePanel);
+      await _deps.http.post(path, { dashboardId: req.dashboardId, groupId: req.groupId, panelId: req.panelId });
     },
 
     async duplicatePanel(req: DuplicatePanelRequest): Promise<DuplicatePanelResponse> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.DuplicatePanel, { id: req.dashboardId, groupId: req.groupId, panelId: req.panelId });
-      return _deps.http.post<DuplicatePanelResponse>(path);
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.DuplicatePanel);
+      return _deps.http.post<DuplicatePanelResponse>(path, { dashboardId: req.dashboardId, groupId: req.groupId, panelId: req.panelId });
     },
 
     async updatePanelGroup(req: UpdatePanelGroupRequest): Promise<UpdatePanelGroupResponse> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.UpdatePanelGroup, { id: req.dashboardId, groupId: req.groupId });
-      return _deps.http.patch<UpdatePanelGroupResponse>(path, { group: req.group });
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.UpdatePanelGroup);
+      return _deps.http.post<UpdatePanelGroupResponse>(path, { dashboardId: req.dashboardId, groupId: req.groupId, group: req.group });
     },
 
     async createPanelGroup(req: CreatePanelGroupRequest): Promise<CreatePanelGroupResponse> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.CreatePanelGroup, { id: req.dashboardId });
-      return _deps.http.post<CreatePanelGroupResponse>(path, { group: req.group });
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.CreatePanelGroup);
+      return _deps.http.post<CreatePanelGroupResponse>(path, { dashboardId: req.dashboardId, group: req.group });
     },
 
     async deletePanelGroup(req: DeletePanelGroupRequest): Promise<void> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.DeletePanelGroup, { id: req.dashboardId, groupId: req.groupId });
-      await _deps.http.delete(path);
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.DeletePanelGroup);
+      await _deps.http.post(path, { dashboardId: req.dashboardId, groupId: req.groupId });
     },
 
     async reorderPanelGroups(req: ReorderPanelGroupsRequest): Promise<void> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.ReorderPanelGroups, { id: req.dashboardId });
-      await _deps.http.patch(path, { order: req.order });
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.ReorderPanelGroups);
+      await _deps.http.post(path, { dashboardId: req.dashboardId, order: req.order });
     },
   };
 }

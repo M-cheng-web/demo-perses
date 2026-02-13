@@ -8,7 +8,11 @@
  * 这里解决的问题：
  * - endpoint key 做成强类型（避免手写字符串出错）
  * - 提供默认 endpoint 路径（占位），后续对接真实后端时按文档替换即可
- * - 提供 path 参数替换工具（例如 /dashboards/:id）
+ * - 提供 path 参数替换工具（用于兼容少数“仍使用 path params 的宿主 override 配置”）
+ *
+ * 本期对接约定（与 API_REQUIREMENTS 对齐）：
+ * - **所有接口统一使用 POST + JSON body**
+ * - dashboardId/panelId/groupId 等业务 id 不放在 URL path params 中，统一放到 body
  *
  * 重要说明：
  * - DEFAULT_HTTP_API_ENDPOINTS 里的路径是“占位默认值”，不是最终真实接口
@@ -24,51 +28,51 @@
  */
 export const HttpApiEndpointKey = {
   // --- Dashboard ---
-  /** GET /dashboards/:id - 获取单个 Dashboard */
+  /** POST /dashboards/load - 获取单个 Dashboard（整盘 JSON，只在进入时拉一次） */
   LoadDashboard: 'LoadDashboard',
-  /** PUT /dashboards/:id - 保存 Dashboard 内容（按 id upsert） */
+  /** POST /dashboards/save - 保存 Dashboard 内容（按 dashboardId upsert，兜底全量保存） */
   SaveDashboard: 'SaveDashboard',
-  /** DELETE /dashboards/:id - 删除 Dashboard */
+  /** POST /dashboards/delete - 删除 Dashboard */
   DeleteDashboard: 'DeleteDashboard',
-  /** GET /dashboards - 查询全部 Dashboard 列表 */
+  /** POST /dashboards/list - 查询全部 Dashboard 列表 */
   AllDashboards: 'AllDashboards',
-  /** GET /dashboards/default - 获取默认 Dashboard */
+  /** POST /dashboards/default - 获取默认 Dashboard */
   DefaultDashboard: 'DefaultDashboard',
-  /** PATCH /dashboards/:id/panel-groups/:groupId/layout - 更新当前页面板布局（分页） */
+  /** POST /dashboards/panel-groups/layout/patch-page - 更新当前页面板布局（分页） */
   PatchPanelGroupLayoutPage: 'PatchPanelGroupLayoutPage',
-  /** POST /dashboards/:id/panel-groups/:groupId/panels - 创建面板 */
+  /** POST /dashboards/panels/create - 创建面板 */
   CreatePanel: 'CreatePanel',
-  /** PUT /dashboards/:id/panel-groups/:groupId/panels/:panelId - 更新面板 */
+  /** POST /dashboards/panels/update - 更新面板 */
   UpdatePanel: 'UpdatePanel',
-  /** DELETE /dashboards/:id/panel-groups/:groupId/panels/:panelId - 删除面板 */
+  /** POST /dashboards/panels/delete - 删除面板 */
   DeletePanel: 'DeletePanel',
-  /** POST /dashboards/:id/panel-groups/:groupId/panels/:panelId/duplicate - 复制面板 */
+  /** POST /dashboards/panels/duplicate - 复制面板 */
   DuplicatePanel: 'DuplicatePanel',
-  /** PATCH /dashboards/:id/panel-groups/:groupId - 更新面板组元信息 */
+  /** POST /dashboards/panel-groups/update - 更新面板组元信息 */
   UpdatePanelGroup: 'UpdatePanelGroup',
-  /** POST /dashboards/:id/panel-groups - 创建面板组 */
+  /** POST /dashboards/panel-groups/create - 创建面板组 */
   CreatePanelGroup: 'CreatePanelGroup',
-  /** DELETE /dashboards/:id/panel-groups/:groupId - 删除面板组 */
+  /** POST /dashboards/panel-groups/delete - 删除面板组 */
   DeletePanelGroup: 'DeletePanelGroup',
-  /** PATCH /dashboards/:id/panel-groups/order - 更新面板组排序 */
+  /** POST /dashboards/panel-groups/reorder - 更新面板组排序 */
   ReorderPanelGroups: 'ReorderPanelGroups',
 
   // --- Query ---
   /** POST /queries/execute - 执行多条查询（推荐：面板通常包含多条 query） */
   ExecuteQueries: 'ExecuteQueries',
-  /** GET /query/metrics - 拉取 metric 列表（QueryBuilder 用） */
+  /** POST /query/metrics - 拉取 metric 列表（QueryBuilder 用） */
   FetchMetrics: 'FetchMetrics',
-  /** GET /query/label-keys - 拉取 label key 列表（QueryBuilder 用） */
+  /** POST /query/label-keys - 拉取 label key 列表（QueryBuilder 用） */
   FetchLabelKeys: 'FetchLabelKeys',
-  /** GET /query/label-values - 拉取 label value 列表（QueryBuilder 用） */
+  /** POST /query/label-values - 拉取 label value 列表（QueryBuilder 用） */
   FetchLabelValues: 'FetchLabelValues',
 
   // --- Datasource ---
-  /** GET /datasources/default - 获取默认数据源 */
+  /** POST /datasources/default - 获取默认数据源 */
   DefaultDatasource: 'DefaultDatasource',
-  /** GET /datasources/:id - 获取指定数据源 */
+  /** POST /datasources/get - 获取指定数据源 */
   GetDatasource: 'GetDatasource',
-  /** GET /datasources - 列出全部数据源（占位） */
+  /** POST /datasources/list - 列出全部数据源（占位） */
   ListDatasources: 'ListDatasources',
 
   // --- Variable ---
@@ -94,20 +98,20 @@ export type HttpApiEndpointKey = (typeof HttpApiEndpointKey)[keyof typeof HttpAp
  */
 export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
   // --- Dashboard ---
-  [HttpApiEndpointKey.LoadDashboard]: '/dashboards/:id',
-  [HttpApiEndpointKey.SaveDashboard]: '/dashboards/:id',
-  [HttpApiEndpointKey.DeleteDashboard]: '/dashboards/:id',
-  [HttpApiEndpointKey.AllDashboards]: '/dashboards',
+  [HttpApiEndpointKey.LoadDashboard]: '/dashboards/load',
+  [HttpApiEndpointKey.SaveDashboard]: '/dashboards/save',
+  [HttpApiEndpointKey.DeleteDashboard]: '/dashboards/delete',
+  [HttpApiEndpointKey.AllDashboards]: '/dashboards/list',
   [HttpApiEndpointKey.DefaultDashboard]: '/dashboards/default',
-  [HttpApiEndpointKey.PatchPanelGroupLayoutPage]: '/dashboards/:id/panel-groups/:groupId/layout',
-  [HttpApiEndpointKey.CreatePanel]: '/dashboards/:id/panel-groups/:groupId/panels',
-  [HttpApiEndpointKey.UpdatePanel]: '/dashboards/:id/panel-groups/:groupId/panels/:panelId',
-  [HttpApiEndpointKey.DeletePanel]: '/dashboards/:id/panel-groups/:groupId/panels/:panelId',
-  [HttpApiEndpointKey.DuplicatePanel]: '/dashboards/:id/panel-groups/:groupId/panels/:panelId/duplicate',
-  [HttpApiEndpointKey.UpdatePanelGroup]: '/dashboards/:id/panel-groups/:groupId',
-  [HttpApiEndpointKey.CreatePanelGroup]: '/dashboards/:id/panel-groups',
-  [HttpApiEndpointKey.DeletePanelGroup]: '/dashboards/:id/panel-groups/:groupId',
-  [HttpApiEndpointKey.ReorderPanelGroups]: '/dashboards/:id/panel-groups/order',
+  [HttpApiEndpointKey.PatchPanelGroupLayoutPage]: '/dashboards/panel-groups/layout/patch-page',
+  [HttpApiEndpointKey.CreatePanel]: '/dashboards/panels/create',
+  [HttpApiEndpointKey.UpdatePanel]: '/dashboards/panels/update',
+  [HttpApiEndpointKey.DeletePanel]: '/dashboards/panels/delete',
+  [HttpApiEndpointKey.DuplicatePanel]: '/dashboards/panels/duplicate',
+  [HttpApiEndpointKey.UpdatePanelGroup]: '/dashboards/panel-groups/update',
+  [HttpApiEndpointKey.CreatePanelGroup]: '/dashboards/panel-groups/create',
+  [HttpApiEndpointKey.DeletePanelGroup]: '/dashboards/panel-groups/delete',
+  [HttpApiEndpointKey.ReorderPanelGroups]: '/dashboards/panel-groups/reorder',
 
   // --- Query ---
   [HttpApiEndpointKey.ExecuteQueries]: '/queries/execute',
@@ -117,8 +121,8 @@ export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
 
   // --- Datasource ---
   [HttpApiEndpointKey.DefaultDatasource]: '/datasources/default',
-  [HttpApiEndpointKey.GetDatasource]: '/datasources/:id',
-  [HttpApiEndpointKey.ListDatasources]: '/datasources',
+  [HttpApiEndpointKey.GetDatasource]: '/datasources/get',
+  [HttpApiEndpointKey.ListDatasources]: '/datasources/list',
 
   // --- Variable ---
   [HttpApiEndpointKey.FetchVariableValues]: '/variables/values',

@@ -5,13 +5,58 @@
 本文档特点：
 - 不标注具体代码调用位置，只描述：场景/调用时机/用途/严格入参出参
 - HTTP 路径为建议值（与 `@grafana-fast/api` 默认 endpoints 保持一致）；如后端已有路径，可在 http 实现层集中映射
-- 所有接口默认 JSON（`Content-Type: application/json`）
+- 本期对接约定：**所有接口统一使用 `POST` + JSON body**（`Content-Type: application/json`），不使用 URL path params 传递业务 id（dashboardId/panelId 等）
+
+## 0. 接口总览（给前后端对齐用）
+
+> 说明：
+> - Dashboard 子项目的所有网络请求都通过 `@grafana-fast/api`（HTTP 实现层）发出；以下清单与其默认 endpoints 对齐。
+
+### 0.1 必需（remote 模式：可查看 + 可编辑 + 可查询 + QueryBuilder + 变量）
+
+- Dashboard JSON（整盘）
+  - `POST /dashboards/load`：进入时加载整盘 `DashboardContent`（只拉一次；request body 含 dashboardId）
+  - `POST /dashboards/save`：全量保存 `DashboardContent`（JSON 导入/应用后的持久化兜底；也用于未来“整盘覆盖保存”）
+- 面板组 PanelGroup（局部写）
+  - `POST /dashboards/panel-groups/create`：创建面板组
+  - `POST /dashboards/panel-groups/update`：更新面板组元信息（标题/描述）
+  - `POST /dashboards/panel-groups/delete`：删除面板组
+  - `POST /dashboards/panel-groups/reorder`：面板组排序（拖拽）
+- 面板 Panel（局部写）
+  - `POST /dashboards/panels/create`：新增面板（后端生成 id）
+  - `POST /dashboards/panels/update`：更新面板（编辑器保存）
+  - `POST /dashboards/panels/delete`：删除面板
+  - `POST /dashboards/panels/duplicate`：复制面板（后端生成新 id）
+- 布局 Layout（局部写，分页固定 20/页）
+  - `POST /dashboards/panel-groups/layout/patch-page`：提交“当前页全部面板”的 `{i,x,y,w,h}`（不是增量）
+- 查询 Query（面板取数唯一入口）
+  - `POST /queries/execute`：执行查询（面板渲染/刷新/时间变化/变量变化）
+- 变量 Variables（query 型变量 options）
+  - `POST /variables/values`：解析 query 型变量的 options（例如 `label_values(...)`）
+- QueryBuilder 联想（Prometheus-like）
+  - `POST /query/metrics`
+  - `POST /query/label-keys`
+  - `POST /query/label-values`
+
+### 0.2 可选（宿主/增强）
+
+- Dashboard 列表/默认模板/删除（演示站点或管理台可能用到）
+  - `POST /dashboards/list`
+  - `POST /dashboards/default`
+  - `POST /dashboards/delete`
+- 数据源（当前 UI 未强依赖，但建议预留）
+  - `POST /datasources/default`
+  - `POST /datasources/list`
+  - `POST /datasources/get`
+- 用户/权限/全局设置（宿主全局）
+  - `POST /me`
+  - `POST /settings`
 
 ---
 
 ## A. 核心产品约束（必须满足）
 
-1. **Dashboard JSON 只在进入时拉一次**：`GET /dashboards/:id` 返回完整 `DashboardContent`；前端后续不做“全量自动保存/全量重新拉取”。
+1. **Dashboard JSON 只在进入时拉一次**：`POST /dashboards/load` 返回完整 `DashboardContent`；前端后续不做“全量自动保存/全量重新拉取”。
 2. **所有编辑类操作采用 optimistic update + 失败回滚**：
    - 前端会先修改本地 JSON，再调用局部接口
    - 任一接口返回非 2xx / 超时 / 网络错误：前端会把本地 JSON 回滚到最近一次“远端确认快照”（synced snapshot）
@@ -87,10 +132,11 @@ type ErrorResponse = {
 
 ### C1. 获取当前用户与权限
 
-- Method: `GET`
+- Method: `POST`
 - Path: `/me`（或 `/users/me`）
 - 场景/时机：应用启动后、进入 Dashboard 前
 - 用途：判定只读/可编辑、以及后端鉴权上下文是否准备好
+- Request Body：`{}`（或无 body；建议兼容两者）
 - Response `200`：
 
 ```ts
@@ -105,10 +151,11 @@ type MeResponse = {
 
 ### C2. 全局设置（可选）
 
-- Method: `GET`
+- Method: `POST`
 - Path: `/settings`
 - 场景/时机：应用启动后（可并行于 /me）
 - 用途：主题/时区/默认 dashboardId/特性开关
+- Request Body：`{}`
 - Response `200`（示例）：
 
 ```ts
@@ -126,12 +173,19 @@ type SettingsResponse = {
 
 ### D1. 加载 Dashboard（只拉一次 JSON）
 
-- Method: `GET`
-- Path: `/dashboards/:dashboardId`
+- Method: `POST`
+- Path: `/dashboards/load`
 - 场景/时机：
   - 进入 dashboard 页面
   - 或切换 dashboardId
 - 用途：获取完整 `DashboardContent`（前端后续所有展示/编辑都以此为单一真相来源）
+- Request Body（严格）：
+
+```ts
+type LoadDashboardRequest = {
+  dashboardId: DashboardId;
+};
+```
 - Response `200`：
 
 ```ts
@@ -211,28 +265,43 @@ type DashboardVariable = {
 type VariableOption = { text: string; value: string };
 ```
 
+- Not Found（两种策略二选一，推荐 A）
+  - A) **get-or-create（推荐，行为与 mock 一致）**：若该 `dashboardId` 在后端不存在，则创建一份默认 `DashboardContent` 并直接返回 `200`
+  - B) **严格 404（REST 语义）**：返回 `404` + `ErrorResponse(code="NOT_FOUND")`
+    - 注意：Dashboard 子项目本身不会在 `404` 时自动 fallback；若选择 B，需要宿主应用捕获 404 并自行决策，例如：
+      - 先 `POST /dashboards/default` 获取模板，再 `POST /dashboards/save` 写入该 `dashboardId`，最后重试 `POST /dashboards/load`
+      - 或直接引导用户导入 JSON 并保存
+
 - 约束（后端必须保证）：
   - `panelGroups[].panels[].id` 与 `panelGroups[].layout[].i` 应能一一对应（缺失时前端会补，但最好后端确保一致）
   - `panelGroups[].panels` 的数组顺序是分页与“新增/复制追加到末尾”的依据
 
 ### D2. 全量保存 Dashboard（兜底）
 
-- Method: `PUT`
-- Path: `/dashboards/:dashboardId`
+- Method: `POST`
+- Path: `/dashboards/save`
 - 场景/时机：
   - 用户在 JSON 编辑器里“导入/应用 JSON”
   - 或未来需要“整盘覆盖保存”
 - 用途：把当前 `DashboardContent` 覆盖保存到后端
-- Request Body：`DashboardContent`
+- Request Body：
+
+```ts
+type SaveDashboardRequest = {
+  dashboardId: DashboardId;
+  content: DashboardContent;
+};
+```
 - Response：建议 `204 No Content`
 - 注意：
   - 日常拖拽/增删改面板不会走这条（已改为局部接口）
 
 ### D3. Dashboard 列表（可选）
 
-- Method: `GET`
-- Path: `/dashboards`
+- Method: `POST`
+- Path: `/dashboards/list`
 - 场景/时机：列表页/选择器（演示站点可能用到）
+- Request Body：`{}`
 - Response `200`：
 
 ```ts
@@ -248,33 +317,42 @@ type ListDashboardsResponse = DashboardListItem[];
 
 ### D4. 默认 Dashboard（可选）
 
-- Method: `GET`
+- Method: `POST`
 - Path: `/dashboards/default`
 - 场景/时机：空状态/首次进入（演示站点用）
+- Request Body：`{}`
 - Response `200`：`DashboardContent`
 
 ### D5. 删除 Dashboard（可选）
 
-- Method: `DELETE`
-- Path: `/dashboards/:dashboardId`
+- Method: `POST`
+- Path: `/dashboards/delete`
+- Request Body：
+
+```ts
+type DeleteDashboardRequest = {
+  dashboardId: DashboardId;
+};
+```
 - Response：建议 `204`
 
 ---
 
 ## E. 模块：面板组 PanelGroup（局部编辑接口）
 
-> 说明：PanelGroup 的“内容（panels/layout）”来自 `GET /dashboards/:id` 的 JSON；
+> 说明：PanelGroup 的“内容（panels/layout）”来自 `POST /dashboards/load` 的 `DashboardContent`；
 > 面板组接口只负责元信息与结构性变更（增删改/排序），避免走全量 save。
 
 ### E1. 创建面板组
 
 - Method: `POST`
-- Path: `/dashboards/:dashboardId/panel-groups`
+- Path: `/dashboards/panel-groups/create`
 - 场景/时机：用户点击“创建面板组”
 - Request Body：
 
 ```ts
 type CreatePanelGroupRequest = {
+  dashboardId: DashboardId;
   group: {
     title: string;
     description?: string;
@@ -297,13 +375,15 @@ type CreatePanelGroupResponse = {
 
 ### E2. 更新面板组元信息（标题/描述）
 
-- Method: `PATCH`
-- Path: `/dashboards/:dashboardId/panel-groups/:groupId`
+- Method: `POST`
+- Path: `/dashboards/panel-groups/update`
 - 场景/时机：编辑面板组标题/描述保存
 - Request Body：
 
 ```ts
 type UpdatePanelGroupRequest = {
+  dashboardId: DashboardId;
+  groupId: ID;
   group: {
     title: string;
     description?: string;
@@ -323,21 +403,30 @@ type UpdatePanelGroupResponse = {
 
 ### E3. 删除面板组
 
-- Method: `DELETE`
-- Path: `/dashboards/:dashboardId/panel-groups/:groupId`
+- Method: `POST`
+- Path: `/dashboards/panel-groups/delete`
 - 场景/时机：用户删除面板组
+- Request Body：
+
+```ts
+type DeletePanelGroupRequest = {
+  dashboardId: DashboardId;
+  groupId: ID;
+};
+```
 - Response：建议 `204`
 - 约束：应同时删除该组下的 panels/layout（或做级联删除）。
 
 ### E4. 面板组排序（拖拽排序）
 
-- Method: `PATCH`
-- Path: `/dashboards/:dashboardId/panel-groups/order`
+- Method: `POST`
+- Path: `/dashboards/panel-groups/reorder`
 - 场景/时机：用户拖拽调整面板组顺序并释放
 - Request Body：
 
 ```ts
 type ReorderPanelGroupsRequest = {
+  dashboardId: DashboardId;
   order: ID[]; // panelGroupId 的顺序数组
 };
 ```
@@ -355,7 +444,7 @@ type ReorderPanelGroupsRequest = {
 ### F1. 新增面板（编辑态按钮：新增面板）
 
 - Method: `POST`
-- Path: `/dashboards/:dashboardId/panel-groups/:groupId/panels`
+- Path: `/dashboards/panels/create`
 - 场景/时机：
   - 面板组处于编辑态
   - 点击“新增面板”并在编辑器保存
@@ -364,6 +453,8 @@ type ReorderPanelGroupsRequest = {
 
 ```ts
 type CreatePanelRequest = {
+  dashboardId: DashboardId;
+  groupId: ID;
   // 前端会发送 panel（不含 id）；后端可自行补默认值
   panel?: Partial<Omit<Panel, 'id'>>;
 };
@@ -384,13 +475,16 @@ type CreatePanelResponse = {
 
 ### F2. 更新面板（编辑器保存）
 
-- Method: `PUT`
-- Path: `/dashboards/:dashboardId/panel-groups/:groupId/panels/:panelId`
+- Method: `POST`
+- Path: `/dashboards/panels/update`
 - 场景/时机：面板编辑器点击“保存”
 - Request Body：
 
 ```ts
 type UpdatePanelRequest = {
+  dashboardId: DashboardId;
+  groupId: ID;
+  panelId: ID;
   panel: Omit<Panel, 'id'>; // 前端发送“完整面板内容”（不含 id）
 };
 ```
@@ -407,17 +501,35 @@ type UpdatePanelResponse = {
 
 ### F3. 删除面板
 
-- Method: `DELETE`
-- Path: `/dashboards/:dashboardId/panel-groups/:groupId/panels/:panelId`
+- Method: `POST`
+- Path: `/dashboards/panels/delete`
 - 场景/时机：用户点击删除面板并确认
+- Request Body：
+
+```ts
+type DeletePanelRequest = {
+  dashboardId: DashboardId;
+  groupId: ID;
+  panelId: ID;
+};
+```
 - Response：建议 `204`
 - 约束：必须同时删除该面板对应的 layout 项（`layout[i==panelId]`）。
 
 ### F4. 复制面板
 
 - Method: `POST`
-- Path: `/dashboards/:dashboardId/panel-groups/:groupId/panels/:panelId/duplicate`
+- Path: `/dashboards/panels/duplicate`
 - 场景/时机：用户点击复制面板
+- Request Body：
+
+```ts
+type DuplicatePanelRequest = {
+  dashboardId: DashboardId;
+  groupId: ID;
+  panelId: ID;
+};
+```
 - Response `200`：
 
 ```ts
@@ -437,14 +549,16 @@ type DuplicatePanelResponse = {
 
 ### G1. 更新面板组“当前页”布局（拖拽/缩放）
 
-- Method: `PATCH`
-- Path: `/dashboards/:dashboardId/panel-groups/:groupId/layout`
+- Method: `POST`
+- Path: `/dashboards/panel-groups/layout/patch-page`
 - 场景/时机：用户拖拽/缩放面板后停止（前端 debounce 合并）
 - 用途：把“当前页（最多 20 个面板）”的布局持久化到后端
 - Request Body（严格）：
 
 ```ts
 type PatchPanelGroupLayoutPageRequest = {
+  dashboardId: DashboardId;
+  groupId: ID;
   items: Array<{
     i: ID; // panelId
     x: number; // grid units
@@ -562,7 +676,7 @@ type FetchVariableValuesRequest = {
   /**
    * 变量查询表达式（例如 label_values(...)）
    *
-   * 推荐约定（与面板查询一致）：
+   * 当前前端约定（与面板查询一致）：
    * - 前端会先用当前变量值对表达式做插值（$var / ${var} / [[var]]），再把最终 expr 发送给后端；
    * - 后端不需要理解/替换 $var 语法（避免后端重复实现插值规则）。
    */
@@ -595,14 +709,20 @@ type FetchVariableValuesResponse = Array<{ text: string; value: string }>;
 >
 > v1 约定：
 > - 联想接口**不按 datasourceRef 区分**，默认按“当前/默认 Prometheus 数据源”返回即可
-> - 未来如需要多数据源联想，可在 querystring 增加 `datasourceUid`（或改为 POST 带 body）
+> - 未来如需要多数据源联想，可在 request body 增加 `datasourceRef`/`datasourceUid`
 
 ### J1. 指标联想（metrics）
 
-- Method: `GET`
+- Method: `POST`
 - Path: `/query/metrics`
-- Query:
-  - `search?: string`（可选；为空表示拉取默认列表）
+- Request Body（可选参数全部放 body；为空等价于默认列表）：
+
+```ts
+type FetchMetricsRequest = {
+  search?: string;
+  datasourceRef?: DatasourceRef;
+};
+```
 - Response `200`：
 
 ```ts
@@ -615,10 +735,16 @@ type FetchMetricsResponse = string[];
 
 ### J2. Label Keys 联想
 
-- Method: `GET`
+- Method: `POST`
 - Path: `/query/label-keys`
-- Query:
-  - `metric: string`（必填）
+- Request Body：
+
+```ts
+type FetchLabelKeysRequest = {
+  metric: string;
+  datasourceRef?: DatasourceRef;
+};
+```
 - Response `200`：
 
 ```ts
@@ -627,13 +753,18 @@ type FetchLabelKeysResponse = string[];
 
 ### J3. Label Values 联想（支持 otherLabels 过滤）
 
-- Method: `GET`
+- Method: `POST`
 - Path: `/query/label-values`
-- Query（严格）：
-  - `metric: string`（必填；若为空字符串，建议直接返回空数组 `[]`，避免 Builder 初始态误触发报错）
-  - `labelKey: string`（必填）
-  - `otherLabels?: Record<string,string>`（可选；会被前端扁平化到 querystring）
-    - 例如：`/query/label-values?metric=up&labelKey=job&instance=1.1.1.1:9100`
+- Request Body（严格）：
+
+```ts
+type FetchLabelValuesRequest = {
+  metric: string; // 必填；若为空字符串，建议直接返回空数组 []
+  labelKey: string; // 必填
+  otherLabels?: Record<string, string>; // 可选：其他 label 条件（前端会跳过含变量引用的条件）
+  datasourceRef?: DatasourceRef;
+};
+```
 - Response `200`：
 
 ```ts
@@ -641,15 +772,23 @@ type FetchLabelValuesResponse = string[];
 ```
 
 - 约束：
-  - 后端需要区分保留参数（`metric`/`labelKey`）与其他标签条件（其余 querystring key/value）
   - 当前前端会跳过包含变量引用（如 `$var`）的 otherLabels 条件，避免误导后端
 
 ### J4.（可选增强）指标元数据
 
 - 现状：前端 MetricsModal 里 type/help 为本地“模拟推断”，并非后端返回
 - 若你希望真实展示，可新增：
-  - `GET /query/metrics/meta?names=...` 或 `POST /query/metrics/meta`
-  - 返回：`Array<{ name: string; type?: string; help?: string }>`
+  - Method: `POST`
+  - Path: `/query/metrics/meta`
+  - Request Body：
+
+```ts
+type FetchMetricsMetaRequest = {
+  names: string[];
+  datasourceRef?: DatasourceRef;
+};
+```
+  - Response `200`：`Array<{ name: string; type?: string; help?: string }>`
 - 该接口当前前端未接入，仅作为产品增强建议。
 
 ---
@@ -661,8 +800,9 @@ type FetchLabelValuesResponse = string[];
 
 ### K1. 获取默认数据源
 
-- Method: `GET`
+- Method: `POST`
 - Path: `/datasources/default`
+- Request Body：`{}`
 - Response `200`：
 
 ```ts
@@ -680,13 +820,21 @@ type GetDefaultDatasourceResponse = Datasource;
 
 ### K2. 列出全部数据源
 
-- Method: `GET`
-- Path: `/datasources`
+- Method: `POST`
+- Path: `/datasources/list`
+- Request Body：`{}`
 - Response `200`：`Datasource[]`
 
 ### K3. 获取数据源详情
 
-- Method: `GET`
-- Path: `/datasources/:id`
+- Method: `POST`
+- Path: `/datasources/get`
+- Request Body：
+
+```ts
+type GetDatasourceRequest = {
+  id: ID;
+};
+```
 - Response `200`：`Datasource`
 - 找不到：建议 `404`

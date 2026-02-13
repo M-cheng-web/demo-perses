@@ -28,13 +28,13 @@ export function createHttpDatasourceService(_deps: HttpDatasourceServiceDeps): D
   return {
     async getDefaultDatasource(): Promise<Datasource> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.DefaultDatasource);
-      return _deps.http.get<Datasource>(path);
+      return _deps.http.post<Datasource>(path, {});
     },
 
     async getDatasourceById(id: ID): Promise<Datasource | null> {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.GetDatasource, { id });
+      const path = getEndpointPath(_deps.endpoints, EndpointKey.GetDatasource);
       try {
-        return await _deps.http.get<Datasource>(path);
+        return await _deps.http.post<Datasource>(path, { id });
       } catch (err) {
         // contract 语义：找不到返回 null（而不是抛错）
         if (isHttpError(err) && err.status === 404) return null;
@@ -44,7 +44,7 @@ export function createHttpDatasourceService(_deps: HttpDatasourceServiceDeps): D
 
     async listDatasources(): Promise<Datasource[]> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.ListDatasources);
-      const res = await _deps.http.get<unknown>(path);
+      const res = await _deps.http.post<unknown>(path, {});
       return normalizeArrayResponse<Datasource>(res);
     },
   };
