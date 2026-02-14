@@ -246,7 +246,12 @@
 
   // 监听 drawer 打开
   const scheduleExecuteQueries = debounceCancellable(() => {
-    panelPreviewRef.value?.executeQueries();
+    const ret = panelPreviewRef.value?.executeQueries();
+    if (ret && typeof (ret as PromiseLike<void>).then === 'function') {
+      void Promise.resolve(ret).catch(() => {
+        // 自动预览执行失败时：错误由 PanelPreview 内部直接展示，这里避免未处理 Promise。
+      });
+    }
   }, 100);
 
   onBeforeUnmount(() => {

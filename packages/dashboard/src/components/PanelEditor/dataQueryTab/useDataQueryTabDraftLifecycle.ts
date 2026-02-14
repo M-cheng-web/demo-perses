@@ -37,6 +37,11 @@ export function useDataQueryTabDraftLifecycle(options: UseDataQueryTabDraftLifec
     resetFromProps: drafts.resetFromProps,
     convertDraftsToCanonical: validation.convertDraftsToCanonical,
     emitUpdateQueries,
+    canEmit: () => {
+      const ds = datasource();
+      const id = String(ds?.id ?? '').trim();
+      return !!id;
+    },
   });
 
   return {

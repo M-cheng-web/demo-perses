@@ -21,6 +21,39 @@ export interface UseLegendOptions {
 export function useLegend(options: UseLegendOptions) {
   const { panel, queryResults, updateChart } = options;
 
+  function computeSeriesStats(points: Array<[unknown, unknown]> | undefined): Record<string, number> {
+    if (!Array.isArray(points) || points.length === 0) return {};
+
+    let first: number | null = null;
+    let last: number | null = null;
+    let min: number | null = null;
+    let max: number | null = null;
+    let sum = 0;
+    let count = 0;
+
+    for (const p of points) {
+      if (!Array.isArray(p) || p.length < 2) continue;
+      const v = Number(p[1]);
+      if (!Number.isFinite(v)) continue;
+      if (first === null) first = v;
+      last = v;
+      min = min === null ? v : Math.min(min, v);
+      max = max === null ? v : Math.max(max, v);
+      sum += v;
+      count += 1;
+    }
+
+    if (count <= 0 || first === null || last === null || min === null || max === null) return {};
+    return {
+      first,
+      last,
+      min,
+      max,
+      sum,
+      mean: sum / count,
+    };
+  }
+
   // ============ 选中状态管理 ============
   // 'ALL' 表示所有项都显示，对象表示只有对象中 value 为 true 的项显示
   const selectedItems = ref<LegendSelection>('ALL');
@@ -145,11 +178,13 @@ export function useLegend(options: UseLegendOptions) {
         const label = timeSeries.metric.__legend__ || timeSeries.metric.__name__ || `Series ${index + 1}`;
 
         const color = colors[colorIndex % colors.length] || `hsl(${(colorIndex * 137.5) % 360}, 70%, 50%)`;
+        const stats = computeSeriesStats((timeSeries as any)?.values);
 
         items.push({
           id: `series-${colorIndex}`,
           label,
           color,
+          data: stats,
         });
 
         colorIndex++;

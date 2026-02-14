@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Button, Select } from '@grafana-fast/component';
+  import { Button, Select, message } from '@grafana-fast/component';
   import { ref, watch, onMounted } from 'vue';
   import { PlusOutlined, CloseOutlined } from '@ant-design/icons-vue';
   import type { QueryBuilderLabelFilter } from '@grafana-fast/utils';
@@ -100,10 +100,7 @@
   // 加载标签键
   const loadLabelKeys = async () => {
     if (!props.metric) {
-      labelOptions.value = [
-        { label: 'instance', value: 'instance' },
-        { label: 'job', value: 'job' },
-      ];
+      labelOptions.value = [];
       return;
     }
 
@@ -112,6 +109,9 @@
       const keys = await api.query.fetchLabelKeys(props.metric);
       labelOptions.value = keys.map((k) => ({ label: k, value: k }));
     } catch (error) {
+      labelOptions.value = [];
+      const msg = error instanceof Error ? error.message : String(error);
+      message.error({ content: `加载标签名失败：${msg}`, key: 'querybuilder:label-keys', duration: 3 });
       console.error('Failed to load label keys:', error);
     } finally {
       loadingKeys.value = false;
@@ -185,6 +185,11 @@
 
   const loadLabelValues = async (index: number, labelName: string) => {
     if (!labelName) return;
+    const metric = String(props.metric ?? '').trim();
+    if (!metric) {
+      labelValueOptions.value[index] = [];
+      return;
+    }
 
     loadingValues.value[index] = true;
     try {
@@ -201,9 +206,12 @@
         }
       });
 
-      const values = await api.query.fetchLabelValues(props.metric || '', labelName, otherLabels);
+      const values = await api.query.fetchLabelValues(metric, labelName, otherLabels);
       labelValueOptions.value[index] = values.map((v) => ({ label: v, value: v }));
     } catch (error) {
+      labelValueOptions.value[index] = [];
+      const msg = error instanceof Error ? error.message : String(error);
+      message.error({ content: `加载标签值失败：${msg}`, key: `querybuilder:label-values:${labelName}`, duration: 3 });
       console.error('Failed to load label values:', error);
     } finally {
       loadingValues.value[index] = false;
@@ -216,7 +224,7 @@
 
     // 初始加载已有标签的值
     filters.value.forEach((filter, index) => {
-      if (filter.label) {
+      if (filter.label && props.metric) {
         loadLabelValues(index, filter.label);
       }
     });

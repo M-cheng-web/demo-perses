@@ -65,14 +65,23 @@
       mean: '平均',
       last: '最新',
       first: '首值',
+      sum: '总和',
     };
     return labelMap[column] || column;
   };
 
-  // 获取列值（使用假数据）
-  const getColumnValue = (): string => {
-    const randomValue = () => (Math.random() * 100).toFixed(2);
-    return randomValue();
+  const formatNumber = (value: unknown): string => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value.toFixed(2) : '';
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toFixed(2) : '';
+  };
+
+  const getColumnValue = (item: LegendItem, column: string): string => {
+    const data = item?.data as Record<string, unknown> | undefined;
+    const raw = data?.[column];
+    if (raw == null) return '';
+    if (typeof raw === 'string') return raw;
+    return formatNumber(raw);
   };
 
   // 表格列定义
@@ -115,7 +124,7 @@
 
       // 添加动态列的值
       props.displayColumns.forEach((col) => {
-        row[col] = getColumnValue();
+        row[col] = getColumnValue(item, col);
       });
 
       return row;

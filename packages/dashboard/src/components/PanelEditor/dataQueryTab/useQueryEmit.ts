@@ -11,10 +11,25 @@ export function useQueryEmit(options: {
   resetFromProps: (nextQueries?: CanonicalQuery[]) => void;
   convertDraftsToCanonical: (purpose: 'save' | 'execute') => CanonicalQuery[];
   emitUpdateQueries: (queries: CanonicalQuery[]) => void;
+  /**
+   * 可选：是否允许 emit（用于依赖未就绪时避免写回 props）
+   *
+   * 典型场景：
+   * - datasource 尚未解析出来时，CanonicalQuery.datasourceRef 无法可靠生成
+   */
+  canEmit?: () => boolean;
 }) {
-  const { getQueriesProp, getSessionKey, queryDrafts, resetFromProps, convertDraftsToCanonical, emitUpdateQueries } = options;
+  const { getQueriesProp, getSessionKey, queryDrafts, resetFromProps, convertDraftsToCanonical, emitUpdateQueries, canEmit } = options;
 
   const lastEmittedSignature = ref<string>('');
+
+  const canEmitNow = () => {
+    try {
+      return typeof canEmit === 'function' ? !!canEmit() : true;
+    } catch {
+      return false;
+    }
+  };
 
   watch(
     () => getQueriesProp(),
@@ -36,13 +51,18 @@ export function useQueryEmit(options: {
     }
   );
 
-  const emitQueriesDebounced = debounceCancellable(() => {
+  const tryEmitQueries = () => {
+    if (!canEmitNow()) return;
     const next = convertDraftsToCanonical('save');
     const sig = signatureFromCanonical(next);
     // 重要：避免“内部状态变化（例如解析 warnings）”导致重复 emit
     if (sig === lastEmittedSignature.value) return;
     lastEmittedSignature.value = sig;
     emitUpdateQueries(next);
+  };
+
+  const emitQueriesDebounced = debounceCancellable(() => {
+    tryEmitQueries();
   }, 200);
 
   watch(
@@ -51,6 +71,19 @@ export function useQueryEmit(options: {
       emitQueriesDebounced();
     },
     { deep: true }
+  );
+
+  watch(
+    () => canEmitNow(),
+    (ok) => {
+      if (!ok) {
+        emitQueriesDebounced.cancel();
+        return;
+      }
+      // 依赖就绪后立刻同步一次，避免“draft 已变更但因 canEmit=false 被跳过”的情况。
+      tryEmitQueries();
+    },
+    { immediate: true }
   );
 
   onBeforeUnmount(() => {

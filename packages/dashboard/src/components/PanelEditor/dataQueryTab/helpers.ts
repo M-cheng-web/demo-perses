@@ -51,12 +51,15 @@ export function nextRefId(used: Set<string>): string {
 export function normalizeDatasourceType(type: unknown): DatasourceType {
   const t = String(type ?? '').trim();
   if (t === 'prometheus' || t === 'influxdb' || t === 'elasticsearch') return t;
-  return 'prometheus';
+  throw new Error(`[grafana-fast] Invalid datasource type: ${t || '<empty>'}`);
 }
 
 export function getDatasourceRef(datasource: Pick<Datasource, 'id' | 'type'> | null | undefined): DatasourceRef {
-  const uid = datasource?.id ? String(datasource.id) : 'prometheus-mock';
+  const uid = String(datasource?.id ?? '').trim();
   const type = normalizeDatasourceType(datasource?.type);
+  if (!uid) {
+    throw new Error('[grafana-fast] Missing datasource id. Ensure a datasource is provided or loaded before building CanonicalQuery.datasourceRef.');
+  }
   return { type, uid };
 }
 

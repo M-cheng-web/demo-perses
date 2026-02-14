@@ -5,7 +5,7 @@
  * - 初始化 values/options
  * - 为 query 型变量解析 options（由实现层决定怎么拉取）
  */
-import type { DashboardVariable, VariableOption, VariablesState } from '@grafana-fast/types';
+import type { DashboardVariable, TimeRange, VariableOption, VariablesState } from '@grafana-fast/types';
 
 /**
  * VariableService（契约层）
@@ -40,5 +40,5 @@ export interface VariableService {
    * - 实现层应尽量做到“增量”和“可缓存”（避免频繁请求）
    * - 返回值仅包含需要更新的变量 options（上层可以 merge）
    */
-  resolveOptions: (variables: DashboardVariable[], state: VariablesState) => Promise<Record<string, VariableOption[]>>;
+  resolveOptions: (variables: DashboardVariable[], state: VariablesState, timeRange: TimeRange) => Promise<Record<string, VariableOption[]>>;
 }

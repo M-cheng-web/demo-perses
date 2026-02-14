@@ -39,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Button, Select } from '@grafana-fast/component';
+  import { Button, Select, message } from '@grafana-fast/component';
   import { ref, computed, onBeforeUnmount, onMounted, watch } from 'vue';
   import { AppstoreOutlined } from '@ant-design/icons-vue';
   import { useApiClient } from '/#/runtime/useInjected';
@@ -95,6 +95,10 @@
       if (token !== requestToken) return;
       metrics.value = list;
     } catch (error) {
+      if (token !== requestToken) return;
+      metrics.value = [];
+      const msg = error instanceof Error ? error.message : String(error);
+      message.error({ content: `加载指标失败：${msg}`, key: 'querybuilder:metrics', duration: 3 });
       console.error('Failed to load metrics:', error);
     } finally {
       if (token === requestToken) loading.value = false;

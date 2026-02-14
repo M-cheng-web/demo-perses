@@ -337,8 +337,7 @@
     const name = String(v?.name ?? '').trim();
     if (!name) return [];
     const runtime = variablesStore.getOptions(name);
-    if (Array.isArray(runtime) && runtime.length > 0) return runtime;
-    return Array.isArray(v.options) ? v.options : [];
+    return Array.isArray(runtime) ? runtime : [];
   }
 
   function getVariableSelectOptions(v: DashboardVariable): Array<{ label: string; value: string }> {

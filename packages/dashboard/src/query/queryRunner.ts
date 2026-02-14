@@ -192,8 +192,41 @@ export class QueryRunner {
 
       const promise = this.runWithConcurrency(async () => {
         const resultList = await this.api.query.executeQueries([{ ...q, expr }], context, options.signal ? { signal: options.signal } : undefined);
-        const result = resultList[0] ?? { queryId: q.id, refId: q.refId, expr, data: [], error: '空结果' };
-        return { ...result, refId: q.refId };
+        const first = Array.isArray(resultList) ? resultList[0] : undefined;
+
+        if (!first || typeof first !== 'object') {
+          return {
+            queryId: q.id,
+            refId: q.refId,
+            expr,
+            data: [],
+            error: '契约错误：executeQueries 返回空数组（未返回该 query 的结果）',
+          };
+        }
+
+        const queryId = String((first as any)?.queryId ?? '');
+        if (!queryId || queryId !== String(q.id)) {
+          return {
+            queryId: q.id,
+            refId: q.refId,
+            expr,
+            data: [],
+            error: `契约错误：executeQueries 返回的 queryId 不匹配（expected=${String(q.id)}, got=${queryId || '<empty>'}）`,
+          };
+        }
+
+        const data = (first as any)?.data;
+        if (!Array.isArray(data)) {
+          return {
+            queryId: q.id,
+            refId: q.refId,
+            expr,
+            data: [],
+            error: '契约错误：QueryResult.data 必须为数组',
+          };
+        }
+
+        return { ...(first as QueryResult), refId: q.refId };
       }, options.signal);
 
       this.cache.set(cacheKey, { timestamp: now, promise });

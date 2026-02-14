@@ -8,7 +8,7 @@
  */
 
 import type { VariableService } from '../../../contracts/variable';
-import type { DashboardVariable, VariableOption, VariablesState } from '@grafana-fast/types';
+import type { DashboardVariable, TimeRange, VariableOption, VariablesState } from '@grafana-fast/types';
 import type { QueryService } from '../../../contracts/query';
 
 export interface HttpVariableServiceDeps {
@@ -40,19 +40,15 @@ export function createHttpVariableService(deps: HttpVariableServiceDeps): Variab
       return { values, options, lastUpdatedAt: Date.now() };
     },
 
-    async resolveOptions(variables: DashboardVariable[], state: VariablesState): Promise<Record<string, VariableOption[]>> {
+    async resolveOptions(variables: DashboardVariable[], state: VariablesState, timeRange: TimeRange): Promise<Record<string, VariableOption[]>> {
       const resolved: Record<string, VariableOption[]> = {};
 
       for (const v of variables) {
         // query 型变量：尝试通过 QueryService 解析 options（未来将对接真实后端/数据源）
         if (v.type === 'query' && v.query && deps.queryService?.fetchVariableValues) {
-          try {
-            const items = await deps.queryService.fetchVariableValues(v.query, { from: 'now-1h', to: 'now' });
-            resolved[v.name] = items.map((it) => ({ text: it.text, value: it.value }));
-            continue;
-          } catch {
-            // fall through to existing options
-          }
+          const items = await deps.queryService.fetchVariableValues(v.query, timeRange);
+          resolved[v.name] = items.map((it) => ({ text: it.text, value: it.value }));
+          continue;
         }
 
         resolved[v.name] = state.options[v.name] ?? normalizeOptions(v.options);

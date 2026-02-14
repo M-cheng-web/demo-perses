@@ -135,20 +135,12 @@ export function usePanelGroupPagination(panelGroups: () => PanelGroup[], options
     (group.layout ?? []).forEach((it) => layoutById.set(String(it.i), it));
 
     // Build the page layout strictly by panels array order (per requirement).
-    const rawLayout: PanelLayout[] = pagePanels.map((p, idx) => {
+    const rawLayout: PanelLayout[] = pagePanels.map((p) => {
       const existing = layoutById.get(String(p.id));
-      if (existing) return existing;
-
-      // Fallback: missing layout entry (should be rare). Place it at the end to avoid overlap.
-      return {
-        i: p.id,
-        x: 0,
-        y: idx * 8,
-        w: 24,
-        h: 8,
-        minW: 6,
-        minH: 4,
-      };
+      if (!existing) {
+        throw new Error(`[grafana-fast] Missing layout item for panelId=${String(p.id)} in groupId=${String(group.id)}`);
+      }
+      return existing;
     });
 
     // Rebase Y so each page starts near the top (avoid huge blank space from original y).

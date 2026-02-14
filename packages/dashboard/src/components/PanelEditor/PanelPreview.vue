@@ -5,6 +5,9 @@
       <div v-if="showHeader" :class="bem('header')">
         <div :class="bem('title')">预览</div>
       </div>
+      <div v-if="lastError" :class="bem('error')">
+        <Alert type="error" show-icon :message="lastError" />
+      </div>
       <component v-if="panel && queryResults.length > 0" :is="chartComponent" :panel="panel" :query-results="queryResults" />
       <Empty v-else description="暂无数据" />
     </div>
@@ -13,7 +16,7 @@
 
 <script setup lang="ts">
   import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
-  import { Empty } from '@grafana-fast/component';
+  import { Alert, Empty } from '@grafana-fast/component';
   import type { Panel, QueryResult, QueryContext } from '@grafana-fast/types';
   import { useTimeRangeStore, useVariablesStore } from '/#/stores';
   import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
@@ -41,6 +44,7 @@
   const variablesStore = useVariablesStore();
   const queryResults = ref<QueryResult[]>([]);
   const isLoading = ref(false);
+  const lastError = ref<string>('');
   let abortController: AbortController | null = null;
 
   // 根据面板类型选择对应的图表组件
@@ -52,6 +56,7 @@
   const executeQueriesInternal = async () => {
     if (!props.panel.queries || props.panel.queries.length === 0) {
       queryResults.value = [];
+      lastError.value = '';
       return;
     }
 
@@ -59,6 +64,7 @@
     abortController = new AbortController();
 
     isLoading.value = true;
+    lastError.value = '';
     try {
       const { start, end } = timeRangeStore.getTimeRangeTimestamps();
       const context: QueryContext = { timeRange: { from: start, to: end } };
@@ -75,10 +81,23 @@
       const results = await runner.executeQueries(resolvedQueries, context, { signal: abortController.signal });
 
       queryResults.value = results;
+
+      // 严格：任意 query 返回 error 都视为“执行失败”，需要显式暴露给上层与用户。
+      const errors = results
+        .map((r) => (r.error ? `${String(r.refId || r.queryId || 'query')}: ${String(r.error)}` : ''))
+        .filter(Boolean);
+      if (errors.length > 0) {
+        const msg = errors.length === 1 ? errors[0]! : `${errors[0]} 等 ${errors.length} 个错误`;
+        lastError.value = msg;
+        throw new Error(msg);
+      }
     } catch (error) {
       if ((error as any)?.name === 'AbortError') return;
+      const msg = error instanceof Error ? error.message : '查询失败';
+      lastError.value = msg;
       console.error('Query execution failed:', error);
-      queryResults.value = [];
+      // 保留 queryResults（若已有部分结果/错误信息），不要用“空数据”掩盖错误
+      throw error;
     } finally {
       isLoading.value = false;
     }
@@ -89,7 +108,9 @@
     () => props.panel,
     () => {
       if (props.autoExecute) {
-        executeQueriesInternal();
+        void executeQueriesInternal().catch(() => {
+          // autoExecute 场景不向上抛（避免未处理 Promise），错误通过 lastError 直接展示
+        });
       }
     },
     { deep: true, immediate: false }
@@ -115,7 +136,7 @@
     () => timeRangeStore.timeRange,
     () => {
       if (props.autoExecute) {
-        executeQueriesInternal();
+        void executeQueriesInternal().catch(() => {});
       }
     },
     { deep: true }
@@ -126,14 +147,14 @@
     () => variablesStore.valuesGeneration,
     () => {
       if (props.autoExecute) {
-        executeQueriesInternal();
+        void executeQueriesInternal().catch(() => {});
       }
     }
   );
 
   onMounted(() => {
     if (props.autoExecute) {
-      executeQueriesInternal();
+      void executeQueriesInternal().catch(() => {});
     }
   });
 

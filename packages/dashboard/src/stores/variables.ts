@@ -14,6 +14,7 @@ import { defineStore } from '@grafana-fast/store';
 import type { DashboardVariable, VariableOption, VariablesState } from '@grafana-fast/types';
 import { isPlainObject } from '@grafana-fast/utils';
 import { deepCloneStructured } from '/#/utils';
+import { useTimeRangeStore } from './timeRange';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
 import { interpolateExpr } from '/#/query/interpolate';
 
@@ -148,7 +149,8 @@ export const useVariablesStore = defineStore('variables', {
           return { ...v, query: expr };
         });
 
-        const patch = await api.variable.resolveOptions(interpolatedVariables, this.state);
+        const timeRangeStore = useTimeRangeStore(this.$pinia);
+        const patch = await api.variable.resolveOptions(interpolatedVariables, this.state, deepCloneStructured(timeRangeStore.timeRange));
         const next: Record<string, VariableOption[]> = { ...(this.state.options ?? {}) };
         for (const [name, opts] of Object.entries(patch ?? {})) {
           next[name] = normalizeVariableOptions(opts);
@@ -159,6 +161,20 @@ export const useVariablesStore = defineStore('variables', {
         this.optionsGeneration = (this.optionsGeneration + 1) % Number.MAX_SAFE_INTEGER;
       } catch (error) {
         this.lastError = error instanceof Error ? error.message : String(error);
+
+        // 不做“静默兜底”：
+        // - query 型变量 options 由后端返回，是契约的一部分
+        // - 解析失败时清空 query 型变量 options，避免 UI 继续使用旧数据导致误判
+        const next: Record<string, VariableOption[]> = { ...(this.state.options ?? {}) };
+        for (const v of this.variables) {
+          if (v.type !== 'query') continue;
+          const name = String(v?.name ?? '').trim();
+          if (!name) continue;
+          next[name] = [];
+        }
+        this.state.options = next;
+        this.state.lastUpdatedAt = Date.now();
+        this.optionsGeneration = (this.optionsGeneration + 1) % Number.MAX_SAFE_INTEGER;
       } finally {
         this.isResolvingOptions = false;
       }

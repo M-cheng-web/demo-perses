@@ -8,6 +8,7 @@ import type { DashboardContent, DashboardId, PanelGroup, Panel, PanelLayout, ID,
 import { createPrefixedId, deepCloneStructured } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
 import { BIG_DASHBOARD_JSON_BYTES_THRESHOLD, BIG_DASHBOARD_PANEL_THRESHOLD } from './dashboard/constants';
+import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
 import {
   addPanel as addPanelLocal,
   addPanelGroup as addPanelGroupLocal,
@@ -593,6 +594,14 @@ export const useDashboardStore = defineStore('dashboard', {
           const res = await patchFn({ dashboardId, groupId, items: queued });
           if (opSeq !== this._remoteOpSeq) return;
 
+          // 严格：如果后端返回 items 字段，则必须是数组（否则视为契约破坏）
+          if (res && typeof res === 'object' && 'items' in (res as any)) {
+            const rawItems = (res as any).items;
+            if (rawItems != null && !Array.isArray(rawItems)) {
+              throw new Error('Invalid PatchPanelGroupLayoutPageResponse.items: expected PanelLayout[]');
+            }
+          }
+
           // 后端可选返回最终 layout（例如 compact 后的结果）；若返回，则回写 current+synced
           const serverItems = Array.isArray(res?.items) && res.items.length > 0 ? res.items : null;
           if (serverItems) {
@@ -671,6 +680,10 @@ export const useDashboardStore = defineStore('dashboard', {
         const res = await createFn({ dashboardId, groupId, panel: payload });
         if (opSeq !== this._remoteOpSeq) return;
 
+        if (!res || typeof res !== 'object' || !(res as any).panel) {
+          throw new Error('Invalid CreatePanelResponse: missing panel');
+        }
+
         const createdPanel = deepCloneStructured(res.panel) as Panel;
         const createdLayout = res.layout ? (deepCloneStructured(res.layout) as PanelLayout) : undefined;
 
@@ -717,6 +730,10 @@ export const useDashboardStore = defineStore('dashboard', {
 
         const res = await updateFn({ dashboardId, groupId, panelId, panel: payload });
         if (opSeq !== this._remoteOpSeq) return;
+
+        if (!res || typeof res !== 'object' || !(res as any).panel) {
+          throw new Error('Invalid UpdatePanelResponse: missing panel');
+        }
 
         const saved = deepCloneStructured(res.panel) as Panel;
         updatePanelLocal.call(this, groupId, panelId, saved);
@@ -793,6 +810,10 @@ export const useDashboardStore = defineStore('dashboard', {
         const res = await dupFn({ dashboardId, groupId, panelId });
         if (opSeq !== this._remoteOpSeq) return;
 
+        if (!res || typeof res !== 'object' || !(res as any).panel) {
+          throw new Error('Invalid DuplicatePanelResponse: missing panel');
+        }
+
         const duplicated = deepCloneStructured(res.panel) as Panel;
         const duplicatedLayout = res.layout ? (deepCloneStructured(res.layout) as PanelLayout) : undefined;
 
@@ -840,6 +861,10 @@ export const useDashboardStore = defineStore('dashboard', {
           },
         });
         if (opSeq !== this._remoteOpSeq) return;
+
+        if (!res || typeof res !== 'object' || !(res as any).group) {
+          throw new Error('Invalid CreatePanelGroupResponse: missing group');
+        }
 
         const created = deepCloneStructured(res.group) as PanelGroup;
         // Replace temp group id with backend-generated id (keep array order stable)
@@ -895,6 +920,10 @@ export const useDashboardStore = defineStore('dashboard', {
 
         const res = await updateFn({ dashboardId, groupId: id, group: { title, description } });
         if (opSeq !== this._remoteOpSeq) return;
+
+        if (!res || typeof res !== 'object' || !(res as any).group) {
+          throw new Error('Invalid UpdatePanelGroupResponse: missing group');
+        }
 
         const saved = deepCloneStructured(res.group) as PanelGroup;
         // 仅更新元信息（title/description），避免把 current 的 panels/layout 引用写进 syncedSnapshot
@@ -1059,6 +1088,16 @@ export const useDashboardStore = defineStore('dashboard', {
         await yieldToPaint();
         const api = getPiniaApiClient(this.$pinia);
         const dashboard = await api.dashboard.loadDashboard(dashboardId);
+
+        // 严格：远端返回的 Dashboard JSON 必须满足当前前端运行时约束。
+        // 若不合法，直接 failBoot 并把错误暴露给页面（避免后续以“部分可用/部分诡异”的方式运行）。
+        const validationErrors = await Promise.resolve(validateDashboardStrict('', dashboard as any));
+        if (validationErrors.length > 0) {
+          const first = validationErrors[0]!;
+          const extra = validationErrors.length > 1 ? `（另有 ${validationErrors.length - 1} 个错误）` : '';
+          throw new Error(`[grafana-fast] Invalid dashboard payload: ${first}${extra}`);
+        }
+
         this.bootStage = 'initializing';
         await yieldToPaint();
 

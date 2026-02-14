@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Select } from '@grafana-fast/component';
+  import { Select, message } from '@grafana-fast/component';
   import { ref, watch, onMounted } from 'vue';
   import { useApiClient } from '/#/runtime/useInjected';
   import { promQueryModeller } from '@grafana-fast/utils';
@@ -85,7 +85,7 @@
       const metric = metricFromSelector || props.query?.metric || '';
 
       // 获取可用的标签键（Prometheus-like）
-      const labels = metric ? await api.query.fetchLabelKeys(metric) : ['instance', 'job'];
+      const labels = metric ? await api.query.fetchLabelKeys(metric) : [];
 
       labelOptions.value = labels.map((label) => ({
         label,
@@ -94,14 +94,11 @@
 
       labelsLoaded.value = true;
     } catch (error) {
+      labelOptions.value = [];
+      labelsLoaded.value = false;
+      const msg = error instanceof Error ? error.message : String(error);
+      message.error({ content: `加载标签列表失败：${msg}`, key: 'querybuilder:label-param', duration: 3 });
       console.error('Failed to load labels:', error);
-      // 失败时使用默认标签
-      labelOptions.value = [
-        { label: 'instance', value: 'instance' },
-        { label: 'job', value: 'job' },
-        { label: 'pod', value: 'pod' },
-        { label: 'namespace', value: 'namespace' },
-      ];
     } finally {
       loading.value = false;
     }

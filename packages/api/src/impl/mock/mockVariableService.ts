@@ -6,7 +6,7 @@
  * - resolveOptions：对 query 型变量（type='query'）尝试调用 mock QueryService 拉取 options
  */
 import type { VariableService } from '../../contracts';
-import type { DashboardVariable, VariableOption, VariablesState } from '@grafana-fast/types';
+import type { DashboardVariable, TimeRange, VariableOption, VariablesState } from '@grafana-fast/types';
 import type { QueryService } from '../../contracts/query';
 
 function normalizeCurrent(variable: DashboardVariable): string | string[] {
@@ -34,20 +34,16 @@ export function createMockVariableService(queryService?: QueryService): Variable
       return { values, options, lastUpdatedAt: Date.now() };
     },
 
-    async resolveOptions(variables: DashboardVariable[], state: VariablesState): Promise<Record<string, VariableOption[]>> {
+    async resolveOptions(variables: DashboardVariable[], state: VariablesState, timeRange: TimeRange): Promise<Record<string, VariableOption[]>> {
       const resolved: Record<string, VariableOption[]> = {};
 
       for (const v of variables) {
         // query 型变量：尝试通过 QueryService 解析 options（模拟远端数据源拉取）
         if (v.type === 'query' && v.query && queryService?.fetchVariableValues) {
-          try {
-            const items = await queryService.fetchVariableValues(v.query, { from: 'now-1h', to: 'now' });
-            const opts: VariableOption[] = items.map((it) => ({ text: it.text, value: it.value }));
-            resolved[v.name] = opts;
-            continue;
-          } catch {
-            // fall through to existing options
-          }
+          const items = await queryService.fetchVariableValues(v.query, timeRange);
+          const opts: VariableOption[] = items.map((it) => ({ text: it.text, value: it.value }));
+          resolved[v.name] = opts;
+          continue;
         }
 
         resolved[v.name] = state.options[v.name] ?? normalizeOptions(v.options);
