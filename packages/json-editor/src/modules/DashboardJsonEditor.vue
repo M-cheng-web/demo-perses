@@ -2,14 +2,14 @@
   组件说明：DashboardJsonEditor（Dashboard JSON 专用编辑器）
 
   目标（按当前阶段需求）：
-  1) 基本能力：格式化 / 压缩 / 复制
+  1) 基本能力：复制
   2) JSON 不合法时：只在编辑器内部报错，不会把内容同步到外部（避免污染外部状态）
   3) 支持外部校验钩子：每次输入变化都会调用；若不通过，编辑器展示错误且不向外同步
   4) 提供精简摘要：面板组数量、面板数量、变量数量（便于用户快速确认“粘贴对了”）
   5) 行号 + 错误行高亮：帮助用户定位语法错误
 
   说明：
-  - 本组件不做 schemaVersion migration（不修改/不迁移 JSON），但会输出更完整的“诊断报告”
+  - 本组件不会自动修改 JSON（仅做编辑 + 诊断报告输出）
   - 外部只会拿到“最后一次通过校验的 JSON 文本”；草稿状态完全留在组件内部
 -->
 <template>
@@ -23,8 +23,6 @@
       </Space>
 
       <Space :size="8">
-        <Button size="small" :disabled="effectiveReadOnly" @click="handleFormat">格式化</Button>
-        <Button size="small" :disabled="effectiveReadOnly" @click="handleMinify">压缩</Button>
         <Button size="small" @click="handleCopy">复制</Button>
       </Space>
     </Flex>
@@ -37,8 +35,6 @@
       :error-line="errorLine"
       @update:model-value="setDraft"
     />
-
-    <Alert v-if="isTooLargeToEdit" type="warning" show-icon message="内容较大，编辑能力已禁用" :description="tooLargeHint" style="margin-top: 10px" />
 
     <Alert
       v-if="!diagnostics.json.ok && diagnostics.json.error"
@@ -201,15 +197,6 @@
 
   const effectiveReadOnly = computed(() => Boolean(props.readOnly) || isTooLargeToEdit.value);
 
-  const tooLargeHint = computed(() => {
-    const limit = maxEditableCharsLimit.value;
-    const len = (draftText.value ?? '').length;
-    if (!limit || limit <= 0) {
-      return `当前内容长度约 ${len} 字符。为避免卡顿，仅支持查看/复制；如需修改建议在外部编辑后重新导入。`;
-    }
-    return `当前内容约 ${len} 字符，超过可编辑上限 ${limit}（maxEditableChars）。为避免卡顿，仅支持查看/复制；如需修改建议在外部编辑后重新导入。`;
-  });
-
   const textAreaRef = ref<null | {
     scrollToLine?: (line: number) => void;
   }>(null);
@@ -320,7 +307,7 @@
 
     const riskLines: string[] = [];
     if (Array.isArray(d.issues) && d.issues.length > 0) riskLines.push(...d.issues);
-    if (isTooLargeToEdit.value) riskLines.push('内容过大：已自动切换为只读模式（仍支持查看/复制/校验/应用）');
+    if (isTooLargeToEdit.value && !props.readOnly) riskLines.push('内容过大：已自动切换为只读模式（仍支持查看/复制/校验/应用）');
 
     if (riskLines.length > 0) sections.push({ title: '风险提示', lines: riskLines });
 
@@ -333,8 +320,8 @@
     if (!d.looksLikeDashboard) return '不是 Dashboard';
     if (validating.value) return '校验中...';
     if (validatorErrors.value.length > 0) return '校验未通过';
-    if (isTooLargeToEdit.value) return '只读（内容过大）';
     if (props.readOnly) return '只读';
+    if (isTooLargeToEdit.value) return '只读（内容过大）';
     return '可应用';
   });
 
@@ -355,32 +342,6 @@
     if (validatorErrors.value.length > 0) return 'var(--gf-color-danger)';
     return 'var(--gf-color-success)';
   });
-
-  const handleFormat = () => {
-    const d = diagnostics.value;
-    if (!d.json.ok) {
-      message.error('无法格式化：JSON 不合法');
-      return;
-    }
-    try {
-      setDraft(JSON.stringify(d.json.value, null, 2));
-    } catch (e) {
-      message.error(`格式化失败：${(e as Error)?.message ?? String(e)}`);
-    }
-  };
-
-  const handleMinify = () => {
-    const d = diagnostics.value;
-    if (!d.json.ok) {
-      message.error('无法压缩：JSON 不合法');
-      return;
-    }
-    try {
-      setDraft(JSON.stringify(d.json.value));
-    } catch (e) {
-      message.error(`压缩失败：${(e as Error)?.message ?? String(e)}`);
-    }
-  };
 
   const handleCopy = async () => {
     try {

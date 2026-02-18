@@ -44,7 +44,11 @@ export function useDashboardStatus(options: UseDashboardStatusOptions) {
     lastErrorToastMessage.value = err;
 
     if (bootStage.value === 'error') {
-      message.error(`仪表盘加载失败：${err}`);
+      if (bootStats.value.source === 'import') {
+        message.error(`仪表盘导入失败：${err}`);
+      } else {
+        message.error(`仪表盘加载失败：${err}`);
+      }
       return;
     }
 
@@ -70,6 +74,8 @@ export function useDashboardStatus(options: UseDashboardStatusOptions) {
 
   const loadingDetail = computed(() => {
     switch (bootStage.value) {
+      case 'fetching':
+        return '正在连接数据，请稍候。';
       case 'parsing':
         return '正在处理配置，请稍候。';
       case 'initializing':

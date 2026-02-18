@@ -3,7 +3,7 @@
 
   定位：
   - 一个“通用 JSON 文本编辑器”，用于粘贴/少量编辑 JSON
-  - 提供基础工具：格式化 / 压缩 / 复制
+  - 提供基础工具：复制
   - 提供清晰校验：JSON 是否合法 + 错误行/列定位
 
   注意：
@@ -24,8 +24,6 @@
       </Space>
 
       <Space :size="8">
-        <Button size="small" :disabled="effectiveReadOnly" @click="handleFormat">格式化</Button>
-        <Button size="small" :disabled="effectiveReadOnly" @click="handleMinify">压缩</Button>
         <Button size="small" @click="handleCopy">复制</Button>
       </Space>
     </Flex>
@@ -37,15 +35,6 @@
       :height="normalizedHeight"
       :error-line="errorLine"
       @update:model-value="setDraft"
-    />
-
-    <Alert
-      v-if="isTooLargeToEdit && !readOnly"
-      type="warning"
-      show-icon
-      message="内容较大，已切换为只读"
-      description="为避免卡顿，当前仅支持查看/复制；如需修改建议在外部编辑后重新导入。"
-      style="margin-top: 10px"
     />
 
     <Alert
@@ -264,32 +253,6 @@
 
     // 有外部校验器时：同步由 runExternalValidate 的 finally 统一决定
     emit('validate', false);
-  };
-
-  const handleFormat = () => {
-    try {
-      const d = analyzeJsonText(draftText.value ?? '');
-      if (!d.ok) {
-        message.error('无法格式化：JSON 不合法');
-        return;
-      }
-      setDraft(JSON.stringify(d.value, null, 2));
-    } catch (error) {
-      message.error(`格式化失败：${(error as Error)?.message ?? String(error)}`);
-    }
-  };
-
-  const handleMinify = () => {
-    try {
-      const d = analyzeJsonText(draftText.value ?? '');
-      if (!d.ok) {
-        message.error('无法压缩：JSON 不合法');
-        return;
-      }
-      setDraft(JSON.stringify(d.value));
-    } catch (error) {
-      message.error(`压缩失败：${(error as Error)?.message ?? String(error)}`);
-    }
   };
 
   const handleCopy = async () => {

@@ -7,11 +7,6 @@ type DashboardStoreLike = {
   applyDashboardFromJson: (dashboard: DashboardContent, rawText: string) => void | Promise<void>;
 };
 
-export type DashboardJsonEditorExpose = {
-  getDraftText?: () => string;
-  getDashboard: () => DashboardContent;
-};
-
 interface Options {
   isBooting: Ref<boolean>;
   isReadOnly: Ref<boolean>;
@@ -23,29 +18,23 @@ interface Options {
    * 可选：外部传入 template refs（用于避免 build 模式下的 noUnusedLocals 误判）
    * - 若不传，hook 内部会自行创建
    */
-  dashboardJsonEditorRef?: Ref<DashboardJsonEditorExpose | null>;
   jsonFileInputRef?: Ref<HTMLInputElement | undefined>;
 }
 
 export function useDashboardJsonModal(options: Options) {
-  const MAX_EDITABLE_DASHBOARD_JSON_CHARS = 120_000;
+  // 仅用于查看时的性能保护：超过该长度时，DashboardJsonEditor 会跳过昂贵的诊断解析（仍可查看/复制）。
+  const MAX_DASHBOARD_JSON_CHARS_FOR_FAST_VIEW = 120_000;
 
   const jsonModalVisible = ref(false);
-  const jsonModalMode = ref<'view' | 'edit'>('view');
+  const jsonModalMode = ref<'view' | 'import'>('view');
   const dashboardJson = ref('');
-  const isJsonValid = ref(true);
   const isGeneratingJson = ref(false);
+  const isApplyingJson = ref(false);
   let generateJsonSeq = 0;
-
-  const dashboardJsonEditorRef = options.dashboardJsonEditorRef ?? ref<DashboardJsonEditorExpose | null>(null);
   const jsonFileInputRef = options.jsonFileInputRef ?? ref<HTMLInputElement>();
 
   const lockScrollEl = computed(() => options.contentEl.value ?? options.rootEl.value ?? null);
   const lockScrollEnabled = computed(() => lockScrollEl.value != null);
-
-  const handleJsonValidate = (ok: boolean) => {
-    isJsonValid.value = ok;
-  };
 
   const generateDashboardJsonText = async (dash: DashboardContent) => {
     const seq = ++generateJsonSeq;
@@ -84,7 +73,7 @@ export function useDashboardJsonModal(options: Options) {
     if (options.isBooting.value) return;
     const dash = options.dashboardStore.getPersistableDashboardSnapshot();
     if (!dash) return;
-    jsonModalMode.value = options.isReadOnly.value && mode === 'edit' ? 'view' : mode;
+    jsonModalMode.value = 'view';
     jsonModalVisible.value = true;
     void generateDashboardJsonText(dash);
   };
@@ -111,9 +100,9 @@ export function useDashboardJsonModal(options: Options) {
       generateJsonSeq++;
       isGeneratingJson.value = false;
       dashboardJson.value = json;
-      jsonModalMode.value = 'edit';
+      jsonModalMode.value = 'import';
       jsonModalVisible.value = true;
-      message.success('已加载 JSON，请检查并点击“应用”');
+      message.success('已加载 JSON，点击“应用”后将提交到服务端校验并覆盖当前配置');
     };
     reader.readAsText(file);
 
@@ -131,41 +120,61 @@ export function useDashboardJsonModal(options: Options) {
   };
 
   const handleApplyJson = () => {
+    if (options.isBooting.value) return;
+    if (options.isReadOnly.value) {
+      message.warning('当前为只读模式，无法应用 JSON');
+      return;
+    }
+    if (jsonModalMode.value !== 'import') return;
+    if (isApplyingJson.value) return;
+
+    const rawText = dashboardJson.value ?? '';
+    let parsed: unknown;
     try {
-      if (options.isBooting.value) return;
-      if (options.isReadOnly.value) {
-        message.warning('当前为只读模式，无法应用 JSON');
-        return;
-      }
-      const dashboard = dashboardJsonEditorRef.value?.getDashboard();
-      if (!dashboard) {
-        message.error('无法应用：Dashboard JSON 不合法');
-        return;
-      }
-      const rawText = dashboardJsonEditorRef.value?.getDraftText?.() ?? dashboardJson.value;
-      void options.dashboardStore.applyDashboardFromJson(dashboard, rawText);
-      jsonModalVisible.value = false;
-      message.success('应用成功');
+      parsed = JSON.parse(rawText);
     } catch (error) {
       console.error('应用失败：JSON 格式错误', error);
-      message.error((error as Error)?.message ?? '应用失败');
+      message.error((error as Error)?.message ?? 'JSON 格式错误');
+      return;
     }
+
+    if (!parsed || typeof parsed !== 'object') {
+      message.error('JSON 必须是对象');
+      return;
+    }
+
+    isApplyingJson.value = true;
+    const toastKey = 'dashboard-json-apply';
+    message.loading({ content: '正在应用（服务端校验中）...', key: toastKey, duration: 0 });
+    Promise.resolve(options.dashboardStore.applyDashboardFromJson(parsed as DashboardContent, rawText))
+      .then(() => {
+        jsonModalVisible.value = false;
+        message.success({ content: '应用成功', key: toastKey, duration: 2 });
+      })
+      .catch((error) => {
+        // 失败提示由 store 的 lastError 统一 toast，这里只清理 loading。
+        message.destroy(toastKey);
+        // keep console for debugging
+        // eslint-disable-next-line no-console -- import failures should be traceable
+        console.error('Failed to apply imported dashboard json:', error);
+      })
+      .finally(() => {
+        isApplyingJson.value = false;
+      });
   };
 
   return {
-    MAX_EDITABLE_DASHBOARD_JSON_CHARS,
+    MAX_DASHBOARD_JSON_CHARS_FOR_FAST_VIEW,
     jsonModalVisible,
     jsonModalMode,
     dashboardJson,
-    isJsonValid,
     isGeneratingJson,
-    dashboardJsonEditorRef,
+    isApplyingJson,
     jsonFileInputRef,
     lockScrollEl,
     lockScrollEnabled,
     openJsonModal,
     closeJsonModal,
-    handleJsonValidate,
     handleJsonFileChange,
     handleImportJson,
     handleApplyJson,

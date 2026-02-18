@@ -95,12 +95,11 @@
                 </div>
               </TabPane>
 
-              <!-- JSON 编辑器 -->
-              <!-- 创建面板时隐藏 JSON 编辑：此时还没有稳定的 panel.id，严格校验会导致保存被阻塞 -->
-              <TabPane v-if="editingMode !== 'create'" name="json" tab="JSON 编辑">
+              <!-- JSON 查看（只读） -->
+              <TabPane v-if="editingMode !== 'create'" name="json" tab="JSON 查看">
                 <div :class="bem('tab-content')">
                   <div :class="bem('json-editor-wrapper')">
-                    <JsonEditorLite v-model="jsonDraft" :height="380" :validate="validatePanelStrict" @validate="handleJsonValidate" />
+                    <JsonEditorLite :model-value="panelJsonText" :height="380" read-only />
                   </div>
                 </div>
               </TabPane>
@@ -140,20 +139,11 @@
   import { debounceCancellable, deepClone, createNamespace } from '/#/utils';
   import { getBuiltInPanelDefaultOptions, getBuiltInPanelStyleComponent, getBuiltInPanelTypeOptions } from '/#/panels/builtInPanels';
   import type { CanonicalQuery, Panel } from '@grafana-fast/types';
-  import { validatePanelStrict } from '/#/utils/strictJsonValidators';
   import PanelPreview from './PanelPreview.vue';
   import DataQueryTab from './DataQueryTab.vue';
 
-  type JsonEditorModule = typeof import('@grafana-fast/json-editor');
-  let jsonEditorModulePromise: Promise<JsonEditorModule> | null = null;
-
-  const loadJsonEditorModule = async (): Promise<JsonEditorModule> => {
-    jsonEditorModulePromise ??= import('@grafana-fast/json-editor');
-    return jsonEditorModulePromise;
-  };
-
   const JsonEditorLite = defineAsyncComponent({
-    loader: async () => (await loadJsonEditorModule()).JsonEditorLite,
+    loader: async () => (await import('@grafana-fast/json-editor')).JsonEditorLite,
     delay: 120,
     timeout: 30_000,
   });
@@ -172,7 +162,6 @@
 
   const isOpen = ref(false);
   const activeTab = ref('query'); // 默认选中数据查询
-  const isJsonValid = ref(true);
   const selectedGroupId = ref<string>('');
   const panelPreviewRef = ref<InstanceType<typeof PanelPreview>>();
   type DataQueryTabExpose = InstanceType<typeof DataQueryTab> & {
@@ -180,7 +169,6 @@
     validateAndGetQueriesForExecute: () => { ok: boolean; errors: Array<{ refId: string; message: string }>; queries: CanonicalQuery[] };
   };
   const dataQueryTabRef = ref<DataQueryTabExpose | null>(null);
-  const jsonDraft = ref<string>('');
   const isSaving = ref(false);
 
   // 获取面板组列表
@@ -209,39 +197,14 @@
   // 根据面板类型获取样式配置组件（仅内置类型）
   const styleComponent = computed(() => getBuiltInPanelStyleComponent(formData.type));
 
-  const handleJsonValidate = (isValid: boolean) => {
-    isJsonValid.value = isValid;
-  };
+  const panelJsonText = computed(() => JSON.stringify(formData, null, 2));
 
-  // 当切换到 JSON tab 时，用当前表单值刷新一份草稿（避免在用户编辑时被自动覆盖）
+  // 当切换到 JSON tab 时：预加载 json-editor 模块，避免首次打开出现明显延迟
   watch(
     () => activeTab.value,
     (tab) => {
       if (tab !== 'json') return;
-      jsonDraft.value = JSON.stringify(formData, null, 2);
-      // Prefetch: avoid blocking the first keystroke in JSON editor tab.
-      void loadJsonEditorModule();
-    }
-  );
-
-  // JSON 草稿变更：当草稿成为合法 JSON 时，再写回到 formData（不阻塞用户输入过程）
-  let jsonAnalyzeToken = 0;
-  watch(
-    () => jsonDraft.value,
-    (text) => {
-      const token = ++jsonAnalyzeToken;
-      void (async () => {
-        try {
-          const { analyzeJsonText } = await loadJsonEditorModule();
-          if (token !== jsonAnalyzeToken) return;
-          const d = analyzeJsonText(text ?? '');
-          if (!d.ok) return;
-          if (!d.value || typeof d.value !== 'object') return;
-          Object.assign(formData, d.value as any);
-        } catch {
-          // ignore: JSON editor is an optional UX enhancer; parsing failure should not break panel editing flow
-        }
-      })();
+      void import('@grafana-fast/json-editor');
     }
   );
 
@@ -265,8 +228,6 @@
       isOpen.value = open;
       scheduleExecuteQueries.cancel();
       if (open) {
-        // 每次打开都重置 JSON 校验状态，避免上一次 JSON 编辑的错误“粘住”导致本次无法保存
-        isJsonValid.value = true;
         // create 模式下 JSON tab 不渲染；若之前停留在 json tab，这里强制切回数据查询
         if (editingMode.value === 'create' && activeTab.value === 'json') activeTab.value = 'query';
 
@@ -387,11 +348,6 @@
 
     if (!selectedGroupId.value) {
       message.error('请选择面板组');
-      return;
-    }
-
-    if (!isJsonValid.value) {
-      message.error('JSON 格式错误，请检查');
       return;
     }
 
@@ -619,7 +575,7 @@
       color: var(--gf-color-text-tertiary);
     }
 
-    // ===== JSON 编辑器包装 =====
+    // ===== JSON 查看包装 =====
     &__json-editor-wrapper {
       border-radius: var(--gf-radius-md);
       overflow: hidden;

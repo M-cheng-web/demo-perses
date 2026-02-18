@@ -376,6 +376,30 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   );
 
   const actions: DashboardSdkActions = {
+    resetDashboard: () =>
+      runWithError(() => {
+        // 语义：把 dashboard 状态重置为“等待加载”（类似浏览器刷新后的初始状态）。
+        // 期间宿主可异步获取 dashboardId（资源标识），再调用 loadDashboard(id)。
+        dashboardStore.cancelPendingSync();
+        dashboardStore.dashboardId = null;
+        dashboardStore.currentDashboard = null;
+        dashboardStore.syncedDashboard = null;
+        dashboardStore.hasUnsyncedChanges = false;
+        dashboardStore.lastError = null;
+
+        dashboardStore.editingGroupId = null;
+        dashboardStore.viewPanelId = null;
+        dashboardStore.viewMode = 'grouped';
+
+        dashboardStore.isBooting = false;
+        dashboardStore.bootStage = 'idle';
+        dashboardStore.bootStats = { startedAt: null, groupCount: null, panelCount: null, jsonBytes: null, source: null };
+
+        // bump revision: help host detect a "hard reset"
+        const rev = Number(dashboardStore.dashboardContentRevision ?? 0);
+        dashboardStore.dashboardContentRevision = Number.isFinite(rev) ? rev + 1 : 0;
+        scheduleChange();
+      }),
     // Dashboard 数据加载/保存
     loadDashboard: async (id: ID) =>
       runAsyncWithError(async () => {

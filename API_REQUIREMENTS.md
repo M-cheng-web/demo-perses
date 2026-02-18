@@ -214,7 +214,7 @@ type VariableOption = { text: string; value: string };
 - Method: `POST`
 - Path: `/dashboards/save`
 - 场景/时机：
-  - 用户在 JSON 编辑器里“导入/应用 JSON”
+  - 用户通过“导入 JSON（文件/粘贴）→ 应用”覆盖整盘配置（前端不提供在线编辑 JSON）
   - 需要“整盘覆盖保存”时
 - 用途：把当前 `DashboardContent` 覆盖保存到远端
 - Request Body：
@@ -227,6 +227,7 @@ type SaveDashboardRequest = {
 ```
 - Response：`204 No Content`
 - 说明：日常拖拽/增删改面板不调用该接口（使用局部接口）
+- 重要约束（导入兜底校验）：后端必须校验 `content` 未修改服务端管理/不可变字段（例如 panelGroupId/panelId 等）；若发现越权或非法变更，必须返回非 2xx 且不应用该 JSON。
 
 ---
 

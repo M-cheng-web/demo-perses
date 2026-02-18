@@ -376,6 +376,22 @@ function createLargeGroup(): PanelGroup {
 }
 
 function createDefaultDashboardContent(dashboardId: DashboardId): DashboardContent {
+  const id = String(dashboardId ?? '');
+  // Demo helper: allow host app to switch to an "empty dashboard" by id.
+  // - Used by packages/app DashboardView.vue to verify "dashboardId changes trigger full refresh".
+  // - Any id containing "empty" will be treated as an empty dashboard (no panelGroups).
+  if (id.toLowerCase().includes('empty')) {
+    return {
+      schemaVersion: 1,
+      name: `Empty Dashboard（${id || '-'}）`,
+      description: 'Mock empty dashboard for dashboardId switching demo',
+      panelGroups: [],
+      timeRange: { from: 'now-1h', to: 'now' },
+      refreshInterval: 0,
+      variables: [],
+    };
+  }
+
   const groupCount = 30;
   const panelsPerGroup = 30;
   const fixedGroups: PanelGroup[] = [createFixedCpuGroup(), createLargeGroup()];
@@ -406,7 +422,7 @@ function createDefaultDashboardContent(dashboardId: DashboardId): DashboardConte
         const type = panelTypes[(groupIndex + pi) % panelTypes.length]!;
         const expr = exprCandidates[(groupIndex * 7 + panelIndex * 3) % exprCandidates.length]!;
         const id = `g${groupIndex}-p${panelIndex}`;
-        // 前端运行时严格约束：CanonicalQuery.format 必须为 "time_series"（见 API_REQUIREMENTS / strictJsonValidators）。
+        // 前端运行时约束：CanonicalQuery.format 必须为 "time_series"（见 API_REQUIREMENTS）。
         // Panel 的展示形态由 panel.type 决定，而不是 query.format。
         const format = 'time_series';
 

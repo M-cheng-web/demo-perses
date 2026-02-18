@@ -41,6 +41,9 @@
 
         <div class="dp-dashboard-view__action-group">
           <Button size="small" type="primary" @click="reloadDashboard">重新加载</Button>
+          <Button size="small" type="ghost" :disabled="!resolvedDashboardId || isResolvingDashboardId" @click="toggleDashboardId">
+            {{ switchDashboardButtonText }}
+          </Button>
           <Button size="small" type="ghost" :disabled="!state.dashboard" @click="handleRefresh">刷新时间范围</Button>
           <Button size="small" type="ghost" :disabled="!state.dashboard" @click="setQuickRange">最近 5 分钟</Button>
           <Button size="small" type="ghost" :disabled="!state.dashboard" @click="toggleReadOnly">
@@ -118,19 +121,27 @@
   // - 再根据业务返回结果决定最终 dashboardId
   const resolvedDashboardId = ref<string | null>(null);
   const isResolvingDashboardId = ref(false);
+  const EMPTY_DASHBOARD_ID = 'biz-dashboard-empty-001';
   const mockBusinessFetchDashboardId = async (): Promise<string> => {
     // 模拟网络延迟
     await new Promise<void>((r) => window.setTimeout(r, 600));
     // 这里返回一个稳定值，避免每次刷新都是“全新 dashboard”影响演示
     return 'biz-dashboard-001';
   };
+  const mockBusinessFetchEmptyDashboardId = async (): Promise<string> => {
+    await new Promise<void>((r) => window.setTimeout(r, 600));
+    return EMPTY_DASHBOARD_ID;
+  };
 
-  const resolveAndLoadDashboard = async () => {
+  const resolveAndLoadDashboard = async (mode: 'original' | 'empty' = 'original') => {
     if (isResolvingDashboardId.value) return;
     isResolvingDashboardId.value = true;
     try {
-      const id = await mockBusinessFetchDashboardId();
-      resolvedDashboardId.value = id;
+      // 类似浏览器刷新：先把 dashboard 状态重置到 waiting（显示“正在连接数据”），
+      // 再模拟宿主业务接口获取 dashboardId（资源标识），最后加载 dashboard JSON。
+      dashboardActions.resetDashboard();
+      const id = mode === 'empty' ? await mockBusinessFetchEmptyDashboardId() : await mockBusinessFetchDashboardId();
+      if (mode === 'original') resolvedDashboardId.value = id;
       await dashboardActions.loadDashboard(id);
     } finally {
       isResolvingDashboardId.value = false;
@@ -138,16 +149,20 @@
   };
 
   onMounted(() => {
-    void resolveAndLoadDashboard();
+    void resolveAndLoadDashboard('original');
   });
+
+  // Demo: dashboardId switching (should trigger full dashboard reload every time)
+  const isEmptyDashboard = computed(() => state.value.dashboard?.id === EMPTY_DASHBOARD_ID);
+  const switchDashboardButtonText = computed(() => (isEmptyDashboard.value ? '切换回原 dashboardId' : '切换到空 dashboardId'));
+  const toggleDashboardId = async () => {
+    if (isResolvingDashboardId.value) return;
+    void resolveAndLoadDashboard(isEmptyDashboard.value ? 'original' : 'empty');
+  };
 
   const reloadDashboard = async () => {
     try {
-      if (resolvedDashboardId.value) {
-        await dashboardActions.loadDashboard(resolvedDashboardId.value);
-      } else {
-        await resolveAndLoadDashboard();
-      }
+      await resolveAndLoadDashboard(isEmptyDashboard.value ? 'empty' : 'original');
     } catch {
       // demo page: errors are surfaced via console / onError hook in host apps
     }

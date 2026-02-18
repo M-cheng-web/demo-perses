@@ -1089,6 +1089,10 @@ export const useDashboardStore = defineStore('dashboard', {
         const api = getPiniaApiClient(this.$pinia);
         const dashboard = await api.dashboard.loadDashboard(dashboardId);
 
+        // 关键：即便后端/Mock 响应极快，也要给浏览器一次机会先把 fetching（“正在连接数据”）渲染出来，
+        // 否则用户可能只看到后续 initializing（“正在准备面板”），体验不像“首次进入/浏览器刷新”。
+        await yieldToPaint();
+
         // 严格：远端返回的 Dashboard JSON 必须满足当前前端运行时约束。
         // 若不合法，直接 failBoot 并把错误暴露给页面（避免后续以“部分可用/部分诡异”的方式运行）。
         const validationErrors = await Promise.resolve(validateDashboardStrict('', dashboard as any));
@@ -1122,48 +1126,51 @@ export const useDashboardStore = defineStore('dashboard', {
     },
 
     /**
-     * 从 JSON 导入/应用 Dashboard（用于 DashboardToolbar 的 JSON 编辑器）
+     * 从 JSON 导入/应用 Dashboard（全局 JSON：仅支持导入/导出，不提供在线编辑）
      *
      * 注意：
-     * - rawJsonText 用于统计 bytes（提示“数据量较大，需要等待”）
-     * - dashboard 对象已由编辑器严格校验通过
+     * - 导入失败（服务端校验不通过/拒绝）不会影响当前已加载的 dashboard 状态
+     * - 导入成功后会触发一次“全局刷新”：重新请求 `POST /dashboards/load` 并按首次进入流程重新解析
+     * - rawJsonText 仅用于调试/统计（不影响导入结果）
      */
     async applyDashboardFromJson(dashboard: DashboardContent, rawJsonText?: string) {
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
-      this.beginBoot('import', 'parsing');
+      const dashboardId = this.dashboardId;
+      if (!dashboardId) {
+        throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+      }
       try {
-        if (typeof rawJsonText === 'string' && rawJsonText.trim()) {
-          this.bootStats.jsonBytes = safeUtf8Bytes(rawJsonText);
-        }
+        // 重要：先让后端校验并落库；若失败，前端不应用该 JSON（保持当前状态不变）。
+        const api = getPiniaApiClient(this.$pinia);
+        await api.dashboard.saveDashboard(dashboardId, dashboard);
 
-        await yieldToPaint();
-        this.bootStage = 'initializing';
-        await yieldToPaint();
-
-        const { groupCount, panelCount } = countDashboardStats(dashboard);
-        this.bootStats.groupCount = groupCount;
-        this.bootStats.panelCount = panelCount;
-
-        const next = sanitizeDashboardContent(dashboard);
-        this.currentDashboard = markRaw(next);
-        this._syncRuntimeStoresFromDashboard(next);
-        // Import/apply 属于“用户主动修改”：但此时还未被远端确认，不能直接覆盖 syncedDashboard，
-        // 否则后续保存失败将无法回滚到远端快照。
+        // 导入成功：按“首次进入”语义全局刷新。
         //
-        // 约定：
-        // - 若已存在 syncedDashboard（通常来自 loadDashboard）：保持不变，等待 save/sync 成功后再更新
-        // - 若不存在 syncedDashboard：退化为“以当前为已确认态”，避免后续回滚无源
-        if (!this.syncedDashboard) {
-          this.syncedDashboard = markRaw(deepCloneStructured(next));
-          this.hasUnsyncedChanges = false;
-        } else {
-          this.hasUnsyncedChanges = true;
-        }
-        this.finishBoot();
+        // 关键点：
+        // - 先把 currentDashboard 清空，让 boot mask 先进入 waiting（“正在连接数据”）
+        // - 再 loadDashboard 走 fetching → initializing → ready
+        //
+        // 这样 reload/import 成功后的体验会更接近浏览器 F5 刷新（而不是只闪一下“正在准备面板”）。
+        this.cancelPendingSync();
+        this.currentDashboard = null;
+        this.syncedDashboard = null;
+        this.hasUnsyncedChanges = false;
+        this.lastError = null;
+        this.editingGroupId = null;
+        this.viewPanelId = null;
+        this.viewMode = 'grouped';
+        this.isBooting = false;
+        this.bootStage = 'idle';
+        this.bootStats = { startedAt: null, groupCount: null, panelCount: null, jsonBytes: null, source: null };
         this._bumpDashboardContentRevision();
+        await yieldToPaint();
+        await this.loadDashboard(dashboardId);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to apply dashboard json';
-        this.failBoot(message);
+        // 不进入 boot error：只记录错误并抛出，确保不会打断当前编辑态/打开的面板组。
+        this.lastError = message;
+        // eslint-disable-next-line no-console -- import failures should be traceable in dev
+        if (typeof rawJsonText === 'string' && rawJsonText.trim()) console.error('Failed to apply dashboard json:', message, { bytes: safeUtf8Bytes(rawJsonText) });
         throw error;
       }
     },
@@ -1199,7 +1206,7 @@ export const useDashboardStore = defineStore('dashboard', {
     setViewPanel,
     togglePanelView,
 
-    // ---- (Optional) local-only helpers kept for compatibility ----
+    // ---- (Optional) local-only helpers ----
     movePanelGroup: movePanelGroupLocal,
     updatePanelGroupLayout: updatePanelGroupLayoutLocal,
   },

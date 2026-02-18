@@ -47,7 +47,7 @@
               <Tooltip title="查看当前 Dashboard JSON">
                 <Button type="ghost" :icon="h(FileTextOutlined)" :disabled="isBooting" @click="handleViewJson">查看</Button>
               </Tooltip>
-              <Tooltip title="导入 JSON 配置（严格校验）">
+              <Tooltip title="导入 JSON 配置（以服务端校验为准）">
                 <Button type="ghost" :icon="h(UploadOutlined)" :disabled="isBooting || isReadOnly" @click="handleImport">导入</Button>
               </Tooltip>
               <Tooltip title="导出当前配置为 JSON">

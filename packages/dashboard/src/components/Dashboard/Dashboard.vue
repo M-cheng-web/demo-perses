@@ -109,17 +109,20 @@
         <div v-if="isGeneratingJson" :class="bem('json-loading')">正在生成 JSON（内容较大时可能需要几秒）...</div>
         <DashboardJsonEditor
           v-else
-          ref="dashboardJsonEditorRef"
           v-model="dashboardJson"
-          :read-only="jsonModalMode === 'view'"
-          :max-editable-chars="MAX_EDITABLE_DASHBOARD_JSON_CHARS"
-          :validate="jsonModalMode === 'edit' ? validateDashboardStrict : undefined"
-          @validate="handleJsonValidate"
+          :read-only="true"
+          :max-editable-chars="MAX_DASHBOARD_JSON_CHARS_FOR_FAST_VIEW"
         />
         <template #footer>
           <Space>
-            <Button @click="jsonModalVisible = false">取消</Button>
-            <Button v-if="jsonModalMode === 'edit'" type="primary" :disabled="isReadOnly || !isJsonValid || isBooting" @click="handleApplyJson">
+            <Button @click="jsonModalVisible = false">关闭</Button>
+            <Button
+              v-if="jsonModalMode === 'import'"
+              type="primary"
+              :disabled="isReadOnly || isBooting || isApplyingJson"
+              :loading="isApplyingJson"
+              @click="handleApplyJson"
+            >
               应用
             </Button>
           </Space>
@@ -171,9 +174,8 @@
   import PanelGroupDialog from '/#/components/PanelGroup/PanelGroupDialog.vue';
   import type { PanelGroup } from '@grafana-fast/types';
   import type { GrafanaFastApiClient } from '@grafana-fast/api';
-  import { validateDashboardStrict } from '/#/utils/strictJsonValidators';
   import { usePanelGroupPagination } from '/#/composables/usePanelGroupPagination';
-  import { useDashboardJsonModal, type DashboardJsonEditorExpose } from './useDashboardJsonModal';
+  import { useDashboardJsonModal } from './useDashboardJsonModal';
   import { useDashboardRuntimeBindings } from './useDashboardRuntimeBindings';
   import { useDashboardSettingsUi } from './useDashboardSettingsUi';
   import { useDashboardStatus } from './useDashboardStatus';
@@ -552,21 +554,19 @@
     lastError,
   });
 
-  const dashboardJsonEditorRef = ref<DashboardJsonEditorExpose | null>(null);
   const jsonFileInputRef = ref<HTMLInputElement>();
 
   const {
-    MAX_EDITABLE_DASHBOARD_JSON_CHARS,
+    MAX_DASHBOARD_JSON_CHARS_FOR_FAST_VIEW,
     jsonModalVisible,
     jsonModalMode,
     dashboardJson,
-    isJsonValid,
     isGeneratingJson,
+    isApplyingJson,
     lockScrollEl,
     lockScrollEnabled,
     openJsonModal,
     closeJsonModal,
-    handleJsonValidate,
     handleJsonFileChange,
     handleImportJson,
     handleApplyJson,
@@ -577,7 +577,6 @@
     rootEl,
     contentEl,
     dashboardStore,
-    dashboardJsonEditorRef,
     jsonFileInputRef,
   });
 

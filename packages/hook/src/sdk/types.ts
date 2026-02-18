@@ -187,6 +187,15 @@ export interface DashboardSdkEventMap {
 export type DashboardSdkEventName = keyof DashboardSdkEventMap;
 
 export interface DashboardSdkActions {
+  /**
+   * 将 dashboard 状态重置为“等待加载”（类似浏览器刷新后的初始状态）
+   *
+   * 典型用法：
+   * - 宿主先异步获取 dashboardId（资源标识）
+   * - 获取期间希望展示 boot mask 的 waiting 状态（“正在连接数据”）
+   * - 拿到 id 后再调用 loadDashboard(id)
+   */
+  resetDashboard: () => void;
   /** 按 dashboardId（资源标识）加载 dashboard 内容（不做历史 schema 迁移，依赖后端/宿主保证结构正确） */
   loadDashboard: (id: ID) => Promise<void>;
   /** 保存当前 dashboard（落库或写回后端/本地实现） */
