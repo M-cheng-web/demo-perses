@@ -1,4 +1,4 @@
-import type { CanonicalQuery, Datasource, DatasourceRef, DatasourceType, PromVisualQuery } from '@grafana-fast/types';
+import type { CanonicalQuery, PromVisualQuery } from '@grafana-fast/types';
 import { promQueryModeller } from '@grafana-fast/utils';
 import type { PromqlParseWarning } from '@grafana-fast/utils';
 import type { QueryDraft } from './types';
@@ -16,7 +16,6 @@ export function signatureFromCanonical(queries: CanonicalQuery[] | undefined): s
         hide: q.hide,
         format: q.format,
         instant: q.instant,
-        datasourceRef: q.datasourceRef,
         visualQuery: (q as any).visualQuery ?? null,
       }))
     );
@@ -46,21 +45,6 @@ export function nextRefId(used: Set<string>): string {
     if (!used.has(id)) return id;
   }
   return `${indexToRefId(0)}_${Math.random().toString(16).slice(2, 6)}`;
-}
-
-export function normalizeDatasourceType(type: unknown): DatasourceType {
-  const t = String(type ?? '').trim();
-  if (t === 'prometheus' || t === 'influxdb' || t === 'elasticsearch') return t;
-  throw new Error(`[grafana-fast] Invalid datasource type: ${t || '<empty>'}`);
-}
-
-export function getDatasourceRef(datasource: Pick<Datasource, 'id' | 'type'> | null | undefined): DatasourceRef {
-  const uid = String(datasource?.id ?? '').trim();
-  const type = normalizeDatasourceType(datasource?.type);
-  if (!uid) {
-    throw new Error('[grafana-fast] Missing datasource id. Ensure a datasource is provided or loaded before building CanonicalQuery.datasourceRef.');
-  }
-  return { type, uid };
 }
 
 export function renderPromql(query: PromVisualQuery): string {

@@ -18,7 +18,6 @@ import { createFetchHttpClient } from './fetchClient';
 import type { CreateHttpApiClientOptions } from './config';
 import { resolveHttpApiClientConfig } from './config';
 import { createHttpDashboardService } from './services/dashboardService';
-import { createHttpDatasourceService } from './services/datasourceService';
 import { createHttpQueryService } from './services/queryService';
 import { createHttpVariableService } from './services/variableService';
 
@@ -38,7 +37,6 @@ export function createHttpApiClient(options: CreateHttpApiClientOptions = {}): G
   return {
     kind: 'http',
     dashboard: createHttpDashboardService({ http, endpoints: resolved.endpoints }),
-    datasource: createHttpDatasourceService({ http, endpoints: resolved.endpoints }),
     query: queryService,
     variable: createHttpVariableService({ queryService }),
   };

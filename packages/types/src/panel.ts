@@ -208,7 +208,7 @@ export interface PanelTransformation {
    *
    * 说明：
    * - 每种 transformation 的 options 结构不同
-   * - 存储层保持宽松：未知字段不丢失，便于未来扩展与兼容旧 JSON
+   * - 存储层保持宽松：未知字段不丢失，便于未来扩展
    */
   options?: Record<string, any>;
 }

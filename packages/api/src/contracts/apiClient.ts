@@ -5,7 +5,6 @@
  * 调用方只依赖这个稳定接口；实现层（mock/http）可以自由替换/演进。
  */
 import type { DashboardService } from './dashboard';
-import type { DatasourceService } from './datasource';
 import type { QueryService } from './query';
 import type { VariableService } from './variable';
 
@@ -39,7 +38,6 @@ export interface GrafanaFastApiClient {
    */
   kind: ApiImplementationKind;
   dashboard: DashboardService;
-  datasource: DatasourceService;
   query: QueryService;
   variable: VariableService;
 }

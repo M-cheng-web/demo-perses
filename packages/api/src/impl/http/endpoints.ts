@@ -67,14 +67,6 @@ export const HttpApiEndpointKey = {
   /** POST /query/label-values - 拉取 label value 列表（QueryBuilder 用） */
   FetchLabelValues: 'FetchLabelValues',
 
-  // --- Datasource ---
-  /** POST /datasources/default - 获取默认数据源 */
-  DefaultDatasource: 'DefaultDatasource',
-  /** POST /datasources/get - 获取指定数据源 */
-  GetDatasource: 'GetDatasource',
-  /** POST /datasources/list - 列出全部数据源（占位） */
-  ListDatasources: 'ListDatasources',
-
   // --- Variable ---
   /**
    * POST /variables/values - query 型变量解析 values/options（占位）
@@ -118,11 +110,6 @@ export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
   [HttpApiEndpointKey.FetchMetrics]: '/query/metrics',
   [HttpApiEndpointKey.FetchLabelKeys]: '/query/label-keys',
   [HttpApiEndpointKey.FetchLabelValues]: '/query/label-values',
-
-  // --- Datasource ---
-  [HttpApiEndpointKey.DefaultDatasource]: '/datasources/default',
-  [HttpApiEndpointKey.GetDatasource]: '/datasources/get',
-  [HttpApiEndpointKey.ListDatasources]: '/datasources/list',
 
   // --- Variable ---
   [HttpApiEndpointKey.FetchVariableValues]: '/variables/values',

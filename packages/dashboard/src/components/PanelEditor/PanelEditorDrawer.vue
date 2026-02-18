@@ -96,7 +96,8 @@
               </TabPane>
 
               <!-- JSON 编辑器 -->
-              <TabPane name="json" tab="JSON 编辑">
+              <!-- 创建面板时隐藏 JSON 编辑：此时还没有稳定的 panel.id，严格校验会导致保存被阻塞 -->
+              <TabPane v-if="editingMode !== 'create'" name="json" tab="JSON 编辑">
                 <div :class="bem('tab-content')">
                   <div :class="bem('json-editor-wrapper')">
                     <JsonEditorLite v-model="jsonDraft" :height="380" :validate="validatePanelStrict" @validate="handleJsonValidate" />
@@ -264,6 +265,11 @@
       isOpen.value = open;
       scheduleExecuteQueries.cancel();
       if (open) {
+        // 每次打开都重置 JSON 校验状态，避免上一次 JSON 编辑的错误“粘住”导致本次无法保存
+        isJsonValid.value = true;
+        // create 模式下 JSON tab 不渲染；若之前停留在 json tab，这里强制切回数据查询
+        if (editingMode.value === 'create' && activeTab.value === 'json') activeTab.value = 'query';
+
         if (editingPanel.value) {
           Object.assign(formData, deepClone(editingPanel.value));
         }
@@ -406,7 +412,9 @@
     formData.queries = qres.queries ?? [];
 
     if (formData.queries.length === 0) {
-      message.warning('建议至少添加一个查询');
+      activeTab.value = 'query';
+      message.error('请至少添加一个查询');
+      return;
     }
 
     const toastKey = 'panel-save';

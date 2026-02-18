@@ -28,8 +28,8 @@ const baseContext: QueryContext = {
 const makeQuery = (id: string, refId: string, expr: string): CanonicalQuery => ({
   id,
   refId,
-  datasourceRef: { type: 'prometheus', uid: 'mock' },
   expr,
+  minStep: 15,
   format: 'time_series',
   instant: false,
   hide: false,
@@ -54,7 +54,6 @@ function createApiClient(
   return {
     kind: 'mock',
     dashboard: {} as never,
-    datasource: {} as never,
     variable: {} as never,
     query: {
       executeQueries,

@@ -15,7 +15,7 @@ export function useQueryEmit(options: {
    * 可选：是否允许 emit（用于依赖未就绪时避免写回 props）
    *
    * 典型场景：
-   * - datasource 尚未解析出来时，CanonicalQuery.datasourceRef 无法可靠生成
+   * - 编辑器处于初始化/切换 sessionKey 中，暂不希望把草稿写回 props
    */
   canEmit?: () => boolean;
 }) {

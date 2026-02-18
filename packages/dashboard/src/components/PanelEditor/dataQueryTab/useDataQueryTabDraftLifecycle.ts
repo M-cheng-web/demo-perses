@@ -1,4 +1,4 @@
-import type { CanonicalQuery, Datasource } from '@grafana-fast/types';
+import type { CanonicalQuery } from '@grafana-fast/types';
 import type { Ref } from 'vue';
 import { useQueryDrafts } from './useQueryDrafts';
 import { useQueryEmit } from './useQueryEmit';
@@ -8,7 +8,6 @@ import type { QueryMode } from './types';
 
 interface UseDataQueryTabDraftLifecycleOptions {
   queryMode: Ref<QueryMode>;
-  datasource: () => Pick<Datasource, 'id' | 'type' | 'name'> | null | undefined;
   getQueriesProp: () => CanonicalQuery[] | undefined;
   getSessionKey: () => string | number | undefined;
   emitUpdateQueries: (queries: CanonicalQuery[]) => void;
@@ -18,7 +17,7 @@ interface UseDataQueryTabDraftLifecycleOptions {
  * 把 DataQueryTab 的“草稿 / 同步 / 校验 / 对外 emit”生命周期收敛到一个业务 hook。
  */
 export function useDataQueryTabDraftLifecycle(options: UseDataQueryTabDraftLifecycleOptions) {
-  const { queryMode, datasource, getQueriesProp, getSessionKey, emitUpdateQueries } = options;
+  const { queryMode, getQueriesProp, getSessionKey, emitUpdateQueries } = options;
 
   const drafts = useQueryDrafts();
 
@@ -27,7 +26,6 @@ export function useDataQueryTabDraftLifecycle(options: UseDataQueryTabDraftLifec
   const validation = useQueryValidation({
     queryMode,
     queryDrafts: drafts.queryDrafts,
-    getDatasource: datasource,
   });
 
   const { markEmitted } = useQueryEmit({
@@ -37,11 +35,6 @@ export function useDataQueryTabDraftLifecycle(options: UseDataQueryTabDraftLifec
     resetFromProps: drafts.resetFromProps,
     convertDraftsToCanonical: validation.convertDraftsToCanonical,
     emitUpdateQueries,
-    canEmit: () => {
-      const ds = datasource();
-      const id = String(ds?.id ?? '').trim();
-      return !!id;
-    },
   });
 
   return {

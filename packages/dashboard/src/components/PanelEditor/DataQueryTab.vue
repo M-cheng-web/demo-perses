@@ -147,11 +147,11 @@
                       <div :class="[bem('section'), bem('section--metric')]">
                         <div :class="bem('section-header')">
                           <span :class="bem('section-title')">指标</span>
-                        </div>
-                        <div :class="bem('section-content')">
-                          <MetricSelector :class="bem('metric-selector')" v-model="draft.builder.visualQuery.metric" :datasource="effectiveDatasource" />
-                        </div>
-                      </div>
+	                        </div>
+	                        <div :class="bem('section-content')">
+	                          <MetricSelector :class="bem('metric-selector')" v-model="draft.builder.visualQuery.metric" />
+	                        </div>
+	                      </div>
 
                       <!-- 标签过滤器 -->
                       <div :class="[bem('section'), bem('section--filters')]">
@@ -160,13 +160,12 @@
                         </div>
                         <div :class="bem('section-content')">
                           <LabelFilters
-                            :class="bem('label-filters')"
-                            v-model="draft.builder.visualQuery.labels"
-                            :metric="draft.builder.visualQuery.metric"
-                            :datasource="effectiveDatasource"
-                          />
-                        </div>
-                      </div>
+	                            :class="bem('label-filters')"
+	                            v-model="draft.builder.visualQuery.labels"
+	                            :metric="draft.builder.visualQuery.metric"
+	                          />
+	                        </div>
+	                      </div>
 
                       <!-- 操作列表 -->
                       <div :class="[bem('section'), bem('section--operations')]">
@@ -174,14 +173,13 @@
                           <span :class="bem('section-title')">操作</span>
                         </div>
                         <div :class="bem('section-content')">
-                          <OperationsList
-                            :class="bem('operations-list')"
-                            v-model="draft.builder.visualQuery.operations"
-                            :currentQuery="draft.builder.visualQuery"
-                            :datasource="effectiveDatasource"
-                            :highlighted-index="highlightedOpIndex"
-                            @query-update="handleBuilderQueryUpdate(index, $event)"
-                          />
+	                          <OperationsList
+	                            :class="bem('operations-list')"
+	                            v-model="draft.builder.visualQuery.operations"
+	                            :currentQuery="draft.builder.visualQuery"
+	                            :highlighted-index="highlightedOpIndex"
+	                            @query-update="handleBuilderQueryUpdate(index, $event)"
+	                          />
                         </div>
                       </div>
 
@@ -194,12 +192,11 @@
                           <span :class="bem('section-title')">二元查询</span>
                         </div>
                         <div :class="bem('section-content')">
-                          <NestedQueryList
-                            :class="bem('nested-query-list')"
-                            :query="draft.builder.visualQuery"
-                            :datasource="effectiveDatasource"
-                            @update="handleNestedQueryUpdate(index, $event)"
-                          />
+	                          <NestedQueryList
+	                            :class="bem('nested-query-list')"
+	                            :query="draft.builder.visualQuery"
+	                            @update="handleNestedQueryUpdate(index, $event)"
+	                          />
                         </div>
                       </div>
 
@@ -209,12 +206,11 @@
                           <span :class="bem('section-title')">查询提示</span>
                         </div>
                         <div :class="bem('section-content')">
-                          <QueryHints
-                            :class="bem('query-hints')"
-                            :query="draft.builder.visualQuery"
-                            :datasource="effectiveDatasource"
-                            @apply-fix="handleApplyFix(index, $event)"
-                          />
+	                          <QueryHints
+	                            :class="bem('query-hints')"
+	                            :query="draft.builder.visualQuery"
+	                            @apply-fix="handleApplyFix(index, $event)"
+	                          />
                         </div>
                       </div>
 
@@ -293,7 +289,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { computed, h, onBeforeUnmount, ref } from 'vue';
   import {
     Alert,
     Button,
@@ -328,16 +324,14 @@
   import QueryExplain from '/#/components/QueryBuilder/query-builder/QueryExplain.vue';
   import QueryPatternsModal from '/#/components/QueryBuilder/QueryPatternsModal.vue';
   import { createNamespace, debounceCancellable } from '/#/utils';
-  import type { CanonicalQuery, Datasource, PromVisualQuery } from '@grafana-fast/types';
+  import type { CanonicalQuery, PromVisualQuery } from '@grafana-fast/types';
   import { useVariablesStore } from '/#/stores';
-  import { useApiClient } from '/#/runtime/useInjected';
 
   import {
     appendTokenToExpr,
     formatDiagnostics,
     formatParseWarnings,
     getPromQLForDraft,
-    normalizeDatasourceType,
     normalizeVariableToken,
   } from './dataQueryTab/helpers';
   import type { QueryMode } from './dataQueryTab/types';
@@ -350,7 +344,6 @@
 
   interface Props {
     queries?: CanonicalQuery[];
-    datasource?: Pick<Datasource, 'id' | 'type' | 'name'> | null;
     /**
      * 可选：session key，用于强制重新初始化
      * - 当面板编辑器切换到另一个 panel 时，父组件应改变该值
@@ -377,66 +370,6 @@
   const patternsModalOpen = ref(false);
   const currentPatternQueryIndex = ref<number>(0);
   const highlightedOpIndex = ref<number>();
-  const api = useApiClient();
-
-  const inferredDatasourceFromQueries = computed<Pick<Datasource, 'id' | 'type' | 'name'> | null>(() => {
-    const list = Array.isArray(props.queries) ? props.queries : [];
-    for (const q of list) {
-      const ref = (q as any)?.datasourceRef as { type?: unknown; uid?: unknown } | undefined;
-      const uid = String(ref?.uid ?? '').trim();
-      const type = String(ref?.type ?? '').trim();
-      if (!uid || !type) continue;
-      return { id: uid, type: type as any, name: uid };
-    }
-    return null;
-  });
-
-  const defaultDatasource = ref<Pick<Datasource, 'id' | 'type' | 'name'> | null>(null);
-  const isLoadingDefaultDatasource = ref(false);
-  const defaultDatasourceError = ref<string | null>(null);
-  let defaultDatasourceReqToken = 0;
-
-  const effectiveDatasource = computed<Pick<Datasource, 'id' | 'type' | 'name'> | null>(() => {
-    return props.datasource ?? inferredDatasourceFromQueries.value ?? defaultDatasource.value;
-  });
-
-  const hasEffectiveDatasource = computed(() => {
-    const id = String(effectiveDatasource.value?.id ?? '').trim();
-    return !!id;
-  });
-
-  const loadDefaultDatasourceIfNeeded = async () => {
-    if (props.datasource?.id) return;
-    if (inferredDatasourceFromQueries.value?.id) return;
-    if (defaultDatasource.value?.id) return;
-    if (isLoadingDefaultDatasource.value) return;
-
-    const token = (defaultDatasourceReqToken = defaultDatasourceReqToken + 1);
-    isLoadingDefaultDatasource.value = true;
-    defaultDatasourceError.value = null;
-    try {
-      const ds = await api.datasource.getDefaultDatasource();
-      if (token !== defaultDatasourceReqToken) return;
-      const id = String(ds?.id ?? '').trim();
-      if (!id) {
-        throw new Error('Default datasource response missing required field: id');
-      }
-      const type = normalizeDatasourceType((ds as any)?.type);
-      const name = String((ds as any)?.name ?? '').trim();
-      if (!name) {
-        throw new Error('Default datasource response missing required field: name');
-      }
-      defaultDatasource.value = { id, type, name };
-    } catch (error) {
-      if (token !== defaultDatasourceReqToken) return;
-      defaultDatasource.value = null;
-      const msg = error instanceof Error ? error.message : String(error);
-      defaultDatasourceError.value = msg;
-      message.error({ content: `默认数据源获取失败：${msg}`, key: 'datasource:default', duration: 3 });
-    } finally {
-      if (token === defaultDatasourceReqToken) isLoadingDefaultDatasource.value = false;
-    }
-  };
 
   const clearHighlightedOp = debounceCancellable(() => {
     highlightedOpIndex.value = undefined;
@@ -462,23 +395,10 @@
     markEmitted,
   } = useDataQueryTabDraftLifecycle({
     queryMode,
-    datasource: () => effectiveDatasource.value,
     getQueriesProp: () => props.queries,
     getSessionKey: () => props.sessionKey,
     emitUpdateQueries: (queries) => emit('update:queries', queries),
   });
-
-  onMounted(() => {
-    void loadDefaultDatasourceIfNeeded();
-  });
-
-  watch(
-    () => [props.datasource?.id, inferredDatasourceFromQueries.value?.id],
-    () => {
-      void loadDefaultDatasourceIfNeeded();
-    },
-    { immediate: true }
-  );
 
   const handleCodeExprInput = (index: number) => {
     markCodeEdited(index);
@@ -560,16 +480,6 @@
   };
 
   const handleExecuteQuery = () => {
-    if (!hasEffectiveDatasource.value) {
-      const msg = defaultDatasourceError.value
-        ? `默认数据源获取失败：${defaultDatasourceError.value}`
-        : isLoadingDefaultDatasource.value
-          ? '默认数据源加载中，请稍后重试'
-          : '缺少数据源，无法执行查询';
-      message.error(msg);
-      return;
-    }
-
     const v = validateDrafts('execute');
     if (!v.ok) {
       const first = v.errors[0];
@@ -592,26 +502,10 @@
   defineExpose({
     getQueries: () => convertDraftsToCanonical('save'),
     validateAndGetQueriesForSave: () => {
-      if (!hasEffectiveDatasource.value) {
-        const msg = defaultDatasourceError.value
-          ? `默认数据源获取失败：${defaultDatasourceError.value}`
-          : isLoadingDefaultDatasource.value
-            ? '默认数据源加载中，请稍后重试'
-            : '缺少数据源，无法保存查询';
-        return { ok: false, errors: [{ refId: queryDrafts.value[0]?.refId ?? 'A', message: msg }], queries: [] };
-      }
       const v = validateDrafts('save');
       return { ...v, queries: v.ok ? convertDraftsToCanonical('save') : [] };
     },
     validateAndGetQueriesForExecute: () => {
-      if (!hasEffectiveDatasource.value) {
-        const msg = defaultDatasourceError.value
-          ? `默认数据源获取失败：${defaultDatasourceError.value}`
-          : isLoadingDefaultDatasource.value
-            ? '默认数据源加载中，请稍后重试'
-            : '缺少数据源，无法执行查询';
-        return { ok: false, errors: [{ refId: queryDrafts.value[0]?.refId ?? 'A', message: msg }], queries: [] };
-      }
       const v = validateDrafts('execute');
       return { ...v, queries: v.ok ? convertDraftsToCanonical('execute') : [] };
     },

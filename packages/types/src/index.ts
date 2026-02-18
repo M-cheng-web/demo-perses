@@ -12,8 +12,6 @@ export * from './common.js';
 export * from './timeRange.js';
 // 查询结果/数据点结构（用于 queryRunner/面板渲染）
 export * from './query.js';
-// 查询模型：CanonicalQuery / VisualQuery 等（存储/传输层与 UI 层的桥梁）
-export * from './queryModel.js';
 // 图表通用配置：axis/legend/format/threshold 等
 export * from './chart.js';
 // 面板定义：Panel/PanelOptions/CorePanelType
@@ -24,8 +22,6 @@ export * from './layout.js';
 export * from './panelGroup.js';
 // Dashboard：顶层结构 + variables 等
 export * from './dashboard.js';
-// Datasource 定义（引用/配置/类型）
-export * from './datasource.js';
 // QueryBuilder 结构（可视化构建 query 的中间模型）
 export * from './queryBuilder.js';
 // 从 prometheus 导出，但排除 DataPoint (使用 query.ts 中的 DataPoint)

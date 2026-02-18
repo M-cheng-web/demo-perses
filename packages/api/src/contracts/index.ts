@@ -7,6 +7,5 @@
  */
 export * from './apiClient';
 export * from './dashboard';
-export * from './datasource';
 export * from './query';
 export * from './variable';

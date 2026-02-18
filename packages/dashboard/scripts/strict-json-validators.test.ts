@@ -42,7 +42,6 @@ const validDashboard = (): DashboardContent => ({
             {
               id: 'query-1',
               refId: 'A',
-              datasourceRef: { type: 'prometheus', uid: 'mock' },
               expr: 'up',
               minStep: 15,
               format: 'time_series',

@@ -42,10 +42,13 @@ function validateCanonicalQueryObject(query: unknown, path: string): string[] {
     return errors;
   }
 
+  // 注意：导入 JSON 必须严格符合当前契约；query 中不允许出现 datasource/datasourceRef（数据源由后端决定）。
+  if ('datasourceRef' in (query as any)) errors.push(`${path}.datasourceRef 不支持（前端不接受 datasourceRef；由后端决定数据源）`);
+  if ('datasource' in (query as any)) errors.push(`${path}.datasource 不支持（请使用本项目导出的 JSON 格式）`);
+
   const q = query as {
     id?: unknown;
     refId?: unknown;
-    datasourceRef?: unknown;
     expr?: unknown;
     visualQuery?: unknown;
     legendFormat?: unknown;
@@ -58,18 +61,6 @@ function validateCanonicalQueryObject(query: unknown, path: string): string[] {
   if (typeof q.id !== 'string' || !q.id.trim()) errors.push(`${path}.id 必填`);
   if (typeof q.refId !== 'string' || !q.refId.trim()) errors.push(`${path}.refId 必填`);
   if (typeof q.expr !== 'string' || !q.expr.trim()) errors.push(`${path}.expr 必填`);
-
-  const ds = q.datasourceRef;
-  if (!isPlainObject(ds)) {
-    errors.push(`${path}.datasourceRef 必填且必须是对象`);
-  } else {
-    const uid = (ds as any).uid;
-    const type = (ds as any).type;
-    if (typeof uid !== 'string' || !uid.trim()) errors.push(`${path}.datasourceRef.uid 必填`);
-    if (type !== 'prometheus' && type !== 'influxdb' && type !== 'elasticsearch') {
-      errors.push(`${path}.datasourceRef.type 不合法：${String(type ?? 'undefined')}`);
-    }
-  }
 
   if ('visualQuery' in q && q.visualQuery != null && typeof q.visualQuery !== 'object') {
     errors.push(`${path}.visualQuery 必须是对象`);
@@ -120,6 +111,7 @@ function validatePanelObject(panel: unknown, path: string): string[] {
   if (!Array.isArray(panelObj.queries)) {
     errors.push(`${path}.queries 必须是数组`);
   } else {
+    if (panelObj.queries.length === 0) errors.push(`${path}.queries 至少需要 1 条查询`);
     panelObj.queries.forEach((q, qi) => {
       errors.push(...validateCanonicalQueryObject(q, `${path}.queries[${qi}]`));
     });

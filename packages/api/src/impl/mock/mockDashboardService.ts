@@ -31,6 +31,26 @@ function nowTs() {
   return Date.now();
 }
 
+function normalizeCanonicalQueriesInPlace(content: DashboardContent) {
+  // Keep mock payload aligned with API_REQUIREMENTS + dashboard strict validators.
+  // CanonicalQuery is the storage/transport model; the runtime assumes required fields are present.
+  const DEFAULT_MIN_STEP = 15;
+
+  for (const group of content.panelGroups ?? []) {
+    for (const panel of group.panels ?? []) {
+      for (const query of panel.queries ?? []) {
+        const q = query as any;
+        if (!q || typeof q !== 'object') continue;
+
+        if (q.format !== 'time_series') q.format = 'time_series';
+        if (typeof q.minStep !== 'number' || !Number.isFinite(q.minStep) || q.minStep <= 0) q.minStep = DEFAULT_MIN_STEP;
+        if (typeof q.instant !== 'boolean') q.instant = false;
+        if (typeof q.hide !== 'boolean') q.hide = false;
+      }
+    }
+  }
+}
+
 let idSeq = 0;
 function createMockId(prefix: string): string {
   idSeq += 1;
@@ -165,14 +185,13 @@ function createFixedCpuGroup(): PanelGroup {
         name: 'CPU 使用率',
         type: 'timeseries',
         queries: [
-          {
-            id: 'q-1',
-            refId: 'A',
-            datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-            expr: `cpu_usage${scopeSelector}`,
-            legendFormat: 'CPU {{cpu}}',
-            format: 'time_series',
-            instant: false,
+	          {
+	            id: 'q-1',
+	            refId: 'A',
+	            expr: `cpu_usage${scopeSelector}`,
+	            legendFormat: 'CPU {{cpu}}',
+	            format: 'time_series',
+	            instant: false,
             hide: false,
             minStep: 15,
           },
@@ -188,14 +207,13 @@ function createFixedCpuGroup(): PanelGroup {
         name: 'CPU 平均使用率',
         type: 'stat',
         queries: [
-          {
-            id: 'q-2',
-            refId: 'A',
-            datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-            expr: `avg(cpu_usage${scopeSelector})`,
-            format: 'time_series',
-            instant: false,
-            hide: false,
+	          {
+	            id: 'q-2',
+	            refId: 'A',
+	            expr: `avg(cpu_usage${scopeSelector})`,
+	            format: 'time_series',
+	            instant: false,
+	            hide: false,
             minStep: 15,
           },
         ],
@@ -209,14 +227,13 @@ function createFixedCpuGroup(): PanelGroup {
         name: 'CPU 最大使用率',
         type: 'stat',
         queries: [
-          {
-            id: 'q-3',
-            refId: 'A',
-            datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-            expr: `max(cpu_usage${scopeSelector})`,
-            format: 'time_series',
-            instant: false,
-            hide: false,
+	          {
+	            id: 'q-3',
+	            refId: 'A',
+	            expr: `max(cpu_usage${scopeSelector})`,
+	            format: 'time_series',
+	            instant: false,
+	            hide: false,
             minStep: 15,
           },
         ],
@@ -230,14 +247,13 @@ function createFixedCpuGroup(): PanelGroup {
         name: 'CPU 使用率（副本）',
         type: 'timeseries',
         queries: [
-          {
-            id: 'q-4',
-            refId: 'A',
-            datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-            expr: `cpu_usage${scopeSelector}`,
-            legendFormat: 'CPU {{cpu}}',
-            format: 'time_series',
-            instant: false,
+	          {
+	            id: 'q-4',
+	            refId: 'A',
+	            expr: `cpu_usage${scopeSelector}`,
+	            legendFormat: 'CPU {{cpu}}',
+	            format: 'time_series',
+	            instant: false,
             hide: false,
             minStep: 15,
           },
@@ -253,14 +269,13 @@ function createFixedCpuGroup(): PanelGroup {
         name: 'CPU 核心对比',
         type: 'bar',
         queries: [
-          {
-            id: 'q-5',
-            refId: 'A',
-            datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-            expr: `cpu_usage${scopeSelector}`,
-            format: 'time_series',
-            instant: false,
-            hide: false,
+	          {
+	            id: 'q-5',
+	            refId: 'A',
+	            expr: `cpu_usage${scopeSelector}`,
+	            format: 'time_series',
+	            instant: false,
+	            hide: false,
             minStep: 15,
           },
         ],
@@ -295,14 +310,13 @@ function createLargeGroup(): PanelGroup {
       name: `Large Panel #${n}`,
       type: 'timeseries',
       queries: [
-        {
-          id: `q-big-${n}`,
-          refId: 'A',
-          datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-          expr: `cpu_usage${scopeSelector}`,
-          legendFormat: 'CPU {{cpu}}',
-          format: 'time_series',
-          instant: false,
+	        {
+	          id: `q-big-${n}`,
+	          refId: 'A',
+	          expr: `cpu_usage${scopeSelector}`,
+	          legendFormat: 'CPU {{cpu}}',
+	          format: 'time_series',
+	          instant: false,
           hide: false,
           minStep: 15,
         },
@@ -392,21 +406,22 @@ function createDefaultDashboardContent(dashboardId: DashboardId): DashboardConte
         const type = panelTypes[(groupIndex + pi) % panelTypes.length]!;
         const expr = exprCandidates[(groupIndex * 7 + panelIndex * 3) % exprCandidates.length]!;
         const id = `g${groupIndex}-p${panelIndex}`;
-        const format = type === 'table' ? 'table' : type === 'heatmap' ? 'heatmap' : 'time_series';
+        // 前端运行时严格约束：CanonicalQuery.format 必须为 "time_series"（见 API_REQUIREMENTS / strictJsonValidators）。
+        // Panel 的展示形态由 panel.type 决定，而不是 query.format。
+        const format = 'time_series';
 
         return {
           id,
           name: `G${String(groupIndex).padStart(2, '0')} · ${type.toUpperCase()} · #${panelIndex}`,
           type,
           queries: [
-            {
-              id: `q-${id}`,
-              refId: 'A',
-              datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
-              expr,
-              legendFormat: 'series {{instance}}',
-              format,
-              instant: false,
+	            {
+	              id: `q-${id}`,
+	              refId: 'A',
+	              expr,
+	              legendFormat: 'series {{instance}}',
+	              format,
+	              instant: false,
               hide: false,
               minStep: 15,
             },
@@ -501,9 +516,13 @@ const dashboards = new Map<DashboardId, StoredMockDashboard>();
 
 function getOrCreate(dashboardId: DashboardId): StoredMockDashboard {
   const existing = dashboards.get(dashboardId);
-  if (existing) return existing;
+  if (existing) {
+    normalizeCanonicalQueriesInPlace(existing.content);
+    return existing;
+  }
   const now = nowTs();
   const content = createDefaultDashboardContent(dashboardId);
+  normalizeCanonicalQueriesInPlace(content);
   const created: StoredMockDashboard = { content, createdAt: now, updatedAt: now };
   dashboards.set(dashboardId, created);
   return created;
@@ -516,6 +535,7 @@ export function createMockDashboardService(): DashboardService {
     },
     async saveDashboard(dashboardId: DashboardId, content: DashboardContent): Promise<void> {
       const entry = getOrCreate(dashboardId);
+      normalizeCanonicalQueriesInPlace(content);
       entry.content = content;
       entry.updatedAt = nowTs();
       dashboards.set(dashboardId, entry);

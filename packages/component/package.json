@@ -24,7 +24,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build --config vite.config.ts",
-    "build:types": "vue-tsc --project tsconfig.json --declaration --emitDeclarationOnly --outDir dist",
+    "build:types": "node -e \"require('fs').rmSync('node_modules/.tmp/tsconfig.tsbuildinfo', { force: true })\" && vue-tsc --project tsconfig.json --declaration --emitDeclarationOnly --outDir dist",
     "type-check": "vue-tsc --noEmit --project tsconfig.json",
     "preview": "vite preview"
   },

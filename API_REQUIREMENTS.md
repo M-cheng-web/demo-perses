@@ -36,8 +36,6 @@
   - `POST /query/metrics`
   - `POST /query/label-keys`
   - `POST /query/label-values`
-- Datasource（默认数据源）
-  - `POST /datasources/default`：获取默认数据源（用于填充 `CanonicalQuery.datasourceRef`）
 
 ---
 
@@ -85,13 +83,6 @@ type TimeRange = {
   from: number | string;
   to: number | string;
 };
-
-type DatasourceType = 'prometheus' | 'influxdb' | 'elasticsearch';
-
-type DatasourceRef = {
-  type: DatasourceType;
-  uid: ID; // datasource id/uid
-};
 ```
 
 ### B3. 错误返回（统一结构）
@@ -115,38 +106,6 @@ type ErrorResponse = {
   - 必须直接返回 **JSON Array**：`[...]`
   - 不要再额外包一层：`{ items: [...] }` / `{ data: [...] }` / `{ results: [...] }`
   - 返回包装结构一律视为契约错误（不做兼容）
-
----
-
-## C. 模块：Datasource（数据源）
-
-> 说明：
-> - Dashboard 子项目会在需要时获取“默认数据源”，用于生成 `CanonicalQuery.datasourceRef`（面板查询必填字段）。
-> - 当前 v1 只要求一个“默认数据源”即可；多数据源选择/切换不在本期范围内。
-
-### C1. 获取默认数据源
-
-- Method: `POST`
-- Path: `/datasources/default`
-- 场景/时机：
-  - 面板编辑器首次打开、且当前面板 queries 没有可用 datasourceRef 时
-  - Dashboard 初始化阶段预加载默认 datasource
-- 用途：返回默认数据源信息（用于填充 `CanonicalQuery.datasourceRef`）
-- Request Body：
-
-```ts
-type GetDefaultDatasourceRequest = Record<string, never>; // 固定为 {}
-```
-
-- Response `200`：
-
-```ts
-type GetDefaultDatasourceResponse = {
-  id: ID;
-  name: string;
-  type: DatasourceType;
-};
-```
 
 ## D. 模块：Dashboard（JSON 资源）
 
@@ -538,7 +497,7 @@ type ExecuteQueriesRequest = {
 type CanonicalQuery = {
   id: ID; // 用于结果对齐（必须原样回传到 QueryResult.queryId）
   refId: string; // A/B/C...
-  datasourceRef: DatasourceRef;
+  // 注意：前端不传 datasource 信息；由后端按租户/环境/默认配置选择查询数据源。
 
   expr: string; // PromQL（前端已完成变量插值）
   visualQuery?: Record<string, any>; // 可视化 QueryBuilder 模型（用于 QueryBuilder 反显与 round-trip）

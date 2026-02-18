@@ -60,7 +60,6 @@
           {
             id: `q-${i + 1}`,
             refId: 'A',
-            datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
             expr: i % 2 === 0 ? 'cpu_usage' : 'memory_usage',
             legendFormat: '',
             minStep: 15,

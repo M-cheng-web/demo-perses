@@ -30,7 +30,6 @@ function makePanels({ count, idPrefix, heavy, heavyTextRepeat = 12 }) {
         {
           id: `q-${id}`,
           refId: 'A',
-          datasourceRef: { type: 'prometheus', uid: 'prometheus-mock' },
           expr: heavy ? `sum(rate(container_cpu_usage_seconds_total{job=\"node\", instance=\"$instance\"}[5m])) by (cpu)` : 'cpu_usage',
           legendFormat: heavy ? 'CPU {{cpu}} / {{instance}}' : 'CPU {{cpu}}',
           format: 'time_series',

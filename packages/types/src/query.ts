@@ -4,7 +4,6 @@
 
 import type { ID, KeyValue, Timestamp } from './common';
 import type { TimeRange } from './timeRange';
-import type { DatasourceRef } from './queryModel';
 import type { PromVisualQuery } from './queryBuilder';
 
 /**
@@ -15,7 +14,6 @@ export type QueryFormat = 'time_series' | 'table' | 'heatmap';
 /**
  * 规范化查询（存储/传输层）
  * - refId: A/B/C...（与 Grafana 一致）
- * - datasourceRef: 不依赖 UI 的 datasource 名称字符串
  * - hide: 是否参与结果/渲染
  */
 export interface CanonicalQuery {
@@ -27,11 +25,9 @@ export interface CanonicalQuery {
    */
   refId: string;
   /**
-   * 数据源引用（与 UI 展示名称解耦）
-   * - type：数据源类型（prometheus/...）
-   * - uid：数据源唯一标识（例如 'prometheus-mock'）
+   * 注意：
+   * - 本项目不在前端暴露数据源选择能力；执行层会按租户/环境/默认配置选择数据源。
    */
-  datasourceRef: DatasourceRef;
   /** 查询表达式（PromQL 或其他实现层可解释的语法） */
   expr: string;
   /**

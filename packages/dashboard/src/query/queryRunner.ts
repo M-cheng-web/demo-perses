@@ -148,8 +148,6 @@ export class QueryRunner {
     const from = typeof tr.from === 'number' ? tr.from : String(tr.from);
     const to = typeof tr.to === 'number' ? tr.to : String(tr.to);
     return [
-      query.datasourceRef?.type ?? 'unknown',
-      query.datasourceRef?.uid ?? 'unknown',
       query.format ?? 'time_series',
       query.instant ? 'instant' : 'range',
       query.minStep ?? '',

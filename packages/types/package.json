@@ -17,7 +17,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b -f",
+    "build": "tsc -b --clean && tsc -b -f",
     "type-check": "tsc --noEmit -p tsconfig.json"
   },
   "peerDependencies": {

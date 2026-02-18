@@ -7,7 +7,6 @@
  */
 import type { GrafanaFastApiClient } from '../../contracts';
 import { createMockDashboardService } from './mockDashboardService';
-import { createMockDatasourceService } from './mockDatasourceService';
 import { createMockQueryService } from './mockQueryService';
 import { createMockVariableService } from './mockVariableService';
 
@@ -19,7 +18,6 @@ export function createMockApiClient(): GrafanaFastApiClient {
   return {
     kind: 'mock',
     dashboard: createMockDashboardService(),
-    datasource: createMockDatasourceService(),
     query,
     variable: createMockVariableService(query),
   };

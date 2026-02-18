@@ -1,34 +1,18 @@
 import type { Ref } from 'vue';
-import type { CanonicalQuery, Datasource, DatasourceRef, PromVisualQuery } from '@grafana-fast/types';
+import type { CanonicalQuery, PromVisualQuery } from '@grafana-fast/types';
 import { parsePromqlToVisualQuery } from '@grafana-fast/utils';
 import { deepClone } from '/#/utils';
-import { getDatasourceRef, normalizeDatasourceType, renderPromql } from './helpers';
+import { renderPromql } from './helpers';
 import type { QueryDraft, QueryMode } from './types';
 
 export function useQueryValidation(options: {
   queryMode: Ref<QueryMode>;
   queryDrafts: Ref<QueryDraft[]>;
-  getDatasource: () => Pick<Datasource, 'id' | 'type' | 'name'> | null | undefined;
 }) {
-  const { queryMode, queryDrafts, getDatasource } = options;
+  const { queryMode, queryDrafts } = options;
 
   const validateDrafts = (purpose: 'save' | 'execute') => {
     const errors: Array<{ refId: string; message: string }> = [];
-
-    // CanonicalQuery.datasourceRef 是必填字段；datasource 未就绪时不允许继续（避免生成无效的 query）。
-    const ds = getDatasource();
-    const dsId = String(ds?.id ?? '').trim();
-    if (!dsId) {
-      errors.push({ refId: queryDrafts.value[0]?.refId ?? 'A', message: '数据源未就绪，无法生成 datasourceRef' });
-      return { ok: false, errors };
-    }
-    try {
-      normalizeDatasourceType((ds as any)?.type);
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      errors.push({ refId: queryDrafts.value[0]?.refId ?? 'A', message: msg });
-      return { ok: false, errors };
-    }
 
     for (const d of queryDrafts.value) {
       const shouldValidate = purpose === 'save' ? true : !d.hide;
@@ -44,7 +28,6 @@ export function useQueryValidation(options: {
   };
 
   const convertDraftsToCanonical = (purpose: 'save' | 'execute'): CanonicalQuery[] => {
-    const datasourceRef: DatasourceRef = getDatasourceRef(getDatasource());
     return queryDrafts.value.map((d) => {
       const canUseBuilder =
         queryMode.value === 'builder' && d.builder.status === 'ok' && (d.builder.confidence === 'exact' || !!d.builder.acceptedPartial);
@@ -52,7 +35,6 @@ export function useQueryValidation(options: {
       const out: CanonicalQuery = {
         id: d.id,
         refId: d.refId,
-        datasourceRef,
         expr: expr || '',
         legendFormat: d.code.legendFormat || '',
         minStep: d.code.minStep || 15,
