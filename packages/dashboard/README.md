@@ -21,8 +21,19 @@ Peer dependencies（宿主应用需要提供）：
 ```ts
 import { useDashboardSdk } from '@grafana-fast/hooks';
 
+const getDashboardSessionKey = async () => {
+  // 调用你的业务接口换取 dashboardSessionKey（真实 dashboardId 不对前端暴露）
+  const res = await fetch('/api/dashboards/session/resolve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ params: { projectId: 'p-1' } }),
+  });
+  const json = await res.json();
+  return json.dashboardSessionKey as string;
+};
+
 const sdk = useDashboardSdk(dashboardRef, {
-  dashboardId: 'default',
+  getDashboardSessionKey,
   instanceId: 'my-dashboard-1',
   // apiClient / theme / readOnly 等…
 });

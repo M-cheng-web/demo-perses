@@ -17,7 +17,7 @@ function isSameViewPanelId(a: DashboardSdkStateSnapshot['viewPanelId'], b: Dashb
 function isSameDashboardSummary(a: DashboardSdkDashboardSummary | null, b: DashboardSdkDashboardSummary | null): boolean {
   if (a == null && b == null) return true;
   if (a == null || b == null) return false;
-  return String(a.id ?? '') === String(b.id ?? '') && a.name === b.name && a.groupCount === b.groupCount && a.panelCount === b.panelCount;
+  return String(a.sessionKey ?? '') === String(b.sessionKey ?? '') && a.name === b.name && a.groupCount === b.groupCount && a.panelCount === b.panelCount;
 }
 
 export function computeDashboardSdkChangedKeys(

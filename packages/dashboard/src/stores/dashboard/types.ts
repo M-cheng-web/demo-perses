@@ -1,17 +1,18 @@
-import type { DashboardContent, DashboardId, ID } from '@grafana-fast/types';
+import type { DashboardContent, DashboardSessionKey, ID } from '@grafana-fast/types';
 
 export type BootStage = 'idle' | 'fetching' | 'parsing' | 'initializing' | 'ready' | 'error';
 export type DashboardViewMode = 'grouped' | 'allPanels';
 
 export interface DashboardState {
   /**
-   * 当前 DashboardId（资源标识）
+   * 当前 dashboardSessionKey（会话级访问 Key）
    *
    * 说明：
-   * - DashboardContent（内容 JSON）不包含 dashboardId
-   * - 该字段由宿主/SDK 在 loadDashboard 时传入并绑定，用于 save/sync 定位资源
+   * - DashboardContent（内容 JSON）不包含任何资源标识
+   * - 真实 dashboardId 仅后端内部存在，不对前端暴露
+   * - 该字段由宿主/SDK 在 loadDashboard 时传入并绑定，用于后续所有读写请求
    */
-  dashboardId: DashboardId | null;
+  dashboardSessionKey: DashboardSessionKey | null;
   /** 当前 Dashboard */
   currentDashboard: DashboardContent | null;
   /**

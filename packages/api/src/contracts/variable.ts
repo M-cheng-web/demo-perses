@@ -5,7 +5,27 @@
  * - 初始化 values/options
  * - 为 query 型变量解析 options（由实现层决定怎么拉取）
  */
-import type { DashboardVariable, TimeRange, VariableOption, VariablesState } from '@grafana-fast/types';
+import type { DashboardSessionKey, DashboardVariable, TimeRange, VariableOption, VariablesState } from '@grafana-fast/types';
+
+export interface ResolveVariableOptionsContext {
+  /**
+   * （可选）Dashboard 会话级访问 key
+   *
+   * 说明：
+   * - 用于嵌入式 Dashboard 场景：宿主/后端签发 `dashboardSessionKey`，前端在所有请求中携带
+   * - HTTP 实现层建议把它映射为 header：`X-Dashboard-Session-Key`
+   */
+  dashboardSessionKey?: DashboardSessionKey;
+
+  /**
+   * （可选）取消信号
+   *
+   * 说明：
+   * - 变量 options 解析可能触发多次请求（多个 query 变量）
+   * - 上层可在页面卸载/切换 dashboard 时传入 signal 以主动取消
+   */
+  signal?: AbortSignal;
+}
 
 /**
  * VariableService（契约层）
@@ -40,5 +60,10 @@ export interface VariableService {
    * - 实现层应尽量做到“增量”和“可缓存”（避免频繁请求）
    * - 返回值仅包含需要更新的变量 options（上层可以 merge）
    */
-  resolveOptions: (variables: DashboardVariable[], state: VariablesState, timeRange: TimeRange) => Promise<Record<string, VariableOption[]>>;
+  resolveOptions: (
+    variables: DashboardVariable[],
+    state: VariablesState,
+    timeRange: TimeRange,
+    context?: ResolveVariableOptionsContext
+  ) => Promise<Record<string, VariableOption[]>>;
 }

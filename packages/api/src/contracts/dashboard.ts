@@ -4,7 +4,7 @@
  * 这是 UI/核心包访问 Dashboard 数据的唯一入口契约。实现层可对接本地 mock 或后端 HTTP，
  * 调用方不关心具体接口路径/DTO 细节。
  */
-import type { DashboardContent, DashboardListItem, DashboardId, ID, Panel, PanelGroup, PanelLayout } from '@grafana-fast/types';
+import type { DashboardContent, DashboardListItem, DashboardSessionKey, ID, Panel, PanelGroup, PanelLayout } from '@grafana-fast/types';
 
 /**
  * 布局更新（分页）
@@ -23,8 +23,19 @@ export interface PanelLayoutPatchItem {
   h: number;
 }
 
-export interface PatchPanelGroupLayoutPageRequest {
-  dashboardId: DashboardId;
+/**
+ * Dashboard 会话上下文（由宿主/后端签发）
+ *
+ * 说明：
+ * - 真实 dashboardId（资源标识）不对前端暴露
+ * - 前端仅持有 `dashboardSessionKey`，并在所有请求中携带
+ * - HTTP 实现层建议将其映射为 header：`X-Dashboard-Session-Key`
+ */
+export interface DashboardSessionContext {
+  dashboardSessionKey: DashboardSessionKey;
+}
+
+export interface PatchPanelGroupLayoutPageRequest extends DashboardSessionContext {
   groupId: ID;
   /**
    * 当前页 layout items（最多 20 条）
@@ -41,8 +52,7 @@ export interface PatchPanelGroupLayoutPageResponse {
   items?: PanelLayout[];
 }
 
-export interface CreatePanelRequest {
-  dashboardId: DashboardId;
+export interface CreatePanelRequest extends DashboardSessionContext {
   groupId: ID;
   /**
    * 可选：由后端决定默认值时可以不传。
@@ -59,8 +69,7 @@ export interface CreatePanelResponse {
   layout?: PanelLayout;
 }
 
-export interface UpdatePanelRequest {
-  dashboardId: DashboardId;
+export interface UpdatePanelRequest extends DashboardSessionContext {
   groupId: ID;
   panelId: ID;
   /** 面板完整内容（推荐：由后端做白名单字段落盘） */
@@ -71,14 +80,12 @@ export interface UpdatePanelResponse {
   panel: Panel;
 }
 
-export interface DeletePanelRequest {
-  dashboardId: DashboardId;
+export interface DeletePanelRequest extends DashboardSessionContext {
   groupId: ID;
   panelId: ID;
 }
 
-export interface DuplicatePanelRequest {
-  dashboardId: DashboardId;
+export interface DuplicatePanelRequest extends DashboardSessionContext {
   groupId: ID;
   panelId: ID;
 }
@@ -88,8 +95,7 @@ export interface DuplicatePanelResponse {
   layout?: PanelLayout;
 }
 
-export interface UpdatePanelGroupRequest {
-  dashboardId: DashboardId;
+export interface UpdatePanelGroupRequest extends DashboardSessionContext {
   groupId: ID;
   group: Pick<PanelGroup, 'title' | 'description'>;
 }
@@ -98,8 +104,7 @@ export interface UpdatePanelGroupResponse {
   group: PanelGroup;
 }
 
-export interface CreatePanelGroupRequest {
-  dashboardId: DashboardId;
+export interface CreatePanelGroupRequest extends DashboardSessionContext {
   group: Pick<PanelGroup, 'title' | 'description'>;
 }
 
@@ -107,14 +112,27 @@ export interface CreatePanelGroupResponse {
   group: PanelGroup;
 }
 
-export interface DeletePanelGroupRequest {
-  dashboardId: DashboardId;
+export interface DeletePanelGroupRequest extends DashboardSessionContext {
   groupId: ID;
 }
 
-export interface ReorderPanelGroupsRequest {
-  dashboardId: DashboardId;
+export interface ReorderPanelGroupsRequest extends DashboardSessionContext {
   order: ID[];
+}
+
+export interface ResolveDashboardSessionRequest {
+  /**
+   * 业务自定义参数（保持自由度）
+   *
+   * 说明：
+   * - 后端基于该 params 定位到“真实 dashboard 资源”（内部 dashboardId）
+   * - 必要时可在此处完成初始化（get-or-create），确保后续 load 一定可用
+   */
+  params: Record<string, any>;
+}
+
+export interface ResolveDashboardSessionResponse {
+  dashboardSessionKey: DashboardSessionKey;
 }
 
 /**
@@ -127,11 +145,20 @@ export interface ReorderPanelGroupsRequest {
  */
 export interface DashboardService {
   /**
-   * 加载单个 Dashboard 内容
+   * 解析并签发 dashboardSessionKey（业务入口）
    *
-   * @param dashboardId Dashboard 资源标识（例如 'default' 或业务侧映射后的 id）
+   * 说明：
+   * - 真实 dashboardId 不对前端暴露
+   * - SDK/宿主应先 resolve 得到 sessionKey，再以 sessionKey 调用 load/save/patch 等接口
    */
-  loadDashboard: (dashboardId: DashboardId) => Promise<DashboardContent>;
+  resolveDashboardSession: (req: ResolveDashboardSessionRequest) => Promise<ResolveDashboardSessionResponse>;
+
+  /**
+   * 加载单个 Dashboard 内容（只拉一次 JSON）
+   *
+   * @param dashboardSessionKey 会话级访问 key（由 resolve 接口签发）
+   */
+  loadDashboard: (dashboardSessionKey: DashboardSessionKey) => Promise<DashboardContent>;
 
   /**
    * 保存 Dashboard 内容（全量）
@@ -140,12 +167,12 @@ export interface DashboardService {
    * - 这是“兜底接口”：用于导入/应用 JSON、或需要整盘覆盖的场景
    * - 常规交互（增删改面板、拖拽布局）应优先走局部接口，避免频繁传大 JSON
    */
-  saveDashboard: (dashboardId: DashboardId, content: DashboardContent) => Promise<void>;
+  saveDashboard: (dashboardSessionKey: DashboardSessionKey, content: DashboardContent) => Promise<void>;
 
   /**
    * 删除 Dashboard
    */
-  deleteDashboard: (dashboardId: DashboardId) => Promise<void>;
+  deleteDashboard: (dashboardSessionKey: DashboardSessionKey) => Promise<void>;
 
   /**
    * 列出 Dashboard（用于列表页）

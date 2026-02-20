@@ -37,25 +37,29 @@ export function createHttpQueryService(_deps: HttpQueryServiceDeps): QueryServic
   return {
     async executeQueries(queries: CanonicalQuery[], context: QueryContext, options): Promise<QueryResult[]> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.ExecuteQueries);
-      const res = await _deps.http.post<unknown>(path, { queries, context }, { signal: options?.signal });
+      const headers = options?.dashboardSessionKey ? { 'X-Dashboard-Session-Key': options.dashboardSessionKey } : undefined;
+      const res = await _deps.http.post<unknown>(path, { queries, context }, { signal: options?.signal, headers });
       return normalizeArrayResponse<QueryResult>(res);
     },
 
     async fetchMetrics(search?: string, options?): Promise<string[]> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.FetchMetrics);
-      const res = await _deps.http.post<unknown>(path, search ? { search } : {}, { signal: options?.signal });
+      const headers = options?.dashboardSessionKey ? { 'X-Dashboard-Session-Key': options.dashboardSessionKey } : undefined;
+      const res = await _deps.http.post<unknown>(path, search ? { search } : {}, { signal: options?.signal, headers });
       return normalizeArrayResponse<string>(res);
     },
 
     async fetchLabelKeys(metric: string, options?): Promise<string[]> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.FetchLabelKeys);
-      const res = await _deps.http.post<unknown>(path, { metric }, { signal: options?.signal });
+      const headers = options?.dashboardSessionKey ? { 'X-Dashboard-Session-Key': options.dashboardSessionKey } : undefined;
+      const res = await _deps.http.post<unknown>(path, { metric }, { signal: options?.signal, headers });
       return normalizeArrayResponse<string>(res);
     },
 
     async fetchLabelValues(metric: string, labelKey: string, otherLabels?: Record<string, string>, options?): Promise<string[]> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.FetchLabelValues);
-      const res = await _deps.http.post<unknown>(path, { metric, labelKey, otherLabels }, { signal: options?.signal });
+      const headers = options?.dashboardSessionKey ? { 'X-Dashboard-Session-Key': options.dashboardSessionKey } : undefined;
+      const res = await _deps.http.post<unknown>(path, { metric, labelKey, otherLabels }, { signal: options?.signal, headers });
       return normalizeArrayResponse<string>(res);
     },
 
@@ -69,7 +73,8 @@ export function createHttpQueryService(_deps: HttpQueryServiceDeps): QueryServic
      */
     async fetchVariableValues(expr: string, timeRange: TimeRange, options?) {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.FetchVariableValues);
-      const res = await _deps.http.post<unknown>(path, { expr, timeRange }, { signal: options?.signal });
+      const headers = options?.dashboardSessionKey ? { 'X-Dashboard-Session-Key': options.dashboardSessionKey } : undefined;
+      const res = await _deps.http.post<unknown>(path, { expr, timeRange }, { signal: options?.signal, headers });
       // 约定返回 [{ text, value }]；若后端不同，在这里做一次映射即可
       return normalizeArrayResponse<{ text: string; value: string }>(res);
     },

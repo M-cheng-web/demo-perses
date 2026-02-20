@@ -8,7 +8,18 @@
   import { useDashboardSdk } from '@grafana-fast/hooks';
 
   const hostRef = ref<HTMLElement | null>(null);
-  useDashboardSdk(hostRef, { dashboardId: 'default' });
+  const getDashboardSessionKey = async () => {
+    // 调用你的业务接口换取 dashboardSessionKey（真实 dashboardId 不对前端暴露）
+    const res = await fetch('/api/dashboards/session/resolve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ params: { dashboardKey: 'default' } }),
+    });
+    const json = await res.json();
+    return json.dashboardSessionKey as string;
+  };
+
+  useDashboardSdk(hostRef, { getDashboardSessionKey });
 </script>
 
 <template>

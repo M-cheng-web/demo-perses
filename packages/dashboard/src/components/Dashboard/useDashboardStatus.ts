@@ -12,7 +12,7 @@ interface BootStatsLike {
 }
 
 interface UseDashboardStatusOptions {
-  dashboardId: Ref<string | number | null | undefined>;
+  dashboardSessionKey: Ref<string | null | undefined>;
   currentDashboard: Ref<unknown | null>;
   isBooting: Ref<boolean>;
   bootStage: Ref<'idle' | 'fetching' | 'parsing' | 'initializing' | 'ready' | 'error'>;
@@ -89,7 +89,7 @@ export function useDashboardStatus(options: UseDashboardStatusOptions) {
     if (isBooting.value) return 'loading';
     if (currentDashboard.value) return null;
     if (bootStage.value === 'error') return 'error';
-    // currentDashboard 为空且不在 boot：典型为宿主正在远程获取 dashboardId
+    // currentDashboard 为空且不在 boot：典型为宿主正在远程 resolve dashboardSessionKey
     return 'waiting';
   });
 

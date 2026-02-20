@@ -32,23 +32,6 @@
   const dashboardRef = ref<HTMLElement | null>(null);
   const panelCount = ref(100);
 
-  let panelCountForApi = panelCount.value;
-  const { actions } = useDashboardSdk(dashboardRef, {
-    dashboardId: 'perf',
-    enableMock: true,
-    defaultApiMode: 'mock',
-    createMockApiClient: async () => {
-      const { createMockApiClient } = await import('@grafana-fast/api/mock');
-      const api = createMockApiClient();
-      const originalLoad = api.dashboard.loadDashboard.bind(api.dashboard);
-      api.dashboard.loadDashboard = async (id) => {
-        if (String(id) === 'perf') return generateDashboard(panelCountForApi);
-        return originalLoad(id);
-      };
-      return api;
-    },
-  });
-
   const generateDashboard = (count: number): DashboardContent => {
     const panels = Array.from({ length: count }).map((_, i) => {
       const id = `p-${i + 1}`;
@@ -96,9 +79,24 @@
     };
   };
 
+  let panelCountForApi = panelCount.value;
+  const { actions } = useDashboardSdk(dashboardRef, {
+    autoLoad: false,
+    getDashboardSessionKey: async () => {
+      const { createMockApiClient } = await import('@grafana-fast/api/mock');
+      const api = createMockApiClient();
+      const res = await api.dashboard.resolveDashboardSession({ params: { dashboardKey: 'perf' } });
+      await api.dashboard.saveDashboard(res.dashboardSessionKey, generateDashboard(panelCountForApi));
+      return res.dashboardSessionKey;
+    },
+    enableMock: true,
+    defaultApiMode: 'mock',
+    createMockApiClient: async () => (await import('@grafana-fast/api/mock')).createMockApiClient(),
+  });
+
   const apply = () => {
     panelCountForApi = panelCount.value;
-    void actions.loadDashboard('perf');
+    void actions.loadDashboard();
   };
 
   const goHome = () => router.push('/home');

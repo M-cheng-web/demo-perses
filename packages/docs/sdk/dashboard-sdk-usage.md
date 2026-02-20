@@ -14,20 +14,34 @@
 
 ```ts
 import { onUnmounted, ref } from 'vue';
-import { useDashboardSdk, DashboardApi } from '@grafana-fast/hooks';
+import { useDashboardSdk } from '@grafana-fast/hooks';
+import { createHttpApiClient } from '@grafana-fast/api';
 
 const containerRef = ref<HTMLElement | null>(null);
 
-const { on, getState, getApiConfig, actions } = useDashboardSdk(containerRef, {
-  instanceId: 'my-dashboard-1', // 多实例时务必唯一且稳定
-  // dashboardId 是“资源标识”（不在导出的 JSON 里），用于后端定位这份 Dashboard 内容
-  dashboardId: 'default',
+const apiClient = createHttpApiClient({
   apiConfig: {
     baseUrl: 'https://api.example.com',
-    endpoints: {
-      [DashboardApi.ExecuteQueries]: '/custom/execute',
+    auth: {
+      getBearerToken: async () => localStorage.getItem('token') ?? '',
     },
   },
+});
+
+const getDashboardSessionKey = async () => {
+  const res = await fetch('/api/dashboards/session/resolve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ params: { projectId: 'p-1', scene: 'overview' } }),
+  });
+  const json = await res.json();
+  return json.dashboardSessionKey as string;
+};
+
+const { on, getState, actions } = useDashboardSdk(containerRef, {
+  instanceId: 'my-dashboard-1', // 多实例时务必唯一且稳定
+  apiClient,
+  getDashboardSessionKey,
   onError: (err) => console.error('[dashboard-sdk] error:', err),
 });
 
@@ -50,7 +64,7 @@ actions.setReadOnly(true);
 - `getState()` 返回的是 **快照**，外部修改这个对象不会影响内部。
 - `on('change')` 用于监听变化；`on` 会返回一个 `unsubscribe()`，组件卸载时记得调用。
 - `actions.*` 是**唯一被支持**的“外部修改内部”的方式。
-- 若 `dashboardId` 需要从业务接口异步获取，建议使用 `autoLoad: false`，拿到 id 后再 `actions.loadDashboard(dashboardId)`；详见 `/sdk/dashboard-sdk-plan-a`。
+- 若你希望自行控制加载时机：使用 `autoLoad: false`，准备好后再 `await actions.loadDashboard()`；详见 `/sdk/dashboard-sdk-plan-a`。
 
 ---
 
@@ -60,11 +74,16 @@ SDK 只提供一类读取方式：
 
 - `getState()`：轻量状态快照（适合频繁读取/渲染 UI）
   - 包含容器尺寸、主题、只读开关、viewMode、timeRange、加载/保存状态等
-  - `state.dashboard` 只提供摘要（id/name/groupCount/panelCount）
-    - 其中 `id` 指的是 `dashboardId`（资源标识），不是 Dashboard JSON 的字段
+  - `state.dashboard` 只提供摘要（sessionKey/name/groupCount/panelCount）
+    - 其中 `sessionKey` 是会话级访问 Key（真实 dashboardId 不对前端暴露）
   - 通过 `state.dashboardRevision` 反映 dashboard 内容是否发生变化（单调递增）
 
 如果宿主需要“全量 dashboard JSON”，建议由宿主自己管理（通常本来就来自你的后端/业务缓存），或在宿主侧包装 `apiClient.dashboard.load/save` 来缓存你需要的内容。
+
+补充：
+
+- SDK 内部会把当前 `sessionKey` 透传给所有请求（dashboard/query/variable/querybuilder）。
+- 对接真实后端时，HTTP 实现层会把它映射为请求头 `X-Dashboard-Session-Key`（与 `API_REQUIREMENTS.md` 对齐）。
 
 ---
 
@@ -114,12 +133,10 @@ on('change', ({ changedKeys, state }) => {
 
 宿主只能通过 `actions.*` 修改内部（部分常用示例）：
 
-- 生命周期/挂载：
-  - `actions.mountDashboard()` / `actions.unmountDashboard()`
-- Dashboard 数据：
-  - `actions.loadDashboard(dashboardId)`
+- Dashboard 数据（整盘）：
+  - `actions.resetDashboard()`
+  - `actions.loadDashboard()`（内部会 resolve sessionKey 并整盘加载）
   - `actions.saveDashboard()`
-  - `actions.setDashboard(dashboardContent, { markAsSynced? })`
 - 能力开关：
   - `actions.setReadOnly(true/false)`
 - 时间范围：
@@ -129,9 +146,12 @@ on('change', ({ changedKeys, state }) => {
 - 主题：
   - `actions.setTheme('light' | 'dark')`
   - `actions.setThemePreference('light' | 'dark' | 'system')`
-- UI 辅助（依赖组件已挂载）：
-  - `actions.openSettings()` / `actions.closeSettings()`
-  - `actions.toolbar.openJsonModal()` / `actions.toolbar.viewJson()` 等
+  - `actions.toggleTheme()`
+  - `actions.getTheme()`
+- 变量：
+  - `actions.setVariableValue(name, value)`
+  - `actions.setVariableValues({ [name]: value })`
+  - `actions.refreshVariableOptions()`
 
 > 建议：宿主侧把 `actions` 当作“命令总线”；不要尝试通过 props 或直接改内部对象来驱动 dashboard。
 

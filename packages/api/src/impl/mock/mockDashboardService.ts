@@ -19,12 +19,14 @@ import type {
   PatchPanelGroupLayoutPageRequest,
   PatchPanelGroupLayoutPageResponse,
   ReorderPanelGroupsRequest,
+  ResolveDashboardSessionRequest,
+  ResolveDashboardSessionResponse,
   UpdatePanelGroupRequest,
   UpdatePanelGroupResponse,
   UpdatePanelRequest,
   UpdatePanelResponse,
 } from '../../contracts/dashboard';
-import type { CorePanelType, DashboardContent, DashboardId, DashboardListItem, Panel, PanelGroup, PanelLayout } from '@grafana-fast/types';
+import type { CorePanelType, DashboardContent, DashboardListItem, DashboardSessionKey, Panel, PanelGroup, PanelLayout } from '@grafana-fast/types';
 import { deepCloneStructured } from '@grafana-fast/utils';
 
 function nowTs() {
@@ -375,16 +377,16 @@ function createLargeGroup(): PanelGroup {
   };
 }
 
-function createDefaultDashboardContent(dashboardId: DashboardId): DashboardContent {
-  const id = String(dashboardId ?? '');
-  // Demo helper: allow host app to switch to an "empty dashboard" by id.
-  // - Used by packages/app DashboardView.vue to verify "dashboardId changes trigger full refresh".
-  // - Any id containing "empty" will be treated as an empty dashboard (no panelGroups).
+function createDefaultDashboardContent(dashboardKey: string): DashboardContent {
+  const id = String(dashboardKey ?? '');
+  // Demo helper: allow host app to switch to an "empty dashboard" by key.
+  // - Used by packages/app DashboardView.vue to verify "dashboardSessionKey changes trigger full refresh".
+  // - Any key containing "empty" will be treated as an empty dashboard (no panelGroups).
   if (id.toLowerCase().includes('empty')) {
     return {
       schemaVersion: 1,
       name: `Empty Dashboard（${id || '-'}）`,
-      description: 'Mock empty dashboard for dashboardId switching demo',
+      description: 'Mock empty dashboard for session switching demo',
       panelGroups: [],
       timeRange: { from: 'now-1h', to: 'now' },
       refreshInterval: 0,
@@ -462,7 +464,7 @@ function createDefaultDashboardContent(dashboardId: DashboardId): DashboardConte
 
   return {
     schemaVersion: 1,
-    name: `Mock Dashboard（${String(dashboardId)}）`,
+    name: `Mock Dashboard（${id}）`,
     description: 'Mock dashboard (built-in) for focus-layer/pagination/virtualization testing',
     panelGroups: groups,
     timeRange: { from: 'now-1h', to: 'now' },
@@ -528,36 +530,118 @@ function createDefaultDashboardContent(dashboardId: DashboardId): DashboardConte
 }
 
 type StoredMockDashboard = { content: DashboardContent; createdAt: number; updatedAt: number };
-const dashboards = new Map<DashboardId, StoredMockDashboard>();
+type MockDashboardKey = string;
 
-function getOrCreate(dashboardId: DashboardId): StoredMockDashboard {
-  const existing = dashboards.get(dashboardId);
+const dashboards = new Map<MockDashboardKey, StoredMockDashboard>();
+
+type StoredMockSession = {
+  dashboardKey: MockDashboardKey;
+  issuedAt: number;
+  expiresAt: number;
+  lastRenewAt: number;
+};
+
+const sessions = new Map<DashboardSessionKey, StoredMockSession>();
+
+const SESSION_MIN_TTL_MS = 10 * 60 * 60 * 1000;
+const SESSION_RENEW_THROTTLE_MS = 60 * 60 * 1000;
+
+class MockDashboardSessionExpiredError extends Error {
+  code = 'DASHBOARD_SESSION_EXPIRED';
+
+  constructor(message = '[mockDashboardService] Dashboard session expired') {
+    super(message);
+    this.name = 'MockDashboardSessionExpiredError';
+  }
+}
+
+function resolveDashboardKeyFromParams(params: Record<string, any>): MockDashboardKey {
+  const p = (params ?? {}) as Record<string, any>;
+  const candidates = [p.mockDashboardKey, p.dashboardKey, p.key, p.id, p.dashboardId];
+  for (const v of candidates) {
+    if (typeof v === 'string' && v.trim()) return v.trim();
+  }
+  try {
+    const json = JSON.stringify(params ?? {});
+    if (json && json !== '{}' && json !== 'null') return `mock:${json}`;
+  } catch {
+    // ignore
+  }
+  return 'default';
+}
+
+function getOrCreate(dashboardKey: MockDashboardKey): StoredMockDashboard {
+  const existing = dashboards.get(dashboardKey);
   if (existing) {
     normalizeCanonicalQueriesInPlace(existing.content);
     return existing;
   }
   const now = nowTs();
-  const content = createDefaultDashboardContent(dashboardId);
+  const content = createDefaultDashboardContent(dashboardKey);
   normalizeCanonicalQueriesInPlace(content);
   const created: StoredMockDashboard = { content, createdAt: now, updatedAt: now };
-  dashboards.set(dashboardId, created);
+  dashboards.set(dashboardKey, created);
   return created;
+}
+
+function touchSession(dashboardSessionKey: DashboardSessionKey): StoredMockSession {
+  const session = sessions.get(dashboardSessionKey);
+  if (!session) throw new MockDashboardSessionExpiredError('[mockDashboardService] Dashboard session not found');
+
+  const now = nowTs();
+  if (now > session.expiresAt) {
+    sessions.delete(dashboardSessionKey);
+    throw new MockDashboardSessionExpiredError();
+  }
+
+  // Sliding renewal with write throttling: at most once per hour.
+  if (now - session.lastRenewAt >= SESSION_RENEW_THROTTLE_MS) {
+    session.lastRenewAt = now;
+    session.expiresAt = now + SESSION_MIN_TTL_MS;
+    sessions.set(dashboardSessionKey, session);
+  }
+
+  return session;
+}
+
+function getEntryBySessionKey(dashboardSessionKey: DashboardSessionKey): StoredMockDashboard {
+  const session = touchSession(dashboardSessionKey);
+  return getOrCreate(session.dashboardKey);
 }
 
 export function createMockDashboardService(): DashboardService {
   return {
-    async loadDashboard(dashboardId: DashboardId): Promise<DashboardContent> {
-      return getOrCreate(dashboardId).content;
+    async resolveDashboardSession(req: ResolveDashboardSessionRequest): Promise<ResolveDashboardSessionResponse> {
+      const dashboardKey = resolveDashboardKeyFromParams(req.params);
+      // Ensure the dashboard exists (get-or-create).
+      getOrCreate(dashboardKey);
+
+      const now = nowTs();
+      const dashboardSessionKey = createMockId('dash-session');
+      sessions.set(dashboardSessionKey, {
+        dashboardKey,
+        issuedAt: now,
+        lastRenewAt: now,
+        expiresAt: now + SESSION_MIN_TTL_MS,
+      });
+
+      return { dashboardSessionKey };
     },
-    async saveDashboard(dashboardId: DashboardId, content: DashboardContent): Promise<void> {
-      const entry = getOrCreate(dashboardId);
+
+    async loadDashboard(dashboardSessionKey: DashboardSessionKey): Promise<DashboardContent> {
+      return getEntryBySessionKey(dashboardSessionKey).content;
+    },
+    async saveDashboard(dashboardSessionKey: DashboardSessionKey, content: DashboardContent): Promise<void> {
+      const entry = getEntryBySessionKey(dashboardSessionKey);
       normalizeCanonicalQueriesInPlace(content);
       entry.content = content;
       entry.updatedAt = nowTs();
-      dashboards.set(dashboardId, entry);
+      dashboards.set(touchSession(dashboardSessionKey).dashboardKey, entry);
     },
-    async deleteDashboard(dashboardId: DashboardId): Promise<void> {
-      dashboards.delete(dashboardId);
+    async deleteDashboard(dashboardSessionKey: DashboardSessionKey): Promise<void> {
+      const session = touchSession(dashboardSessionKey);
+      dashboards.delete(session.dashboardKey);
+      sessions.delete(dashboardSessionKey);
     },
     async listDashboards(): Promise<DashboardListItem[]> {
       // Ensure there is always at least one dashboard for demo flows.
@@ -575,7 +659,7 @@ export function createMockDashboardService(): DashboardService {
     },
 
     async patchPanelGroupLayoutPage(req: PatchPanelGroupLayoutPageRequest): Promise<PatchPanelGroupLayoutPageResponse> {
-      const entry = getOrCreate(req.dashboardId);
+      const entry = getEntryBySessionKey(req.dashboardSessionKey);
       const content = entry.content;
       const group = getGroupOrThrow(content, String(req.groupId));
 
@@ -608,12 +692,12 @@ export function createMockDashboardService(): DashboardService {
       }
 
       entry.updatedAt = nowTs();
-      dashboards.set(req.dashboardId, entry);
+      dashboards.set(touchSession(req.dashboardSessionKey).dashboardKey, entry);
       return { items: deepCloneStructured(group.layout ?? []) };
     },
 
     async createPanel(req: CreatePanelRequest): Promise<CreatePanelResponse> {
-      const entry = getOrCreate(req.dashboardId);
+      const entry = getEntryBySessionKey(req.dashboardSessionKey);
       const content = entry.content;
       const group = getGroupOrThrow(content, String(req.groupId));
 
@@ -634,12 +718,12 @@ export function createMockDashboardService(): DashboardService {
       group.layout.push(layout);
 
       entry.updatedAt = nowTs();
-      dashboards.set(req.dashboardId, entry);
+      dashboards.set(touchSession(req.dashboardSessionKey).dashboardKey, entry);
       return { panel: deepCloneStructured(panel), layout: deepCloneStructured(layout) };
     },
 
     async updatePanel(req: UpdatePanelRequest): Promise<UpdatePanelResponse> {
-      const entry = getOrCreate(req.dashboardId);
+      const entry = getEntryBySessionKey(req.dashboardSessionKey);
       const content = entry.content;
       const group = getGroupOrThrow(content, String(req.groupId));
 
@@ -650,12 +734,12 @@ export function createMockDashboardService(): DashboardService {
       group.panels[idx] = next;
 
       entry.updatedAt = nowTs();
-      dashboards.set(req.dashboardId, entry);
+      dashboards.set(touchSession(req.dashboardSessionKey).dashboardKey, entry);
       return { panel: deepCloneStructured(next) };
     },
 
     async deletePanel(req: DeletePanelRequest): Promise<void> {
-      const entry = getOrCreate(req.dashboardId);
+      const entry = getEntryBySessionKey(req.dashboardSessionKey);
       const content = entry.content;
       const group = getGroupOrThrow(content, String(req.groupId));
 
@@ -663,11 +747,11 @@ export function createMockDashboardService(): DashboardService {
       group.layout = (group.layout ?? []).filter((it) => String(it.i) !== String(req.panelId));
 
       entry.updatedAt = nowTs();
-      dashboards.set(req.dashboardId, entry);
+      dashboards.set(touchSession(req.dashboardSessionKey).dashboardKey, entry);
     },
 
     async duplicatePanel(req: DuplicatePanelRequest): Promise<DuplicatePanelResponse> {
-      const entry = getOrCreate(req.dashboardId);
+      const entry = getEntryBySessionKey(req.dashboardSessionKey);
       const content = entry.content;
       const group = getGroupOrThrow(content, String(req.groupId));
 
@@ -682,23 +766,23 @@ export function createMockDashboardService(): DashboardService {
       group.layout.push(layout);
 
       entry.updatedAt = nowTs();
-      dashboards.set(req.dashboardId, entry);
+      dashboards.set(touchSession(req.dashboardSessionKey).dashboardKey, entry);
       return { panel: deepCloneStructured(copied), layout: deepCloneStructured(layout) };
     },
 
     async updatePanelGroup(req: UpdatePanelGroupRequest): Promise<UpdatePanelGroupResponse> {
-      const entry = getOrCreate(req.dashboardId);
+      const entry = getEntryBySessionKey(req.dashboardSessionKey);
       const content = entry.content;
       const group = getGroupOrThrow(content, String(req.groupId));
       group.title = String(req.group.title ?? group.title);
       group.description = req.group.description ?? group.description;
       entry.updatedAt = nowTs();
-      dashboards.set(req.dashboardId, entry);
+      dashboards.set(touchSession(req.dashboardSessionKey).dashboardKey, entry);
       return { group: deepCloneStructured(group) };
     },
 
     async createPanelGroup(req: CreatePanelGroupRequest): Promise<CreatePanelGroupResponse> {
-      const entry = getOrCreate(req.dashboardId);
+      const entry = getEntryBySessionKey(req.dashboardSessionKey);
       const content = entry.content;
       content.panelGroups ??= [];
       const next: PanelGroup = {
@@ -712,22 +796,22 @@ export function createMockDashboardService(): DashboardService {
       };
       content.panelGroups.push(next);
       entry.updatedAt = nowTs();
-      dashboards.set(req.dashboardId, entry);
+      dashboards.set(touchSession(req.dashboardSessionKey).dashboardKey, entry);
       return { group: deepCloneStructured(next) };
     },
 
     async deletePanelGroup(req: DeletePanelGroupRequest): Promise<void> {
-      const entry = getOrCreate(req.dashboardId);
+      const entry = getEntryBySessionKey(req.dashboardSessionKey);
       const content = entry.content;
       content.panelGroups = (content.panelGroups ?? []).filter((g) => String(g.id) !== String(req.groupId));
       // re-index order
       (content.panelGroups ?? []).forEach((g, idx) => (g.order = idx));
       entry.updatedAt = nowTs();
-      dashboards.set(req.dashboardId, entry);
+      dashboards.set(touchSession(req.dashboardSessionKey).dashboardKey, entry);
     },
 
     async reorderPanelGroups(req: ReorderPanelGroupsRequest): Promise<void> {
-      const entry = getOrCreate(req.dashboardId);
+      const entry = getEntryBySessionKey(req.dashboardSessionKey);
       const content = entry.content;
       const groups = content.panelGroups ?? [];
 
@@ -755,7 +839,7 @@ export function createMockDashboardService(): DashboardService {
       content.panelGroups = next;
 
       entry.updatedAt = nowTs();
-      dashboards.set(req.dashboardId, entry);
+      dashboards.set(touchSession(req.dashboardSessionKey).dashboardKey, entry);
     },
   };
 }

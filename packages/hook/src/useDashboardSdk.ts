@@ -10,6 +10,7 @@
  */
 import { createApp, defineComponent, h, onMounted, onUnmounted, ref, toRaw, watch, type App, type Ref } from 'vue';
 import { createPinia } from '@grafana-fast/store';
+import { isHttpError, type GrafanaFastApiClient } from '@grafana-fast/api';
 import type { ID, TimeRange } from '@grafana-fast/types';
 import {
   DashboardView,
@@ -78,7 +79,7 @@ export type {
 /**
  * 将 Dashboard 渲染到指定容器并暴露状态/操作
  * @param targetRef 要挂载 Dashboard 的容器 ref
- * @param options   配置项（dashboardId、接口路径、生命周期钩子等）
+ * @param options   配置项（sessionKey 获取方式、接口路径、生命周期钩子等）
  */
 export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: DashboardSdkOptions = {}): UseDashboardSdkResult {
   const emitter = createEmitter<DashboardSdkEventMap>();
@@ -126,7 +127,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     let panelCount = 0;
     for (const g of groups) panelCount += g.panels?.length ?? 0;
     return {
-      id: dashboardStore.dashboardId ?? null,
+      sessionKey: dashboardStore.dashboardSessionKey ?? null,
       name: dash.name,
       groupCount: groups.length,
       panelCount,
@@ -243,6 +244,198 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     }
   };
 
+  // ---------------------------
+  // Dashboard sessionKey resolve + single-flight reload
+  // ---------------------------
+
+  const DASHBOARD_SESSION_EXPIRED_CODE = 'DASHBOARD_SESSION_EXPIRED';
+
+  const extractErrorCode = (error: unknown): string | null => {
+    if (isHttpError(error)) {
+      const code = (error.responseJson as any)?.error?.code;
+      return typeof code === 'string' ? code : null;
+    }
+    const code = (error as any)?.code;
+    return typeof code === 'string' ? code : null;
+  };
+
+  const isDashboardSessionExpiredError = (error: unknown): boolean => extractErrorCode(error) === DASHBOARD_SESSION_EXPIRED_CODE;
+
+  const resetDashboardStoreState = () => {
+    // 语义：把 dashboard 状态重置为“等待加载”（类似浏览器刷新后的初始状态）。
+    // 期间宿主可异步 resolve dashboardSessionKey，再触发 load。
+    dashboardStore.cancelPendingSync();
+    dashboardStore.dashboardSessionKey = null;
+    dashboardStore.currentDashboard = null;
+    dashboardStore.syncedDashboard = null;
+    dashboardStore.hasUnsyncedChanges = false;
+    dashboardStore.lastError = null;
+
+    dashboardStore.editingGroupId = null;
+    dashboardStore.viewPanelId = null;
+    dashboardStore.viewMode = 'grouped';
+
+    dashboardStore.isBooting = false;
+    dashboardStore.bootStage = 'idle';
+    dashboardStore.bootStats = { startedAt: null, groupCount: null, panelCount: null, jsonBytes: null, source: null };
+
+    // bump revision: help host detect a "hard reset"
+    const rev = Number(dashboardStore.dashboardContentRevision ?? 0);
+    dashboardStore.dashboardContentRevision = Number.isFinite(rev) ? rev + 1 : 0;
+    scheduleChange();
+  };
+
+  const resolveDashboardSessionKey = async (): Promise<string> => {
+    if (typeof options.getDashboardSessionKey === 'function') {
+      const key = String(await options.getDashboardSessionKey()).trim();
+      if (!key) throw new Error('[grafana-fast] getDashboardSessionKey() returned empty value.');
+      return key;
+    }
+
+    const api = activeApiClient.value;
+    if (!api) {
+      throw new Error('[grafana-fast] Missing apiClient. Provide `apiClient` or enable mock, or pass `getDashboardSessionKey()`.');
+    }
+    const res = await api.dashboard.resolveDashboardSession({ params: {} });
+    const key = String(res?.dashboardSessionKey ?? '').trim();
+    if (!key) throw new Error('[grafana-fast] resolveDashboardSession() returned empty dashboardSessionKey.');
+    return key;
+  };
+
+  let resolveAndLoadInFlight: Promise<void> | null = null;
+  const resolveAndLoadDashboard = async (): Promise<void> => {
+    if (resolveAndLoadInFlight) return resolveAndLoadInFlight;
+    resolveAndLoadInFlight = (async () => {
+      await apiReadyPromise;
+      // Show waiting mask during sessionKey resolving.
+      resetDashboardStoreState();
+      const sessionKey = await resolveDashboardSessionKey();
+      await dashboardStore.loadDashboard(sessionKey);
+      scheduleChange();
+    })().finally(() => {
+      resolveAndLoadInFlight = null;
+    });
+    return resolveAndLoadInFlight;
+  };
+
+  // Wrap apiClient so any dashboard request that hits "SESSION_EXPIRED" will trigger a single-flight reload.
+  const apiClientWrapCache = new WeakMap<object, GrafanaFastApiClient>();
+  const wrapApiClientWithSessionReload = (client: GrafanaFastApiClient): GrafanaFastApiClient => {
+    const cached = apiClientWrapCache.get(client as any);
+    if (cached) return cached;
+
+    const getActiveDashboardSessionKey = (): string | undefined => {
+      const raw = dashboardStore.dashboardSessionKey;
+      const v = raw == null ? '' : String(raw).trim();
+      return v ? v : undefined;
+    };
+
+    const baseDashboard = client.dashboard;
+    const baseQuery = client.query;
+    const baseVariable = client.variable;
+
+    const wrapWithSessionReload = async <T>(call: () => Promise<T>): Promise<T> => {
+      try {
+        return await call();
+      } catch (error) {
+        if (isDashboardSessionExpiredError(error)) {
+          void resolveAndLoadDashboard().catch((e) => emitError(e));
+        }
+        throw error;
+      }
+    };
+
+    const withDashboardSessionKey = <T extends Record<string, any> | undefined>(options: T): T | Record<string, any> => {
+      const sessionKey = getActiveDashboardSessionKey();
+      if (!sessionKey) return options;
+      if (options && typeof options === 'object' && options.dashboardSessionKey) return options;
+      return { ...(options ?? {}), dashboardSessionKey: sessionKey };
+    };
+
+    const withVariableResolveContext = <T extends Record<string, any> | undefined>(context: T): T | Record<string, any> => {
+      const sessionKey = getActiveDashboardSessionKey();
+      if (!sessionKey) return context;
+      if (context && typeof context === 'object' && context.dashboardSessionKey) return context;
+      return { ...(context ?? {}), dashboardSessionKey: sessionKey };
+    };
+
+    const wrapped: GrafanaFastApiClient = {
+      ...client,
+      dashboard: {
+        ...baseDashboard,
+        loadDashboard: (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.loadDashboard.apply(baseDashboard as any, args))),
+        saveDashboard: (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.saveDashboard.apply(baseDashboard as any, args))),
+        deleteDashboard: (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.deleteDashboard.apply(baseDashboard as any, args))),
+        patchPanelGroupLayoutPage: baseDashboard.patchPanelGroupLayoutPage
+          ? (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.patchPanelGroupLayoutPage!.apply(baseDashboard as any, args)))
+          : undefined,
+        createPanel: baseDashboard.createPanel
+          ? (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.createPanel!.apply(baseDashboard as any, args)))
+          : undefined,
+        updatePanel: baseDashboard.updatePanel
+          ? (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.updatePanel!.apply(baseDashboard as any, args)))
+          : undefined,
+        deletePanel: baseDashboard.deletePanel
+          ? (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.deletePanel!.apply(baseDashboard as any, args)))
+          : undefined,
+        duplicatePanel: baseDashboard.duplicatePanel
+          ? (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.duplicatePanel!.apply(baseDashboard as any, args)))
+          : undefined,
+        updatePanelGroup: baseDashboard.updatePanelGroup
+          ? (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.updatePanelGroup!.apply(baseDashboard as any, args)))
+          : undefined,
+        createPanelGroup: baseDashboard.createPanelGroup
+          ? (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.createPanelGroup!.apply(baseDashboard as any, args)))
+          : undefined,
+        deletePanelGroup: baseDashboard.deletePanelGroup
+          ? (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.deletePanelGroup!.apply(baseDashboard as any, args)))
+          : undefined,
+        reorderPanelGroups: baseDashboard.reorderPanelGroups
+          ? (...args) => wrapWithSessionReload(() => Promise.resolve(baseDashboard.reorderPanelGroups!.apply(baseDashboard as any, args)))
+          : undefined,
+      },
+      query: {
+        ...baseQuery,
+        executeQueries: (queries, context, options) =>
+          wrapWithSessionReload(() => Promise.resolve(baseQuery.executeQueries(queries as any, context as any, withDashboardSessionKey(options) as any))),
+        fetchMetrics: (search, options) =>
+          wrapWithSessionReload(() => Promise.resolve(baseQuery.fetchMetrics(search as any, withDashboardSessionKey(options) as any))),
+        fetchLabelKeys: (metric, options) =>
+          wrapWithSessionReload(() => Promise.resolve(baseQuery.fetchLabelKeys(metric as any, withDashboardSessionKey(options) as any))),
+        fetchLabelValues: (metric, labelKey, otherLabels, options) =>
+          wrapWithSessionReload(() =>
+            Promise.resolve(baseQuery.fetchLabelValues(metric as any, labelKey as any, otherLabels as any, withDashboardSessionKey(options) as any))
+          ),
+        fetchVariableValues: baseQuery.fetchVariableValues
+          ? (expr, timeRange, options) =>
+              wrapWithSessionReload(() => Promise.resolve(baseQuery.fetchVariableValues!(expr as any, timeRange as any, withDashboardSessionKey(options) as any)))
+          : undefined,
+      },
+      variable: {
+        ...baseVariable,
+        resolveOptions: (variables, state, timeRange, context) =>
+          wrapWithSessionReload(() =>
+            Promise.resolve(baseVariable.resolveOptions(variables as any, state as any, timeRange as any, withVariableResolveContext(context) as any))
+          ),
+      },
+    };
+
+    apiClientWrapCache.set(client as any, wrapped);
+    return wrapped;
+  };
+
+  const activeApiClientForDashboard = ref<GrafanaFastApiClient | undefined>(undefined);
+  watch(
+    activeApiClient,
+    (client) => {
+      activeApiClientForDashboard.value = client ? wrapApiClientWithSessionReload(client) : undefined;
+      if (activeApiClientForDashboard.value) {
+        setPiniaApiClient(pinia, activeApiClientForDashboard.value);
+      }
+    },
+    { immediate: true }
+  );
+
   const DashboardSdkRoot = defineComponent({
     name: 'DashboardSdkRoot',
     setup() {
@@ -251,7 +444,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
           ref: dashboardViewRef,
           theme: theme.value,
           portalTarget: options.portalTarget ?? null,
-          apiClient: activeApiClient.value,
+          apiClient: activeApiClientForDashboard.value,
           instanceId,
           apiMode: apiMode.value,
           apiModeOptions: apiModeOptions.value,
@@ -321,7 +514,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
 
       mountDashboard();
       if (options.autoLoad !== false && !dashboardStore.currentDashboard) {
-        await dashboardStore.loadDashboard(options.dashboardId ?? 'default');
+        await resolveAndLoadDashboard();
       }
 
       ready.value = true;
@@ -378,34 +571,12 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   const actions: DashboardSdkActions = {
     resetDashboard: () =>
       runWithError(() => {
-        // 语义：把 dashboard 状态重置为“等待加载”（类似浏览器刷新后的初始状态）。
-        // 期间宿主可异步获取 dashboardId（资源标识），再调用 loadDashboard(id)。
-        dashboardStore.cancelPendingSync();
-        dashboardStore.dashboardId = null;
-        dashboardStore.currentDashboard = null;
-        dashboardStore.syncedDashboard = null;
-        dashboardStore.hasUnsyncedChanges = false;
-        dashboardStore.lastError = null;
-
-        dashboardStore.editingGroupId = null;
-        dashboardStore.viewPanelId = null;
-        dashboardStore.viewMode = 'grouped';
-
-        dashboardStore.isBooting = false;
-        dashboardStore.bootStage = 'idle';
-        dashboardStore.bootStats = { startedAt: null, groupCount: null, panelCount: null, jsonBytes: null, source: null };
-
-        // bump revision: help host detect a "hard reset"
-        const rev = Number(dashboardStore.dashboardContentRevision ?? 0);
-        dashboardStore.dashboardContentRevision = Number.isFinite(rev) ? rev + 1 : 0;
-        scheduleChange();
+        resetDashboardStoreState();
       }),
     // Dashboard 数据加载/保存
-    loadDashboard: async (id: ID) =>
+    loadDashboard: async () =>
       runAsyncWithError(async () => {
-        await apiReadyPromise;
-        await dashboardStore.loadDashboard(id);
-        scheduleChange();
+        await resolveAndLoadDashboard();
       }),
     saveDashboard: async () =>
       runAsyncWithError(async () => {

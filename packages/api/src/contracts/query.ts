@@ -4,7 +4,7 @@
  * 该文件定义“查询执行 + QueryBuilder 辅助能力”的统一接口。
  * 上层（QueryRunner/QueryScheduler）会基于这些方法实现并发控制、缓存、取消与调度策略。
  */
-import type { CanonicalQuery, QueryContext, QueryResult, TimeRange } from '@grafana-fast/types';
+import type { CanonicalQuery, DashboardSessionKey, QueryContext, QueryResult, TimeRange } from '@grafana-fast/types';
 
 /**
  * QueryService（契约层）
@@ -22,6 +22,16 @@ export interface ExecuteQueriesOptions {
    * - 实现层应尽可能中止进行中的请求，并在信号触发后抛出 AbortError（或等价错误）
    */
   signal?: AbortSignal;
+
+  /**
+   * （可选）Dashboard 会话级访问 key
+   *
+   * 说明：
+   * - 用于嵌入式 Dashboard 场景：宿主/后端签发 `dashboardSessionKey`，前端在所有请求中携带
+   * - HTTP 实现层建议把它映射为 header：`X-Dashboard-Session-Key`
+   * - 不同后端可按需决定是否校验/续租；缺失时不应影响 mock/本地执行
+   */
+  dashboardSessionKey?: DashboardSessionKey;
 }
 
 export interface QueryService {

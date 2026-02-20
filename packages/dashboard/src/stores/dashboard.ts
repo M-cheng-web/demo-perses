@@ -4,7 +4,7 @@
 
 import { defineStore } from '@grafana-fast/store';
 import { markRaw, toRaw } from 'vue';
-import type { DashboardContent, DashboardId, PanelGroup, Panel, PanelLayout, ID, DashboardVariable, VariableOption } from '@grafana-fast/types';
+import type { DashboardContent, DashboardSessionKey, PanelGroup, Panel, PanelLayout, ID, DashboardVariable, VariableOption } from '@grafana-fast/types';
 import { createPrefixedId, deepCloneStructured } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
 import { BIG_DASHBOARD_JSON_BYTES_THRESHOLD, BIG_DASHBOARD_PANEL_THRESHOLD } from './dashboard/constants';
@@ -43,7 +43,7 @@ import { useVariablesStore } from './variables';
 
 export const useDashboardStore = defineStore('dashboard', {
   state: (): DashboardState => ({
-    dashboardId: null,
+    dashboardSessionKey: null,
     currentDashboard: null,
     isReadOnly: false,
     syncedDashboard: null,
@@ -391,13 +391,13 @@ export const useDashboardStore = defineStore('dashboard', {
       }
 
       const mode = options?.mode ?? 'auto';
-      const dashboardId = this.dashboardId;
-      if (!dashboardId) {
-        // 没有绑定 dashboardId（资源标识）时无法持久化到远端。
+      const dashboardSessionKey = this.dashboardSessionKey;
+      if (!dashboardSessionKey) {
+        // 没有绑定 dashboardSessionKey 时无法持久化到远端。
         // - 自动同步：静默 no-op，避免后台不断重试/刷错误
-        // - 手动保存：明确抛错，提示宿主需要先 bind/load dashboardId
+        // - 手动保存：明确抛错，提示宿主需要先 resolve/load sessionKey
         if (mode === 'manual') {
-          throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+          throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
         }
         return;
       }
@@ -429,7 +429,7 @@ export const useDashboardStore = defineStore('dashboard', {
       const payload = this._buildPersistableDashboardSnapshot();
       try {
         const api = getPiniaApiClient(this.$pinia);
-        await api.dashboard.saveDashboard(dashboardId, payload);
+        await api.dashboard.saveDashboard(dashboardSessionKey, payload);
 
         // 忽略过期完成：例如请求进行中发生了 load/import/replace，不能用老结果覆盖状态。
         if (this._syncInFlightSeq !== token) return;
@@ -584,14 +584,14 @@ export const useDashboardStore = defineStore('dashboard', {
           if (!queued || queued.length === 0) break;
           this._layoutPatchQueuedItemsByGroupId[key] = null;
 
-          const dashboardId = this.dashboardId;
-          if (!dashboardId) throw new Error('Missing dashboardId');
+          const dashboardSessionKey = this.dashboardSessionKey;
+          if (!dashboardSessionKey) throw new Error('Missing dashboardSessionKey');
 
           const api = getPiniaApiClient(this.$pinia);
           const patchFn = api.dashboard.patchPanelGroupLayoutPage;
           if (!patchFn) throw new Error('DashboardService.patchPanelGroupLayoutPage is not implemented');
 
-          const res = await patchFn({ dashboardId, groupId, items: queued });
+          const res = await patchFn({ dashboardSessionKey, groupId, items: queued });
           if (opSeq !== this._remoteOpSeq) return;
 
           // 严格：如果后端返回 items 字段，则必须是数组（否则视为契约破坏）
@@ -660,8 +660,8 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isBooting) return;
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
 
-      const dashboardId = this.dashboardId;
-      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+      const dashboardSessionKey = this.dashboardSessionKey;
+      if (!dashboardSessionKey) throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
 
       // optimistic insert with a temp id (backend generates the final id)
       const tempId = createPrefixedId('p_tmp');
@@ -677,7 +677,7 @@ export const useDashboardStore = defineStore('dashboard', {
         const payload = deepCloneStructured(panel) as any;
         delete payload.id;
 
-        const res = await createFn({ dashboardId, groupId, panel: payload });
+        const res = await createFn({ dashboardSessionKey, groupId, panel: payload });
         if (opSeq !== this._remoteOpSeq) return;
 
         if (!res || typeof res !== 'object' || !(res as any).panel) {
@@ -712,8 +712,8 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isBooting) return;
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
 
-      const dashboardId = this.dashboardId;
-      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+      const dashboardSessionKey = this.dashboardSessionKey;
+      if (!dashboardSessionKey) throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
 
       updatePanelLocal.call(this, groupId, panelId, updates);
 
@@ -728,7 +728,7 @@ export const useDashboardStore = defineStore('dashboard', {
         const payload = deepCloneStructured(current) as any;
         delete payload.id;
 
-        const res = await updateFn({ dashboardId, groupId, panelId, panel: payload });
+        const res = await updateFn({ dashboardSessionKey, groupId, panelId, panel: payload });
         if (opSeq !== this._remoteOpSeq) return;
 
         if (!res || typeof res !== 'object' || !(res as any).panel) {
@@ -757,8 +757,8 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isBooting) return;
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
 
-      const dashboardId = this.dashboardId;
-      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+      const dashboardSessionKey = this.dashboardSessionKey;
+      if (!dashboardSessionKey) throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
 
       deletePanelLocal.call(this, groupId, panelId);
 
@@ -768,7 +768,7 @@ export const useDashboardStore = defineStore('dashboard', {
         const delFn = api.dashboard.deletePanel;
         if (!delFn) throw new Error('DashboardService.deletePanel is not implemented');
 
-        await delFn({ dashboardId, groupId, panelId });
+        await delFn({ dashboardSessionKey, groupId, panelId });
         if (opSeq !== this._remoteOpSeq) return;
 
         this._removePanelFromDashboard(this.syncedDashboard, groupId, panelId);
@@ -791,8 +791,8 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isBooting) return;
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
 
-      const dashboardId = this.dashboardId;
-      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+      const dashboardSessionKey = this.dashboardSessionKey;
+      if (!dashboardSessionKey) throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
 
       const src = this.getPanelById(groupId, panelId);
       if (!src) throw new Error('Panel not found');
@@ -807,7 +807,7 @@ export const useDashboardStore = defineStore('dashboard', {
         const dupFn = api.dashboard.duplicatePanel;
         if (!dupFn) throw new Error('DashboardService.duplicatePanel is not implemented');
 
-        const res = await dupFn({ dashboardId, groupId, panelId });
+        const res = await dupFn({ dashboardSessionKey, groupId, panelId });
         if (opSeq !== this._remoteOpSeq) return;
 
         if (!res || typeof res !== 'object' || !(res as any).panel) {
@@ -841,8 +841,8 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isBooting) return;
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
 
-      const dashboardId = this.dashboardId;
-      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+      const dashboardSessionKey = this.dashboardSessionKey;
+      if (!dashboardSessionKey) throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
 
       const tempId = createPrefixedId('pg_tmp');
       addPanelGroupLocal.call(this, { ...(group as any), id: tempId });
@@ -854,7 +854,7 @@ export const useDashboardStore = defineStore('dashboard', {
         if (!createFn) throw new Error('DashboardService.createPanelGroup is not implemented');
 
         const res = await createFn({
-          dashboardId,
+          dashboardSessionKey,
           group: {
             title: String(group?.title ?? '新面板组'),
             description: group?.description,
@@ -904,8 +904,8 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isBooting) return;
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
 
-      const dashboardId = this.dashboardId;
-      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+      const dashboardSessionKey = this.dashboardSessionKey;
+      if (!dashboardSessionKey) throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
 
       updatePanelGroupLocal.call(this, id, updates);
 
@@ -918,7 +918,7 @@ export const useDashboardStore = defineStore('dashboard', {
         const title = String(updates.title ?? this._getGroupFromDashboard(this.currentDashboard, id)?.title ?? '');
         const description = updates.description ?? this._getGroupFromDashboard(this.currentDashboard, id)?.description;
 
-        const res = await updateFn({ dashboardId, groupId: id, group: { title, description } });
+        const res = await updateFn({ dashboardSessionKey, groupId: id, group: { title, description } });
         if (opSeq !== this._remoteOpSeq) return;
 
         if (!res || typeof res !== 'object' || !(res as any).group) {
@@ -955,8 +955,8 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isBooting) return;
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
 
-      const dashboardId = this.dashboardId;
-      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+      const dashboardSessionKey = this.dashboardSessionKey;
+      if (!dashboardSessionKey) throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
 
       deletePanelGroupLocal.call(this, id);
 
@@ -966,7 +966,7 @@ export const useDashboardStore = defineStore('dashboard', {
         const delFn = api.dashboard.deletePanelGroup;
         if (!delFn) throw new Error('DashboardService.deletePanelGroup is not implemented');
 
-        await delFn({ dashboardId, groupId: id });
+        await delFn({ dashboardSessionKey, groupId: id });
         if (opSeq !== this._remoteOpSeq) return;
 
         if (this.syncedDashboard) {
@@ -992,8 +992,8 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isBooting) return;
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
 
-      const dashboardId = this.dashboardId;
-      if (!dashboardId) throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+      const dashboardSessionKey = this.dashboardSessionKey;
+      if (!dashboardSessionKey) throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
 
       reorderPanelGroupsLocal.call(this, nextOrder);
 
@@ -1003,7 +1003,7 @@ export const useDashboardStore = defineStore('dashboard', {
         const reorderFn = api.dashboard.reorderPanelGroups;
         if (!reorderFn) throw new Error('DashboardService.reorderPanelGroups is not implemented');
 
-        await reorderFn({ dashboardId, order: nextOrder });
+        await reorderFn({ dashboardSessionKey, order: nextOrder });
         if (opSeq !== this._remoteOpSeq) return;
 
         if (this.syncedDashboard) {
@@ -1076,9 +1076,9 @@ export const useDashboardStore = defineStore('dashboard', {
     /**
      * 加载 Dashboard
      */
-    async loadDashboard(dashboardId: DashboardId) {
-      // 绑定资源标识并清空旧内容，避免出现“dashboardId 与内容不一致导致保存错资源”的风险。
-      this.dashboardId = dashboardId;
+    async loadDashboard(dashboardSessionKey: DashboardSessionKey) {
+      // 绑定会话 key 并清空旧内容，避免出现“sessionKey 与内容不一致导致保存错资源”的风险。
+      this.dashboardSessionKey = dashboardSessionKey;
       this.currentDashboard = null;
       this.syncedDashboard = null;
       this.hasUnsyncedChanges = false;
@@ -1087,7 +1087,7 @@ export const useDashboardStore = defineStore('dashboard', {
       try {
         await yieldToPaint();
         const api = getPiniaApiClient(this.$pinia);
-        const dashboard = await api.dashboard.loadDashboard(dashboardId);
+        const dashboard = await api.dashboard.loadDashboard(dashboardSessionKey);
 
         // 关键：即便后端/Mock 响应极快，也要给浏览器一次机会先把 fetching（“正在连接数据”）渲染出来，
         // 否则用户可能只看到后续 initializing（“正在准备面板”），体验不像“首次进入/浏览器刷新”。
@@ -1135,14 +1135,14 @@ export const useDashboardStore = defineStore('dashboard', {
      */
     async applyDashboardFromJson(dashboard: DashboardContent, rawJsonText?: string) {
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
-      const dashboardId = this.dashboardId;
-      if (!dashboardId) {
-        throw new Error('Missing dashboardId. Call loadDashboard(dashboardId) first.');
+      const dashboardSessionKey = this.dashboardSessionKey;
+      if (!dashboardSessionKey) {
+        throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
       }
       try {
         // 重要：先让后端校验并落库；若失败，前端不应用该 JSON（保持当前状态不变）。
         const api = getPiniaApiClient(this.$pinia);
-        await api.dashboard.saveDashboard(dashboardId, dashboard);
+        await api.dashboard.saveDashboard(dashboardSessionKey, dashboard);
 
         // 导入成功：按“首次进入”语义全局刷新。
         //
@@ -1164,7 +1164,7 @@ export const useDashboardStore = defineStore('dashboard', {
         this.bootStats = { startedAt: null, groupCount: null, panelCount: null, jsonBytes: null, source: null };
         this._bumpDashboardContentRevision();
         await yieldToPaint();
-        await this.loadDashboard(dashboardId);
+        await this.loadDashboard(dashboardSessionKey);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to apply dashboard json';
         // 不进入 boot error：只记录错误并抛出，确保不会打断当前编辑态/打开的面板组。

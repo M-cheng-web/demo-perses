@@ -4,8 +4,15 @@ import type { ID, TimeRange } from '@grafana-fast/types';
 import type { Unsubscribe } from '../emitter';
 
 export interface DashboardSdkOptions {
-  /** 指定加载的 dashboard id，默认加载 default */
-  dashboardId?: string;
+  /**
+   * 获取 dashboardSessionKey 的方法（支持异步）
+   *
+   * 说明：
+   * - 前端不再直接持有真实 dashboardId（资源标识）
+   * - 宿主/后端会基于业务参数签发一个临时的 dashboardSessionKey
+   * - SDK 在需要加载/整盘重载时调用该方法拿到最新 sessionKey
+   */
+  getDashboardSessionKey?: () => string | Promise<string>;
   /**
    * Dashboard 实例唯一 id（用于多实例隔离）
    *
@@ -108,13 +115,13 @@ export type DashboardSdkBootStage = 'idle' | 'fetching' | 'parsing' | 'initializ
 
 export interface DashboardSdkDashboardSummary {
   /**
-   * DashboardId（资源标识）
+   * 当前 dashboardSessionKey（会话级访问 Key）
    *
    * 说明：
-   * - 该 id 不属于 Dashboard JSON（DashboardContent）的一部分
-   * - 它来自宿主传入/后端定位（用于 load/save/delete）
+   * - 真实 dashboardId 仅后端内部存在，不对前端暴露
+   * - 该 key 由宿主/后端签发，SDK 仅用于后续请求携带
    */
-  id: ID | null;
+  sessionKey: string | null;
   name: string;
   groupCount: number;
   panelCount: number;
@@ -191,13 +198,19 @@ export interface DashboardSdkActions {
    * 将 dashboard 状态重置为“等待加载”（类似浏览器刷新后的初始状态）
    *
    * 典型用法：
-   * - 宿主先异步获取 dashboardId（资源标识）
+   * - 宿主先异步 resolve dashboardSessionKey
    * - 获取期间希望展示 boot mask 的 waiting 状态（“正在连接数据”）
-   * - 拿到 id 后再调用 loadDashboard(id)
+   * - 拿到 key 后再调用 loadDashboard()
    */
   resetDashboard: () => void;
-  /** 按 dashboardId（资源标识）加载 dashboard 内容（不做历史 schema 迁移，依赖后端/宿主保证结构正确） */
-  loadDashboard: (id: ID) => Promise<void>;
+  /**
+   * 加载/重载 dashboard（整盘）
+   *
+   * 语义：
+   * - SDK 会调用 options.getDashboardSessionKey() 获取 sessionKey
+   * - 然后加载 dashboard JSON 并进入 ready
+   */
+  loadDashboard: () => Promise<void>;
   /** 保存当前 dashboard（落库或写回后端/本地实现） */
   saveDashboard: () => Promise<void>;
   /** 设置时间范围（会触发相关面板刷新） */

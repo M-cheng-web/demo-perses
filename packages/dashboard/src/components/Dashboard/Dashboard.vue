@@ -270,7 +270,7 @@
   const { isDrawerOpen } = storeToRefs(editorStore);
   const {
     currentDashboard,
-    dashboardId,
+    dashboardSessionKey,
     panelGroups,
     editingGroupId,
     viewMode,
@@ -543,7 +543,7 @@
   // 只读能力开关（readOnly）由 store/SDK 作为单一事实来源（SSOT），Dashboard 组件内部不再监听外部 props 触发业务。
 
   const { statusKind, statusTitle, statusDetail, statusHint, statusIcon, handleStatusMaskWheel, handleStatusMaskTouchMove } = useDashboardStatus({
-    dashboardId,
+    dashboardSessionKey,
     currentDashboard,
     isBooting,
     bootStage,

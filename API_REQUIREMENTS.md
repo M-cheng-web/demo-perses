@@ -5,7 +5,10 @@
 本文档特点：
 - 不标注具体代码调用位置，只描述：场景/调用时机/用途/严格入参出参
 - HTTP 路径与 `@grafana-fast/api` 默认 endpoints 对齐；如需对接现有服务路由，在 http 实现层集中映射
-- 本期对接约定：**所有接口统一使用 `POST` + JSON body**（`Content-Type: application/json`），不使用 URL path params 传递业务 id（dashboardId/panelId 等）
+- 本期对接约定：
+  - **所有接口统一使用 `POST` + JSON body**（`Content-Type: application/json`）
+  - 不使用 URL path params 传递业务 id（panelId/groupId 等）
+  - Dashboard 资源定位不使用 `dashboardId`：前端只持有 **`dashboardSessionKey`**，并通过 header `X-Dashboard-Session-Key` 传递（详见 B1）
 
 ## 0. 接口总览（Dashboard 子项目实际会用到）
 
@@ -14,8 +17,9 @@
 > - 本清单只列 dashboard 子项目实际会调用的接口（因此清单内全部都是必需接口）。
 
 - Dashboard JSON（整盘）
-  - `POST /dashboards/load`：进入时加载整盘 `DashboardContent`（只拉一次；request body 含 dashboardId）
-  - `POST /dashboards/save`：全量保存 `DashboardContent`（JSON 导入/应用后的持久化兜底；也用于“整盘覆盖保存”）
+  - `POST /dashboards/session/resolve`：根据宿主业务参数解析并签发 `dashboardSessionKey`（前端不知真实 dashboardId）
+  - `POST /dashboards/load`：进入时加载整盘 `DashboardContent`（只拉一次；依赖 header `X-Dashboard-Session-Key`）
+  - `POST /dashboards/save`：全量保存 `DashboardContent`（JSON 导入/应用后的持久化兜底；也用于“整盘覆盖保存”；依赖 header）
 - 面板组 PanelGroup（局部写）
   - `POST /dashboards/panel-groups/create`：创建面板组
   - `POST /dashboards/panel-groups/update`：更新面板组元信息（标题/描述）
@@ -68,11 +72,54 @@
 本文档不约束鉴权/多租户的 header/cookie/session 形态；由宿主统一实现。
 本文档只约束：接口 method/path/body/response/状态码与关键业务语义。
 
+#### B1.1 DashboardSessionKey（资源定位，必需）
+
+本期开始 **Dashboard 资源定位不再使用 `dashboardId`**（真实 id 不对前端暴露）。
+前端只持有一个临时的 `dashboardSessionKey`，并在请求头中携带：
+
+- Header: `X-Dashboard-Session-Key: <dashboardSessionKey>`
+
+约束：
+
+- 除 `POST /dashboards/session/resolve` 外，本文件内所有**会话内请求**都必须携带该 header（即使接口不在 `/dashboards/*` 路径下），包括：
+  - Dashboard 资源读写：`/dashboards/*`
+  - 查询执行：`/queries/*`
+  - 变量 options 解析：`/variables/*`
+  - QueryBuilder 联想：`/query/*`
+- 后端通过 `dashboardSessionKey` 映射到真实 dashboard 资源并完成读写（并据此做权限校验与续租/过期控制）
+
+#### B1.2 过期与续租（后端必须实现）
+
+目标语义（偏用户体验）：
+
+- `dashboardSessionKey` 的有效期 **默认最少 10 小时**
+- 当用户持续操作时，应保持“不断线”：**1 小时内有操作则续 10 小时**
+
+推荐实现（便于落地与测试）：
+
+- 初次签发：`expiresAt = now + 10h`
+- 续租（滑动续期 + 写入节流）：
+  - 任意成功请求（含读/写）视为一次“操作”
+  - 若 `now - lastRenewAt >= 1h`：则更新 `expiresAt = now + 10h`，并更新 `lastRenewAt = now`
+  - 若小于 1h：不更新（避免高频写）
+- 过期：当 `now > expiresAt`，后端必须对任意接口返回：
+  - HTTP `401`
+  - `ErrorResponse(error.code="DASHBOARD_SESSION_EXPIRED")`
+
+#### B1.3 安全模型（本期约定，给后端提示）
+
+`dashboardSessionKey` 属于“会话级访问 key”，语义更接近 **bearer token**：
+
+- 本期 **不要求** 做来源绑定（IP / UA / 设备指纹 / referer 等）与 PoP（proof-of-possession）
+- 安全依赖宿主鉴权（cookie / bearer token / 签名 header 等）+ HTTPS 传输
+- 后端仍需基于鉴权上下文校验该用户是否可访问该 `dashboardSessionKey` 对应资源（否则仍可能被越权调用）
+  - 若未来确实有“key 被复制到其它终端仍可用”的安全诉求，再在后端升级来源绑定/PoP 即可（不影响本文档主体流程）
+
 ### B2. 基础类型（契约）
 
 ```ts
 type ID = string;
-type DashboardId = string;
+type DashboardSessionKey = string; // 真实 dashboardId 仅后端内部使用，不在 API 中出现
 
 type TimestampMs = number;
 
@@ -107,22 +154,66 @@ type ErrorResponse = {
   - 不要再额外包一层：`{ items: [...] }` / `{ data: [...] }` / `{ results: [...] }`
   - 返回包装结构一律视为契约错误（不做兼容）
 
+---
+
+## C. 模块：Dashboard Session（dashboardSessionKey）
+
+### C1. 解析并签发 dashboardSessionKey（业务接口）
+
+- Method: `POST`
+- Path: `/dashboards/session/resolve`
+- 场景/时机：
+  - 宿主系统进入 dashboard 页面前（首次进入/刷新/切换业务上下文）
+  - `dashboardSessionKey` 过期后，宿主/SDK 重新获取 sessionKey 并整盘重载
+- 用途：
+  - 根据宿主传入的一系列业务参数定位“真实 dashboard 资源”（真实 `dashboardId` 仅后端内部存在）
+  - 必要时完成初始化（get-or-create），确保后续 `POST /dashboards/load` 必然可用
+  - 签发并返回一个新的 `dashboardSessionKey`
+- Request Body（严格）：
+
+```ts
+type ResolveDashboardSessionRequest = {
+  /**
+   * 业务自定义参数（保持自由度）
+   *
+   * 示例（仅示意）：
+   * - { projectId, spaceId }
+   * - { scene: "overview", tenantId }
+   * - { dashboardTemplate: "cpu", cluster, namespace }
+   */
+  params: Record<string, any>;
+};
+```
+
+- Response `200`：
+
+```ts
+type ResolveDashboardSessionResponse = {
+  dashboardSessionKey: DashboardSessionKey;
+};
+```
+
+- 约束：
+  - `dashboardSessionKey` 必须是后端生成的 opaque string（不可被前端解析出真实 id）
+  - 后端不得在任何 response 中返回真实 `dashboardId`
+  - 该接口应负责“首次初始化”：避免前端通过 `404 → save → load` 的方式创建资源（前端无真实 id）
+
 ## D. 模块：Dashboard（JSON 资源）
 
 ### D1. 加载 Dashboard（只拉一次 JSON）
 
 - Method: `POST`
 - Path: `/dashboards/load`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：
   - 进入 dashboard 页面
-  - 或切换 dashboardId
+  - 或切换 `dashboardSessionKey`
 - 用途：获取完整 `DashboardContent`（前端后续所有展示/编辑都以此为单一真相来源）
 - Request Body（严格）：
 
 ```ts
-type LoadDashboardRequest = {
-  dashboardId: DashboardId;
-};
+type LoadDashboardRequest = {};
 ```
 - Response `200`：
 
@@ -201,9 +292,13 @@ type DashboardVariable = {
 type VariableOption = { text: string; value: string };
 ```
 
+- Session Expired（严格）
+  - 返回 `401` + `ErrorResponse(code="DASHBOARD_SESSION_EXPIRED")`
+  - 说明：前端会重新调用 `POST /dashboards/session/resolve` 获取新的 `dashboardSessionKey` 并整盘重载（本期不要求自动重试触发请求）
+
 - Not Found（严格）
   - 返回 `404` + `ErrorResponse(code="NOT_FOUND")`
-  - 首次进入自动初始化流程：先 `POST /dashboards/save` 创建，再重试 `POST /dashboards/load`
+  - 说明：正常情况下不应发生；首次初始化应由 `POST /dashboards/session/resolve` 完成（get-or-create）
 
 - 约束：
   - `panelGroups[].panels[].id` 与 `panelGroups[].layout[].i` 一一对应（同一组内）
@@ -213,6 +308,8 @@ type VariableOption = { text: string; value: string };
 
 - Method: `POST`
 - Path: `/dashboards/save`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：
   - 用户通过“导入 JSON（文件/粘贴）→ 应用”覆盖整盘配置（前端不提供在线编辑 JSON）
   - 需要“整盘覆盖保存”时
@@ -221,7 +318,6 @@ type VariableOption = { text: string; value: string };
 
 ```ts
 type SaveDashboardRequest = {
-  dashboardId: DashboardId;
   content: DashboardContent;
 };
 ```
@@ -240,12 +336,13 @@ type SaveDashboardRequest = {
 
 - Method: `POST`
 - Path: `/dashboards/panel-groups/create`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：用户点击“创建面板组”
 - Request Body：
 
 ```ts
 type CreatePanelGroupRequest = {
-  dashboardId: DashboardId;
   group: {
     title: string;
     description?: string;
@@ -270,12 +367,13 @@ type CreatePanelGroupResponse = {
 
 - Method: `POST`
 - Path: `/dashboards/panel-groups/update`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：编辑面板组标题/描述保存
 - Request Body：
 
 ```ts
 type UpdatePanelGroupRequest = {
-  dashboardId: DashboardId;
   groupId: ID;
   group: {
     title: string;
@@ -298,12 +396,13 @@ type UpdatePanelGroupResponse = {
 
 - Method: `POST`
 - Path: `/dashboards/panel-groups/delete`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：用户删除面板组
 - Request Body：
 
 ```ts
 type DeletePanelGroupRequest = {
-  dashboardId: DashboardId;
   groupId: ID;
 };
 ```
@@ -314,12 +413,13 @@ type DeletePanelGroupRequest = {
 
 - Method: `POST`
 - Path: `/dashboards/panel-groups/reorder`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：用户拖拽调整面板组顺序并释放
 - Request Body：
 
 ```ts
 type ReorderPanelGroupsRequest = {
-  dashboardId: DashboardId;
   order: ID[]; // panelGroupId 的顺序数组
 };
 ```
@@ -338,6 +438,8 @@ type ReorderPanelGroupsRequest = {
 
 - Method: `POST`
 - Path: `/dashboards/panels/create`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：
   - 面板组处于编辑态
   - 点击“新增面板”并在编辑器保存
@@ -346,7 +448,6 @@ type ReorderPanelGroupsRequest = {
 
 ```ts
 type CreatePanelRequest = {
-  dashboardId: DashboardId;
   groupId: ID;
   // 前端发送“完整面板内容”（不含 id）
   panel: Omit<Panel, 'id'>;
@@ -370,12 +471,13 @@ type CreatePanelResponse = {
 
 - Method: `POST`
 - Path: `/dashboards/panels/update`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：面板编辑器点击“保存”
 - Request Body：
 
 ```ts
 type UpdatePanelRequest = {
-  dashboardId: DashboardId;
   groupId: ID;
   panelId: ID;
   panel: Omit<Panel, 'id'>; // 前端发送“完整面板内容”（不含 id）
@@ -396,12 +498,13 @@ type UpdatePanelResponse = {
 
 - Method: `POST`
 - Path: `/dashboards/panels/delete`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：用户点击删除面板并确认
 - Request Body：
 
 ```ts
 type DeletePanelRequest = {
-  dashboardId: DashboardId;
   groupId: ID;
   panelId: ID;
 };
@@ -413,12 +516,13 @@ type DeletePanelRequest = {
 
 - Method: `POST`
 - Path: `/dashboards/panels/duplicate`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：用户点击复制面板
 - Request Body：
 
 ```ts
 type DuplicatePanelRequest = {
-  dashboardId: DashboardId;
   groupId: ID;
   panelId: ID;
 };
@@ -444,13 +548,14 @@ type DuplicatePanelResponse = {
 
 - Method: `POST`
 - Path: `/dashboards/panel-groups/layout/patch-page`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：用户拖拽/缩放面板后停止（前端 debounce 合并）
 - 用途：把“当前页（最多 20 个面板）”的布局持久化到远端
 - Request Body（严格）：
 
 ```ts
 type PatchPanelGroupLayoutPageRequest = {
-  dashboardId: DashboardId;
   groupId: ID;
   items: Array<{
     i: ID; // panelId
@@ -482,6 +587,8 @@ type PatchPanelGroupLayoutPageResponse = {
 
 - Method: `POST`
 - Path: `/queries/execute`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：
   - 打开面板组后渲染可见面板
   - 用户点击刷新
@@ -550,6 +657,8 @@ type ExecuteQueriesResponse = QueryResult[];
 
 - Method: `POST`
 - Path: `/variables/values`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：
   - Dashboard 初始化后（异步，不阻塞首屏）
   - 用户修改 timeRange/变量值并“应用设置”后（用于让 options 与当前时间范围保持一致）
@@ -583,6 +692,8 @@ type FetchVariableValuesResponse = Array<{ text: string; value: string }>;
 
 - Method: `POST`
 - Path: `/query/metrics`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - Request Body（可选参数全部放 body；为空等价于默认列表）：
 
 ```ts
@@ -604,6 +715,8 @@ type FetchMetricsResponse = string[];
 
 - Method: `POST`
 - Path: `/query/label-keys`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - Request Body：
 
 ```ts
@@ -621,6 +734,8 @@ type FetchLabelKeysResponse = string[];
 
 - Method: `POST`
 - Path: `/query/label-values`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - Request Body（严格）：
 
 ```ts

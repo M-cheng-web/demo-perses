@@ -7,7 +7,7 @@
  * - resolveOptions 未来会通过 queryService.fetchVariableValues 对接真实 datasource/后端能力
  */
 
-import type { VariableService } from '../../../contracts/variable';
+import type { ResolveVariableOptionsContext, VariableService } from '../../../contracts/variable';
 import type { DashboardVariable, TimeRange, VariableOption, VariablesState } from '@grafana-fast/types';
 import type { QueryService } from '../../../contracts/query';
 
@@ -40,13 +40,21 @@ export function createHttpVariableService(deps: HttpVariableServiceDeps): Variab
       return { values, options, lastUpdatedAt: Date.now() };
     },
 
-    async resolveOptions(variables: DashboardVariable[], state: VariablesState, timeRange: TimeRange): Promise<Record<string, VariableOption[]>> {
+    async resolveOptions(
+      variables: DashboardVariable[],
+      state: VariablesState,
+      timeRange: TimeRange,
+      context?: ResolveVariableOptionsContext
+    ): Promise<Record<string, VariableOption[]>> {
       const resolved: Record<string, VariableOption[]> = {};
 
       for (const v of variables) {
         // query 型变量：尝试通过 QueryService 解析 options（未来将对接真实后端/数据源）
         if (v.type === 'query' && v.query && deps.queryService?.fetchVariableValues) {
-          const items = await deps.queryService.fetchVariableValues(v.query, timeRange);
+          const items = await deps.queryService.fetchVariableValues(v.query, timeRange, {
+            signal: context?.signal,
+            dashboardSessionKey: context?.dashboardSessionKey,
+          });
           resolved[v.name] = items.map((it) => ({ text: it.text, value: it.value }));
           continue;
         }

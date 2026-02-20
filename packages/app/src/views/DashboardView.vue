@@ -26,7 +26,7 @@
       <div class="dp-dashboard-view__controls">
         <div class="dp-dashboard-view__status-group" :class="{ 'is-placeholder': !state.dashboard }">
           <Tag size="small" color="var(--gf-color-primary)">面板组 {{ state.dashboard?.groupCount ?? '-' }}</Tag>
-          <Tag size="small" variant="neutral">dashboardId: {{ state.dashboard?.id ?? '-' }}</Tag>
+          <Tag size="small" variant="neutral">dashboardSessionKey: {{ dashboardSessionKeyDisplay }}</Tag>
           <Tag size="small" :color="state.mounted ? 'var(--gf-color-success)' : 'var(--gf-color-warning)'">
             {{ state.mounted ? '已挂载' : '未挂载' }}
           </Tag>
@@ -41,7 +41,7 @@
 
         <div class="dp-dashboard-view__action-group">
           <Button size="small" type="primary" @click="reloadDashboard">重新加载</Button>
-          <Button size="small" type="ghost" :disabled="!resolvedDashboardId || isResolvingDashboardId" @click="toggleDashboardId">
+          <Button size="small" type="ghost" :disabled="isResolvingDashboardSessionKey" @click="toggleDashboardKey">
             {{ switchDashboardButtonText }}
           </Button>
           <Button size="small" type="ghost" :disabled="!state.dashboard" @click="handleRefresh">刷新时间范围</Button>
@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, ref } from 'vue';
+  import { computed, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { Button, List, Modal, Segmented, Tag } from '@grafana-fast/component';
   import { useDashboardSdk } from '@grafana-fast/hooks';
@@ -73,14 +73,40 @@
   const dashboardRef = ref<HTMLElement | null>(null);
   const debugOpen = ref(false);
 
+  // 模拟“宿主业务接口”解析并签发 dashboardSessionKey 的真实流程：
+  // - 业务侧可能先请求 project/user/space 等上下文
+  // - 再根据业务返回结果决定最终 dashboard（后端内部真实 dashboardId 不对前端暴露）
+  // - 最终拿到一个短期/会话级的 dashboardSessionKey
+  const isResolvingDashboardSessionKey = ref(false);
+  const ORIGINAL_DASHBOARD_KEY = 'biz-dashboard-001';
+  const EMPTY_DASHBOARD_KEY = 'biz-dashboard-empty-001';
+  const dashboardKeyModel = ref<'original' | 'empty'>('original');
+
+  const mockBusinessResolveDashboardSessionKey = async (): Promise<string> => {
+    isResolvingDashboardSessionKey.value = true;
+    try {
+      // 模拟网络延迟（宿主业务 resolve 阶段）
+      await new Promise<void>((r) => window.setTimeout(r, 600));
+
+      // demo 使用 mock apiClient 来模拟“后端签发 sessionKey”
+      // 注意：mock 的 sessionKey/dashboards 为模块级共享数据，不同实例间可互通。
+      const { createMockApiClient } = await import('@grafana-fast/api/mock');
+      const api = createMockApiClient();
+      const dashboardKey = dashboardKeyModel.value === 'empty' ? EMPTY_DASHBOARD_KEY : ORIGINAL_DASHBOARD_KEY;
+      const res = await api.dashboard.resolveDashboardSession({ params: { dashboardKey } });
+      return res.dashboardSessionKey;
+    } finally {
+      isResolvingDashboardSessionKey.value = false;
+    }
+  };
+
   const {
     on,
     getState,
     actions: dashboardActions,
   } = useDashboardSdk(dashboardRef, {
-    // 方案A演示：dashboardId（资源标识）可能来自宿主业务接口，因此这里禁用 autoLoad，
-    // 等“宿主先拿到 dashboardId”后再显式调用 actions.loadDashboard(dashboardId)。
-    autoLoad: false,
+    // 方案演示：宿主通过业务参数 resolve dashboardSessionKey（可异步），SDK 内部自动管理 loading。
+    getDashboardSessionKey: mockBusinessResolveDashboardSessionKey,
     enableMock: true,
     defaultApiMode: 'mock',
     createMockApiClient: async () => (await import('@grafana-fast/api/mock')).createMockApiClient(),
@@ -116,53 +142,17 @@
     },
   });
 
-  // 模拟“宿主业务接口”获取 dashboardId（资源标识）的真实流程：
-  // - 业务侧可能先请求 project/user/space 等上下文
-  // - 再根据业务返回结果决定最终 dashboardId
-  const resolvedDashboardId = ref<string | null>(null);
-  const isResolvingDashboardId = ref(false);
-  const EMPTY_DASHBOARD_ID = 'biz-dashboard-empty-001';
-  const mockBusinessFetchDashboardId = async (): Promise<string> => {
-    // 模拟网络延迟
-    await new Promise<void>((r) => window.setTimeout(r, 600));
-    // 这里返回一个稳定值，避免每次刷新都是“全新 dashboard”影响演示
-    return 'biz-dashboard-001';
-  };
-  const mockBusinessFetchEmptyDashboardId = async (): Promise<string> => {
-    await new Promise<void>((r) => window.setTimeout(r, 600));
-    return EMPTY_DASHBOARD_ID;
-  };
-
-  const resolveAndLoadDashboard = async (mode: 'original' | 'empty' = 'original') => {
-    if (isResolvingDashboardId.value) return;
-    isResolvingDashboardId.value = true;
-    try {
-      // 类似浏览器刷新：先把 dashboard 状态重置到 waiting（显示“正在连接数据”），
-      // 再模拟宿主业务接口获取 dashboardId（资源标识），最后加载 dashboard JSON。
-      dashboardActions.resetDashboard();
-      const id = mode === 'empty' ? await mockBusinessFetchEmptyDashboardId() : await mockBusinessFetchDashboardId();
-      if (mode === 'original') resolvedDashboardId.value = id;
-      await dashboardActions.loadDashboard(id);
-    } finally {
-      isResolvingDashboardId.value = false;
-    }
-  };
-
-  onMounted(() => {
-    void resolveAndLoadDashboard('original');
-  });
-
-  // Demo: dashboardId switching (should trigger full dashboard reload every time)
-  const isEmptyDashboard = computed(() => state.value.dashboard?.id === EMPTY_DASHBOARD_ID);
-  const switchDashboardButtonText = computed(() => (isEmptyDashboard.value ? '切换回原 dashboardId' : '切换到空 dashboardId'));
-  const toggleDashboardId = async () => {
-    if (isResolvingDashboardId.value) return;
-    void resolveAndLoadDashboard(isEmptyDashboard.value ? 'original' : 'empty');
+  const isEmptyDashboard = computed(() => dashboardKeyModel.value === 'empty');
+  const switchDashboardButtonText = computed(() => (isEmptyDashboard.value ? '切换回原 dashboard' : '切换到空 dashboard'));
+  const toggleDashboardKey = async () => {
+    if (isResolvingDashboardSessionKey.value) return;
+    dashboardKeyModel.value = isEmptyDashboard.value ? 'original' : 'empty';
+    await dashboardActions.loadDashboard();
   };
 
   const reloadDashboard = async () => {
     try {
-      await resolveAndLoadDashboard(isEmptyDashboard.value ? 'empty' : 'original');
+      await dashboardActions.loadDashboard();
     } catch {
       // demo page: errors are surfaced via console / onError hook in host apps
     }
@@ -179,6 +169,14 @@
   const goPerf = () => router.push('/perf');
   const goJsonEditor = () => router.push('/json-editor');
   const goPromql = () => router.push('/promql');
+
+  const dashboardSessionKeyDisplay = computed(() => {
+    const key = state.value.dashboard?.sessionKey;
+    if (!key) return '-';
+    const v = String(key);
+    if (v.length <= 14) return v;
+    return `${v.slice(0, 6)}…${v.slice(-6)}`;
+  });
 </script>
 
 <style scoped lang="less">

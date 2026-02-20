@@ -12,7 +12,8 @@
  *
  * 本期对接约定（与 API_REQUIREMENTS 对齐）：
  * - **所有接口统一使用 POST + JSON body**
- * - dashboardId/panelId/groupId 等业务 id 不放在 URL path params 中，统一放到 body
+ * - panelId/groupId 等业务 id 不放在 URL path params 中，统一放到 body
+ * - Dashboard 资源定位由 `dashboardSessionKey` 完成：通过 header `X-Dashboard-Session-Key` 传递（不在 body 传 dashboardId）
  *
  * 重要说明：
  * - DEFAULT_HTTP_API_ENDPOINTS 里的路径是“占位默认值”，不是最终真实接口
@@ -28,9 +29,11 @@
  */
 export const HttpApiEndpointKey = {
   // --- Dashboard ---
+  /** POST /dashboards/session/resolve - 解析业务参数并签发 dashboardSessionKey */
+  ResolveDashboardSession: 'ResolveDashboardSession',
   /** POST /dashboards/load - 获取单个 Dashboard（整盘 JSON，只在进入时拉一次） */
   LoadDashboard: 'LoadDashboard',
-  /** POST /dashboards/save - 保存 Dashboard 内容（按 dashboardId upsert，兜底全量保存） */
+  /** POST /dashboards/save - 保存 Dashboard 内容（按 dashboardSessionKey 定位资源，兜底全量保存） */
   SaveDashboard: 'SaveDashboard',
   /** POST /dashboards/delete - 删除 Dashboard */
   DeleteDashboard: 'DeleteDashboard',
@@ -90,6 +93,7 @@ export type HttpApiEndpointKey = (typeof HttpApiEndpointKey)[keyof typeof HttpAp
  */
 export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
   // --- Dashboard ---
+  [HttpApiEndpointKey.ResolveDashboardSession]: '/dashboards/session/resolve',
   [HttpApiEndpointKey.LoadDashboard]: '/dashboards/load',
   [HttpApiEndpointKey.SaveDashboard]: '/dashboards/save',
   [HttpApiEndpointKey.DeleteDashboard]: '/dashboards/delete',

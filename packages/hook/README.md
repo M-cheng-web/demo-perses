@@ -11,8 +11,17 @@ import { ref } from 'vue';
 import { useDashboardSdk } from '@grafana-fast/hooks';
 
 const container = ref<HTMLElement | null>(null);
+const getDashboardSessionKey = async () => {
+  // 真实场景：调用你的业务接口，根据上下文参数换取 sessionKey
+  // demo/mock：直接用 mock apiClient 模拟“后端签发 sessionKey”
+  const { createMockApiClient } = await import('@grafana-fast/api/mock');
+  const api = createMockApiClient();
+  const res = await api.dashboard.resolveDashboardSession({ params: { dashboardKey: 'default' } });
+  return res.dashboardSessionKey;
+};
+
 const { on, getState, actions } = useDashboardSdk(container, {
-  dashboardId: 'default',
+  getDashboardSessionKey,
   // 本地开发/演示可开启 mock；生产建议直接提供 apiClient（remote）
   enableMock: true,
   defaultApiMode: 'mock',

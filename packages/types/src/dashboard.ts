@@ -16,15 +16,26 @@ import type { TimeRange } from './timeRange';
 export type DashboardId = ID;
 
 /**
+ * DashboardSessionKey（会话级访问 Key）
+ *
+ * 说明：
+ * - 这是宿主应用/后端签发给前端的“临时访问 key”（opaque string）
+ * - 前端不应知道真实的 dashboardId（资源标识），只持有 sessionKey
+ * - 后端可通过 sessionKey 映射到真实 dashboard 资源并做续租/过期控制
+ * - HTTP 传输建议放在 header（如 `X-Dashboard-Session-Key`），避免出现在 URL/query 中
+ */
+export type DashboardSessionKey = string;
+
+/**
  * Dashboard 内容（可导入/导出/持久化的 JSON）
  *
  * 设计约束：
  * - 该结构是“纯内容”，不包含 dashboardId（资源标识）
- * - dashboardId 应由宿主/后端协议承载（例如 URL path / 请求参数）
+ * - 建议由宿主/后端协议承载会话级 key（例如 `dashboardSessionKey` header），真实 dashboardId 仅后端内部存在
  *
  * 典型用途：
  * - 用户导入/导出 JSON 文件
- * - 后端返回/保存 Dashboard 内容（由 dashboardId 定位）
+ * - 后端返回/保存 Dashboard 内容（由 sessionKey 或内部资源 id 定位）
  */
 export interface DashboardContent {
   /**
