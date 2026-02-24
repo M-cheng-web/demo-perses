@@ -117,7 +117,7 @@
        *
        * 典型用途：
        * - 校验 “是否符合当前 dashboard 定义/业务约束”
-       * - 例如：必填字段、panel/layout 一致性、变量 current 类型、refreshInterval 范围等
+       * - 例如：必填字段、panel/layout 一致性、变量 current 类型、字段范围等
        *
        * 返回：
        * - [] 表示通过；非空数组表示错误列表（会展示，并阻断向外同步）

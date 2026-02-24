@@ -8,7 +8,6 @@
       "id": "group-import-1",
       "title": "导入测试面板组 #1（120 panels）",
       "description": "多组验证：每组独立 VirtualList/触底加载",
-      "isCollapsed": false,
       "order": 0,
       "panels": [
         {
@@ -4339,7 +4338,6 @@
       "id": "group-import-2",
       "title": "导入测试面板组 #2（120 panels）",
       "description": "多组验证：每组独立 VirtualList/触底加载",
-      "isCollapsed": false,
       "order": 1,
       "panels": [
         {
@@ -8670,7 +8668,6 @@
       "id": "group-import-3",
       "title": "导入测试面板组 #3（120 panels）",
       "description": "多组验证：每组独立 VirtualList/触底加载",
-      "isCollapsed": false,
       "order": 2,
       "panels": [
         {
@@ -12998,11 +12995,6 @@
       ]
     }
   ],
-  "timeRange": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "refreshInterval": 0,
   "variables": [],
   "createdAt": 1769520943439,
   "updatedAt": 1769520943439

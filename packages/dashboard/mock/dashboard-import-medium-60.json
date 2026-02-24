@@ -8,7 +8,6 @@
       "id": "group-import-medium",
       "title": "导入测试面板组（60 panels）",
       "description": "用于验证：触底加载 + 窗口化渲染",
-      "isCollapsed": false,
       "order": 0,
       "panels": [
         {
@@ -2176,11 +2175,6 @@
       ]
     }
   ],
-  "timeRange": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "refreshInterval": 0,
   "variables": [],
   "createdAt": 1769520943433,
   "updatedAt": 1769520943433

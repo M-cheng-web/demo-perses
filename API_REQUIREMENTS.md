@@ -81,12 +81,8 @@
 
 约束：
 
-- 除 `POST /dashboards/session/resolve` 外，本文件内所有**会话内请求**都必须携带该 header（即使接口不在 `/dashboards/*` 路径下），包括：
-  - Dashboard 资源读写：`/dashboards/*`
-  - 查询执行：`/queries/*`
-  - 变量 options 解析：`/variables/*`
-  - QueryBuilder 联想：`/query/*`
-- 后端通过 `dashboardSessionKey` 映射到真实 dashboard 资源并完成读写（并据此做权限校验与续租/过期控制）
+- 除 `POST /dashboards/session/resolve` 外，本文件内所有接口都必须携带该 header（含查询/变量/QueryBuilder 等非 `/dashboards/*` 路径）。
+- 后端以 `dashboardSessionKey` 作为“会话内资源定位”与权限/过期校验的上下文来源。
 
 #### B1.2 过期与续租（后端必须实现）
 
@@ -223,9 +219,6 @@ type DashboardContent = {
   name: string;
   description?: string;
 
-  timeRange: TimeRange;
-  refreshInterval: number; // ms，0 表示不自动刷新
-
   panelGroups: PanelGroup[];
 
   variables?: DashboardVariable[];
@@ -235,8 +228,6 @@ type PanelGroup = {
   id: ID;
   title: string;
   description?: string;
-
-  isCollapsed: boolean;
 
   // 排序字段（与数组顺序一致）
   order: number;
@@ -291,6 +282,10 @@ type DashboardVariable = {
 
 type VariableOption = { text: string; value: string };
 ```
+
+> 说明（重要）：`timeRange` 与“自动刷新间隔”属于运行时全局状态，不存入 Dashboard JSON（`DashboardContent`）。
+> - 前端会在每次加载/整盘重载时重置为默认值；
+> - 查询执行与变量 options 解析会在各自请求里显式携带 `timeRange`（见 H/I 模块）。
 
 - Session Expired（严格）
   - 返回 `401` + `ErrorResponse(code="DASHBOARD_SESSION_EXPIRED")`

@@ -8,7 +8,6 @@
       "id": "group-import-heavy",
       "title": "导入测试面板组（heavy 240 panels）",
       "description": "每个 panel 配置更重（transformations/fieldConfig/annotations）",
-      "isCollapsed": false,
       "order": 0,
       "panels": [
         {
@@ -53776,11 +53775,6 @@
       ]
     }
   ],
-  "timeRange": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "refreshInterval": 0,
   "variables": [],
   "createdAt": 1769520943444,
   "updatedAt": 1769520943444

@@ -16,8 +16,6 @@ export interface PanelGroup {
   title: string;
   /** 面板组描述 */
   description?: string;
-  /** 是否折叠 */
-  isCollapsed: boolean;
   /** 排序顺序 */
   order: number;
   /** 面板列表 */
@@ -44,6 +42,4 @@ export interface UpdatePanelGroupParams {
   title?: string;
   /** 描述 */
   description?: string;
-  /** 是否折叠 */
-  isCollapsed?: boolean;
 }

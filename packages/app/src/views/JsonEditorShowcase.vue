@@ -42,7 +42,7 @@
           <Space direction="vertical" :size="10" style="width: 100%">
             <Space wrap :size="8">
               <Switch v-model:checked="strictValidationEnabled" />
-              <span class="dp-json-editor-showcase__hint">启用严格外部校验（示例：name 必填、refreshInterval >= 0、panel/type 必填）</span>
+              <span class="dp-json-editor-showcase__hint">启用严格外部校验（示例：name 必填、panel/type 必填、panel/layout 一致性）</span>
             </Space>
 
             <DashboardJsonEditor

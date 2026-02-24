@@ -108,7 +108,8 @@ await actions.loadDashboard();
 
 ## 4. 导入/导出 JSON（不会泄露资源标识）
 
-- 导出：SDK/store 会构造“可持久化快照”（合并 timeRange/refreshInterval/variables 的运行时值），然后 stringify。
+- 导出：SDK/store 会构造“可持久化快照”（合并 variables 的运行时值），然后 stringify。
+  - 说明：`timeRange/refreshInterval` 属于运行时全局 UI 状态，不存入 Dashboard JSON；每次整盘重载会回到默认值。
 - 导入：导入 JSON 只会替换“内容 JSON”；不会影响 sessionKey 的语义。
 
 安全约束：

@@ -179,7 +179,6 @@ function createFixedCpuGroup(): PanelGroup {
     id: 'group-1',
     title: 'CPU 监控',
     description: 'CPU 相关指标监控',
-    isCollapsed: false,
     order: 0,
     panels: [
       {
@@ -370,7 +369,6 @@ function createLargeGroup(): PanelGroup {
     id: 'group-large-1k',
     title: '大规模面板组（1k panels / 虚拟化 & 可视刷新验证）',
     description: '用于验证：只渲染/只刷新 viewport + 上下 0.5 屏；滚动时渐进刷新；避免请求风暴。',
-    isCollapsed: true,
     order: 99,
     panels,
     layout,
@@ -388,8 +386,6 @@ function createDefaultDashboardContent(dashboardKey: string): DashboardContent {
       name: `Empty Dashboard（${id || '-'}）`,
       description: 'Mock empty dashboard for session switching demo',
       panelGroups: [],
-      timeRange: { from: 'now-1h', to: 'now' },
-      refreshInterval: 0,
       variables: [],
     };
   }
@@ -454,7 +450,6 @@ function createDefaultDashboardContent(dashboardKey: string): DashboardContent {
         id: `group-${groupIndex}`,
         title: `面板组 ${String(groupIndex).padStart(2, '0')}`,
         description: `Mock group #${groupIndex}（约 ${panelsPerGroup} panels，混合类型）`,
-        isCollapsed: true,
         order: gi + fixedGroups.length,
         panels,
         layout,
@@ -467,8 +462,6 @@ function createDefaultDashboardContent(dashboardKey: string): DashboardContent {
     name: `Mock Dashboard（${id}）`,
     description: 'Mock dashboard (built-in) for focus-layer/pagination/virtualization testing',
     panelGroups: groups,
-    timeRange: { from: 'now-1h', to: 'now' },
-    refreshInterval: 0,
     variables: [
       {
         id: 'var-cluster',
@@ -789,7 +782,6 @@ export function createMockDashboardService(): DashboardService {
         id: createMockId('group'),
         title: String(req.group.title ?? '新面板组'),
         description: req.group.description,
-        isCollapsed: true,
         order: content.panelGroups.length,
         panels: [],
         layout: [],

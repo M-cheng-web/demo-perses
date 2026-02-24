@@ -15,13 +15,16 @@ interface TimeRangeState {
   _timerId: number | null;
 }
 
+const DEFAULT_TIME_RANGE: TimeRange = {
+  from: 'now-1h',
+  to: 'now',
+};
+const DEFAULT_REFRESH_INTERVAL = 0;
+
 export const useTimeRangeStore = defineStore('timeRange', {
   state: (): TimeRangeState => ({
-    timeRange: {
-      from: 'now-1h',
-      to: 'now',
-    },
-    refreshInterval: 0,
+    timeRange: { ...DEFAULT_TIME_RANGE },
+    refreshInterval: DEFAULT_REFRESH_INTERVAL,
     _timerId: null,
   }),
 
@@ -42,6 +45,18 @@ export const useTimeRangeStore = defineStore('timeRange', {
   },
 
   actions: {
+    /**
+     * 重置为默认时间范围与默认刷新间隔
+     *
+     * 说明：
+     * - timeRange/refreshInterval 属于运行时全局 UI 状态，不应持久化到 Dashboard JSON
+     * - 每次整盘 load/替换时，dashboard store 会调用该方法做“回到默认”的语义
+     */
+    reset() {
+      this.setTimeRange({ ...DEFAULT_TIME_RANGE });
+      this.setRefreshInterval(DEFAULT_REFRESH_INTERVAL);
+    },
+
     /**
      * 获取时间范围的时间戳（毫秒）
      */

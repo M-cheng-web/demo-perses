@@ -63,7 +63,6 @@
         {
           id: 'perf-group-1',
           title: 'Perf Panels',
-          isCollapsed: false,
           order: 0,
           panels: panels as any,
           layout: panels.map((p: any, i: number) => {
@@ -73,8 +72,6 @@
           }),
         },
       ],
-      timeRange: { from: 'now-1h', to: 'now' },
-      refreshInterval: 0,
       variables: [],
     };
   };

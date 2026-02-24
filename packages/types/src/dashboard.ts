@@ -4,7 +4,6 @@
 
 import type { ID, Timestamp } from './common';
 import type { PanelGroup } from './panelGroup';
-import type { TimeRange } from './timeRange';
 
 /**
  * DashboardId（资源标识）
@@ -31,6 +30,7 @@ export type DashboardSessionKey = string;
  *
  * 设计约束：
  * - 该结构是“纯内容”，不包含 dashboardId（资源标识）
+ * - `timeRange/refreshInterval` 属于运行时全局 UI 状态：不存入 Dashboard JSON（由前端运行时 store 管理）
  * - 建议由宿主/后端协议承载会话级 key（例如 `dashboardSessionKey` header），真实 dashboardId 仅后端内部存在
  *
  * 典型用途：
@@ -52,10 +52,6 @@ export interface DashboardContent {
   description?: string;
   /** 面板组列表 */
   panelGroups: PanelGroup[];
-  /** 时间范围 */
-  timeRange: TimeRange;
-  /** 刷新间隔（毫秒，0 表示不自动刷新） */
-  refreshInterval: number;
   /** 变量列表 */
   variables?: DashboardVariable[];
 }

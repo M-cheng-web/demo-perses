@@ -8,7 +8,6 @@
       "id": "group-import-vertical",
       "title": "导入测试面板组（垂直 240 panels）",
       "description": "极端：全部垂直堆叠",
-      "isCollapsed": false,
       "order": 0,
       "panels": [
         {
@@ -8656,11 +8655,6 @@
       ]
     }
   ],
-  "timeRange": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "refreshInterval": 0,
   "variables": [],
   "createdAt": 1769520943437,
   "updatedAt": 1769520943437

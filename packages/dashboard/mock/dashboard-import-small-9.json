@@ -8,7 +8,6 @@
       "id": "group-import-small",
       "title": "导入测试面板组（9 panels）",
       "description": "用于验证：<=阈值直接全量渲染",
-      "isCollapsed": false,
       "order": 0,
       "panels": [
         {
@@ -340,11 +339,6 @@
       ]
     }
   ],
-  "timeRange": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "refreshInterval": 0,
   "variables": [],
   "createdAt": 1769520943432,
   "updatedAt": 1769520943432

@@ -30,7 +30,6 @@ const validDashboard = (): DashboardContent => ({
       id: 'group-1',
       title: 'Group 1',
       description: '',
-      isCollapsed: false,
       order: 0,
       panels: [
         {
@@ -55,8 +54,6 @@ const validDashboard = (): DashboardContent => ({
       layout: [{ i: 'panel-1', x: 0, y: 0, w: 24, h: 8 }],
     },
   ],
-  timeRange: { from: 'now-1h', to: 'now' },
-  refreshInterval: 0,
   variables: [
     {
       id: 'var-1',
@@ -82,7 +79,7 @@ await test('rejects unsupported panel types', async () => {
 });
 
 await test('rejects malformed panel queries and negative refresh interval', async () => {
-  const dashboard = deepClone(validDashboard()) as DashboardContent;
+  const dashboard = deepClone(validDashboard()) as DashboardContent & { refreshInterval?: number };
   dashboard.refreshInterval = -1;
   dashboard.panelGroups[0]!.panels[0]!.queries = {} as unknown as DashboardContent['panelGroups'][number]['panels'][number]['queries'];
 

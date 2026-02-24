@@ -8,7 +8,6 @@
       "id": "group-import-threshold",
       "title": "导入测试面板组（10 panels）",
       "description": "用于验证：=阈值不虚拟化",
-      "isCollapsed": false,
       "order": 0,
       "panels": [
         {
@@ -376,11 +375,6 @@
       ]
     }
   ],
-  "timeRange": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "refreshInterval": 0,
   "variables": [],
   "createdAt": 1769520943433,
   "updatedAt": 1769520943433

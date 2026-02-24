@@ -1,4 +1,4 @@
-import type { DashboardContent, DashboardVariable } from '@grafana-fast/types';
+import type { DashboardContent, DashboardVariable, Panel, PanelGroup, PanelLayout } from '@grafana-fast/types';
 
 import { deepCloneStructured } from '/#/utils';
 
@@ -42,6 +42,63 @@ export function normalizeVariableCurrent(def: DashboardVariable, value: unknown)
   return String(value ?? '');
 }
 
+function sanitizePanelLayout(input: unknown): PanelLayout {
+  const it = (input ?? {}) as any;
+  return {
+    i: it.i,
+    x: it.x,
+    y: it.y,
+    w: it.w,
+    h: it.h,
+    minW: it.minW,
+    minH: it.minH,
+    maxW: it.maxW,
+    maxH: it.maxH,
+    static: it.static,
+  } as PanelLayout;
+}
+
+function sanitizePanel(input: unknown): Panel {
+  const p = (input ?? {}) as any;
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    type: p.type,
+    queries: p.queries,
+    options: p.options,
+    transformations: p.transformations,
+  } as Panel;
+}
+
+function sanitizePanelGroup(input: unknown): PanelGroup {
+  const g = (input ?? {}) as any;
+  return {
+    id: g.id,
+    title: g.title,
+    description: g.description,
+    order: g.order,
+    panels: Array.isArray(g.panels) ? g.panels.map(sanitizePanel) : [],
+    layout: Array.isArray(g.layout) ? g.layout.map(sanitizePanelLayout) : [],
+  } as PanelGroup;
+}
+
+function sanitizeVariable(input: unknown): DashboardVariable {
+  const v = (input ?? {}) as any;
+  return {
+    id: v.id,
+    name: v.name,
+    label: v.label,
+    type: v.type,
+    query: v.query,
+    options: v.options,
+    current: v.current,
+    multi: v.multi,
+    includeAll: v.includeAll,
+    allValue: v.allValue,
+  } as DashboardVariable;
+}
+
 export function sanitizeDashboardContent(input: DashboardContent): DashboardContent {
   // 重要：DashboardContent 只允许“纯内容字段”，用于导入/导出/持久化。
   // 为避免老版本/外部 JSON 带入 dashboardId/id/createdAt 等字段导致“导出泄漏资源标识”，
@@ -51,9 +108,7 @@ export function sanitizeDashboardContent(input: DashboardContent): DashboardCont
     schemaVersion: raw.schemaVersion,
     name: raw.name,
     description: raw.description,
-    panelGroups: raw.panelGroups,
-    timeRange: raw.timeRange,
-    refreshInterval: raw.refreshInterval,
-    variables: raw.variables,
+    panelGroups: Array.isArray(raw.panelGroups) ? raw.panelGroups.map(sanitizePanelGroup) : [],
+    variables: Array.isArray(raw.variables) ? raw.variables.map(sanitizeVariable) : raw.variables,
   } as DashboardContent;
 }

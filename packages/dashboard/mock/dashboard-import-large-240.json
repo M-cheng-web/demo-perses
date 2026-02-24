@@ -8,7 +8,6 @@
       "id": "group-import-large",
       "title": "导入测试面板组（240 panels）",
       "description": "大量 panels（随机大小），用于验证滚动/触底/窗口化渲染",
-      "isCollapsed": false,
       "order": 0,
       "panels": [
         {
@@ -8656,11 +8655,6 @@
       ]
     }
   ],
-  "timeRange": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "refreshInterval": 0,
   "variables": [],
   "createdAt": 1769520943435,
   "updatedAt": 1769520943435

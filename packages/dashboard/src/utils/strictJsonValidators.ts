@@ -192,7 +192,6 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
     variables?: unknown;
     schemaVersion?: unknown;
     name?: unknown;
-    refreshInterval?: unknown;
   };
   const errors: string[] = [];
 
@@ -210,23 +209,30 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
     errors.push('dashboard.description 必须是 string');
   }
 
-  const refreshInterval = dashboard.refreshInterval;
-  if (typeof refreshInterval !== 'number' || Number.isNaN(refreshInterval)) {
-    errors.push('dashboard.refreshInterval 必须是 number');
-  } else if (refreshInterval < 0) {
-    errors.push('dashboard.refreshInterval 不能为负数');
+  // 运行时上下文字段（timeRange/refreshInterval）不再属于 Dashboard JSON 的持久化字段：
+  // - 后端可不返回
+  // - 前端会在 load 时重置到默认值
+  // 这里保持“若出现则校验类型”的宽容策略，兼容历史/外部 JSON。
+  const refreshInterval = (dashboard as any).refreshInterval;
+  if ('refreshInterval' in (dashboard as any) && refreshInterval != null) {
+    if (typeof refreshInterval !== 'number' || Number.isNaN(refreshInterval)) {
+      errors.push('dashboard.refreshInterval 必须是 number');
+    } else if (refreshInterval < 0) {
+      errors.push('dashboard.refreshInterval 不能为负数');
+    }
   }
 
-  // timeRange 是查询与变量解析的核心上下文字段
   const tr = (dashboard as any).timeRange;
-  if (!isPlainObject(tr)) {
-    errors.push('dashboard.timeRange 必须是对象');
-  } else {
-    const from = (tr as any).from;
-    const to = (tr as any).to;
-    const isTimeValue = (v: unknown) => typeof v === 'number' || typeof v === 'string';
-    if (!isTimeValue(from)) errors.push('dashboard.timeRange.from 必填且必须是 number 或 string');
-    if (!isTimeValue(to)) errors.push('dashboard.timeRange.to 必填且必须是 number 或 string');
+  if ('timeRange' in (dashboard as any) && tr != null) {
+    if (!isPlainObject(tr)) {
+      errors.push('dashboard.timeRange 必须是对象');
+    } else {
+      const from = (tr as any).from;
+      const to = (tr as any).to;
+      const isTimeValue = (v: unknown) => typeof v === 'number' || typeof v === 'string';
+      if (!isTimeValue(from)) errors.push('dashboard.timeRange.from 必填且必须是 number 或 string');
+      if (!isTimeValue(to)) errors.push('dashboard.timeRange.to 必填且必须是 number 或 string');
+    }
   }
 
   if (!Array.isArray(dashboard.panelGroups)) {
@@ -241,11 +247,10 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
       return;
     }
 
-    const groupObj = group as { id?: unknown; title?: unknown; isCollapsed?: unknown; order?: unknown; panels?: unknown; layout?: unknown };
+    const groupObj = group as { id?: unknown; title?: unknown; order?: unknown; panels?: unknown; layout?: unknown };
 
     if (typeof groupObj.id !== 'string' || !groupObj.id.trim()) errors.push(`${base}.id 必填`);
     if (typeof groupObj.title !== 'string' || !groupObj.title.trim()) errors.push(`${base}.title 必填`);
-    if (typeof groupObj.isCollapsed !== 'boolean') errors.push(`${base}.isCollapsed 必填且必须是 boolean`);
     if (!isFiniteNumber(groupObj.order) || groupObj.order < 0) errors.push(`${base}.order 必填且必须是非负 number`);
 
     const panels = groupObj.panels;

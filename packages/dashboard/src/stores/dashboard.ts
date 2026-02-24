@@ -29,7 +29,6 @@ import {
 } from './dashboard/mutations';
 import {
   countDashboardStats,
-  normalizeNonNegativeInt,
   normalizeVariableCurrent,
   safeUtf8Bytes,
   sanitizeDashboardContent,
@@ -143,24 +142,27 @@ export const useDashboardStore = defineStore('dashboard', {
 
   actions: {
     /**
-     * 将 Dashboard JSON 的“默认/持久化字段”同步到运行时 store（timeRange/variables）
+     * 将 Dashboard JSON 的“持久化字段”同步到运行时 store（variables）
      *
      * 说明：
-     * - timeRange/refreshInterval/variables 是“运行时需要全局读取”的字段，不应散落在多个地方各自维护
-     * - 这里把它们统一落在 store 中：
-     *   - timeRangeStore：timeRange + refreshInterval（并负责 auto refresh timer）
-     *   - variablesStore：values/options（并负责 options 解析）
+     * - timeRange/refreshInterval 属于运行时全局状态：不存入 Dashboard JSON；
+     *   每次 load/整盘替换时重置为默认值（避免把“公共 UI 状态”持久化到业务 JSON）。
+     * - variables 属于 Dashboard JSON 的定义：运行时 state 负责 values/options 的解析与更新。
      */
-    _syncRuntimeStoresFromDashboard(dashboard: DashboardContent) {
-      try {
-        const timeRangeStore = useTimeRangeStore(this.$pinia);
-        // 深拷贝：避免外部 dashboard 引用污染运行时 store
-        timeRangeStore.setTimeRange(deepCloneStructured(dashboard.timeRange));
-        timeRangeStore.setRefreshInterval(normalizeNonNegativeInt(dashboard.refreshInterval, 0));
-      } catch {
-        // ignore: runtime sync should never break dashboard flow
+    _syncRuntimeStoresFromDashboard(dashboard: DashboardContent, options?: { resetTimeRange?: boolean }) {
+      // timeRange/refreshInterval：运行时全局 UI 状态
+      // - 不持久化到 Dashboard JSON
+      // - 只在“整盘加载/替换”时才重置（不应在乐观更新失败回滚时被重置）
+      if (options?.resetTimeRange) {
+        try {
+          const timeRangeStore = useTimeRangeStore(this.$pinia);
+          timeRangeStore.reset();
+        } catch {
+          // ignore: runtime sync should never break dashboard flow
+        }
       }
 
+      // variables：Dashboard JSON 定义 + 运行时 values/options
       try {
         const variablesStore = useVariablesStore(this.$pinia);
         variablesStore.initializeFromDashboard(dashboard.variables);
@@ -173,7 +175,6 @@ export const useDashboardStore = defineStore('dashboard', {
 
     /**
      * 构造一个“可持久化/可导出”的 Dashboard 快照：
-     * - 合并运行时的 timeRange/refreshInterval（来自 timeRangeStore）
      * - 合并运行时的变量 current/options（来自 variablesStore）
      *
      * 重要：
@@ -182,14 +183,6 @@ export const useDashboardStore = defineStore('dashboard', {
     _buildPersistableDashboardSnapshot(): DashboardContent {
       if (!this.currentDashboard) throw new Error('No dashboard');
       const dash = sanitizeDashboardContent(toRaw(this.currentDashboard) as DashboardContent);
-
-      try {
-        const timeRangeStore = useTimeRangeStore(this.$pinia);
-        dash.timeRange = deepCloneStructured(toRaw(timeRangeStore.timeRange));
-        dash.refreshInterval = normalizeNonNegativeInt(toRaw(timeRangeStore.refreshInterval), dash.refreshInterval ?? 0);
-      } catch {
-        // ignore: use dashboard's own fields as fallback
-      }
 
       try {
         const variablesStore = useVariablesStore(this.$pinia);
@@ -246,7 +239,7 @@ export const useDashboardStore = defineStore('dashboard', {
       this.currentDashboard = markRaw(next);
 
       // 同步运行时 store（timeRange/variables）
-      this._syncRuntimeStoresFromDashboard(next);
+      this._syncRuntimeStoresFromDashboard(next, { resetTimeRange: true });
 
       // 重置可能指向旧对象的 UI 状态（避免引用悬挂/状态错乱）。
       this.editingGroupId = null;
@@ -1113,7 +1106,7 @@ export const useDashboardStore = defineStore('dashboard', {
         // 大 JSON 下用 structuredClone 降低 stringify/parse 的主线程压力。
         const next = sanitizeDashboardContent(dashboard);
         this.currentDashboard = markRaw(next);
-        this._syncRuntimeStoresFromDashboard(next);
+        this._syncRuntimeStoresFromDashboard(next, { resetTimeRange: true });
         this.markSyncedFromCurrent();
         this._bumpDashboardContentRevision();
         this.finishBoot();
@@ -1142,7 +1135,7 @@ export const useDashboardStore = defineStore('dashboard', {
       try {
         // 重要：先让后端校验并落库；若失败，前端不应用该 JSON（保持当前状态不变）。
         const api = getPiniaApiClient(this.$pinia);
-        await api.dashboard.saveDashboard(dashboardSessionKey, dashboard);
+        await api.dashboard.saveDashboard(dashboardSessionKey, sanitizeDashboardContent(dashboard));
 
         // 导入成功：按“首次进入”语义全局刷新。
         //

@@ -87,7 +87,6 @@ export function addPanelGroup(this: DashboardMutationThis, group: Partial<PanelG
     id: group.id != null ? String(group.id) : createPrefixedId('pg'),
     title: group.title || '新面板组',
     description: group.description,
-    isCollapsed: true,
     order: dashboard.panelGroups.length,
     panels: [],
     layout: [],
@@ -113,8 +112,6 @@ export function updatePanelGroup(this: DashboardMutationThis, id: ID, updates: P
         ...updates,
         id: currentGroup.id, // 确保id不被覆盖
         title: updates.title ?? currentGroup.title,
-        // 面板组统一折叠：不再暴露/维护“折叠状态”字段
-        isCollapsed: true,
         order: updates.order ?? currentGroup.order,
         panels: updates.panels ?? currentGroup.panels,
         layout: updates.layout ?? currentGroup.layout,
