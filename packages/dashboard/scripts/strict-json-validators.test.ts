@@ -54,16 +54,6 @@ const validDashboard = (): DashboardContent => ({
       layout: [{ i: 'panel-1', x: 0, y: 0, w: 24, h: 8 }],
     },
   ],
-  variables: [
-    {
-      id: 'var-1',
-      name: 'job',
-      label: 'job',
-      type: 'select',
-      current: 'api',
-      options: [{ text: 'api', value: 'api' }],
-    },
-  ],
 });
 
 await test('accepts a valid dashboard payload', async () => {
@@ -88,31 +78,21 @@ await test('rejects malformed panel queries and negative refresh interval', asyn
   assert.ok(errors.includes('panelGroups[0].panels[0].queries 必须是数组'));
 });
 
-await test('rejects invalid variables payload and duplicate names', async () => {
-  const dashboard = deepClone(validDashboard()) as DashboardContent;
+await test('ignores legacy dashboard.variables payload', async () => {
+  const dashboard = deepClone(validDashboard()) as any;
   dashboard.variables = [
     {
       id: 'var-1',
-      name: 'dup',
-      label: 'dup',
+      name: 'job',
+      label: 'job',
       type: 'select',
-      current: 'a',
-      options: [{ text: 'a', value: 'a' }],
-    },
-    {
-      id: 'var-2',
-      name: 'dup',
-      label: 'dup2',
-      type: 'query',
-      current: 123 as unknown as string,
-      options: {} as unknown as Array<{ text: string; value: string }>,
+      current: 'api',
+      options: [{ text: 'api', value: 'api' }],
     },
   ];
 
   const errors = await validateDashboard(dashboard);
-  assert.ok(errors.some((line) => line.includes('dashboard.variables[1].name 重复：dup')));
-  assert.ok(errors.some((line) => line.includes('dashboard.variables[1].current 在 multi=false 时必须是 string 或 string[]')));
-  assert.ok(errors.some((line) => line.includes('dashboard.variables[1].options 必须是数组')));
+  assert.deepEqual(errors, []);
 });
 
 await test('rejects non-array panelGroups payload', async () => {

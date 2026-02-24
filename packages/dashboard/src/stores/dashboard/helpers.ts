@@ -83,22 +83,6 @@ function sanitizePanelGroup(input: unknown): PanelGroup {
   } as PanelGroup;
 }
 
-function sanitizeVariable(input: unknown): DashboardVariable {
-  const v = (input ?? {}) as any;
-  return {
-    id: v.id,
-    name: v.name,
-    label: v.label,
-    type: v.type,
-    query: v.query,
-    options: v.options,
-    current: v.current,
-    multi: v.multi,
-    includeAll: v.includeAll,
-    allValue: v.allValue,
-  } as DashboardVariable;
-}
-
 export function sanitizeDashboardContent(input: DashboardContent): DashboardContent {
   // 重要：DashboardContent 只允许“纯内容字段”，用于导入/导出/持久化。
   // 为避免老版本/外部 JSON 带入 dashboardId/id/createdAt 等字段导致“导出泄漏资源标识”，
@@ -109,6 +93,5 @@ export function sanitizeDashboardContent(input: DashboardContent): DashboardCont
     name: raw.name,
     description: raw.description,
     panelGroups: Array.isArray(raw.panelGroups) ? raw.panelGroups.map(sanitizePanelGroup) : [],
-    variables: Array.isArray(raw.variables) ? raw.variables.map(sanitizeVariable) : raw.variables,
   } as DashboardContent;
 }

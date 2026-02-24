@@ -159,7 +159,8 @@ export function analyzeDashboardText(text: string): DashboardTextDiagnostics {
   const dashboard = value as DashboardContent;
   const panelGroupCount = dashboard.panelGroups?.length ?? 0;
   const panelCount = (dashboard.panelGroups ?? []).reduce((acc, g) => acc + (g.panels?.length ?? 0), 0);
-  const variableCount = Array.isArray(dashboard.variables) ? dashboard.variables.length : 0;
+  // NOTE: variables 已不属于 DashboardContent 的持久化字段；这里仅用于兼容历史/外部 JSON 的统计展示。
+  const variableCount = Array.isArray((dashboard as any).variables) ? (dashboard as any).variables.length : 0;
   const panelTypeCounts = collectPanelTypeCounts(dashboard);
   const issues = diagnoseStructure(dashboard);
 

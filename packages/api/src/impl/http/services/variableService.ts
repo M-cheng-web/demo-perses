@@ -1,68 +1,44 @@
 /**
- * 文件说明：VariableService 的 HTTP 实现（当前可用：初始化 + 透传 query-based 解析）
+ * 文件说明：VariableService 的 HTTP 实现
  *
- * 说明：
- * - 变量系统本身是“dashboard 运行时”的核心能力之一
- * - initialize 是纯前端归一化逻辑，不依赖后端，因此 http 实现可以直接完整实现
- * - resolveOptions 未来会通过 queryService.fetchVariableValues 对接真实 datasource/后端能力
+ * 模式：后端全量下发变量
+ * - loadVariables：POST /variables/load
+ * - applyVariables：POST /variables/apply
  */
 
-import type { ResolveVariableOptionsContext, VariableService } from '../../../contracts/variable';
-import type { DashboardVariable, TimeRange, VariableOption, VariablesState } from '@grafana-fast/types';
-import type { QueryService } from '../../../contracts/query';
+import type { VariableService, VariablesRequestContext } from '../../../contracts/variable';
+import type { DashboardVariable } from '@grafana-fast/types';
+import type { FetchHttpClient } from '../fetchClient';
+import type { HttpApiEndpointKey } from '../endpoints';
+import { HttpApiEndpointKey as EndpointKey, getEndpointPath } from '../endpoints';
+import { normalizeArrayResponse } from './responseUtils';
 
 export interface HttpVariableServiceDeps {
-  queryService?: QueryService;
+  http: FetchHttpClient;
+  endpoints: Record<HttpApiEndpointKey, string>;
 }
 
-function normalizeCurrent(variable: DashboardVariable): string | string[] {
-  if (variable.multi) {
-    if (Array.isArray(variable.current)) return variable.current;
-    if (typeof variable.current === 'string' && variable.current) return [variable.current];
-    return [];
-  }
-  return Array.isArray(variable.current) ? (variable.current[0] ?? '') : (variable.current ?? '');
-}
-
-function normalizeOptions(options: VariableOption[] | undefined): VariableOption[] {
-  return (options ?? []).map((opt) => ({ text: opt.text ?? String(opt.value ?? ''), value: String(opt.value ?? opt.text ?? '') }));
+function buildSessionHeader(context?: VariablesRequestContext): Record<string, string> | undefined {
+  const key = context?.dashboardSessionKey;
+  return key ? { 'X-Dashboard-Session-Key': key } : undefined;
 }
 
 export function createHttpVariableService(deps: HttpVariableServiceDeps): VariableService {
   return {
-    initialize(variables: DashboardVariable[] | undefined): VariablesState {
-      const values: Record<string, string | string[]> = {};
-      const options: Record<string, VariableOption[]> = {};
-      for (const v of variables ?? []) {
-        values[v.name] = normalizeCurrent(v);
-        options[v.name] = normalizeOptions(v.options);
-      }
-      return { values, options, lastUpdatedAt: Date.now() };
+    async loadVariables(context?: VariablesRequestContext): Promise<DashboardVariable[]> {
+      const path = getEndpointPath(deps.endpoints, EndpointKey.LoadVariables);
+      const headers = buildSessionHeader(context);
+      const res = await deps.http.post<unknown>(path, {}, { signal: context?.signal, headers });
+      return normalizeArrayResponse<DashboardVariable>(res);
     },
 
-    async resolveOptions(
-      variables: DashboardVariable[],
-      state: VariablesState,
-      timeRange: TimeRange,
-      context?: ResolveVariableOptionsContext
-    ): Promise<Record<string, VariableOption[]>> {
-      const resolved: Record<string, VariableOption[]> = {};
-
-      for (const v of variables) {
-        // query 型变量：尝试通过 QueryService 解析 options（未来将对接真实后端/数据源）
-        if (v.type === 'query' && v.query && deps.queryService?.fetchVariableValues) {
-          const items = await deps.queryService.fetchVariableValues(v.query, timeRange, {
-            signal: context?.signal,
-            dashboardSessionKey: context?.dashboardSessionKey,
-          });
-          resolved[v.name] = items.map((it) => ({ text: it.text, value: it.value }));
-          continue;
-        }
-
-        resolved[v.name] = state.options[v.name] ?? normalizeOptions(v.options);
-      }
-
-      return resolved;
+    async applyVariables(values: Record<string, string | string[]>, context?: VariablesRequestContext): Promise<DashboardVariable[]> {
+      const path = getEndpointPath(deps.endpoints, EndpointKey.ApplyVariables);
+      const headers = buildSessionHeader(context);
+      const body = { values: values ?? {} };
+      const res = await deps.http.post<unknown>(path, body, { signal: context?.signal, headers });
+      return normalizeArrayResponse<DashboardVariable>(res);
     },
   };
 }
+

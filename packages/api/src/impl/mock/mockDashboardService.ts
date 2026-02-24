@@ -386,7 +386,6 @@ function createDefaultDashboardContent(dashboardKey: string): DashboardContent {
       name: `Empty Dashboard（${id || '-'}）`,
       description: 'Mock empty dashboard for session switching demo',
       panelGroups: [],
-      variables: [],
     };
   }
 
@@ -462,63 +461,6 @@ function createDefaultDashboardContent(dashboardKey: string): DashboardContent {
     name: `Mock Dashboard（${id}）`,
     description: 'Mock dashboard (built-in) for focus-layer/pagination/virtualization testing',
     panelGroups: groups,
-    variables: [
-      {
-        id: 'var-cluster',
-        name: 'cluster',
-        label: '集群',
-        type: 'select',
-        options: [
-          { text: 'prod-a', value: 'prod-a' },
-          { text: 'prod-b', value: 'prod-b' },
-          { text: 'staging', value: 'staging' },
-        ],
-        current: 'prod-a',
-      },
-      {
-        id: 'var-namespace',
-        name: 'namespace',
-        label: '命名空间',
-        type: 'query',
-        query: 'label_values(up, namespace)',
-        multi: true,
-        options: [],
-        current: ['default'],
-      },
-      {
-        id: 'var-service',
-        name: 'service',
-        label: '服务',
-        type: 'query',
-        query: 'label_values(http_requests_total, job)',
-        multi: false,
-        options: [],
-        current: 'api',
-      },
-      {
-        id: 'var-instance',
-        name: 'instance',
-        label: '实例',
-        type: 'query',
-        query: 'label_values(up, instance)',
-        multi: true,
-        options: [],
-        current: ['server-1'],
-      },
-      {
-        id: 'var-window',
-        name: 'window',
-        label: '窗口',
-        type: 'select',
-        options: [
-          { text: '1m', value: '1m' },
-          { text: '5m', value: '5m' },
-          { text: '10m', value: '10m' },
-          { text: '15m', value: '15m' },
-        ],
-        current: '5m',
-      },
-    ],
   };
 }
 
@@ -595,6 +537,15 @@ function touchSession(dashboardSessionKey: DashboardSessionKey): StoredMockSessi
   }
 
   return session;
+}
+
+/**
+ * 给 mockVariableService 等模块复用的 session 校验入口：
+ * - 确保 dashboardSessionKey 存在且未过期
+ * - 返回该 session 对应的 dashboardKey（用于模拟“按 sessionKey 返回不同变量/资源”）
+ */
+export function resolveMockDashboardKeyBySessionKey(dashboardSessionKey: DashboardSessionKey): string {
+  return touchSession(dashboardSessionKey).dashboardKey;
 }
 
 function getEntryBySessionKey(dashboardSessionKey: DashboardSessionKey): StoredMockDashboard {

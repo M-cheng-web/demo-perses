@@ -149,9 +149,13 @@
             </div>
 
             <!-- 加载/错误状态 -->
-            <div v-if="isResolvingVariableOptions" :class="bem('var-status')">
+            <div v-if="isVariableLoading" :class="bem('var-status')">
               <LoadingOutlined spin :class="bem('var-status-icon')" />
-              <span>选项加载中...</span>
+              <span>变量加载中...</span>
+            </div>
+            <div v-else-if="isVariableApplying" :class="bem('var-status')">
+              <LoadingOutlined spin :class="bem('var-status-icon')" />
+              <span>变量应用中...</span>
             </div>
             <div v-if="variableLastError" :class="[bem('var-status'), bem('var-status--error')]">
               <WarningOutlined :class="bem('var-status-icon')" />
@@ -201,7 +205,7 @@
 <script setup lang="ts">
   import { h, ref, computed, watch } from 'vue';
   import { storeToRefs } from '@grafana-fast/store';
-  import { Button, Input, Segmented, Select, Tag, TimeRangePicker, Tooltip } from '@grafana-fast/component';
+  import { Button, Input, Segmented, Select, Tag, TimeRangePicker, Tooltip, message } from '@grafana-fast/component';
   import {
     ClockCircleOutlined,
     CodeOutlined,
@@ -246,8 +250,13 @@
   const timeRangeStore = useTimeRangeStore();
   const variablesStore = useVariablesStore();
 
-  const { viewMode, isBooting, isReadOnly } = storeToRefs(dashboardStore);
-  const { variables: variableDefsRef, isResolvingOptions: isResolvingVariableOptions, lastError: variableLastError } = storeToRefs(variablesStore);
+  const { viewMode, isBooting, isReadOnly, dashboardSessionKey } = storeToRefs(dashboardStore);
+  const {
+    variables: variableDefsRef,
+    isLoading: isVariableLoading,
+    isApplying: isVariableApplying,
+    lastError: variableLastError,
+  } = storeToRefs(variablesStore);
 
   const isAllPanelsView = computed(() => viewMode.value === 'allPanels');
   const variableDefs = computed(() => variableDefsRef.value ?? []);
@@ -393,12 +402,12 @@
       if (multi) {
         return [
           `多选：替换结果会是 a|b|c（regex join），推荐在标签过滤里用 ${name || 'label'}=~"${token}"`,
-          v.type === 'query' ? '选项：点击弹窗“确定”后自动刷新（由后端/实现层返回）' : '选项：来自 Dashboard JSON 的静态 options',
+          '选项：随 /variables/load 或 /variables/apply 返回（由后端/实现层下发）',
         ];
       }
       return [
         `单选：直接替换为一个值，推荐在标签过滤里用 ${name || 'label'}="${token}"`,
-        v.type === 'query' ? '选项：点击弹窗“确定”后自动刷新（由后端/实现层返回）' : '选项：来自 Dashboard JSON 的静态 options',
+        '选项：随 /variables/load 或 /variables/apply 返回（由后端/实现层下发）',
       ];
     }
 
@@ -424,9 +433,22 @@
       const current = name in currentValues ? currentValues[name] : undefined;
       if (!isSameVariableValue(current, next)) patch[name] = next;
     }
-    if (Object.keys(patch).length > 0) variablesStore.setValues(patch);
-
-    void variablesStore.resolveOptions();
+    const sessionKey = dashboardSessionKey.value;
+    if (Object.keys(patch).length > 0) {
+      if (!sessionKey) {
+        message.error('缺少 dashboardSessionKey，无法应用变量');
+      } else {
+        const applyVariables = variablesStore.applyVariables;
+        if (typeof applyVariables !== 'function') {
+          message.error('VariablesStore.applyVariables 不可用');
+        } else {
+          void applyVariables(sessionKey, patch).catch((error: unknown) => {
+            const msg = error instanceof Error ? error.message : String(error);
+            message.error({ content: `应用变量失败：${msg}`, key: 'dashboard:variables:apply', duration: 3 });
+          });
+        }
+      }
+    }
   };
 
   const handleViewJson = () => {

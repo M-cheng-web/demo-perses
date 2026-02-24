@@ -413,10 +413,12 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       },
       variable: {
         ...baseVariable,
-        resolveOptions: (variables, state, timeRange, context) =>
-          wrapWithSessionReload(() =>
-            Promise.resolve(baseVariable.resolveOptions(variables as any, state as any, timeRange as any, withVariableResolveContext(context) as any))
-          ),
+        loadVariables: (context?: Parameters<typeof baseVariable.loadVariables>[0]) =>
+          wrapWithSessionReload(() => Promise.resolve(baseVariable.loadVariables(withVariableResolveContext(context as any) as any))),
+        applyVariables: (
+          values: Parameters<typeof baseVariable.applyVariables>[0],
+          context?: Parameters<typeof baseVariable.applyVariables>[1]
+        ) => wrapWithSessionReload(() => Promise.resolve(baseVariable.applyVariables(values as any, withVariableResolveContext(context as any) as any))),
       },
     };
 

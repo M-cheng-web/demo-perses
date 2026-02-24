@@ -65,14 +65,17 @@
 
 <script setup lang="ts">
   import { Button, Select, message } from '@grafana-fast/component';
-  import { ref, watch, onMounted } from 'vue';
+  import { computed, ref, watch, onMounted } from 'vue';
   import { PlusOutlined, CloseOutlined } from '@ant-design/icons-vue';
   import type { QueryBuilderLabelFilter } from '@grafana-fast/utils';
+  import type { DashboardVariable } from '@grafana-fast/types';
   import { useApiClient } from '/#/runtime/useInjected';
+  import { useVariablesStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('label-filters');
   const api = useApiClient();
+  const variablesStore = useVariablesStore();
 
   interface Props {
     modelValue: QueryBuilderLabelFilter[];
@@ -96,6 +99,48 @@
     { label: '=~ 正则匹配', value: '=~' },
     { label: '!~ 正则不匹配', value: '!~' },
   ];
+
+  const isDurationLikeValue = (value: unknown): boolean => {
+    if (typeof value !== 'string') return false;
+    const v = value.trim();
+    return /^[0-9]+[smhdwy]$/.test(v);
+  };
+
+  const isWindowLikeVariable = (v: DashboardVariable): boolean => {
+    const name = String(v?.name ?? '').toLowerCase();
+    const label = String(v?.label ?? '').toLowerCase();
+    if (name === 'window' || name === 'interval' || name === 'range' || name === 'step') return true;
+    if (label.includes('窗口') || label.includes('间隔') || label.includes('步长')) return true;
+    const opts = Array.isArray(v.options) ? v.options : [];
+    return opts.some((o) => isDurationLikeValue(o?.value ?? o?.text));
+  };
+
+  const labelFilterVariableOptions = computed(() => {
+    const out: Array<{ label: string; value: string }> = [];
+    const seen = new Set<string>();
+    for (const v of variablesStore.variables ?? []) {
+      const name = String(v?.name ?? '').trim();
+      if (!name) continue;
+      if (name.startsWith('__')) continue;
+      if (isWindowLikeVariable(v)) continue;
+      const token = `$${name}`;
+      if (seen.has(token)) continue;
+      seen.add(token);
+      out.push({ label: token, value: token });
+    }
+    return out;
+  });
+
+  const extractVariableNameFromToken = (raw: string): string | null => {
+    const text = String(raw ?? '').trim();
+    let m = text.match(/^\$([A-Za-z_][A-Za-z0-9_]*)$/);
+    if (m?.[1]) return m[1];
+    m = text.match(/^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$/);
+    if (m?.[1]) return m[1];
+    m = text.match(/^\[\[([A-Za-z_][A-Za-z0-9_]*)\]\]$/);
+    if (m?.[1]) return m[1];
+    return null;
+  };
 
   // 加载标签键
   const loadLabelKeys = async () => {
@@ -169,6 +214,16 @@
     const values = Array.isArray(value) ? value : [];
     const last = values.length ? values[values.length - 1] : '';
     filter.value = last == null ? '' : String(last);
+
+    // 兜底：若用户输入/选择了 $var，但后端没有下发该变量，提示并继续保留原值（不阻断编辑）
+    const name = extractVariableNameFromToken(filter.value);
+    if (name && !name.startsWith('__') && !variablesStore.getVariableDef(name)) {
+      message.error({
+        content: `变量 $${name} 未在后端下发的变量列表中，请检查 /variables/load 返回`,
+        key: `querybuilder:missing-var:${name}`,
+        duration: 3,
+      });
+    }
     handleFilterChange();
   };
 
@@ -207,7 +262,25 @@
       });
 
       const values = await api.query.fetchLabelValues(metric, labelName, otherLabels);
-      labelValueOptions.value[index] = values.map((v) => ({ label: v, value: v }));
+      const merged: Array<{ label: string; value: string }> = [];
+      const seen = new Set<string>();
+      // 伪选项：仅插入“看起来用于标签过滤”的变量（展示形式只用 $name）
+      for (const opt of labelFilterVariableOptions.value) {
+        const key = String(opt.value ?? '');
+        if (!key) continue;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(opt);
+      }
+      for (const v of values) {
+        const key = String(v ?? '');
+        if (!key) continue;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push({ label: key, value: key });
+      }
+
+      labelValueOptions.value[index] = merged;
     } catch (error) {
       labelValueOptions.value[index] = [];
       const msg = error instanceof Error ? error.message : String(error);

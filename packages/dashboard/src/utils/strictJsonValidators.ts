@@ -18,7 +18,7 @@
  */
 
 import type { JsonTextValidator } from '@grafana-fast/json-editor';
-import type { DashboardContent, DashboardVariable, PanelLayout } from '@grafana-fast/types';
+import type { DashboardContent, PanelLayout } from '@grafana-fast/types';
 import { isBuiltInPanelType, listBuiltInPanelTypes } from '../panels/builtInPanelTypes';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -128,54 +128,6 @@ function validatePanelObject(panel: unknown, path: string): string[] {
   return errors;
 }
 
-function validateVariables(variables: unknown, path: string): string[] {
-  const errors: string[] = [];
-  if (variables == null) return errors;
-  if (!Array.isArray(variables)) {
-    errors.push(`${path} 必须是数组`);
-    return errors;
-  }
-
-  const names = new Set<string>();
-  for (let i = 0; i < variables.length; i++) {
-    const v = variables[i] as DashboardVariable;
-    const p = `${path}[${i}]`;
-    if (!isPlainObject(v)) {
-      errors.push(`${p} 必须是对象`);
-      continue;
-    }
-    if (typeof v.id !== 'string' || !v.id.trim()) errors.push(`${p}.id 必填`);
-    if (typeof v.name !== 'string' || !v.name.trim()) errors.push(`${p}.name 必填`);
-    if (typeof v.label !== 'string') errors.push(`${p}.label 必须是 string`);
-    const type = v.type;
-    if (type !== 'select' && type !== 'input' && type !== 'constant' && type !== 'query') {
-      errors.push(`${p}.type 不支持：${String(type ?? 'undefined')}`);
-    }
-    const options = v.options;
-    if (options != null && !Array.isArray(options)) errors.push(`${p}.options 必须是数组`);
-
-    if (type === 'query') {
-      if (typeof v.query !== 'string' || !v.query.trim()) errors.push(`${p}.query 在 type="query" 时必填`);
-    }
-
-    // current 的类型取决于 multi
-    const multi = !!v.multi;
-    const current = v.current;
-    if (multi) {
-      if (!(Array.isArray(current) || typeof current === 'string')) errors.push(`${p}.current 在 multi=true 时必须是 string 或 string[]`);
-    } else {
-      if (!(typeof current === 'string' || Array.isArray(current))) errors.push(`${p}.current 在 multi=false 时必须是 string 或 string[]`);
-    }
-
-    if (typeof v.name === 'string' && v.name.trim()) {
-      if (names.has(v.name)) errors.push(`${p}.name 重复：${v.name}`);
-      names.add(v.name);
-    }
-  }
-
-  return errors;
-}
-
 /**
  * 严格校验：Dashboard JSON
  *
@@ -189,7 +141,6 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
 
   const dashboard = parsedValue as Partial<DashboardContent> & {
     panelGroups?: unknown;
-    variables?: unknown;
     schemaVersion?: unknown;
     name?: unknown;
   };
@@ -313,9 +264,6 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
       if (!panelIds.has(layoutId)) errors.push(`${base}.layout 多余：panelId=${layoutId}`);
     }
   });
-
-  // 变量校验：用于“全局变量管理”场景（通过 JSON 编辑器编辑 variables）
-  errors.push(...validateVariables(dashboard.variables, 'dashboard.variables'));
 
   return errors;
 };

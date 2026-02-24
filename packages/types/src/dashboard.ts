@@ -31,6 +31,7 @@ export type DashboardSessionKey = string;
  * 设计约束：
  * - 该结构是“纯内容”，不包含 dashboardId（资源标识）
  * - `timeRange/refreshInterval` 属于运行时全局 UI 状态：不存入 Dashboard JSON（由前端运行时 store 管理）
+ * - 变量（variables）属于运行时上下文：由后端按 `dashboardSessionKey` 下发（不随 Dashboard JSON 导入/导出）
  * - 建议由宿主/后端协议承载会话级 key（例如 `dashboardSessionKey` header），真实 dashboardId 仅后端内部存在
  *
  * 典型用途：
@@ -52,8 +53,6 @@ export interface DashboardContent {
   description?: string;
   /** 面板组列表 */
   panelGroups: PanelGroup[];
-  /** 变量列表 */
-  variables?: DashboardVariable[];
 }
 
 /**
@@ -77,8 +76,8 @@ export interface DashboardVariable {
    * 变量选项（可选）
    *
    * 说明：
-   * - 对于 query 型变量：options 通常由运行时解析/刷新得到，不一定需要持久化到 Dashboard JSON
-   * - 对于静态 select 变量：可以直接在 JSON 中提供 options
+   * - options 用于渲染下拉列表（select/query 型变量常见）
+   * - options 的来源由实现层决定（后端下发/运行时解析/缓存），可能与 timeRange/变量值有关
    */
   options?: VariableOption[];
   /** 当前值 */

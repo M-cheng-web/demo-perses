@@ -20,7 +20,7 @@ export * from './panel.js';
 export * from './layout.js';
 // 面板组：PanelGroup 等
 export * from './panelGroup.js';
-// Dashboard：顶层结构 + variables 等
+// Dashboard：顶层结构 + 变量类型
 export * from './dashboard.js';
 // QueryBuilder 结构（可视化构建 query 的中间模型）
 export * from './queryBuilder.js';

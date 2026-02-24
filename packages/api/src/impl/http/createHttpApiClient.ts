@@ -31,13 +31,12 @@ export function createHttpApiClient(options: CreateHttpApiClientOptions = {}): G
   const resolved = resolveHttpApiClientConfig(options.apiConfig);
   const http = createFetchHttpClient(resolved.http);
 
-  // 说明：queryService 未来会负责远端查询执行，也可被 variableService 用于 query-based variable 的 options 拉取
   const queryService = createHttpQueryService({ http, endpoints: resolved.endpoints });
 
   return {
     kind: 'http',
     dashboard: createHttpDashboardService({ http, endpoints: resolved.endpoints }),
     query: queryService,
-    variable: createHttpVariableService({ queryService }),
+    variable: createHttpVariableService({ http, endpoints: resolved.endpoints }),
   };
 }

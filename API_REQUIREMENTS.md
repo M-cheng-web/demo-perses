@@ -34,8 +34,9 @@
   - `POST /dashboards/panel-groups/layout/patch-page`：提交“当前页全部面板”的 `{i,x,y,w,h}`（不是增量）
 - 查询 Query（面板取数唯一入口）
   - `POST /queries/execute`：执行查询（面板渲染/刷新/时间变化/变量变化）
-- 变量 Variables（query 型变量 options）
-  - `POST /variables/values`：解析 query 型变量的 options（例如 `label_values(...)`）
+- 变量 Variables（后端全量下发，全局变量）
+  - `POST /variables/load`：按 `dashboardSessionKey` 加载整份变量定义（含 options + 默认值）
+  - `POST /variables/apply`：用户“应用设置”后把变量值回写并返回整份变量（后端可持久化默认值）
 - QueryBuilder 联想（Prometheus-like）
   - `POST /query/metrics`
   - `POST /query/label-keys`
@@ -56,6 +57,7 @@
 4. **布局 patch 的提交规则**（重要）：
    - 触发拖拽/缩放时，前端提交的 `items` **必须包含当前页全部面板**的 `{panelId,x,y,w,h}`，而不是只提交变动项
    - 布局写入以“这一页提交的 items”为一个事务原子写入
+   - 除拖拽/缩放外：**新增 / 复制 / 删除面板成功后，前端也会对“所在页”补一次 `patch-page`**，把该页的最终布局作为真相提交给后端（后端无需推断 CRUD 引起的 layout 重排）
 5. **新增/复制面板的分页行为**（重要）：
    - 创建/复制接口成功后，前端会把该面板追加到本地 JSON，并**自动跳转到该组最后一页**
    - 新面板顺序语义：追加到该组 `panels[]` 末尾
@@ -83,33 +85,7 @@
 
 - 除 `POST /dashboards/session/resolve` 外，本文件内所有接口都必须携带该 header（含查询/变量/QueryBuilder 等非 `/dashboards/*` 路径）。
 - 后端以 `dashboardSessionKey` 作为“会话内资源定位”与权限/过期校验的上下文来源。
-
-#### B1.2 过期与续租（后端必须实现）
-
-目标语义（偏用户体验）：
-
-- `dashboardSessionKey` 的有效期 **默认最少 10 小时**
-- 当用户持续操作时，应保持“不断线”：**1 小时内有操作则续 10 小时**
-
-推荐实现（便于落地与测试）：
-
-- 初次签发：`expiresAt = now + 10h`
-- 续租（滑动续期 + 写入节流）：
-  - 任意成功请求（含读/写）视为一次“操作”
-  - 若 `now - lastRenewAt >= 1h`：则更新 `expiresAt = now + 10h`，并更新 `lastRenewAt = now`
-  - 若小于 1h：不更新（避免高频写）
-- 过期：当 `now > expiresAt`，后端必须对任意接口返回：
-  - HTTP `401`
-  - `ErrorResponse(error.code="DASHBOARD_SESSION_EXPIRED")`
-
-#### B1.3 安全模型（本期约定，给后端提示）
-
-`dashboardSessionKey` 属于“会话级访问 key”，语义更接近 **bearer token**：
-
-- 本期 **不要求** 做来源绑定（IP / UA / 设备指纹 / referer 等）与 PoP（proof-of-possession）
-- 安全依赖宿主鉴权（cookie / bearer token / 签名 header 等）+ HTTPS 传输
-- 后端仍需基于鉴权上下文校验该用户是否可访问该 `dashboardSessionKey` 对应资源（否则仍可能被越权调用）
-  - 若未来确实有“key 被复制到其它终端仍可用”的安全诉求，再在后端升级来源绑定/PoP 即可（不影响本文档主体流程）
+- 当 `dashboardSessionKey` 过期：后端对任意接口返回 `401` + `ErrorResponse(error.code="DASHBOARD_SESSION_EXPIRED")`。
 
 ### B2. 基础类型（契约）
 
@@ -220,8 +196,6 @@ type DashboardContent = {
   description?: string;
 
   panelGroups: PanelGroup[];
-
-  variables?: DashboardVariable[];
 };
 
 type PanelGroup = {
@@ -285,7 +259,7 @@ type VariableOption = { text: string; value: string };
 
 > 说明（重要）：`timeRange` 与“自动刷新间隔”属于运行时全局状态，不存入 Dashboard JSON（`DashboardContent`）。
 > - 前端会在每次加载/整盘重载时重置为默认值；
-> - 查询执行与变量 options 解析会在各自请求里显式携带 `timeRange`（见 H/I 模块）。
+> - 查询执行会在请求里显式携带 `timeRange`（见 H 模块）。
 
 - Session Expired（严格）
   - 返回 `401` + `ErrorResponse(code="DASHBOARD_SESSION_EXPIRED")`
@@ -461,6 +435,7 @@ type CreatePanelResponse = {
 - 关键约束（与分页逻辑强相关）：
   - 新面板的“顺序语义”必须是追加到该组 `panels[]` 末尾
   - 前端固定 20/页：若创建后总数从 20 → 21，前端会自动跳到第 2 页展示新面板
+  - 创建成功后：前端会对“新面板所在页（通常为最后一页）”补一次 `POST /dashboards/panel-groups/layout/patch-page`，提交该页全部面板最终 layout（后端无需在 create 接口内推断/重排布局）
 
 ### F2. 更新面板（编辑器保存）
 
@@ -506,6 +481,7 @@ type DeletePanelRequest = {
 ```
 - Response：`204 No Content`
 - 约束：必须同时删除该面板对应的 layout 项（`layout[i==panelId]`）。
+  - 删除成功后：前端会对“当前所在页”补一次 `POST /dashboards/panel-groups/layout/patch-page`，把删除后的最终布局提交给后端（用于锁定 compact/reflow 结果；后端无需自行推断）
 
 ### F4. 复制面板
 
@@ -534,6 +510,7 @@ type DuplicatePanelResponse = {
 - 关键约束：
   - 新面板必须追加到 `panels[]` 末尾（保证分页与“跳到最后一页”一致）
   - 若响应未返回 layout，前端会在本地生成默认 layout
+  - 复制成功后：前端会对“新面板所在页（通常为最后一页）”补一次 `POST /dashboards/panel-groups/layout/patch-page`，提交该页全部面板最终 layout（后端无需在 duplicate 接口内推断/重排布局）
 
 ---
 
@@ -547,6 +524,8 @@ type DuplicatePanelResponse = {
   - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：用户拖拽/缩放面板后停止（前端 debounce 合并）
 - 用途：把“当前页（最多 20 个面板）”的布局持久化到远端
+- 补充说明：
+  - 除拖拽/缩放外：前端也会在新增/复制/删除面板成功后，对“所在页”调用该接口以锁定最终布局（后端无需推断 CRUD 引起的 layout 重排）
 - Request Body（严格）：
 
 ```ts
@@ -643,41 +622,58 @@ type ExecuteQueriesResponse = QueryResult[];
 
 ---
 
-## I. 模块：变量 Variables（query 型变量 options 解析）
+## I. 模块：变量 Variables（后端全量下发）
 
-> 变量定义在 Dashboard JSON（`DashboardContent.variables`）中；
-> 前端会在初始化后、以及用户手动触发时刷新 query 型变量 options。
+> 本项目采用“后端全量下发变量”的模式：
+> - Dashboard JSON 不承载 variables（不导入/导出，不随 `/dashboards/load` round-trip）
+> - 后端根据 `dashboardSessionKey` 返回该 dashboard 需要的“全局变量定义 + options + 默认值”
+> - 前端在 Dashboard 初始化阶段必须先加载变量，再展示面板组（避免首屏查询出现 `$cluster` 未替换等问题）
+> - 用户修改变量值后，前端会调用接口回写；后端可选择把该值持久化为默认值，并返回更新后的整份变量列表
 
-### I1. 解析 query 型变量 options
+### I1. 加载全局变量（整份）
 
 - Method: `POST`
-- Path: `/variables/values`
+- Path: `/variables/load`
 - Headers（严格）：
   - `X-Dashboard-Session-Key: <dashboardSessionKey>`
 - 场景/时机：
-  - Dashboard 初始化后（异步，不阻塞首屏）
-  - 用户修改 timeRange/变量值并“应用设置”后（用于让 options 与当前时间范围保持一致）
+  - Dashboard 初始化阶段（必须等待完成后再进入 ready）
+- Request Body（可为空对象）：
+
+```ts
+type LoadVariablesRequest = {};
+```
+
+- Response `200`：
+
+```ts
+type LoadVariablesResponse = DashboardVariable[];
+```
+
+---
+
+### I2. 应用变量值（回写默认值，整份返回）
+
+- Method: `POST`
+- Path: `/variables/apply`
+- Headers（严格）：
+  - `X-Dashboard-Session-Key: <dashboardSessionKey>`
+- 场景/时机：
+  - 用户在“全局设置/变量”面板点击“应用设置/确定”
+  - （可选）宿主希望在 timeRange 变化后同步更新变量 options 时，也可复用该接口
 - Request Body：
 
 ```ts
-type FetchVariableValuesRequest = {
-  /**
-   * 变量查询表达式（例如 label_values(...)）
-   *
-   * 注意：expr 在请求前已完成变量插值（$var / ${var} / [[var]] 已被替换）。
-   */
-  expr: string;
-  timeRange: TimeRange;
+type ApplyVariablesRequest = {
+  values: Record<string, string | string[]>;
 };
 ```
 
 - Response `200`：
 
 ```ts
-type FetchVariableValuesResponse = Array<{ text: string; value: string }>;
+type ApplyVariablesResponse = DashboardVariable[];
 ```
-
----
 
 ## J. 模块：QueryBuilder 联想（指标/标签）
 

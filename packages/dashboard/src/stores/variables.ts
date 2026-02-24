@@ -1,25 +1,24 @@
 /**
  * Variables 状态管理（全局变量）
  *
- * 目标：
- * - 变量的“当前值/可选项”应是一个统一的运行时真相来源（Single Source of Truth）
- * - Dashboard JSON 中的 variables 负责“定义/默认值”；运行时 state 负责“当前值/options”
+ * 本项目采用“后端全量下发变量”的模式：
+ * - Dashboard JSON 不承载 variables（不导入/导出，不随 dashboards/load round-trip）
+ * - 后端根据 dashboardSessionKey 返回该 dashboard 需要的变量（定义 + options + current 默认值）
+ * - 前端必须先 loadVariables 再进入 Dashboard ready（避免首屏查询出现 $cluster 未替换等问题）
  *
  * 说明：
- * - 变量 options 的解析逻辑由 @grafana-fast/api 的 VariableService 实现层决定（mock/http）
- * - scheduler/QueryRunner 只需要读取当前 values 来做插值与刷新
+ * - 调用方只依赖 variablesStore.state.values 做插值（QueryScheduler -> PanelRunner）
+ * - 若后端返回变量结构不合法：前端应兜底不崩，并把错误暴露给 UI（message/lastError）
  */
 
 import { defineStore } from '@grafana-fast/store';
-import type { DashboardVariable, VariableOption, VariablesState } from '@grafana-fast/types';
+import type { DashboardSessionKey, DashboardVariable, VariableOption, VariablesState } from '@grafana-fast/types';
 import { isPlainObject } from '@grafana-fast/utils';
 import { deepCloneStructured } from '/#/utils';
-import { useTimeRangeStore } from './timeRange';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
-import { interpolateExpr } from '/#/query/interpolate';
 
 interface VariablesStoreState {
-  /** Dashboard JSON 中的变量定义（深拷贝保存，避免外部引用污染） */
+  /** 后端下发的变量定义（深拷贝保存，避免外部引用污染） */
   variables: DashboardVariable[];
   /** 运行时变量状态（values/options） */
   state: VariablesState;
@@ -27,10 +26,14 @@ interface VariablesStoreState {
   valuesGeneration: number;
   /** options 变化代际（用于 UI 重新渲染下拉列表等，不一定触发查询刷新） */
   optionsGeneration: number;
-  /** 是否正在解析 options（query 型变量） */
-  isResolvingOptions: boolean;
+  /** 是否正在加载变量（loadVariables） */
+  isLoading: boolean;
+  /** 是否正在应用变量（applyVariables） */
+  isApplying: boolean;
   /** 最近一次错误（仅用于调试/展示；不会抛出以免阻断 dashboard 主流程） */
   lastError: string | null;
+  /** 最近一次成功 load 的 sessionKey（用于调试/避免跨 dashboard 串数据） */
+  loadedSessionKey: DashboardSessionKey | null;
 }
 
 function emptyState(): VariablesState {
@@ -52,14 +55,64 @@ function normalizeVariableOptions(options: VariableOption[] | undefined): Variab
   return (options ?? []).map((opt) => ({ text: String(opt.text ?? opt.value ?? ''), value: String(opt.value ?? opt.text ?? '') }));
 }
 
+function normalizeVariableFromServer(raw: DashboardVariable): DashboardVariable | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = String((raw as any).id ?? '').trim();
+  const name = String((raw as any).name ?? '').trim();
+  const label = String((raw as any).label ?? name).trim();
+  const type = String((raw as any).type ?? '').trim();
+
+  // 最小约束：必须有 name/type（id 可由后端决定是否稳定；前端仅用于 key）
+  if (!name) return null;
+  if (type !== 'select' && type !== 'input' && type !== 'constant' && type !== 'query') return null;
+
+  const multi = Boolean((raw as any).multi);
+  const includeAll = Boolean((raw as any).includeAll);
+  const allValue = (raw as any).allValue != null ? String((raw as any).allValue) : undefined;
+
+  const query = (raw as any).query != null ? String((raw as any).query) : undefined;
+  const options = normalizeVariableOptions(Array.isArray((raw as any).options) ? ((raw as any).options as VariableOption[]) : []);
+  const current = normalizeVariableValue({ multi } as DashboardVariable, (raw as any).current);
+
+  return {
+    ...(raw as any),
+    id: id || name,
+    name,
+    label,
+    type: type as DashboardVariable['type'],
+    query,
+    options,
+    current,
+    multi: multi || undefined,
+    includeAll: includeAll || undefined,
+    allValue,
+  } satisfies DashboardVariable;
+}
+
+function deriveRuntimeStateFromVariables(list: DashboardVariable[]): VariablesState {
+  const values: Record<string, string | string[]> = {};
+  const options: Record<string, VariableOption[]> = {};
+
+  for (const v of list) {
+    const name = String(v?.name ?? '').trim();
+    if (!name) continue;
+    values[name] = normalizeVariableValue(v, v.current);
+    options[name] = normalizeVariableOptions(v.options);
+  }
+
+  return { values, options, lastUpdatedAt: Date.now() };
+}
+
 export const useVariablesStore = defineStore('variables', {
   state: (): VariablesStoreState => ({
     variables: [],
     state: emptyState(),
     valuesGeneration: 0,
     optionsGeneration: 0,
-    isResolvingOptions: false,
+    isLoading: false,
+    isApplying: false,
     lastError: null,
+    loadedSessionKey: null,
   }),
 
   getters: {
@@ -90,125 +143,120 @@ export const useVariablesStore = defineStore('variables', {
 
   actions: {
     /**
-     * 用 Dashboard JSON 中的变量定义初始化运行时状态
-     *
-     * 注意：
-     * - 这一步只负责“初始化 values/options”，不会自动触发 query 刷新（由 QueryScheduler watch valuesGeneration 决定）
+     * 清空变量（切换 dashboard / boot 前可用）
      */
-    initializeFromDashboard(variables: DashboardVariable[] | undefined) {
-      const list = deepCloneStructured(Array.isArray(variables) ? variables : []);
-      this.variables = list;
+    reset() {
+      this.variables = [];
+      this.state = emptyState();
+      this.valuesGeneration = (this.valuesGeneration + 1) % Number.MAX_SAFE_INTEGER;
+      this.optionsGeneration = (this.optionsGeneration + 1) % Number.MAX_SAFE_INTEGER;
+      this.isLoading = false;
+      this.isApplying = false;
+      this.lastError = null;
+      this.loadedSessionKey = null;
+    },
+
+    _applyVariablesListFromServer(rawList: DashboardVariable[], dashboardSessionKey: DashboardSessionKey) {
+      const normalized: DashboardVariable[] = [];
+      const seenByName = new Set<string>();
+      const invalid: Array<{ index: number; reason: string }> = [];
+
+      (Array.isArray(rawList) ? rawList : []).forEach((raw, index) => {
+        const v = normalizeVariableFromServer(raw);
+        if (!v) {
+          invalid.push({ index, reason: 'invalid shape' });
+          return;
+        }
+        const name = String(v.name ?? '').trim();
+        if (!name) {
+          invalid.push({ index, reason: 'missing name' });
+          return;
+        }
+        if (seenByName.has(name)) {
+          invalid.push({ index, reason: `duplicate name: ${name}` });
+          return;
+        }
+        seenByName.add(name);
+        normalized.push(v);
+      });
+
+      this.variables = deepCloneStructured(normalized);
+      this.state = deriveRuntimeStateFromVariables(normalized);
+      this.loadedSessionKey = dashboardSessionKey;
+
+      // values/options 都可能变化：统一 bump（简单可靠）
+      this.valuesGeneration = (this.valuesGeneration + 1) % Number.MAX_SAFE_INTEGER;
+      this.optionsGeneration = (this.optionsGeneration + 1) % Number.MAX_SAFE_INTEGER;
+
+      if (invalid.length > 0) {
+        const head = invalid.slice(0, 3).map((it) => `#${it.index}(${it.reason})`).join(', ');
+        const more = invalid.length > 3 ? ` ...(+${invalid.length - 3})` : '';
+        this.lastError = `变量返回部分不合法，已忽略：${head}${more}`;
+      } else {
+        this.lastError = null;
+      }
+    },
+
+    /**
+     * 加载整份变量定义（后端全量下发）
+     *
+     * 重要：该 action 建议在 Dashboard boot 过程中 await（阻塞进入 ready）。
+     */
+    async loadVariables(dashboardSessionKey: DashboardSessionKey) {
+      const sessionKey = String(dashboardSessionKey ?? '').trim();
+      if (!sessionKey) throw new Error('Missing dashboardSessionKey');
 
       const api = getPiniaApiClient(this.$pinia);
+      this.isLoading = true;
       try {
-        const next = api.variable.initialize(list);
-        // 防御：避免实现层返回非对象导致后续崩溃
-        if (!next || !isPlainObject(next) || !isPlainObject((next as any).values) || !isPlainObject((next as any).options)) {
-          this.state = emptyState();
-        } else {
-          this.state = next;
+        const res = await api.variable.loadVariables({ dashboardSessionKey: sessionKey });
+        if (!Array.isArray(res)) throw new Error('Invalid LoadVariablesResponse: expected DashboardVariable[]');
+        const apply = this._applyVariablesListFromServer;
+        if (typeof apply !== 'function') {
+          throw new Error('[grafana-fast] VariablesStore internal helper is missing: _applyVariablesListFromServer');
         }
-        this.lastError = null;
+        apply.call(this, res as DashboardVariable[], sessionKey);
+        return this.variables;
       } catch (error) {
-        this.lastError = error instanceof Error ? error.message : String(error);
+        const msg = error instanceof Error ? error.message : String(error);
+        this.lastError = `加载变量失败：${msg}`;
+        this.variables = [];
         this.state = emptyState();
+        this.valuesGeneration = (this.valuesGeneration + 1) % Number.MAX_SAFE_INTEGER;
+        this.optionsGeneration = (this.optionsGeneration + 1) % Number.MAX_SAFE_INTEGER;
+        this.loadedSessionKey = null;
+        throw error;
+      } finally {
+        this.isLoading = false;
       }
-
-      // 初始化属于 values 的变化：会影响插值结果，因此 bump valuesGeneration
-      this.valuesGeneration = (this.valuesGeneration + 1) % Number.MAX_SAFE_INTEGER;
     },
 
     /**
-     * 刷新 query 型变量的 options（以及其他变量的 options 归一化）
-     *
-     * 说明：
-     * - options 通常用于 UI 下拉列表，不一定需要触发查询刷新
-     * - 若你希望 options 变化也触发刷新，可在 QueryScheduler 里改为 watch optionsGeneration
+     * 应用变量值并回写默认值（由后端决定是否持久化），返回整份变量定义
      */
-    async resolveOptions() {
-      if (!this.variables.length) {
-        this.state.options = {};
-        this.state.lastUpdatedAt = Date.now();
-        this.optionsGeneration = (this.optionsGeneration + 1) % Number.MAX_SAFE_INTEGER;
-        return;
-      }
+    async applyVariables(dashboardSessionKey: DashboardSessionKey, values: Record<string, string | string[]>) {
+      const sessionKey = String(dashboardSessionKey ?? '').trim();
+      if (!sessionKey) throw new Error('Missing dashboardSessionKey');
+      const patch = values && isPlainObject(values) ? values : {};
 
       const api = getPiniaApiClient(this.$pinia);
-      this.isResolvingOptions = true;
+      this.isApplying = true;
       try {
-        // 对 query 型变量的 expr 做一次变量插值（与面板查询一致）：
-        // - 前端完成 $var / ${var} / [[var]] 的替换后再交给后端/实现层解析
-        // - 后端无需实现变量语法，降低接入复杂度
-        const values = (this.state?.values ?? {}) as Record<string, string | string[]>;
-        const interpolatedVariables = this.variables.map((v) => {
-          if (v.type !== 'query') return v;
-          const raw = String(v.query ?? '').trim();
-          if (!raw) return v;
-          const expr = interpolateExpr(raw, values, { multiFormat: 'regex', unknown: 'keep' });
-          if (expr === raw) return v;
-          return { ...v, query: expr };
-        });
-
-        const timeRangeStore = useTimeRangeStore(this.$pinia);
-        const patch = await api.variable.resolveOptions(interpolatedVariables, this.state, deepCloneStructured(timeRangeStore.timeRange));
-        const next: Record<string, VariableOption[]> = { ...(this.state.options ?? {}) };
-        for (const [name, opts] of Object.entries(patch ?? {})) {
-          next[name] = normalizeVariableOptions(opts);
+        const res = await api.variable.applyVariables(deepCloneStructured(patch) as Record<string, string | string[]>, { dashboardSessionKey: sessionKey });
+        if (!Array.isArray(res)) throw new Error('Invalid ApplyVariablesResponse: expected DashboardVariable[]');
+        const apply = this._applyVariablesListFromServer;
+        if (typeof apply !== 'function') {
+          throw new Error('[grafana-fast] VariablesStore internal helper is missing: _applyVariablesListFromServer');
         }
-        this.state.options = next;
-        this.state.lastUpdatedAt = Date.now();
-        this.lastError = null;
-        this.optionsGeneration = (this.optionsGeneration + 1) % Number.MAX_SAFE_INTEGER;
+        apply.call(this, res as DashboardVariable[], sessionKey);
+        return this.variables;
       } catch (error) {
-        this.lastError = error instanceof Error ? error.message : String(error);
-
-        // 不做“静默兜底”：
-        // - query 型变量 options 由后端返回，是契约的一部分
-        // - 解析失败时清空 query 型变量 options，避免 UI 继续使用旧数据导致误判
-        const next: Record<string, VariableOption[]> = { ...(this.state.options ?? {}) };
-        for (const v of this.variables) {
-          if (v.type !== 'query') continue;
-          const name = String(v?.name ?? '').trim();
-          if (!name) continue;
-          next[name] = [];
-        }
-        this.state.options = next;
-        this.state.lastUpdatedAt = Date.now();
-        this.optionsGeneration = (this.optionsGeneration + 1) % Number.MAX_SAFE_INTEGER;
+        const msg = error instanceof Error ? error.message : String(error);
+        this.lastError = `应用变量失败：${msg}`;
+        throw error;
       } finally {
-        this.isResolvingOptions = false;
+        this.isApplying = false;
       }
-    },
-
-    /**
-     * 设置某个变量的当前值
-     */
-    setValue(name: string, value: string | string[]) {
-      const key = String(name ?? '').trim();
-      if (!key) return;
-      const def = this.variables.find((v) => String(v.name) === key);
-      const next = normalizeVariableValue(def, value);
-
-      this.state.values = { ...(this.state.values ?? {}), [key]: next };
-      this.state.lastUpdatedAt = Date.now();
-      this.valuesGeneration = (this.valuesGeneration + 1) % Number.MAX_SAFE_INTEGER;
-    },
-
-    /**
-     * 批量设置变量值（常用于宿主一次性下发）
-     */
-    setValues(values: Record<string, string | string[]>) {
-      if (!values || !isPlainObject(values)) return;
-      const nextValues: Record<string, string | string[]> = { ...(this.state.values ?? {}) };
-      for (const [name, value] of Object.entries(values)) {
-        const key = String(name ?? '').trim();
-        if (!key) continue;
-        const def = this.variables.find((v) => String(v.name) === key);
-        nextValues[key] = normalizeVariableValue(def, value);
-      }
-      this.state.values = nextValues;
-      this.state.lastUpdatedAt = Date.now();
-      this.valuesGeneration = (this.valuesGeneration + 1) % Number.MAX_SAFE_INTEGER;
     },
   },
 });

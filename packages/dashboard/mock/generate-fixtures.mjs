@@ -155,7 +155,6 @@ function makeDashboard({ id, name, description, groups }) {
     name,
     description,
     panelGroups: groups,
-    variables: [],
     createdAt: now,
     updatedAt: now,
   };

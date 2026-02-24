@@ -4,7 +4,7 @@
 
 import { defineStore } from '@grafana-fast/store';
 import { markRaw, toRaw } from 'vue';
-import type { DashboardContent, DashboardSessionKey, PanelGroup, Panel, PanelLayout, ID, DashboardVariable, VariableOption } from '@grafana-fast/types';
+import type { DashboardContent, DashboardSessionKey, PanelGroup, Panel, PanelLayout, ID } from '@grafana-fast/types';
 import { createPrefixedId, deepCloneStructured } from '/#/utils';
 import { getPiniaApiClient } from '/#/runtime/piniaAttachments';
 import { BIG_DASHBOARD_JSON_BYTES_THRESHOLD, BIG_DASHBOARD_PANEL_THRESHOLD } from './dashboard/constants';
@@ -29,7 +29,6 @@ import {
 } from './dashboard/mutations';
 import {
   countDashboardStats,
-  normalizeVariableCurrent,
   safeUtf8Bytes,
   sanitizeDashboardContent,
   yieldToPaint,
@@ -37,6 +36,7 @@ import {
 import type { BootStage, DashboardState } from './dashboard/types';
 import { useTimeRangeStore } from './timeRange';
 import { useVariablesStore } from './variables';
+import { message } from '@grafana-fast/component';
 
 // NOTE: constants + helpers extracted to ./dashboard/* to keep this store file focused on mutations/state.
 
@@ -142,14 +142,13 @@ export const useDashboardStore = defineStore('dashboard', {
 
   actions: {
     /**
-     * 将 Dashboard JSON 的“持久化字段”同步到运行时 store（variables）
+     * 将 Dashboard JSON 的“运行时字段”同步到运行时 store
      *
      * 说明：
      * - timeRange/refreshInterval 属于运行时全局状态：不存入 Dashboard JSON；
      *   每次 load/整盘替换时重置为默认值（避免把“公共 UI 状态”持久化到业务 JSON）。
-     * - variables 属于 Dashboard JSON 的定义：运行时 state 负责 values/options 的解析与更新。
      */
-    _syncRuntimeStoresFromDashboard(dashboard: DashboardContent, options?: { resetTimeRange?: boolean }) {
+    _syncRuntimeStoresFromDashboard(_dashboard: DashboardContent, options?: { resetTimeRange?: boolean }) {
       // timeRange/refreshInterval：运行时全局 UI 状态
       // - 不持久化到 Dashboard JSON
       // - 只在“整盘加载/替换”时才重置（不应在乐观更新失败回滚时被重置）
@@ -161,48 +160,15 @@ export const useDashboardStore = defineStore('dashboard', {
           // ignore: runtime sync should never break dashboard flow
         }
       }
-
-      // variables：Dashboard JSON 定义 + 运行时 values/options
-      try {
-        const variablesStore = useVariablesStore(this.$pinia);
-        variablesStore.initializeFromDashboard(dashboard.variables);
-        // 解析 options 属于增强能力：异步失败不应阻断主流程
-        void variablesStore.resolveOptions();
-      } catch {
-        // ignore
-      }
     },
 
     /**
      * 构造一个“可持久化/可导出”的 Dashboard 快照：
-     * - 合并运行时的变量 current/options（来自 variablesStore）
-     *
-     * 重要：
-     * - 该快照用于 save/export/json-view 等场景，避免 Dashboard JSON 与运行时 state 不一致
+     * - 仅包含 DashboardContent（不包含 timeRange/refreshInterval/variables 等运行时状态）
      */
     _buildPersistableDashboardSnapshot(): DashboardContent {
       if (!this.currentDashboard) throw new Error('No dashboard');
-      const dash = sanitizeDashboardContent(toRaw(this.currentDashboard) as DashboardContent);
-
-      try {
-        const variablesStore = useVariablesStore(this.$pinia);
-        const values = (variablesStore.state?.values ?? {}) as Record<string, unknown>;
-        const options = (variablesStore.state?.options ?? {}) as Record<string, VariableOption[]>;
-        if (Array.isArray(dash.variables)) {
-          dash.variables = dash.variables.map((v) => {
-            const name = String(v?.name ?? '').trim();
-            if (!name) return v;
-            const next: DashboardVariable = { ...v };
-            if (name in values) next.current = normalizeVariableCurrent(v, values[name]);
-            if (name in options) next.options = deepCloneStructured(options[name] ?? []);
-            return next;
-          });
-        }
-      } catch {
-        // ignore
-      }
-
-      return dash;
+      return sanitizeDashboardContent(toRaw(this.currentDashboard) as DashboardContent);
     },
 
     /**
@@ -555,6 +521,64 @@ export const useDashboardStore = defineStore('dashboard', {
       return Math.max(1, Math.ceil(total / size));
     },
 
+    _getPanelIndexInGroup(groupId: ID, panelId: ID): number {
+      const group = this._getGroupFromDashboard(this.currentDashboard, groupId);
+      const list = group?.panels ?? [];
+      if (!Array.isArray(list) || list.length === 0) return -1;
+      const pid = String(panelId);
+      return list.findIndex((p) => String(p.id) === pid);
+    },
+
+    _getPanelPageByIndex(index: number, pageSize = 20): number {
+      const size = Math.max(1, Math.floor(Number(pageSize) || 20));
+      const i = Number.isFinite(index) ? Math.floor(index) : -1;
+      if (i < 0) return 1;
+      return Math.floor(i / size) + 1;
+    },
+
+    /**
+     * 按“分页规则（按 panels 数组顺序切片）”提取某一页的布局，并上报 patch-page。
+     *
+     * 背景：
+     * - 面板 CRUD（新增/复制/删除）会改变当前页的面板集合（甚至引起分页内移位）
+     * - 约定：CRUD 接口本身不负责推断分页/compact 后的布局；前端在成功后补一次 patch-page，
+     *   把“当前页全部 layout items（<=20）”上报给后端，保持后端存储与前端展示一致。
+     */
+    _patchPanelGroupLayoutPageFromCurrent(groupId: ID, page: number, pageSize = 20) {
+      if (!this.currentDashboard) return;
+      const group = this._getGroupFromDashboard(this.currentDashboard, groupId);
+      if (!group) return;
+
+      const size = Math.max(1, Math.floor(Number(pageSize) || 20));
+      const pageCount = this._getPanelGroupPageCount(groupId, size);
+      const p = Math.min(Math.max(1, Math.floor(Number(page) || 1)), pageCount);
+
+      const start = (p - 1) * size;
+      const end = start + size;
+      const pagePanels = (group.panels ?? []).slice(start, end);
+
+      // 若该页已空（常见：删除了最后一页的最后一个面板），则补丁意义不大；
+      // 兜底：尝试上报上一页（如果存在）。
+      if (pagePanels.length === 0) {
+        if (p > 1) this._patchPanelGroupLayoutPageFromCurrent(groupId, p - 1, size);
+        return;
+      }
+
+      const layoutById = new Map<string, PanelLayout>();
+      (group.layout ?? []).forEach((it) => layoutById.set(String(it.i), it));
+
+      const items: Array<{ i: ID; x: number; y: number; w: number; h: number }> = [];
+      for (const panel of pagePanels) {
+        const id = String(panel?.id ?? '').trim();
+        if (!id) continue;
+        const it = layoutById.get(id);
+        if (!it) continue;
+        items.push({ i: it.i, x: Number(it.x ?? 0), y: Number(it.y ?? 0), w: Number(it.w ?? 0), h: Number(it.h ?? 0) });
+      }
+      if (items.length === 0) return;
+      this._queuePanelGroupLayoutPatch(groupId, items);
+    },
+
     _queuePanelGroupLayoutPatch(groupId: ID, items: Array<{ i: ID; x: number; y: number; w: number; h: number }>) {
       const key = String(groupId ?? '');
       if (!key) return;
@@ -686,6 +710,8 @@ export const useDashboardStore = defineStore('dashboard', {
 
         // 创建后默认跳到最后一页（固定 20/页）
         this.requestPanelGroupPageJump(groupId, this._getPanelGroupPageCount(groupId, 20));
+        // 产品化约定：CRUD 成功后补一次 patch-page，上报“所在页”的全量布局（<=20）
+        this._patchPanelGroupLayoutPageFromCurrent(groupId, this._getPanelGroupPageCount(groupId, 20), 20);
         this.hasUnsyncedChanges = false;
         this.lastError = null;
       } catch (error) {
@@ -753,6 +779,8 @@ export const useDashboardStore = defineStore('dashboard', {
       const dashboardSessionKey = this.dashboardSessionKey;
       if (!dashboardSessionKey) throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
 
+      // 删除会导致分页内“移位”（后续页的首项可能补到当前页）；这里记录删除前所在页用于成功后补 patch-page。
+      const pageBeforeDelete = this._getPanelPageByIndex(this._getPanelIndexInGroup(groupId, panelId), 20);
       deletePanelLocal.call(this, groupId, panelId);
 
       const opSeq = this._remoteOpSeq;
@@ -765,6 +793,8 @@ export const useDashboardStore = defineStore('dashboard', {
         if (opSeq !== this._remoteOpSeq) return;
 
         this._removePanelFromDashboard(this.syncedDashboard, groupId, panelId);
+        // 产品化约定：CRUD 成功后补一次 patch-page，上报“所在页”的全量布局（<=20）
+        this._patchPanelGroupLayoutPageFromCurrent(groupId, pageBeforeDelete, 20);
         this.hasUnsyncedChanges = false;
         this.lastError = null;
       } catch (error) {
@@ -815,6 +845,8 @@ export const useDashboardStore = defineStore('dashboard', {
         if (duplicatedLayout) this._upsertLayoutItemsOnDashboard(this.syncedDashboard, groupId, [duplicatedLayout]);
 
         this.requestPanelGroupPageJump(groupId, this._getPanelGroupPageCount(groupId, 20));
+        // 产品化约定：CRUD 成功后补一次 patch-page，上报“所在页”的全量布局（<=20）
+        this._patchPanelGroupLayoutPageFromCurrent(groupId, this._getPanelGroupPageCount(groupId, 20), 20);
         this.hasUnsyncedChanges = false;
         this.lastError = null;
       } catch (error) {
@@ -1075,12 +1107,28 @@ export const useDashboardStore = defineStore('dashboard', {
       this.currentDashboard = null;
       this.syncedDashboard = null;
       this.hasUnsyncedChanges = false;
+      try {
+        // 切换 dashboard 时清空变量，避免旧 values 在 boot 过程中被 QueryScheduler 读到
+        const variablesStore = useVariablesStore(this.$pinia);
+        if (typeof variablesStore.reset === 'function') variablesStore.reset();
+      } catch {
+        // ignore
+      }
 
       this.beginBoot('remote', 'fetching');
       try {
         await yieldToPaint();
         const api = getPiniaApiClient(this.$pinia);
-        const dashboard = await api.dashboard.loadDashboard(dashboardSessionKey);
+
+        // 并行加载：
+        // - dashboard JSON（/dashboards/load）
+        // - 全局变量（/variables/load）
+        const variablesStore = useVariablesStore(this.$pinia);
+        const loadVariables = variablesStore.loadVariables;
+        if (typeof loadVariables !== 'function') {
+          throw new Error('[grafana-fast] VariablesStore.loadVariables is not available');
+        }
+        const [dashboard] = await Promise.all([api.dashboard.loadDashboard(dashboardSessionKey), loadVariables(dashboardSessionKey)]);
 
         // 关键：即便后端/Mock 响应极快，也要给浏览器一次机会先把 fetching（“正在连接数据”）渲染出来，
         // 否则用户可能只看到后续 initializing（“正在准备面板”），体验不像“首次进入/浏览器刷新”。
@@ -1107,6 +1155,51 @@ export const useDashboardStore = defineStore('dashboard', {
         const next = sanitizeDashboardContent(dashboard);
         this.currentDashboard = markRaw(next);
         this._syncRuntimeStoresFromDashboard(next, { resetTimeRange: true });
+
+        // 兜底：若后端返回的变量列表不包含 Dashboard 实际使用到的 $var，
+        // 插值会保留原 token，后续执行可能导致查询错误。
+        // 这里提前做一次提示（不阻断 boot）。
+        try {
+          const variableNames = new Set((variablesStore.variables ?? []).map((v) => String(v?.name ?? '').trim()).filter(Boolean));
+          const missing = new Set<string>();
+
+          const extract = (input: string) => {
+            const text = String(input ?? '');
+            const add = (name: string) => {
+              if (!name) return;
+              if (name.startsWith('__')) return; // $__interval 等内置宏不在本系统变量列表里
+              if (!variableNames.has(name)) missing.add(name);
+            };
+
+            // ${var}
+            text.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_, name: string) => (add(name), ''));
+            // [[var]]
+            text.replace(/\[\[([A-Za-z_][A-Za-z0-9_]*)\]\]/g, (_, name: string) => (add(name), ''));
+            // $var
+            text.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (_, name: string) => (add(name), ''));
+          };
+
+          for (const g of next.panelGroups ?? []) {
+            for (const p of g.panels ?? []) {
+              for (const q of p.queries ?? []) {
+                extract(String(q.expr ?? ''));
+              }
+            }
+          }
+
+          if (missing.size > 0) {
+            const list = Array.from(missing).slice(0, 6).map((n) => `$${n}`).join(', ');
+            const more = missing.size > 6 ? `（另有 ${missing.size - 6} 个）` : '';
+            message.error({
+              content: `变量缺失：${list}${more}。后端返回的变量列表不包含这些变量，相关查询可能失败。`,
+              key: 'dashboard:variables:missing',
+              duration: 4,
+            });
+          }
+        } catch {
+          // ignore
+        }
+
         this.markSyncedFromCurrent();
         this._bumpDashboardContentRevision();
         this.finishBoot();

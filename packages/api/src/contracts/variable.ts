@@ -1,13 +1,15 @@
 /**
  * 文件说明：VariableService 契约
  *
- * 变量系统的运行时能力入口：
- * - 初始化 values/options
- * - 为 query 型变量解析 options（由实现层决定怎么拉取）
+ * 本项目采用“后端全量下发变量”的模式：
+ * - 前端不从 Dashboard JSON 读取 variables（不导入/导出，不随 dashboards/load round-trip）
+ * - 后端根据 `dashboardSessionKey` 返回该 dashboard 需要的变量定义（含 options + 默认值）
+ * - 用户修改变量值后，前端回写给后端；后端可选择持久化为默认值，并返回更新后的整份变量列表
  */
-import type { DashboardSessionKey, DashboardVariable, TimeRange, VariableOption, VariablesState } from '@grafana-fast/types';
 
-export interface ResolveVariableOptionsContext {
+import type { DashboardSessionKey, DashboardVariable } from '@grafana-fast/types';
+
+export interface VariablesRequestContext {
   /**
    * （可选）Dashboard 会话级访问 key
    *
@@ -21,8 +23,7 @@ export interface ResolveVariableOptionsContext {
    * （可选）取消信号
    *
    * 说明：
-   * - 变量 options 解析可能触发多次请求（多个 query 变量）
-   * - 上层可在页面卸载/切换 dashboard 时传入 signal 以主动取消
+   * - 页面卸载/切换 dashboard 时可取消 in-flight 请求
    */
   signal?: AbortSignal;
 }
@@ -31,39 +32,20 @@ export interface ResolveVariableOptionsContext {
  * VariableService（契约层）
  *
  * 设计意图：
- * - 变量系统不仅是 UI 的下拉选择，还要能支撑查询插值与联动刷新
- * - “变量 options 从哪里来”（静态 / query-based / 远端）由实现层决定
- *
- * 约定：
- * - initialize：把 Dashboard JSON 中的变量定义归一化为运行时状态（values/options）
- * - resolveOptions：为 query 型变量拉取/计算 options（可增量、可缓存）
+ * - 提供“加载整份变量定义”的唯一入口
+ * - 提供“应用变量值并回写默认值”的入口（后端可同时更新 options/current）
  */
 export interface VariableService {
   /**
-   * 初始化变量运行时状态
-   *
-   * 输入：
-   * - variables：来自 Dashboard JSON 的变量定义
-   *
-   * 输出：
-   * - VariablesState：包含 values/options/lastUpdatedAt
-   *
-   * 说明：
-   * - includeAll/multi 等语义应在这里被归一化，便于上层统一使用
+   * 加载整份全局变量定义（含 options + 默认 current）
    */
-  initialize: (variables: DashboardVariable[] | undefined) => VariablesState;
+  loadVariables: (context?: VariablesRequestContext) => Promise<DashboardVariable[]>;
 
   /**
-   * 为变量解析 options（重点用于 query 型变量）
+   * 应用变量值（回写默认值），并返回更新后的整份变量定义
    *
-   * 说明：
-   * - 实现层应尽量做到“增量”和“可缓存”（避免频繁请求）
-   * - 返回值仅包含需要更新的变量 options（上层可以 merge）
+   * @param values 当前变量值（可传全量或仅传变化项；以实现层约定为准）
    */
-  resolveOptions: (
-    variables: DashboardVariable[],
-    state: VariablesState,
-    timeRange: TimeRange,
-    context?: ResolveVariableOptionsContext
-  ) => Promise<Record<string, VariableOption[]>>;
+  applyVariables: (values: Record<string, string | string[]>, context?: VariablesRequestContext) => Promise<DashboardVariable[]>;
 }
+

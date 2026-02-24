@@ -72,11 +72,20 @@ export const HttpApiEndpointKey = {
 
   // --- Variable ---
   /**
-   * POST /variables/values - query 型变量解析 values/options（占位）
+   * POST /variables/load - 加载整份变量定义（后端全量下发）
+   */
+  LoadVariables: 'LoadVariables',
+  /**
+   * POST /variables/apply - 应用变量值并回写默认值（整份返回）
+   */
+  ApplyVariables: 'ApplyVariables',
+
+  /**
+   * （Legacy）POST /variables/values
    *
    * 说明：
-   * - 当前 VariableService.resolveOptions 默认可以走 QueryService.fetchVariableValues（更通用）
-   * - 如果未来后端提供“变量专用接口”，可以在这里单独对接
+   * - 早期用于 query 型变量 options 解析（expr + timeRange）
+   * - 当前 Dashboard 已不依赖该接口；如后端仍提供，可在实现层复用
    */
   FetchVariableValues: 'FetchVariableValues',
 } as const;
@@ -116,6 +125,8 @@ export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
   [HttpApiEndpointKey.FetchLabelValues]: '/query/label-values',
 
   // --- Variable ---
+  [HttpApiEndpointKey.LoadVariables]: '/variables/load',
+  [HttpApiEndpointKey.ApplyVariables]: '/variables/apply',
   [HttpApiEndpointKey.FetchVariableValues]: '/variables/values',
 };
 
