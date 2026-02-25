@@ -69,7 +69,7 @@ export function useDashboardJsonModal(options: Options) {
     }
   );
 
-  const openJsonModal = (mode: 'view' | 'edit' = 'view') => {
+  const openJsonModal = () => {
     if (options.isBooting.value) return;
     const dash = options.dashboardStore.getPersistableDashboardSnapshot();
     if (!dash) return;

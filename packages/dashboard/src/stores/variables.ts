@@ -258,5 +258,65 @@ export const useVariablesStore = defineStore('variables', {
         this.isApplying = false;
       }
     },
+
+    /**
+     * 仅本地更新变量值（不触发后端 apply）
+     * - 用于宿主/SDK 在本地切换变量值后触发查询刷新
+     */
+    setValue(name: string, value: string | string[]) {
+      this.setValues?.({ [name]: value });
+    },
+
+    /**
+     * 批量本地更新变量值（不触发后端 apply）
+     */
+    setValues(values: Record<string, string | string[]>) {
+      const patch = values && isPlainObject(values) ? values : {};
+      const nextValues = { ...(this.state.values ?? {}) };
+      let changed = false;
+
+      Object.entries(patch).forEach(([rawName, rawValue]) => {
+        const name = String(rawName ?? '').trim();
+        if (!name) return;
+        const def = this.getVariableDef(name);
+        const normalized = normalizeVariableValue(def, rawValue);
+
+        const prev = nextValues[name];
+        const same = Array.isArray(prev)
+          ? Array.isArray(normalized) && prev.length === normalized.length && prev.every((v, i) => v === normalized[i])
+          : prev === normalized;
+
+        if (!same) {
+          nextValues[name] = normalized;
+          changed = true;
+        }
+
+        const idx = this.variables.findIndex((v) => String(v.name) === name);
+        if (idx >= 0) {
+          const currentVar = this.variables[idx];
+          if (!currentVar) return;
+          this.variables.splice(idx, 1, { ...currentVar, current: normalized });
+        }
+      });
+
+      if (!changed) return;
+      this.state = { ...this.state, values: nextValues, lastUpdatedAt: Date.now() };
+      this.valuesGeneration = (this.valuesGeneration + 1) % Number.MAX_SAFE_INTEGER;
+    },
+
+    /**
+     * 重新解析变量 options（基于当前 values）
+     */
+    async resolveOptions() {
+      const sessionKey = this.loadedSessionKey;
+      if (!sessionKey) return;
+      try {
+        const apply = this.applyVariables;
+        if (typeof apply !== 'function') return;
+        await apply.call(this, sessionKey, deepCloneStructured(this.state.values ?? {}));
+      } catch {
+        // applyVariables 已处理 lastError；此处仅吞掉错误以保持调用方简洁
+      }
+    },
   },
 });

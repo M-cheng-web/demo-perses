@@ -42,11 +42,11 @@ import type {
 } from './sdk/types';
 
 type DashboardViewExpose = {
-  openSettings?: () => void;
-  closeSettings?: () => void;
-  toggleSettings?: () => void;
-  toolbar?: {
-    openJsonModal?: (mode?: 'view' | 'edit') => void;
+    openSettings?: () => void;
+    closeSettings?: () => void;
+    toggleSettings?: () => void;
+    toolbar?: {
+      openJsonModal?: () => void;
     closeJsonModal?: () => void;
     refresh?: () => void;
     save?: () => Promise<void>;
@@ -603,17 +603,17 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
 
     setVariableValue: (name: string, value: string | string[]) =>
       runWithError(() => {
-        variablesStore.setValue(name, value);
+        variablesStore.setValue?.(name, value);
         scheduleChange();
       }),
     setVariableValues: (values: Record<string, string | string[]>) =>
       runWithError(() => {
-        variablesStore.setValues(values);
+        variablesStore.setValues?.(values);
         scheduleChange();
       }),
     refreshVariableOptions: () =>
       runWithError(() => {
-        void variablesStore.resolveOptions();
+        void variablesStore.resolveOptions?.();
       }),
   };
 

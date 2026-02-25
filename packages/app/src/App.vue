@@ -1,5 +1,5 @@
 <template>
-  <ConfigProvider theme="light">
+  <ConfigProvider theme="light" component-size="middle">
     <div class="dp-app">
       <router-view />
     </div>

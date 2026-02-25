@@ -62,6 +62,7 @@
 
         <div v-if="showContent && pagedGroup && pagedGroup.total > pagerThreshold" :class="bem('pagination')">
           <Pagination
+            size="small"
             :current="pagedGroup.currentPage"
             :page-size="pagedGroup.pageSize"
             :page-size-options="pageSizeOptions"
@@ -417,7 +418,7 @@
       flex: 0 0 auto;
       display: flex;
       justify-content: flex-end;
-      padding: 12px 16px;
+      padding: 8px 12px;
       background: var(--gf-color-surface-muted);
       border-top: 1px solid var(--gf-color-border-muted);
     }

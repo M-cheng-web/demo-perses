@@ -1,13 +1,9 @@
 import type { CanonicalQuery } from '@grafana-fast/types';
-import type { Ref } from 'vue';
 import { useQueryDrafts } from './useQueryDrafts';
 import { useQueryEmit } from './useQueryEmit';
-import { useQueryModeSync } from './useQueryModeSync';
 import { useQueryValidation } from './useQueryValidation';
-import type { QueryMode } from './types';
 
 interface UseDataQueryTabDraftLifecycleOptions {
-  queryMode: Ref<QueryMode>;
   getQueriesProp: () => CanonicalQuery[] | undefined;
   getSessionKey: () => string | number | undefined;
   emitUpdateQueries: (queries: CanonicalQuery[]) => void;
@@ -17,16 +13,11 @@ interface UseDataQueryTabDraftLifecycleOptions {
  * 把 DataQueryTab 的“草稿 / 同步 / 校验 / 对外 emit”生命周期收敛到一个业务 hook。
  */
 export function useDataQueryTabDraftLifecycle(options: UseDataQueryTabDraftLifecycleOptions) {
-  const { queryMode, getQueriesProp, getSessionKey, emitUpdateQueries } = options;
+  const { getQueriesProp, getSessionKey, emitUpdateQueries } = options;
 
   const drafts = useQueryDrafts();
 
-  useQueryModeSync({ queryMode, queryDrafts: drafts.queryDrafts });
-
-  const validation = useQueryValidation({
-    queryMode,
-    queryDrafts: drafts.queryDrafts,
-  });
+  const validation = useQueryValidation({ queryDrafts: drafts.queryDrafts });
 
   const { markEmitted } = useQueryEmit({
     getQueriesProp,

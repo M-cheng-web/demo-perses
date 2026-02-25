@@ -3,25 +3,6 @@
   <div :class="bem()">
     <!-- 顶部操作栏 -->
     <div :class="bem('header')">
-      <div :class="bem('controls')">
-        <!-- 模式切换 -->
-        <div :class="[bem('control-chip'), bem('control-chip--mode')]">
-          <span :class="bem('chip-label')">模式</span>
-          <Segmented
-            :class="bem('mode-segmented')"
-            :value="queryMode"
-            :options="queryModeOptions"
-            @update:value="(value: unknown) => (queryMode = value as QueryMode)"
-          />
-        </div>
-
-        <!-- 查询解释开关 -->
-        <div v-if="queryMode === 'builder'" :class="[bem('control-chip'), bem('control-chip--explain')]">
-          <span :class="bem('chip-label')">解释</span>
-          <Switch v-model:checked="showExplain" />
-        </div>
-      </div>
-
       <div :class="bem('header-actions')">
         <Button size="small" :class="bem('run-btn')" @click="handleExecuteQuery">
           <template #icon><SearchOutlined /></template>
@@ -55,12 +36,6 @@
                   </span>
                 </Tooltip>
 
-                <Tooltip v-if="queryMode === 'builder' && draft.builder.status === 'ok'" title="模版填充">
-                  <span :class="bem('action-icon')" style="color: #fa8c16" @click="openQueryPatterns(index)">
-                    <ThunderboltOutlined />
-                  </span>
-                </Tooltip>
-
                 <Popconfirm v-if="queryDrafts.length > 1" title="确认删除该查询？" @confirm="removeQuery(index)">
                   <Tooltip title="删除查询">
                     <span :class="bem('action-icon')" style="color: #ff4d4f">
@@ -75,6 +50,26 @@
           <!-- 查询内容区 -->
           <Transition name="fade-collapse">
             <div v-show="!draft.collapsed" :class="bem('query-content')">
+              <!-- 模式切换 / 解释开关（每个查询独立） -->
+              <div :class="bem('query-tools')">
+                <div :class="bem('controls')">
+                  <div :class="[bem('control-chip'), bem('control-chip--mode')]">
+                    <span :class="bem('chip-label')">模式</span>
+                    <Segmented
+                      :class="bem('mode-segmented')"
+                      :value="draft.mode"
+                      :options="queryModeOptions"
+                      @update:value="(value: unknown) => (draft.mode = value as QueryMode)"
+                    />
+                  </div>
+
+                  <div v-if="draft.mode === 'builder'" :class="[bem('control-chip'), bem('control-chip--explain')]">
+                    <span :class="bem('chip-label')">解释</span>
+                    <Switch v-model:checked="draft.showExplain" />
+                  </div>
+                </div>
+              </div>
+
               <!-- Dashboard variables helper (for template dashboards) -->
               <div v-if="availableVariables.length > 0" :class="bem('vars-bar')">
                 <div :class="bem('vars-label')">变量</div>
@@ -92,13 +87,13 @@
                   </Button>
                 </div>
                 <div :class="bem('vars-hint')">
-                  <template v-if="queryMode === 'code'">点击将追加到 PromQL 并复制</template>
+                  <template v-if="draft.mode === 'code'">点击将追加到 PromQL 并复制</template>
                   <template v-else>点击复制，可粘贴到标签值/操作参数中</template>
                 </div>
               </div>
 
               <!-- QueryBuilder 模式 -->
-              <div v-if="queryMode === 'builder'" :class="bem('builder-mode')">
+              <div v-if="draft.mode === 'builder'" :class="bem('builder-mode')">
                 <Space direction="vertical" :size="10" style="width: 100%">
                   <Alert
                     v-if="draft.builder.status !== 'ok'"
@@ -128,7 +123,7 @@
                     >
                       <template #description>
                         <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
-                          <span>点击“接受转换”后才能编辑，并会用 Builder 生成的 PromQL 覆盖当前表达式（未识别片段将被过滤）。</span>
+                          <span>点击“接受转换”后才能编辑；Builder 与 Code 独立，不会改写 Code 中的表达式。</span>
                           <Button size="small" type="primary" @click="acceptPartialConversion(index)">接受转换</Button>
                         </div>
                       </template>
@@ -195,6 +190,7 @@
 	                          <NestedQueryList
 	                            :class="bem('nested-query-list')"
 	                            :query="draft.builder.visualQuery"
+	                            :show-explain="draft.showExplain"
 	                            @update="handleNestedQueryUpdate(index, $event)"
 	                          />
                         </div>
@@ -228,7 +224,7 @@
                       </div>
 
                       <!-- 查询解释 -->
-                      <div v-if="showExplain && draft.builder.visualQuery.metric" :class="bem('section')">
+                      <div v-if="draft.showExplain && draft.builder.visualQuery.metric" :class="bem('section')">
                         <div :class="bem('section-header')">
                           <span :class="bem('section-title')">查询解释</span>
                         </div>
@@ -257,7 +253,6 @@
                       v-model:value="draft.code.expr"
                       placeholder="例如：cpu_usage"
                       :rows="3"
-                      @input="handleCodeExprInput(index)"
                       @change="handleCodeExprChange(index)"
                     />
                   </FormItem>
@@ -283,8 +278,6 @@
       </Button>
     </div>
 
-    <!-- 查询模板弹窗 -->
-    <QueryPatternsModal v-model:open="patternsModalOpen" @select="handlePatternSelect" />
   </div>
 </template>
 
@@ -313,7 +306,6 @@
     PlusOutlined,
     RightOutlined,
     SearchOutlined,
-    ThunderboltOutlined,
   } from '@ant-design/icons-vue';
   import MetricSelector from '/#/components/QueryBuilder/MetricSelector.vue';
   import LabelFilters from '/#/components/QueryBuilder/LabelFilters.vue';
@@ -322,7 +314,6 @@
   import QueryHints from '/#/components/QueryBuilder/query-builder/QueryHints.vue';
   import QueryPreview from '/#/components/QueryBuilder/QueryPreview.vue';
   import QueryExplain from '/#/components/QueryBuilder/query-builder/QueryExplain.vue';
-  import QueryPatternsModal from '/#/components/QueryBuilder/QueryPatternsModal.vue';
   import { createNamespace, debounceCancellable } from '/#/utils';
   import type { CanonicalQuery, PromVisualQuery } from '@grafana-fast/types';
   import { useVariablesStore } from '/#/stores';
@@ -361,14 +352,10 @@
     execute: [];
   }>();
 
-  const queryMode = ref<QueryMode>('builder');
   const queryModeOptions = [
     { label: 'QueryBuilder', value: 'builder' },
     { label: 'Code', value: 'code' },
   ] as const;
-  const showExplain = ref(false);
-  const patternsModalOpen = ref(false);
-  const currentPatternQueryIndex = ref<number>(0);
   const highlightedOpIndex = ref<number>();
 
   const clearHighlightedOp = debounceCancellable(() => {
@@ -383,10 +370,8 @@
     queryDrafts,
     togglePanelCollapsed,
     toggleQueryVisibility,
-    markCodeEdited,
     addQuery,
     removeQuery,
-    applyPatternToCurrentDraft,
     updateNestedQuery,
     updateBuilderQuery,
     acceptPartialConversion,
@@ -394,15 +379,10 @@
     convertDraftsToCanonical,
     markEmitted,
   } = useDataQueryTabDraftLifecycle({
-    queryMode,
     getQueriesProp: () => props.queries,
     getSessionKey: () => props.sessionKey,
     emitUpdateQueries: (queries) => emit('update:queries', queries),
   });
-
-  const handleCodeExprInput = (index: number) => {
-    markCodeEdited(index);
-  };
 
   const handleCodeExprChange = (_index: number) => {
     // 预留：后续可在这里接入校验/格式化逻辑
@@ -423,10 +403,9 @@
     const token = normalizeVariableToken(name);
     if (!token) return;
 
-    // Code 模式：直接插入到 expr（末尾），并同步 builder 状态（避免继续使用旧 Builder PromQL）
-    if (queryMode.value === 'code') {
+    // Code 模式：直接插入到 expr（末尾）；Builder 保持独立不联动
+    if (d.mode === 'code') {
       d.code.expr = appendTokenToExpr(d.code.expr ?? '', token);
-      markCodeEdited(index);
     }
 
     const ok = await copyToClipboard(token);
@@ -436,16 +415,6 @@
       // clipboard 失败时，至少给用户可见提示（用户仍可手动输入 $var）
       message.info(`变量：${token}`);
     }
-  };
-
-  const openQueryPatterns = (index: number) => {
-    currentPatternQueryIndex.value = index;
-    patternsModalOpen.value = true;
-  };
-
-  const handlePatternSelect = (query: PromVisualQuery) => {
-    applyPatternToCurrentDraft(currentPatternQueryIndex.value, query);
-    patternsModalOpen.value = false;
   };
 
   const handleApplyFix = (_index: number, fix: any) => {
@@ -528,7 +497,7 @@
     &__header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       padding: 8px 12px;
       gap: 10px;
       flex-wrap: wrap;
@@ -542,6 +511,15 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
+    }
+
+    &__query-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
     }
 
     &__control-chip {

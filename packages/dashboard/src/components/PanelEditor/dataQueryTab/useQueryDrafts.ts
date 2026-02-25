@@ -2,7 +2,7 @@ import { ref } from 'vue';
 import type { CanonicalQuery, PromVisualQuery } from '@grafana-fast/types';
 import { parsePromqlToVisualQuery } from '@grafana-fast/utils';
 import { createPrefixedId, deepClone } from '/#/utils';
-import { emptyVisualQuery, indexToRefId, nextRefId, renderPromql } from './helpers';
+import { emptyVisualQuery, indexToRefId, nextRefId } from './helpers';
 import type { QueryDraft } from './types';
 
 function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): QueryDraft {
@@ -16,6 +16,8 @@ function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): Quer
       refId,
       hide: !!q.hide,
       collapsed: false,
+      mode: 'builder',
+      showExplain: false,
       code: {
         expr: String(q.expr ?? ''),
         legendFormat: String(q.legendFormat ?? ''),
@@ -32,6 +34,8 @@ function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): Quer
       refId,
       hide: !!q.hide,
       collapsed: false,
+      mode: 'builder',
+      showExplain: false,
       code: {
         expr: String(q.expr ?? ''),
         legendFormat: String(q.legendFormat ?? ''),
@@ -53,6 +57,8 @@ function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): Quer
       refId,
       hide: !!q.hide,
       collapsed: false,
+      mode: 'builder',
+      showExplain: false,
       code: {
         expr: String(q.expr ?? ''),
         legendFormat: String(q.legendFormat ?? ''),
@@ -75,6 +81,8 @@ function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): Quer
     refId,
     hide: !!q.hide,
     collapsed: false,
+    mode: 'builder',
+    showExplain: false,
     code: {
       expr: String(q.expr ?? ''),
       legendFormat: String(q.legendFormat ?? ''),
@@ -116,6 +124,8 @@ export function useQueryDrafts() {
           refId: 'A',
           hide: false,
           collapsed: false,
+          mode: 'builder',
+          showExplain: false,
           code: { expr: '', legendFormat: '', minStep: 15 },
           builder: { status: 'ok', visualQuery: emptyVisualQuery(), parseWarnings: [] },
         },
@@ -138,19 +148,6 @@ export function useQueryDrafts() {
     d.hide = !d.hide;
   };
 
-  const markCodeEdited = (index: number) => {
-    const d = queryDrafts.value[index];
-    if (!d) return;
-    d.builder.status = 'unsupported';
-    d.builder.issueType = 'unsupported';
-    d.builder.message = '已在 Code 模式编辑 PromQL，Builder 需要重新解析（切换到 Builder 会自动尝试）。';
-    d.builder.parseWarnings = [];
-    d.builder.diagnostics = [];
-    d.builder.confidence = undefined;
-    d.builder.acceptedPartial = false;
-    d.builder.visualQuery = emptyVisualQuery();
-  };
-
   const addQuery = () => {
     const used = new Set(queryDrafts.value.map((d) => d.refId));
     const refId = nextRefId(used);
@@ -159,6 +156,8 @@ export function useQueryDrafts() {
       refId,
       hide: false,
       collapsed: false,
+      mode: 'builder',
+      showExplain: false,
       code: { expr: '', legendFormat: '', minStep: 15 },
       builder: { status: 'ok', visualQuery: emptyVisualQuery(), parseWarnings: [] },
     });
@@ -166,23 +165,6 @@ export function useQueryDrafts() {
 
   const removeQuery = (index: number) => {
     queryDrafts.value.splice(index, 1);
-  };
-
-  const applyPatternToCurrentDraft = (index: number, query: PromVisualQuery) => {
-    const draft = queryDrafts.value[index];
-    if (!draft) return;
-
-    draft.builder.status = 'ok';
-    draft.builder.message = undefined;
-    draft.builder.parseWarnings = [];
-    draft.builder.visualQuery = deepClone({
-      metric: query.metric ?? '',
-      labels: deepClone(query.labels ?? []),
-      operations: deepClone(query.operations ?? []),
-      binaryQueries: deepClone(query.binaryQueries ?? []),
-    });
-    // 同步 code.expr（便于 JSON/导出），但不触发执行查询
-    draft.code.expr = renderPromql(draft.builder.visualQuery);
   };
 
   const updateNestedQuery = (index: number, updatedQuery: PromVisualQuery) => {
@@ -213,11 +195,9 @@ export function useQueryDrafts() {
     draft.builder.confidence = 'exact';
     draft.builder.acceptedPartial = true;
     draft.builder.visualQuery = deepClone(updatedQuery);
-    // 同步 code.expr（不触发执行）
-    draft.code.expr = renderPromql(draft.builder.visualQuery);
   };
 
-  // 用户明确确认：接受 partial 转换（将覆盖 code.expr 为 Builder 生成的 PromQL）
+  // 用户明确确认：接受 partial 转换（允许 Builder 编辑，Code 模式保持独立）
   const acceptPartialConversion = (index: number) => {
     const d = queryDrafts.value[index];
     if (!d) return;
@@ -225,8 +205,6 @@ export function useQueryDrafts() {
     if (!d.builder.confidence || d.builder.confidence === 'exact') return;
 
     d.builder.acceptedPartial = true;
-    // 明确覆盖：把 Builder 渲染的 PromQL 写回 code.expr（这一步就是“接受过滤/简化”）
-    d.code.expr = renderPromql(d.builder.visualQuery);
   };
 
   return {
@@ -234,10 +212,8 @@ export function useQueryDrafts() {
     resetFromProps,
     togglePanelCollapsed,
     toggleQueryVisibility,
-    markCodeEdited,
     addQuery,
     removeQuery,
-    applyPatternToCurrentDraft,
     updateNestedQuery,
     updateBuilderQuery,
     acceptPartialConversion,

@@ -7,7 +7,7 @@
   - 处理多实例隔离：鼠标跟踪、依赖注入与 pinia 附加依赖绑定
 -->
 <template>
-  <ConfigProvider :theme="props.theme" :portal-target="props.portalTarget">
+  <ConfigProvider :theme="props.theme" :portal-target="props.portalTarget" component-size="middle">
     <div ref="rootEl" :class="bem()" :style="rootStyle">
       <!-- 右侧透明设置按钮：打开侧边栏工具面板 -->
       <div ref="settingsEl" :class="[bem('settings'), { 'is-dragging': isSettingsDragging, 'is-peek': isSettingsPeek }]" :style="settingsStyle">
@@ -43,7 +43,7 @@
           :api-mode-options="props.apiModeOptions"
           :api-mode-switching="props.apiModeSwitching"
           @create-group="handleCreateGroup"
-          @view-json="() => openJsonModal('view')"
+          @view-json="() => openJsonModal()"
           @import-json="handleImportJson"
           @export-json="toolbarApi.exportJson"
           @api-mode-change="handleApiModeChange"
@@ -626,7 +626,7 @@
       message.success('导出成功');
     },
     importJson: handleImportJson,
-    viewJson: () => openJsonModal('view'),
+    viewJson: () => openJsonModal(),
     applyJson: handleApplyJson,
 
     // 受控辅助能力

@@ -10,6 +10,8 @@ export interface QueryDraft {
   refId: string;
   hide: boolean;
   collapsed: boolean;
+  mode: QueryMode;
+  showExplain: boolean;
   code: {
     expr: string;
     legendFormat: string;

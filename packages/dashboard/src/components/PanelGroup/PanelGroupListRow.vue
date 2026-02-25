@@ -33,11 +33,11 @@
       <template v-if="canManageGroups" #right>
         <div :class="bem('actions')">
           <Tooltip title="编辑面板组">
-            <Button icon-only type="text" size="middle" :icon="h(EditOutlined)" @click="handleEditGroup" />
+            <Button icon-only type="text" size="small" :icon="h(EditOutlined)" @click="handleEditGroup" />
           </Tooltip>
           <Popconfirm title="确定要删除这个面板组吗？" ok-text="确定" cancel-text="取消" @confirm="handleDeleteGroup">
             <Tooltip title="删除面板组">
-              <Button icon-only type="text" size="middle" :icon="h(DeleteOutlined)" :class="bem('delete-btn')" />
+              <Button icon-only type="text" size="small" :icon="h(DeleteOutlined)" :class="bem('delete-btn')" />
             </Tooltip>
           </Popconfirm>
         </div>
