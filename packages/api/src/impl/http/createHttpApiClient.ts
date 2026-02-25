@@ -14,7 +14,7 @@
  */
 
 import type { GrafanaFastApiClient } from '../../contracts';
-import { createFetchHttpClient } from './fetchClient';
+import { createFetchHttpClient } from '@grafana-fast/utils';
 import type { CreateHttpApiClientOptions } from './config';
 import { resolveHttpApiClientConfig } from './config';
 import { createHttpDashboardService } from './services/dashboardService';

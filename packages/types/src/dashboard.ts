@@ -43,7 +43,7 @@ export interface DashboardContent {
    * Dashboard JSON schema 版本号（保留字段，当前仅做持久化）
    *
    * 说明：
-   * - 当前阶段不在前端内置 migration/兼容逻辑
+   * - 前端不内置 schema migration（由外部/后端保证结构）
    * - 该字段会随 Dashboard JSON 一起保存/导出，供未来演进使用
    */
   schemaVersion: number;

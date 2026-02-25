@@ -96,7 +96,7 @@
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    color: var(--gf-text);
+    color: var(--gf-color-text);
     font-size: var(--gf-font-size-sm);
     line-height: 1.5714285714285714;
     transition: color var(--gf-motion-fast) var(--gf-easing);
@@ -132,7 +132,7 @@
       width: 16px;
       height: 16px;
       border-radius: var(--gf-radius-xs);
-      border: 1px solid var(--gf-control-border-color, var(--gf-border));
+      border: 1px solid var(--gf-control-border-color, var(--gf-color-border));
       background: var(--gf-control-bg, var(--gf-color-surface));
       transition:
         all var(--gf-motion-fast) var(--gf-easing),
@@ -188,13 +188,13 @@
 
     &.is-disabled &__inner {
       background: var(--gf-color-fill);
-      border-color: var(--gf-border);
+      border-color: var(--gf-color-border);
     }
 
     &.is-disabled.is-checked &__inner,
     &.is-disabled.is-indeterminate &__inner {
       background: var(--gf-color-fill-tertiary);
-      border-color: var(--gf-border);
+      border-color: var(--gf-color-border);
 
       .gf-checkbox__check-icon,
       .gf-checkbox__indeterminate-icon {

@@ -61,24 +61,24 @@ await test('accepts a valid dashboard payload', async () => {
   assert.deepEqual(errors, []);
 });
 
-await test('rejects unsupported panel types', async () => {
+await test('allows unknown panel types (required fields only)', async () => {
   const dashboard = deepClone(validDashboard()) as DashboardContent;
   dashboard.panelGroups[0]!.panels[0]!.type = 'custom-panel' as DashboardContent['panelGroups'][number]['panels'][number]['type'];
   const errors = await validateDashboard(dashboard);
-  assert.ok(errors.some((line) => line.includes('panelGroups[0].panels[0].type 不支持：custom-panel')));
+  assert.deepEqual(errors, []);
 });
 
-await test('rejects malformed panel queries and negative refresh interval', async () => {
+await test('rejects malformed panel queries and ignores extra fields', async () => {
   const dashboard = deepClone(validDashboard()) as DashboardContent & { refreshInterval?: number };
-  dashboard.refreshInterval = -1;
+  dashboard.refreshInterval = 5_000;
   dashboard.panelGroups[0]!.panels[0]!.queries = {} as unknown as DashboardContent['panelGroups'][number]['panels'][number]['queries'];
 
   const errors = await validateDashboard(dashboard);
-  assert.ok(errors.includes('dashboard.refreshInterval 不能为负数'));
   assert.ok(errors.includes('panelGroups[0].panels[0].queries 必须是数组'));
+  assert.ok(!errors.some((line) => line.includes('refreshInterval')));
 });
 
-await test('ignores legacy dashboard.variables payload', async () => {
+await test('ignores dashboard.variables payload', async () => {
   const dashboard = deepClone(validDashboard()) as any;
   dashboard.variables = [
     {

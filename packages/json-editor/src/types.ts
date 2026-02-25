@@ -56,6 +56,4 @@ export interface DashboardSummary {
   panelGroupCount: number;
   /** 面板数量 */
   panelCount: number;
-  /** 变量数量 */
-  variableCount: number;
 }

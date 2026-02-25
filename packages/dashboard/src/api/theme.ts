@@ -14,7 +14,7 @@ export interface SetDashboardThemeOptions {
    * - 对“嵌入式 widget”场景，默认不建议修改宿主全局 document
    * - 当你明确在做“全站接管主题”的应用形态时，可以开启
    *
-   * 默认：true（保持向后兼容）
+   * 默认：true
    */
   apply?: boolean;
 }

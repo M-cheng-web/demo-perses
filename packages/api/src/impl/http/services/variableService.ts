@@ -8,7 +8,7 @@
 
 import type { VariableService, VariablesRequestContext } from '../../../contracts/variable';
 import type { DashboardVariable } from '@grafana-fast/types';
-import type { FetchHttpClient } from '../fetchClient';
+import type { FetchHttpClient } from '@grafana-fast/utils';
 import type { HttpApiEndpointKey } from '../endpoints';
 import { HttpApiEndpointKey as EndpointKey, getEndpointPath } from '../endpoints';
 import { normalizeArrayResponse } from './responseUtils';
@@ -41,4 +41,3 @@ export function createHttpVariableService(deps: HttpVariableServiceDeps): Variab
     },
   };
 }
-

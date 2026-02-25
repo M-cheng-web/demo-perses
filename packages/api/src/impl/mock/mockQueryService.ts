@@ -6,7 +6,7 @@
  * - 同时提供 QueryBuilder 所需的 metrics/labels/value 列表能力
  */
 import type { QueryService } from '../../contracts';
-import type { CanonicalQuery, QueryContext, QueryResult, TimeRange, TimeSeriesData } from '@grafana-fast/types';
+import type { CanonicalQuery, QueryContext, QueryResult, TimeSeriesData } from '@grafana-fast/types';
 import { getDefaultDataByExpr } from './defaultDataPool';
 
 const mockMetrics = [
@@ -58,16 +58,6 @@ const mockLabelValues: Record<string, Record<string, string[]>> = {
   },
 };
 
-function parseLabelValuesExpr(expr: string): { metric: string; label: string } | null {
-  // Support a tiny subset of Grafana-like variable queries:
-  // - label_values(metric, label)
-  // - label_values(metric{...}, label)  (selectors are ignored in mock)
-  const text = String(expr ?? '').trim();
-  const m = text.match(/label_values\s*\(\s*([A-Za-z_:][A-Za-z0-9_:]*)(?:\s*\{[^}]*\})?\s*,\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)\s*$/);
-  if (!m) return null;
-  return { metric: m[1]!, label: m[2]! };
-}
-
 function getMockLabelValues(metric: string, labelKey: string): string[] {
   return mockLabelValues[metric]?.[labelKey] ?? ['value1', 'value2', 'value3'];
 }
@@ -105,20 +95,6 @@ export function createMockQueryService(): QueryService {
 
     async fetchLabelValues(metric: string, labelKey: string): Promise<string[]> {
       return getMockLabelValues(metric, labelKey);
-    },
-
-    async fetchVariableValues(expr: string, _timeRange: TimeRange): Promise<Array<{ text: string; value: string }>> {
-      const text = String(expr ?? '').trim();
-      const parsed = parseLabelValuesExpr(text);
-      if (parsed) {
-        const values = getMockLabelValues(parsed.metric, parsed.label);
-        return values.map((v) => ({ text: v, value: v }));
-      }
-
-      // Fallback: treat expr as a metric name and return its instance values (legacy behavior).
-      const metric = text;
-      const values = getMockLabelValues(metric, 'instance');
-      return values.map((v) => ({ text: v, value: v }));
     },
   };
 }

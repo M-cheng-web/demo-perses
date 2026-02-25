@@ -10,7 +10,7 @@
  */
 import { createApp, defineComponent, h, onMounted, onUnmounted, ref, toRaw, watch, type App, type Ref } from 'vue';
 import { createPinia } from '@grafana-fast/store';
-import { isHttpError, type GrafanaFastApiClient } from '@grafana-fast/api';
+import { type GrafanaFastApiClient } from '@grafana-fast/api';
 import type { ID, TimeRange } from '@grafana-fast/types';
 import {
   DashboardView,
@@ -24,7 +24,7 @@ import {
   type DashboardTheme,
   type DashboardThemePreference,
 } from '@grafana-fast/dashboard';
-import { createPrefixedId, deepCloneStructured } from '@grafana-fast/utils';
+import { createPrefixedId, deepCloneStructured, isHttpError } from '@grafana-fast/utils';
 
 import { createEmitter } from './emitter';
 import { computeDashboardSdkChangedKeys } from './sdk/state';
@@ -406,10 +406,6 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
           wrapWithSessionReload(() =>
             Promise.resolve(baseQuery.fetchLabelValues(metric as any, labelKey as any, otherLabels as any, withDashboardSessionKey(options) as any))
           ),
-        fetchVariableValues: baseQuery.fetchVariableValues
-          ? (expr, timeRange, options) =>
-              wrapWithSessionReload(() => Promise.resolve(baseQuery.fetchVariableValues!(expr as any, timeRange as any, withDashboardSessionKey(options) as any)))
-          : undefined,
       },
       variable: {
         ...baseVariable,

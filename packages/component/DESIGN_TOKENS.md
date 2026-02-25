@@ -15,24 +15,23 @@
 
 ## 2. 主题使用方式
 
-Token 同时挂在主题容器 `.gf-theme-light`（以及历史兼容的 `.gf-theme-blue`）上，因此你可以：
+Token 挂在主题容器 `.gf-theme-light` 上，因此你可以：
 
 - 全局生效：直接使用 `:root`（默认）
-- 局部生效：在某个容器上加 `class="gf-theme-light"`，token 仅在该子树生效（`.gf-theme-blue` 为兼容别名）
+- 局部生效：在某个容器上加 `class="gf-theme-light"`，token 仅在该子树生效
 
 同时提供工业风深色模式，token 挂在：
 
 - `.gf-theme-dark`
-- `[data-gf-theme="dark"]`（推荐：用于应用根节点切换）
+- `[data-gf-theme="light" | "dark"]`（推荐：用于应用根节点切换）
 
 ## 3. 命名规范
 
-推荐消费语义 token（`--gf-color-*` / `--gf-shadow-*` / `--gf-space-*`），避免直接依赖调色板或历史 alias。
+推荐消费语义 token（`--gf-color-*` / `--gf-shadow-*` / `--gf-space-*`），避免直接依赖调色板（palette）。
 
 - **Primitive / Palette**：`--gf-palette-*`（原子颜色，不直接用于组件）
 - **Semantic**：`--gf-color-*`（组件与页面优先使用）
 - **System**：`--gf-font-*` `--gf-space-*` `--gf-radius-*` `--gf-shadow-*` `--gf-z-*`
-- **Legacy aliases（兼容）**：`--gf-primary` `--gf-surface` 等（保留，逐步迁移）
 
 ## 4. 核心语义 Token（节选）
 
@@ -102,10 +101,10 @@ Token 同时挂在主题容器 `.gf-theme-light`（以及历史兼容的 `.gf-th
 - `--gf-motion-fast` / `--gf-motion-normal`
 - `--gf-easing`
 
-## 5. 迁移建议
+## 5. 使用建议
 
-- 新组件优先使用 `--gf-color-*` 等语义 token
-- 老组件允许继续使用 `--gf-primary` / `--gf-border` 等 alias；当需要统一调整视觉时，优先下沉到 token 里统一调参
+- 优先使用 `--gf-color-*` 等语义 token（便于统一调整）
+- 组件内避免直接使用 palette token（除非你明确需要“某个固定色阶”）
 
 ## 6. Ant Design Token（TS / JSON）
 

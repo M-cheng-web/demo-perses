@@ -209,7 +209,7 @@
     display: inline-flex;
     width: 90px;
     border-radius: var(--gf-radius-sm);
-    border: 1px solid var(--gf-control-border-color, var(--gf-border));
+    border: 1px solid var(--gf-control-border-color, var(--gf-color-border));
     background: var(--gf-control-bg, var(--gf-color-surface));
     transition:
       border-color var(--gf-motion-fast) var(--gf-easing),
@@ -247,7 +247,7 @@
       border: none;
       outline: none;
       background: transparent;
-      color: var(--gf-text);
+      color: var(--gf-color-text);
       font-size: var(--gf-font-size-sm);
       line-height: 1.5714285714285714;
       text-align: left;
@@ -278,7 +278,7 @@
       width: 22px;
       height: 100%;
       background: var(--gf-color-surface);
-      border-left: 1px solid var(--gf-border);
+      border-left: 1px solid var(--gf-color-border);
       border-radius: 0 var(--gf-radius-sm) var(--gf-radius-sm) 0;
       display: flex;
       flex-direction: column;
@@ -311,7 +311,7 @@
     }
 
     &__handler-up {
-      border-bottom: 1px solid var(--gf-border);
+      border-bottom: 1px solid var(--gf-color-border);
       border-radius: 0 var(--gf-radius-sm) 0 0;
     }
 
@@ -366,7 +366,7 @@
       cursor: not-allowed;
 
       &:hover {
-        border-color: var(--gf-border);
+        border-color: var(--gf-color-border);
       }
 
       .gf-input-number__handler-wrap {

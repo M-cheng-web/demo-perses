@@ -3,7 +3,7 @@
  *
  * 说明：
  * - 实现收敛到 @grafana-fast/utils（统一 BEM 行为/类型提示）
- * - 为保持 dashboard 历史样式前缀不变，这里固定使用 `namespace: 'dp'`
+ * - dashboard 内部固定使用 `namespace: 'dp'`（用于样式命名空间隔离）
  */
 
 import { createNamespace as _createNamespace } from '@grafana-fast/utils';

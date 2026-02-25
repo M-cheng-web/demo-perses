@@ -2,13 +2,11 @@
 // Naming convention:
 // - Primitive palette: --gf-palette-*
 // - Semantic tokens:   --gf-color-*, --gf-font-*, --gf-space-*, --gf-radius-*, --gf-shadow-*, --gf-z-*
-// - Legacy aliases:    --gf-primary, --gf-surface... (kept for backward compatibility)
 //
 // Color System: Based on Ant Design 5.x color palette
 // Primary: #1677ff (Ant Design Daybreak Blue)
 
 .gf-theme-light,
-.gf-theme-blue, // legacy alias (deprecated)
 [data-gf-theme='light'] {
   /* Typography - Ant Design 5.x standards */
   --gf-font-family:
@@ -223,23 +221,6 @@
   --gf-z-popover: 1030;
   --gf-z-tooltip: 1070;
   --gf-z-message: 1010;
-
-  /* Legacy aliases (keep stable for existing components) */
-  --gf-primary: var(--gf-color-primary);
-  --gf-primary-strong: var(--gf-color-primary-active);
-  --gf-primary-soft: var(--gf-color-primary-soft);
-  --gf-accent: var(--gf-palette-blue-400);
-
-  --gf-surface: var(--gf-color-surface);
-  --gf-surface-muted: var(--gf-color-surface-muted);
-  --gf-surface-strong: rgba(0, 0, 0, 0.88);
-
-  --gf-text: var(--gf-color-text);
-  --gf-text-secondary: var(--gf-color-text-secondary);
-  --gf-border: var(--gf-color-border);
-  --gf-border-strong: var(--gf-color-border-strong);
-  --gf-shadow-soft: var(--gf-shadow-1);
-  --gf-shadow-strong: var(--gf-shadow-2);
 
   /* Gradient & glow effects */
   --gf-gradient: linear-gradient(135deg, var(--gf-palette-blue-500) 0%, var(--gf-palette-blue-400) 100%);
@@ -461,23 +442,6 @@
   --gf-z-popover: 1030;
   --gf-z-tooltip: 1070;
   --gf-z-message: 1010;
-
-  /* Legacy aliases */
-  --gf-primary: var(--gf-color-primary);
-  --gf-primary-strong: var(--gf-color-primary-active);
-  --gf-primary-soft: var(--gf-color-primary-soft);
-  --gf-accent: var(--gf-palette-blue-600);
-
-  --gf-surface: var(--gf-color-surface);
-  --gf-surface-muted: var(--gf-color-surface-muted);
-  --gf-surface-strong: rgba(255, 255, 255, 0.85);
-
-  --gf-text: var(--gf-color-text);
-  --gf-text-secondary: var(--gf-color-text-secondary);
-  --gf-border: var(--gf-color-border);
-  --gf-border-strong: var(--gf-color-border-strong);
-  --gf-shadow-soft: var(--gf-shadow-1);
-  --gf-shadow-strong: var(--gf-shadow-2);
 
   /* Gradient & glow effects */
   --gf-gradient: linear-gradient(135deg, var(--gf-palette-blue-500) 0%, var(--gf-palette-blue-600) 100%);

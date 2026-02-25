@@ -9,12 +9,3 @@
 export * from './createHttpApiClient';
 export * from './config';
 export * from './endpoints';
-
-/**
- * fetch 封装导出
- *
- * 说明：
- * - 这是 http 实现层的基础设施：baseURL、headers、超时/取消、错误归一化等
- * - 不会影响 contracts 的稳定性；未来接入真实后端时，将在 createHttpApiClient 内部使用
- */
-export * from './fetchClient';

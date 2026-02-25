@@ -31,7 +31,7 @@
 
 `@grafana-fast/component` 的主题 token 默认挂在：
 
-- `.gf-theme-light` / `.gf-theme-dark`（`.gf-theme-blue` 为兼容别名）
+- `.gf-theme-light` / `.gf-theme-dark`
 - `[data-gf-theme="light" | "dark"]`
 
 不会自动改写宿主的 `html/body`，以避免“嵌入式污染”。

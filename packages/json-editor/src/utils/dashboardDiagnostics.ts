@@ -2,8 +2,8 @@
  * 工具说明：Dashboard JSON 的轻量诊断（精简版）
  *
  * 目标：
- * - 不做历史 schemaVersion 迁移/兼容（按当前需求：只要 JSON 不合法就提示，合法就交给外部校验）
- * - 仍保留一个“足够实用”的摘要：面板组数量、面板数量、变量数量
+ * - 不做 schemaVersion 迁移：只要 JSON 不合法就提示，合法就交给外部校验
+ * - 仍保留一个“足够实用”的摘要：面板组数量、面板数量
  *
  * 说明：
  * - 这里的“looksLikeDashboard”只是启发式判断，用于 UI 提示与阻断“非 dashboard JSON”向外更新。
@@ -36,7 +36,6 @@ export interface DashboardTextDiagnostics {
 
 type DashboardLike = Partial<DashboardContent> & {
   panelGroups?: unknown;
-  variables?: unknown;
 };
 
 function looksLikeDashboard(value: unknown): value is DashboardLike {
@@ -134,7 +133,7 @@ function diagnoseStructure(dashboard: DashboardContent): string[] {
     });
 
     if (missing > 0) issues.push(`面板组 ${label} 有 ${missing} 个面板缺少 layout 项`);
-    if (orphan > 0) issues.push(`面板组 ${label} 有 ${orphan} 条 layout 引用不存在的面板（可能是历史残留）`);
+    if (orphan > 0) issues.push(`面板组 ${label} 有 ${orphan} 条 layout 引用不存在的面板（可能是残留数据）`);
   }
 
   return issues;
@@ -159,8 +158,6 @@ export function analyzeDashboardText(text: string): DashboardTextDiagnostics {
   const dashboard = value as DashboardContent;
   const panelGroupCount = dashboard.panelGroups?.length ?? 0;
   const panelCount = (dashboard.panelGroups ?? []).reduce((acc, g) => acc + (g.panels?.length ?? 0), 0);
-  // NOTE: variables 已不属于 DashboardContent 的持久化字段；这里仅用于兼容历史/外部 JSON 的统计展示。
-  const variableCount = Array.isArray((dashboard as any).variables) ? (dashboard as any).variables.length : 0;
   const panelTypeCounts = collectPanelTypeCounts(dashboard);
   const issues = diagnoseStructure(dashboard);
 
@@ -171,7 +168,6 @@ export function analyzeDashboardText(text: string): DashboardTextDiagnostics {
     summary: {
       panelGroupCount,
       panelCount,
-      variableCount,
     },
     panelTypeCounts,
     issues,

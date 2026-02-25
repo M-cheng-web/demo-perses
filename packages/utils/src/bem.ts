@@ -4,7 +4,7 @@
  * 设计目标：
  * - 输出稳定的 className，减少手写拼接错误
  * - API 足够简单：`bem()` / `bem('el')` / `bem({ mod: true })`
- * - 支持“可选命名空间”，以兼容历史样式前缀（例如 dp-xxx）
+ * - 支持可选命名空间（用于多包/多实例的样式隔离）
  */
 
 export type Mod = string | Record<string, any>;

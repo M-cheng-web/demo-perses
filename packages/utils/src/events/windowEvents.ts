@@ -120,7 +120,7 @@ export function subscribeWindowEvent<E extends Event = Event>(type: string, fn: 
   return subscribeEvent(window, type, fn as Subscriber, options);
 }
 
-// Backward-compatible helpers
+// Convenience helpers
 export function subscribeWindowResize(fn: () => void): Unsubscribe {
   return subscribeWindowEvent('resize', () => fn(), { passive: true });
 }

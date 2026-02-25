@@ -282,7 +282,7 @@
   const summaryLines = computed(() => {
     const d = diagnostics.value;
     if (!d.looksLikeDashboard || !d.summary) return [];
-    return [`面板组：${d.summary.panelGroupCount}`, `面板：${d.summary.panelCount}`, `变量：${d.summary.variableCount}`];
+    return [`面板组：${d.summary.panelGroupCount}`, `面板：${d.summary.panelCount}`];
   });
 
   const panelTypeLines = computed(() => {

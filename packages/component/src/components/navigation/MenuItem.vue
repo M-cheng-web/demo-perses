@@ -39,8 +39,8 @@
     transition: all 0.2s var(--gf-easing);
 
     &:hover {
-      background: var(--gf-primary-soft);
-      color: var(--gf-primary-strong);
+      background: var(--gf-color-primary-soft);
+      color: var(--gf-color-primary-active);
     }
   }
 </style>

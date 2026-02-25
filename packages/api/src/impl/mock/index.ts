@@ -19,6 +19,6 @@ export function createMockApiClient(): GrafanaFastApiClient {
     kind: 'mock',
     dashboard: createMockDashboardService(),
     query,
-    variable: createMockVariableService(query),
+    variable: createMockVariableService(),
   };
 }

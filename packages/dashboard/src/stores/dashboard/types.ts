@@ -44,14 +44,11 @@ export interface DashboardState {
   /** 是否正在保存 */
   isSaving: boolean;
   /**
-   * 是否正在同步（保留字段）
+   * 是否正在同步（全量持久化）
    *
    * 说明：
-   * - 早期版本用于“全量 JSON auto-save”（saveDashboard）
-   * - 产品化版本推荐走“局部接口”（layout patch / panel CRUD / group CRUD）
-   * - 这里仍保留用于：
-   *   1) JSON 导入后手动保存
-   *   2) 作为兜底的全量持久化
+   * - 常规编辑流推荐走“局部接口”（layout patch / panel CRUD / group CRUD）
+   * - 全量保存用于：JSON 导入后的落库、或作为兜底的整盘覆盖保存
    */
   isSyncing: boolean;
   /** 最近一次 load/save 的错误（用于 UI 展示与宿主接管） */
@@ -83,8 +80,6 @@ export interface DashboardState {
   dashboardContentRevision: number;
 
   // ---- Internal sync state (per store instance) ----
-  _syncTimerId: number | null;
-  _syncQueued: boolean;
   _syncSeq: number;
   _syncInFlightSeq: number | null;
 

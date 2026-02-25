@@ -8,9 +8,8 @@
  * 这里解决的问题：
  * - endpoint key 做成强类型（避免手写字符串出错）
  * - 提供默认 endpoint 路径（占位），后续对接真实后端时按文档替换即可
- * - 提供 path 参数替换工具（用于兼容少数“仍使用 path params 的宿主 override 配置”）
  *
- * 本期对接约定（与 API_REQUIREMENTS 对齐）：
+ * 对接约定（与 API_REQUIREMENTS 对齐）：
  * - **所有接口统一使用 POST + JSON body**
  * - panelId/groupId 等业务 id 不放在 URL path params 中，统一放到 body
  * - Dashboard 资源定位由 `dashboardSessionKey` 完成：通过 header `X-Dashboard-Session-Key` 传递（不在 body 传 dashboardId）
@@ -79,15 +78,6 @@ export const HttpApiEndpointKey = {
    * POST /variables/apply - 应用变量值并回写默认值（整份返回）
    */
   ApplyVariables: 'ApplyVariables',
-
-  /**
-   * （Legacy）POST /variables/values
-   *
-   * 说明：
-   * - 早期用于 query 型变量 options 解析（expr + timeRange）
-   * - 当前 Dashboard 已不依赖该接口；如后端仍提供，可在实现层复用
-   */
-  FetchVariableValues: 'FetchVariableValues',
 } as const;
 
 export type HttpApiEndpointKey = (typeof HttpApiEndpointKey)[keyof typeof HttpApiEndpointKey];
@@ -127,7 +117,6 @@ export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
   // --- Variable ---
   [HttpApiEndpointKey.LoadVariables]: '/variables/load',
   [HttpApiEndpointKey.ApplyVariables]: '/variables/apply',
-  [HttpApiEndpointKey.FetchVariableValues]: '/variables/values',
 };
 
 /**
@@ -145,38 +134,11 @@ export function resolveHttpApiEndpoints(overrides: Partial<Record<HttpApiEndpoin
 }
 
 /**
- * 将 path 中的 `:param` 替换为具体值
- *
- * 示例：
- * - fillPathParams('/dashboards/:id', { id: 'default' }) => '/dashboards/default'
- *
- * 说明：
- * - 这里只做最基础的替换；如果 params 缺失，则保留原样（方便你调试）
- */
-export function fillPathParams(path: string, params: Record<string, string | number> | undefined): string {
-  if (!params) return path;
-  return path.replace(/:([A-Za-z0-9_]+)/g, (full, key: string) => {
-    const value = params[key];
-    if (value == null) return full;
-    return encodeURIComponent(String(value));
-  });
-}
-
-/**
- * 根据 key 获取 endpoint path，并填充 path params
+ * 根据 key 获取 endpoint path
  *
  * 说明：
  * - http/fetchClient 会自动处理 baseUrl 拼接，因此这里返回的通常是“相对路径”
- * - params 仅用于替换 `:id` 这类片段，不负责 querystring（query 由 FetchHttpClient 处理）
- *
- * 示例：
- * - const path = getEndpointPath(endpoints, HttpApiEndpointKey.LoadDashboard, { id: 'default' })
- * - await http.get(path)
  */
-export function getEndpointPath(
-  endpoints: Record<HttpApiEndpointKey, string>,
-  key: HttpApiEndpointKey,
-  params?: Record<string, string | number>
-): string {
-  return fillPathParams(endpoints[key], params);
+export function getEndpointPath(endpoints: Record<HttpApiEndpointKey, string>, key: HttpApiEndpointKey): string {
+  return endpoints[key];
 }

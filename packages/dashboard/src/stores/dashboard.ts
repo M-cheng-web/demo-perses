@@ -57,8 +57,6 @@ export const useDashboardStore = defineStore('dashboard', {
     bootStats: { startedAt: null, groupCount: null, panelCount: null, jsonBytes: null, source: null },
     hasUnsyncedChanges: false,
     dashboardContentRevision: 0,
-    _syncTimerId: null,
-    _syncQueued: false,
     _syncSeq: 0,
     _syncInFlightSeq: null,
     uiPageJumpRequest: null,
@@ -246,15 +244,11 @@ export const useDashboardStore = defineStore('dashboard', {
     },
 
     cancelPendingSync() {
-      if (this._syncTimerId != null) {
-        window.clearTimeout(this._syncTimerId);
-        this._syncTimerId = null;
-      }
-      this._syncQueued = false;
       // 使任何 in-flight 的完成回调失效（避免老请求回写/干扰）。
       this._syncSeq++;
       this._syncInFlightSeq = null;
       this.isSyncing = false;
+      this.isSaving = false;
 
       // 同时使“局部持久化”（layout patch / panel CRUD / group CRUD）的旧请求回写失效
       this._remoteOpSeq++;
@@ -304,11 +298,9 @@ export const useDashboardStore = defineStore('dashboard', {
       this.hasUnsyncedChanges = true;
     },
 
-    requestAutoSync() {
-      // NOTE: 保留该方法作为兼容入口，但不再做“全量 JSON auto-save”。
-      // 新版本编辑流要求：
-      // - 首次进入：后端返回完整 dashboard JSON
-      // - 之后：仅通过局部接口（layout patch / panel CRUD / group CRUD）持久化变更
+    markDashboardChanged() {
+      // 标记 Dashboard 内容已变更（用于 UI 提示/调试）：不做“全量 JSON auto-save”。
+      // 常规编辑流应通过局部接口（layout patch / panel CRUD / group CRUD）持久化变更。
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
       if (this.isReadOnly) return;
@@ -340,48 +332,27 @@ export const useDashboardStore = defineStore('dashboard', {
       }
     },
 
-    async syncDashboard(options?: { mode?: 'auto' | 'manual' }) {
+    async syncDashboard() {
       if (!this.currentDashboard) return;
       if (this.isBooting) return;
       if (this.isReadOnly) {
-        // 自动同步：静默 no-op；手动保存：明确抛错提示。
-        if (options?.mode === 'manual') throw new Error('Dashboard is read-only');
-        return;
+        throw new Error('Dashboard is read-only');
       }
 
-      const mode = options?.mode ?? 'auto';
       const dashboardSessionKey = this.dashboardSessionKey;
       if (!dashboardSessionKey) {
-        // 没有绑定 dashboardSessionKey 时无法持久化到远端。
-        // - 自动同步：静默 no-op，避免后台不断重试/刷错误
-        // - 手动保存：明确抛错，提示宿主需要先 resolve/load sessionKey
-        if (mode === 'manual') {
-          throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
-        }
-        return;
+        throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
       }
 
-      // 手动保存：若后台正在 auto-sync，先等待其结束，再保存最新状态。
-      if (mode === 'manual' && this.isSyncing) {
-        await this.waitForSyncIdle();
-      }
-
-      // 自动同步：如果正在同步，标记 queued 后返回（后续会再跑一轮）。
-      if (mode === 'auto' && this.isSyncing) {
-        this._syncQueued = true;
-        return;
-      }
-
+      // 若已有 in-flight 的同步，先等待其结束，再保存最新状态。
       if (this.isSyncing) {
-        // 极少数情况：重入/边界条件（守护一下）。
-        this._syncQueued = true;
-        return;
+        await this.waitForSyncIdle();
       }
 
       const token = ++this._syncSeq;
       this._syncInFlightSeq = token;
       this.isSyncing = true;
-      if (mode === 'manual') this.isSaving = true;
+      this.isSaving = true;
       this.lastError = null;
 
       // 先做一次快照：保证本次持久化写入的是一个稳定 JSON（即使 UI 继续变化）。
@@ -405,18 +376,12 @@ export const useDashboardStore = defineStore('dashboard', {
           this.resetToSynced();
         }
 
-        if (mode === 'manual') throw error;
+        throw error;
       } finally {
         if (this._syncInFlightSeq !== token) return;
         this._syncInFlightSeq = null;
         this.isSyncing = false;
-        if (mode === 'manual') this.isSaving = false;
-
-        if (this._syncQueued) {
-          this._syncQueued = false;
-          // 自动同步：继续尝试保存最新状态（不向上抛错）。
-          void this.syncDashboard({ mode: 'auto' });
-        }
+        this.isSaving = false;
       }
     },
 
@@ -1150,7 +1115,7 @@ export const useDashboardStore = defineStore('dashboard', {
         this.bootStats.groupCount = groupCount;
         this.bootStats.panelCount = panelCount;
 
-        // 按当前策略：不做历史 schema 兼容/迁移；API 返回什么就用什么（外部应保证是当前结构）。
+        // 不在前端内置 schema migration：API 返回的结构即为当前结构（由服务端保证）。
         // 大 JSON 下用 structuredClone 降低 stringify/parse 的主线程压力。
         const next = sanitizeDashboardContent(dashboard);
         this.currentDashboard = markRaw(next);
@@ -1270,12 +1235,7 @@ export const useDashboardStore = defineStore('dashboard', {
       if (this.isReadOnly) throw new Error('Dashboard is read-only');
 
       try {
-        // 手动保存：清空 debounce 计时器并立即持久化。
-        if (this._syncTimerId != null) {
-          window.clearTimeout(this._syncTimerId);
-          this._syncTimerId = null;
-        }
-        await this.syncDashboard({ mode: 'manual' });
+        await this.syncDashboard();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to save dashboard';
         this.lastError = message;

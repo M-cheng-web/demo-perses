@@ -5,7 +5,7 @@
 本文档特点：
 - 不标注具体代码调用位置，只描述：场景/调用时机/用途/严格入参出参
 - HTTP 路径与 `@grafana-fast/api` 默认 endpoints 对齐；如需对接现有服务路由，在 http 实现层集中映射
-- 本期对接约定：
+- 对接约定：
   - **所有接口统一使用 `POST` + JSON body**（`Content-Type: application/json`）
   - 不使用 URL path params 传递业务 id（panelId/groupId 等）
   - Dashboard 资源定位不使用 `dashboardId`：前端只持有 **`dashboardSessionKey`**，并通过 header `X-Dashboard-Session-Key` 传递（详见 B1）
@@ -61,7 +61,7 @@
 5. **新增/复制面板的分页行为**（重要）：
    - 创建/复制接口成功后，前端会把该面板追加到本地 JSON，并**自动跳转到该组最后一页**
    - 新面板顺序语义：追加到该组 `panels[]` 末尾
-6. **本期范围（明确不做，因此无需接口）**：
+6. **明确不做（因此无需接口）**：
    - 不做并发控制（revision/etag/If-Match 等）
    - 不支持面板跨组移动、也不支持面板跨页移动（分页固定 20/页，切片基于 `panels[]` 顺序）
 
@@ -76,7 +76,7 @@
 
 #### B1.1 DashboardSessionKey（资源定位，必需）
 
-本期开始 **Dashboard 资源定位不再使用 `dashboardId`**（真实 id 不对前端暴露）。
+**Dashboard 资源定位不再使用 `dashboardId`**（真实 id 不对前端暴露）。
 前端只持有一个临时的 `dashboardSessionKey`，并在请求头中携带：
 
 - Header: `X-Dashboard-Session-Key: <dashboardSessionKey>`
@@ -265,7 +265,7 @@ type VariableOption = {
 
 - Session Expired（严格）
   - 返回 `401` + `ErrorResponse(code="DASHBOARD_SESSION_EXPIRED")`
-  - 说明：前端会重新调用 `POST /dashboards/session/resolve` 获取新的 `dashboardSessionKey` 并整盘重载（本期不要求自动重试触发请求）
+  - 说明：前端会重新调用 `POST /dashboards/session/resolve` 获取新的 `dashboardSessionKey` 并整盘重载（不要求自动重试触发当前失败的请求）
 
 - Not Found（严格）
   - 返回 `404` + `ErrorResponse(code="NOT_FOUND")`

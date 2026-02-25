@@ -11,7 +11,7 @@
  * Aligned with Ant Design 5.x design system.
  */
 
-:where(.gf-theme-light, .gf-theme-blue, .gf-theme-dark, [data-gf-theme]) {
+:where(.gf-theme-light, .gf-theme-dark, [data-gf-theme]) {
   font-family: var(--gf-font-family);
   font-size: var(--gf-font-size-md);
   line-height: var(--gf-line-height);
@@ -20,7 +20,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-:where(.gf-theme-light, .gf-theme-blue, [data-gf-theme='light']) {
+:where(.gf-theme-light, [data-gf-theme='light']) {
   color-scheme: light;
   color: var(--gf-color-text);
 }
@@ -30,7 +30,7 @@
   color: var(--gf-color-text);
 }
 
-:where(.gf-config-provider.gf-theme-light, .gf-config-provider.gf-theme-blue, .gf-config-provider[data-gf-theme='light']) {
+:where(.gf-config-provider.gf-theme-light, .gf-config-provider[data-gf-theme='light']) {
   background-color: var(--gf-color-bg);
 }
 
@@ -38,12 +38,12 @@
   background-color: var(--gf-color-bg);
 }
 
-:where(.gf-theme-light, .gf-theme-blue, .gf-theme-dark, [data-gf-theme]) * {
+:where(.gf-theme-light, .gf-theme-dark, [data-gf-theme]) * {
   box-sizing: border-box;
 }
 
 // Link styles - Ant Design 5.x
-:where(.gf-theme-light, .gf-theme-blue, .gf-theme-dark, [data-gf-theme], .gf-app) a {
+:where(.gf-theme-light, .gf-theme-dark, [data-gf-theme], .gf-app) a {
   color: var(--gf-color-primary);
   text-decoration: none;
   outline: none;
@@ -179,7 +179,7 @@
 /* ------------------------------------------------------------
  * Selection styles
  * ------------------------------------------------------------ */
-:where(.gf-theme-light, .gf-theme-blue, [data-gf-theme='light'])::selection {
+:where(.gf-theme-light, [data-gf-theme='light'])::selection {
   background: var(--gf-color-primary-bg);
   color: var(--gf-color-primary);
 }

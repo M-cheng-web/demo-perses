@@ -4,7 +4,7 @@
  * 该文件定义“查询执行 + QueryBuilder 辅助能力”的统一接口。
  * 上层（QueryRunner/QueryScheduler）会基于这些方法实现并发控制、缓存、取消与调度策略。
  */
-import type { CanonicalQuery, DashboardSessionKey, QueryContext, QueryResult, TimeRange } from '@grafana-fast/types';
+import type { CanonicalQuery, DashboardSessionKey, QueryContext, QueryResult } from '@grafana-fast/types';
 
 /**
  * QueryService（契约层）
@@ -52,11 +52,4 @@ export interface QueryService {
   fetchMetrics: (search?: string, options?: ExecuteQueriesOptions) => Promise<string[]>;
   fetchLabelKeys: (metric: string, options?: ExecuteQueriesOptions) => Promise<string[]>;
   fetchLabelValues: (metric: string, labelKey: string, otherLabels?: Record<string, string>, options?: ExecuteQueriesOptions) => Promise<string[]>;
-
-  /**
-   * （可选）为 query 型变量解析 options：
-   * - Grafana 常见变量语义：变量 options 来自一次查询（例如 label_values）
-   * - 非 Prometheus datasource 的实现层可选择忽略/抛错/返回空
-   */
-  fetchVariableValues?: (expr: string, timeRange: TimeRange, options?: ExecuteQueriesOptions) => Promise<Array<{ text: string; value: string }>>;
 }

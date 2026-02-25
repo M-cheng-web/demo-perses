@@ -4,16 +4,12 @@
  * 说明：
  * - 该实现用于后端未就绪时的开发/演示
  * - 变量按 dashboardSessionKey 隔离存储（模拟“后端按 sessionKey 返回”）
- * - query 型变量的 options 在 mock 场景下会尝试通过 mock QueryService 生成
  */
 
 import type { VariableService, VariablesRequestContext } from '../../contracts/variable';
-import type { DashboardSessionKey, DashboardVariable, TimeRange, VariableOption } from '@grafana-fast/types';
-import type { QueryService } from '../../contracts/query';
+import type { DashboardSessionKey, DashboardVariable, VariableOption } from '@grafana-fast/types';
 import { deepCloneStructured } from '@grafana-fast/utils';
 import { resolveMockDashboardKeyBySessionKey } from './mockDashboardService';
-
-const DEFAULT_TIME_RANGE: TimeRange = { from: 'now-1h', to: 'now' };
 
 const variablesBySessionKey = new Map<DashboardSessionKey, DashboardVariable[]>();
 
@@ -42,7 +38,11 @@ function buildDefaultVariables(): DashboardVariable[] {
       type: 'query',
       query: 'label_values(up, namespace)',
       multi: true,
-      options: [],
+      options: [
+        { text: 'default', value: 'default' },
+        { text: 'kube-system', value: 'kube-system' },
+        { text: 'monitoring', value: 'monitoring' },
+      ],
       current: ['default'],
     },
     {
@@ -52,7 +52,11 @@ function buildDefaultVariables(): DashboardVariable[] {
       type: 'query',
       query: 'label_values(http_requests_total, job)',
       multi: false,
-      options: [],
+      options: [
+        { text: 'api', value: 'api' },
+        { text: 'web', value: 'web' },
+        { text: 'gateway', value: 'gateway' },
+      ],
       current: 'api',
     },
     {
@@ -62,7 +66,10 @@ function buildDefaultVariables(): DashboardVariable[] {
       type: 'query',
       query: 'label_values(up, instance)',
       multi: true,
-      options: [],
+      options: [
+        { text: 'server-1', value: 'server-1' },
+        { text: 'server-2', value: 'server-2' },
+      ],
       current: ['server-1'],
     },
     {
@@ -87,25 +94,11 @@ function requireSessionKey(context?: VariablesRequestContext): DashboardSessionK
   return key as DashboardSessionKey;
 }
 
-async function hydrateQueryVariableOptions(input: DashboardVariable[], queryService?: QueryService, context?: VariablesRequestContext): Promise<DashboardVariable[]> {
-  const out: DashboardVariable[] = [];
-  for (const v of input) {
-    const next: DashboardVariable = { ...v, options: normalizeOptions(v.options) };
-
-    if (v.type === 'query' && v.query && queryService?.fetchVariableValues) {
-      const items = await queryService.fetchVariableValues(String(v.query), DEFAULT_TIME_RANGE, {
-        signal: context?.signal,
-        dashboardSessionKey: context?.dashboardSessionKey,
-      });
-      next.options = items.map((it) => ({ text: String(it.text ?? it.value ?? ''), value: String(it.value ?? it.text ?? '') }));
-    }
-
-    out.push(next);
-  }
-  return out;
+function normalizeVariables(input: DashboardVariable[]): DashboardVariable[] {
+  return (input ?? []).map((v) => ({ ...v, options: normalizeOptions(v.options) }));
 }
 
-export function createMockVariableService(queryService?: QueryService): VariableService {
+export function createMockVariableService(): VariableService {
   return {
     async loadVariables(context?: VariablesRequestContext): Promise<DashboardVariable[]> {
       const sessionKey = requireSessionKey(context);
@@ -115,7 +108,7 @@ export function createMockVariableService(queryService?: QueryService): Variable
       const existing = variablesBySessionKey.get(sessionKey);
       if (existing) return deepCloneStructured(existing);
 
-      const initial = await hydrateQueryVariableOptions(buildDefaultVariables(), queryService, context);
+      const initial = normalizeVariables(buildDefaultVariables());
       variablesBySessionKey.set(sessionKey, initial);
       return deepCloneStructured(initial);
     },
@@ -135,10 +128,9 @@ export function createMockVariableService(queryService?: QueryService): Variable
         v.current = Array.isArray(nextValue) ? nextValue.map((it) => String(it)) : String(nextValue ?? '');
       }
 
-      const next = await hydrateQueryVariableOptions(current, queryService, context);
+      const next = normalizeVariables(current);
       variablesBySessionKey.set(sessionKey, next);
       return deepCloneStructured(next);
     },
   };
 }
-

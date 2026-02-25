@@ -348,7 +348,7 @@
       align-items: center;
       gap: 4px;
       font-size: var(--gf-font-size-sm);
-      color: var(--gf-text);
+      color: var(--gf-color-text);
       line-height: 1.5714285714285714;
       text-align: right;
       white-space: nowrap;

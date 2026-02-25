@@ -3,7 +3,7 @@
  *
  * 背景：
  * - json-editor 已实现“非法 JSON 不向外同步”的机制，但它只知道“JSON 语法是否可解析”
- * - 业务层还需要更严格的约束：例如 panel.type 必须是内置支持的类型
+ * - 业务层还需要基本的“结构兜底”，避免把明显缺字段的内容同步到运行时导致崩溃
  *
  * 目标：
  * - 给 dashboard 内的所有 JSON 编辑入口提供统一的“业务校验钩子”
@@ -18,17 +18,12 @@
  */
 
 import type { JsonTextValidator } from '@grafana-fast/json-editor';
-import type { DashboardContent, PanelLayout } from '@grafana-fast/types';
-import { isBuiltInPanelType, listBuiltInPanelTypes } from '../panels/builtInPanelTypes';
+import type { DashboardContent } from '@grafana-fast/types';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== 'object' || value === null) return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
-}
-
-function supportedPanelTypes(): string[] {
-  return listBuiltInPanelTypes();
 }
 
 function isFiniteNumber(value: unknown): value is number {
@@ -42,37 +37,15 @@ function validateCanonicalQueryObject(query: unknown, path: string): string[] {
     return errors;
   }
 
-  // 注意：导入 JSON 必须严格符合当前契约；query 中不允许出现 datasource/datasourceRef（数据源由后端决定）。
-  if ('datasourceRef' in (query as any)) errors.push(`${path}.datasourceRef 不支持（前端不接受 datasourceRef；由后端决定数据源）`);
-  if ('datasource' in (query as any)) errors.push(`${path}.datasource 不支持（请使用本项目导出的 JSON 格式）`);
-
   const q = query as {
     id?: unknown;
     refId?: unknown;
     expr?: unknown;
-    visualQuery?: unknown;
-    legendFormat?: unknown;
-    minStep?: unknown;
-    format?: unknown;
-    instant?: unknown;
-    hide?: unknown;
   };
 
   if (typeof q.id !== 'string' || !q.id.trim()) errors.push(`${path}.id 必填`);
   if (typeof q.refId !== 'string' || !q.refId.trim()) errors.push(`${path}.refId 必填`);
   if (typeof q.expr !== 'string' || !q.expr.trim()) errors.push(`${path}.expr 必填`);
-
-  if ('visualQuery' in q && q.visualQuery != null && typeof q.visualQuery !== 'object') {
-    errors.push(`${path}.visualQuery 必须是对象`);
-  }
-  if ('legendFormat' in q && q.legendFormat != null && typeof q.legendFormat !== 'string') {
-    errors.push(`${path}.legendFormat 必须是 string`);
-  }
-
-  if (!isFiniteNumber(q.minStep) || q.minStep <= 0) errors.push(`${path}.minStep 必填且必须为正数`);
-  if (q.format !== 'time_series') errors.push(`${path}.format 必须为 "time_series"`);
-  if (typeof q.instant !== 'boolean') errors.push(`${path}.instant 必填且必须为 boolean`);
-  if (typeof q.hide !== 'boolean') errors.push(`${path}.hide 必填且必须为 boolean`);
 
   return errors;
 }
@@ -89,8 +62,6 @@ function validatePanelObject(panel: unknown, path: string): string[] {
     name?: unknown;
     type?: unknown;
     queries?: unknown;
-    options?: unknown;
-    transformations?: unknown;
   };
 
   if (typeof panelObj.id !== 'string' || !panelObj.id.trim()) errors.push(`${path}.id 必填`);
@@ -102,27 +73,13 @@ function validatePanelObject(panel: unknown, path: string): string[] {
     return errors;
   }
 
-  if (!isBuiltInPanelType(type)) {
-    const allowed = supportedPanelTypes().join(', ');
-    errors.push(`${path}.type 不支持：${type}（可选：${allowed}）`);
-  }
-
   // queries 是一个很核心的结构：很多地方假设它是数组
   if (!Array.isArray(panelObj.queries)) {
     errors.push(`${path}.queries 必须是数组`);
   } else {
-    if (panelObj.queries.length === 0) errors.push(`${path}.queries 至少需要 1 条查询`);
     panelObj.queries.forEach((q, qi) => {
       errors.push(...validateCanonicalQueryObject(q, `${path}.queries[${qi}]`));
     });
-  }
-
-  // options/transformations 的类型也做一个基本兜底，避免渲染时崩溃
-  if (!isPlainObject(panelObj.options)) {
-    errors.push(`${path}.options 必须是对象`);
-  }
-  if ('transformations' in panelObj && panelObj.transformations != null && !Array.isArray(panelObj.transformations)) {
-    errors.push(`${path}.transformations 必须是数组`);
   }
 
   return errors;
@@ -156,36 +113,6 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
     errors.push('dashboard.name 必填');
   }
 
-  if ('description' in dashboard && dashboard.description != null && typeof dashboard.description !== 'string') {
-    errors.push('dashboard.description 必须是 string');
-  }
-
-  // 运行时上下文字段（timeRange/refreshInterval）不再属于 Dashboard JSON 的持久化字段：
-  // - 后端可不返回
-  // - 前端会在 load 时重置到默认值
-  // 这里保持“若出现则校验类型”的宽容策略，兼容历史/外部 JSON。
-  const refreshInterval = (dashboard as any).refreshInterval;
-  if ('refreshInterval' in (dashboard as any) && refreshInterval != null) {
-    if (typeof refreshInterval !== 'number' || Number.isNaN(refreshInterval)) {
-      errors.push('dashboard.refreshInterval 必须是 number');
-    } else if (refreshInterval < 0) {
-      errors.push('dashboard.refreshInterval 不能为负数');
-    }
-  }
-
-  const tr = (dashboard as any).timeRange;
-  if ('timeRange' in (dashboard as any) && tr != null) {
-    if (!isPlainObject(tr)) {
-      errors.push('dashboard.timeRange 必须是对象');
-    } else {
-      const from = (tr as any).from;
-      const to = (tr as any).to;
-      const isTimeValue = (v: unknown) => typeof v === 'number' || typeof v === 'string';
-      if (!isTimeValue(from)) errors.push('dashboard.timeRange.from 必填且必须是 number 或 string');
-      if (!isTimeValue(to)) errors.push('dashboard.timeRange.to 必填且必须是 number 或 string');
-    }
-  }
-
   if (!Array.isArray(dashboard.panelGroups)) {
     errors.push('dashboard.panelGroups 必须是数组');
     return errors;
@@ -202,7 +129,6 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
 
     if (typeof groupObj.id !== 'string' || !groupObj.id.trim()) errors.push(`${base}.id 必填`);
     if (typeof groupObj.title !== 'string' || !groupObj.title.trim()) errors.push(`${base}.title 必填`);
-    if (!isFiniteNumber(groupObj.order) || groupObj.order < 0) errors.push(`${base}.order 必填且必须是非负 number`);
 
     const panels = groupObj.panels;
     if (!Array.isArray(panels)) {
@@ -241,27 +167,14 @@ export const validateDashboardStrict: JsonTextValidator = (_text, parsedValue) =
       if (!isFiniteNumber(h)) errors.push(`${p}.h 必填且必须是 number`);
 
       if (typeof i === 'string' && i.trim()) {
-        if (layoutIds.has(i)) errors.push(`${p}.i 重复：${i}`);
         layoutIds.add(i);
       }
-
-      const maybeNumber = (v: unknown) => v == null || isFiniteNumber(v);
-      const fields: Array<keyof PanelLayout> = ['minW', 'minH', 'maxW', 'maxH'];
-      for (const f of fields) {
-        if (!maybeNumber((it as any)[f])) errors.push(`${p}.${String(f)} 必须是 number`);
-      }
-      const s = (it as any).static;
-      if (s != null && typeof s !== 'boolean') errors.push(`${p}.static 必须是 boolean`);
     }
 
     // panels 与 layout 必须一一对应
     for (const panelId of panelIds) {
       if (!panelId) continue;
       if (!layoutIds.has(panelId)) errors.push(`${base}.layout 缺失：panelId=${panelId}`);
-    }
-    for (const layoutId of layoutIds) {
-      if (!layoutId) continue;
-      if (!panelIds.has(layoutId)) errors.push(`${base}.layout 多余：panelId=${layoutId}`);
     }
   });
 

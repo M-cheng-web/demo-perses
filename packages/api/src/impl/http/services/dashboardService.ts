@@ -27,7 +27,7 @@ import type {
   UpdatePanelResponse,
 } from '../../../contracts/dashboard';
 import type { DashboardContent, DashboardListItem, DashboardSessionKey } from '@grafana-fast/types';
-import type { FetchHttpClient } from '../fetchClient';
+import type { FetchHttpClient } from '@grafana-fast/utils';
 import type { HttpApiEndpointKey } from '../endpoints';
 import { HttpApiEndpointKey as EndpointKey, getEndpointPath } from '../endpoints';
 import { normalizeArrayResponse } from './responseUtils';
@@ -47,7 +47,7 @@ export function createHttpDashboardService(_deps: HttpDashboardServiceDeps): Das
    *
    * 1) 从 deps 拿到 http + endpoints
    * 2) 用 getEndpointPath(endpoints, key, params) 得到路径
-   * 3) 调用 http.post 发请求（本期约定：统一 POST + JSON body）
+   * 3) 调用 http.post 发请求（约定：统一 POST + JSON body）
    * 4) 在这里完成 DTO → @grafana-fast/types 的转换（核心包不关心 DTO）
    */
   return {

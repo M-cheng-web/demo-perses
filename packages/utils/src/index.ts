@@ -6,7 +6,7 @@
  * - 为了避免循环依赖，这里尽量只放无业务语义的基础设施（bem/time/http/common/dom 等）
  *
  * 导出策略（单入口 + 命名空间）：
- * - 基础/通用能力：继续以具名 export 方式导出（便于 tree-shaking / 兼容旧代码）
+ * - 基础/通用能力：继续以具名 export 方式导出（便于 tree-shaking / 按需引用）
  * - 领域/集中能力：额外提供短命名的“命名空间对象”（例如 http.xxx / promql.xxx / echarts.xxx）
  *   方便 IDE 提示与发现能力
  */

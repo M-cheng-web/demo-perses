@@ -37,7 +37,7 @@ const categories = promql.modeller.getCategories();
 const endpoint = url.resolveEndpoint('/api', '/dashboards');
 ```
 
-如需自定义命名空间（例如历史样式前缀）：
+如需自定义命名空间（例如多实例/多包隔离）：
 
 ```ts
 import { createNamespace } from '@grafana-fast/utils';

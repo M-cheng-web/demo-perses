@@ -492,16 +492,8 @@ class MockDashboardSessionExpiredError extends Error {
 
 function resolveDashboardKeyFromParams(params: Record<string, any>): MockDashboardKey {
   const p = (params ?? {}) as Record<string, any>;
-  const candidates = [p.mockDashboardKey, p.dashboardKey, p.key, p.id, p.dashboardId];
-  for (const v of candidates) {
-    if (typeof v === 'string' && v.trim()) return v.trim();
-  }
-  try {
-    const json = JSON.stringify(params ?? {});
-    if (json && json !== '{}' && json !== 'null') return `mock:${json}`;
-  } catch {
-    // ignore
-  }
+  const key = p.dashboardKey;
+  if (typeof key === 'string' && key.trim()) return key.trim();
   return 'default';
 }
 

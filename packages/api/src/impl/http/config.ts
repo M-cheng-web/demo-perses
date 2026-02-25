@@ -10,10 +10,10 @@
  * - 变化应尽可能被限制在 http 实现层内部（包含 endpoint 路径、请求体/响应体适配）
  */
 
-import type { FetchLike, HeadersLike, HttpClientConfig } from './fetchClient';
 import type { HttpApiEndpointKey } from './endpoints';
 import { resolveHttpApiEndpoints } from './endpoints';
 import { normalizeBaseUrl } from '@grafana-fast/utils';
+import type { FetchLike, HeadersLike, HttpClientConfig } from '@grafana-fast/utils';
 
 /**
  * 鉴权配置（可选）

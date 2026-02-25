@@ -101,7 +101,7 @@ await actions.loadDashboard();
 当后端返回 `401` + `ErrorResponse(code="DASHBOARD_SESSION_EXPIRED")` 时：
 
 - SDK 会触发 **single-flight** 的重新 resolve（只会跑一次）
-- 然后 **整盘重载**（本期不要求自动重试触发请求）
+- 然后 **整盘重载**（不要求自动重试触发当前失败的请求）
   - 说明：该规则适用于任意接口（包含 queries / variables / querybuilder），只要命中该错误码就会触发整盘重载
 
 ---
@@ -114,7 +114,7 @@ await actions.loadDashboard();
 
 安全约束：
 
-- 即便导入了历史/外部 JSON 带 `id/createdAt/updatedAt` 等字段，store 会在内部做字段白名单化，只保留 `DashboardContent` 允许的字段，避免导出时泄露资源标识。
+- 即便导入 JSON 带 `id/createdAt/updatedAt` 等非内容字段，store 会在内部做字段白名单化，只保留 `DashboardContent` 允许的字段，避免导出时泄露资源标识。
 
 ---
 

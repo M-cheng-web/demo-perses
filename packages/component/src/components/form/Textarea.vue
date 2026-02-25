@@ -154,9 +154,9 @@
       min-height: var(--gf-control-height-md, 32px);
       padding: 4px 11px;
       border-radius: var(--gf-radius-md);
-      border: 1px solid var(--gf-control-border-color, var(--gf-border));
+      border: 1px solid var(--gf-control-border-color, var(--gf-color-border));
       background: var(--gf-control-bg, var(--gf-color-surface));
-      color: var(--gf-text);
+      color: var(--gf-color-text);
       font-size: var(--gf-font-size-md);
       line-height: 1.5714285714285714;
       resize: vertical;

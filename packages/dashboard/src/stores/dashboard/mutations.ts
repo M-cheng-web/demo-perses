@@ -5,7 +5,7 @@ import { createPrefixedId, deepClone } from '/#/utils';
 import type { DashboardState, DashboardViewMode } from './types';
 
 type DashboardMutationThis = DashboardState & {
-  requestAutoSync: () => void;
+  markDashboardChanged: () => void;
   setViewMode: (mode: DashboardViewMode) => void;
   addPanel: (groupId: ID, panel: Panel) => void;
   setViewPanel: (groupId: ID | null, panelId: ID | null) => void;
@@ -93,7 +93,7 @@ export function addPanelGroup(this: DashboardMutationThis, group: Partial<PanelG
   };
 
   dashboard.panelGroups.push(newGroup);
-  this.requestAutoSync();
+  this.markDashboardChanged();
 }
 
 /**
@@ -118,7 +118,7 @@ export function updatePanelGroup(this: DashboardMutationThis, id: ID, updates: P
       };
     }
   }
-  this.requestAutoSync();
+  this.markDashboardChanged();
 }
 
 /**
@@ -129,7 +129,7 @@ export function deletePanelGroup(this: DashboardMutationThis, id: ID) {
   if (!dashboard) return;
 
   dashboard.panelGroups = dashboard.panelGroups.filter((g) => g.id !== id);
-  this.requestAutoSync();
+  this.markDashboardChanged();
 }
 
 /**
@@ -153,7 +153,7 @@ export function movePanelGroup(this: DashboardMutationThis, fromIndex: number, t
       group.order = index;
     });
   }
-  this.requestAutoSync();
+  this.markDashboardChanged();
 }
 
 /**
@@ -196,7 +196,7 @@ export function reorderPanelGroups(this: DashboardMutationThis, nextOrder: ID[])
     g.order = index;
   });
   dashboard.panelGroups = next;
-  this.requestAutoSync();
+  this.markDashboardChanged();
 }
 
 /**
@@ -210,7 +210,7 @@ export function updatePanelGroupLayout(this: DashboardMutationThis, groupId: ID,
   if (group) {
     group.layout = layout;
   }
-  this.requestAutoSync();
+  this.markDashboardChanged();
 }
 
 /**
@@ -242,7 +242,7 @@ export function patchPanelGroupLayoutItems(this: DashboardMutationThis, groupId:
     group.layout.push(created);
     byId.set(key, created);
   }
-  this.requestAutoSync();
+  this.markDashboardChanged();
 }
 
 /**
@@ -269,7 +269,7 @@ export function addPanel(this: DashboardMutationThis, groupId: ID, panel: Panel)
     minW: 6,
     minH: 4,
   });
-  this.requestAutoSync();
+  this.markDashboardChanged();
 }
 
 /**
@@ -297,7 +297,7 @@ export function updatePanel(this: DashboardMutationThis, groupId: ID, panelId: I
       };
     }
   }
-  this.requestAutoSync();
+  this.markDashboardChanged();
 }
 
 /**
@@ -315,7 +315,7 @@ export function deletePanel(this: DashboardMutationThis, groupId: ID, panelId: I
 
   // 删除布局
   group.layout = group.layout.filter((l) => l.i !== panelId);
-  this.requestAutoSync();
+  this.markDashboardChanged();
 }
 
 /**

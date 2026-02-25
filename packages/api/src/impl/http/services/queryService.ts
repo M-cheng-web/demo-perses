@@ -7,8 +7,8 @@
  */
 
 import type { QueryService } from '../../../contracts/query';
-import type { CanonicalQuery, QueryContext, QueryResult, TimeRange } from '@grafana-fast/types';
-import type { FetchHttpClient } from '../fetchClient';
+import type { CanonicalQuery, QueryContext, QueryResult } from '@grafana-fast/types';
+import type { FetchHttpClient } from '@grafana-fast/utils';
 import type { HttpApiEndpointKey } from '../endpoints';
 import { HttpApiEndpointKey as EndpointKey, getEndpointPath } from '../endpoints';
 import { normalizeArrayResponse } from './responseUtils';
@@ -61,22 +61,6 @@ export function createHttpQueryService(_deps: HttpQueryServiceDeps): QueryServic
       const headers = options?.dashboardSessionKey ? { 'X-Dashboard-Session-Key': options.dashboardSessionKey } : undefined;
       const res = await _deps.http.post<unknown>(path, { metric, labelKey, otherLabels }, { signal: options?.signal, headers });
       return normalizeArrayResponse<string>(res);
-    },
-
-    /**
-     * （可选）支持 query 型变量：
-     *
-     * 说明：
-     * - VariableService.resolveOptions 会优先使用 queryService.fetchVariableValues（若存在）
-     * - 如果你的后端提供了变量解析专用接口，可在 endpoints.FetchVariableValues 上对接
-     * - 目前先实现一个“通用占位”：POST { expr, timeRange }
-     */
-    async fetchVariableValues(expr: string, timeRange: TimeRange, options?) {
-      const path = getEndpointPath(_deps.endpoints, EndpointKey.FetchVariableValues);
-      const headers = options?.dashboardSessionKey ? { 'X-Dashboard-Session-Key': options.dashboardSessionKey } : undefined;
-      const res = await _deps.http.post<unknown>(path, { expr, timeRange }, { signal: options?.signal, headers });
-      // 约定返回 [{ text, value }]；若后端不同，在这里做一次映射即可
-      return normalizeArrayResponse<{ text: string; value: string }>(res);
     },
   };
 }
