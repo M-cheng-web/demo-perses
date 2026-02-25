@@ -58,15 +58,13 @@ export function renderPromql(query: PromVisualQuery): string {
 }
 
 export function getPromQLForDraft(draft: QueryDraft): string {
-  // 关键：partial 未接受时，不允许“隐式覆盖原 PromQL”，仍以 code.expr 为准（避免语义变化）
-  if (draft.builder.status === 'ok') {
-    const okToUseBuilder = draft.builder.confidence === 'exact' || !!draft.builder.acceptedPartial;
-    if (okToUseBuilder) return renderPromql(draft.builder.visualQuery);
+  if (draft.mode === 'builder' && draft.builder.status === 'ok') {
+    return renderPromql(draft.builder.visualQuery);
   }
   return draft.code.expr || '';
 }
 
-// 将 PromQL 反解析 warnings（结构化）格式化成可读的中文提示文本（用于 Builder 底部 Alert 展示）
+// 将 PromQL 反解析 warnings（结构化）格式化成可读的中文提示文本（用于编辑器 Alert 展示）
 export function formatParseWarnings(warnings?: PromqlParseWarning[]): string {
   if (!warnings || warnings.length === 0) return '';
   return warnings

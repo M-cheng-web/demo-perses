@@ -68,10 +68,10 @@
   import { computed, ref, watch, onMounted } from 'vue';
   import { PlusOutlined, CloseOutlined } from '@ant-design/icons-vue';
   import type { QueryBuilderLabelFilter } from '@grafana-fast/utils';
-  import type { DashboardVariable } from '@grafana-fast/types';
   import { useApiClient } from '/#/runtime/useInjected';
   import { useVariablesStore } from '/#/stores';
   import { createNamespace } from '/#/utils';
+  import { extractVariableNameFromToken, getLabelFilterVariableOptions } from './labelFilterVariables';
 
   const [_, bem] = createNamespace('label-filters');
   const api = useApiClient();
@@ -100,47 +100,9 @@
     { label: '!~ 正则不匹配', value: '!~' },
   ];
 
-  const isDurationLikeValue = (value: unknown): boolean => {
-    if (typeof value !== 'string') return false;
-    const v = value.trim();
-    return /^[0-9]+[smhdwy]$/.test(v);
-  };
-
-  const isWindowLikeVariable = (v: DashboardVariable): boolean => {
-    const name = String(v?.name ?? '').toLowerCase();
-    const label = String(v?.label ?? '').toLowerCase();
-    if (name === 'window' || name === 'interval' || name === 'range' || name === 'step') return true;
-    if (label.includes('窗口') || label.includes('间隔') || label.includes('步长')) return true;
-    const opts = Array.isArray(v.options) ? v.options : [];
-    return opts.some((o) => isDurationLikeValue(o?.value ?? o?.text));
-  };
-
   const labelFilterVariableOptions = computed(() => {
-    const out: Array<{ label: string; value: string }> = [];
-    const seen = new Set<string>();
-    for (const v of variablesStore.variables ?? []) {
-      const name = String(v?.name ?? '').trim();
-      if (!name) continue;
-      if (name.startsWith('__')) continue;
-      if (isWindowLikeVariable(v)) continue;
-      const token = `$${name}`;
-      if (seen.has(token)) continue;
-      seen.add(token);
-      out.push({ label: token, value: token });
-    }
-    return out;
+    return getLabelFilterVariableOptions(variablesStore.variables ?? []);
   });
-
-  const extractVariableNameFromToken = (raw: string): string | null => {
-    const text = String(raw ?? '').trim();
-    let m = text.match(/^\$([A-Za-z_][A-Za-z0-9_]*)$/);
-    if (m?.[1]) return m[1];
-    m = text.match(/^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$/);
-    if (m?.[1]) return m[1];
-    m = text.match(/^\[\[([A-Za-z_][A-Za-z0-9_]*)\]\]$/);
-    if (m?.[1]) return m[1];
-    return null;
-  };
 
   // 加载标签键
   const loadLabelKeys = async () => {

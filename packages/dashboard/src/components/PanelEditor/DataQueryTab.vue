@@ -59,7 +59,7 @@
                       :class="bem('mode-segmented')"
                       :value="draft.mode"
                       :options="queryModeOptions"
-                      @update:value="(value: unknown) => (draft.mode = value as QueryMode)"
+                      @update:value="(value: unknown) => handleQueryModeChange(index, value)"
                     />
                   </div>
 
@@ -102,7 +102,7 @@
                     :message="
                       draft.builder.issueType === 'syntax'
                         ? `PromQL 语法错误（${draft.refId}）`
-                        : `该 PromQL 无法完整转换为 Builder（${draft.refId}）`
+                        : `该查询无法在 QueryBuilder 中编辑（${draft.refId}）`
                     "
                     :description="
                       [
@@ -115,30 +115,8 @@
                   />
 
                   <template v-else>
-                    <Alert
-                      v-if="draft.builder.confidence && draft.builder.confidence !== 'exact' && !draft.builder.acceptedPartial"
-                      type="warning"
-                      show-icon
-                      message="该 PromQL 只能部分转换为 Builder（当前仅预览）"
-                    >
-                      <template #description>
-                        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
-                          <span>点击“接受转换”后才能编辑；Builder 与 Code 独立，不会改写 Code 中的表达式。</span>
-                          <Button size="small" type="primary" @click="acceptPartialConversion(index)">接受转换</Button>
-                        </div>
-                      </template>
-                    </Alert>
-
                     <!-- 指标选择 -->
-                    <div
-                      :class="[
-                        bem('builder-sections'),
-                        {
-                          [bem('builder-sections--readonly')]:
-                            draft.builder.confidence && draft.builder.confidence !== 'exact' && !draft.builder.acceptedPartial,
-                        },
-                      ]"
-                    >
+                    <div :class="bem('builder-sections')">
                       <div :class="[bem('section'), bem('section--metric')]">
                         <div :class="bem('section-header')">
                           <span :class="bem('section-title')">指标</span>
@@ -233,13 +211,6 @@
                         </div>
                       </div>
 
-                      <Alert
-                        v-if="draft.builder.parseWarnings && draft.builder.parseWarnings.length > 0"
-                        type="warning"
-                        show-icon
-                        message="部分 PromQL 片段未能反解析为 Builder，已过滤"
-                        :description="formatParseWarnings(draft.builder.parseWarnings)"
-                      />
                     </div>
                   </template>
                 </Space>
@@ -247,6 +218,18 @@
 
               <!-- PromQL 代码模式 -->
               <div v-else :class="bem('code-mode')">
+                <Alert
+                  v-if="draft.builder.status !== 'ok' && draft.builder.message"
+                  :type="draft.builder.issueType === 'syntax' ? 'error' : 'warning'"
+                  show-icon
+                  :message="draft.builder.issueType === 'syntax' ? 'PromQL 语法错误，已使用 Code 模式' : '无法切换到 QueryBuilder，已保持 Code 模式'"
+                  :description="
+                    [draft.builder.message, formatParseWarnings(draft.builder.parseWarnings), formatDiagnostics(draft.builder.diagnostics)]
+                      .filter(Boolean)
+                      .join('；')
+                  "
+                  style="margin-bottom: 8px"
+                />
                 <div :class="bem('code-grid')">
                   <FormItem :class="bem('code-item', 'wide')" label="PromQL 表达式">
                     <Textarea
@@ -282,7 +265,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, h, onBeforeUnmount, ref } from 'vue';
+  import { computed, h, onBeforeUnmount, ref, watch } from 'vue';
   import {
     Alert,
     Button,
@@ -314,8 +297,11 @@
   import QueryHints from '/#/components/QueryBuilder/query-builder/QueryHints.vue';
   import QueryPreview from '/#/components/QueryBuilder/QueryPreview.vue';
   import QueryExplain from '/#/components/QueryBuilder/query-builder/QueryExplain.vue';
+  import { extractVariableNameFromToken, getLabelFilterVariableOptions } from '/#/components/QueryBuilder/labelFilterVariables';
+  import { useApiClient } from '/#/runtime/useInjected';
   import { createNamespace, debounceCancellable } from '/#/utils';
   import type { CanonicalQuery, PromVisualQuery } from '@grafana-fast/types';
+  import { parsePromqlToVisualQuery, promQueryModeller } from '@grafana-fast/utils';
   import { useVariablesStore } from '/#/stores';
 
   import {
@@ -324,12 +310,14 @@
     formatParseWarnings,
     getPromQLForDraft,
     normalizeVariableToken,
+    renderPromql,
   } from './dataQueryTab/helpers';
   import type { QueryMode } from './dataQueryTab/types';
   import { useDataQueryTabDraftLifecycle } from './dataQueryTab/useDataQueryTabDraftLifecycle';
 
   const [_, bem] = createNamespace('data-query-tab');
 
+  const api = useApiClient();
   const variablesStore = useVariablesStore();
   const availableVariables = computed(() => variablesStore.variables ?? []);
 
@@ -362,6 +350,9 @@
     highlightedOpIndex.value = undefined;
   }, 2000);
 
+  // 防止“异步校验”导致模式切换竞态：用 id 代替 index 做代际控制
+  const modeSwitchGeneration = new Map<string, number>();
+
   onBeforeUnmount(() => {
     clearHighlightedOp.cancel();
   });
@@ -374,7 +365,7 @@
     removeQuery,
     updateNestedQuery,
     updateBuilderQuery,
-    acceptPartialConversion,
+    switchQueryMode,
     validateDrafts,
     convertDraftsToCanonical,
     markEmitted,
@@ -386,6 +377,293 @@
 
   const handleCodeExprChange = (_index: number) => {
     // 预留：后续可在这里接入校验/格式化逻辑
+  };
+
+  // 保证 Builder/Code 使用同一份 expr：
+  // - Builder 模式下：任何 visualQuery 变更都会同步到 code.expr（canonical form）
+  // - Code 模式下：不自动改写用户输入；切回 Builder 时再做解析检查
+  watch(
+    queryDrafts,
+    (list) => {
+      for (const d of list) {
+        if (d.mode !== 'builder') continue;
+        if (d.builder.status !== 'ok') continue;
+        const nextExpr = renderPromql(d.builder.visualQuery);
+        if (nextExpr && nextExpr !== d.code.expr) d.code.expr = nextExpr;
+        if (!nextExpr && d.code.expr) d.code.expr = '';
+      }
+    },
+    { deep: true }
+  );
+
+  const handleQueryModeChange = (index: number, value: unknown) => {
+    const next: QueryMode = value === 'code' ? 'code' : 'builder';
+    const draft = queryDrafts.value[index];
+    if (!draft) return;
+
+    const draftId = String(draft.id ?? `${index}`);
+    const gen = (modeSwitchGeneration.get(draftId) ?? 0) + 1;
+    modeSwitchGeneration.set(draftId, gen);
+
+    const showSwitchError = (msg: string) => {
+      message.error({ content: msg || '无法切换模式', key: `query-mode:${draftId}`, duration: 3200 });
+    };
+
+    const setBuilderBlocked = (target: typeof draft, blockedMsg: string, parsed?: { ok: true; value: PromVisualQuery; warnings?: any[]; confidence?: any }) => {
+      // 关键：保持在 code 模式
+      target.mode = 'code';
+      target.builder.status = 'unsupported';
+      target.builder.issueType = 'unsupported';
+      target.builder.message = blockedMsg;
+      if (parsed?.ok) {
+        target.builder.parseWarnings = Array.isArray(parsed.warnings) ? [...parsed.warnings] : [];
+        target.builder.confidence = parsed.confidence ?? target.builder.confidence;
+        target.builder.visualQuery = parsed.value;
+      }
+    };
+
+    // builder -> code：同步 expr 即可（纯同步）
+    if (next === 'code') {
+      const idx = queryDrafts.value.findIndex((d) => String(d.id) === draftId);
+      if (idx < 0) return;
+      const res = switchQueryMode(idx, 'code');
+      if (!res.ok) showSwitchError(res.message || '无法切换到 Code 模式');
+      return;
+    }
+
+    // code -> builder：额外校验“可反显的选项值”是否存在，否则不允许切换
+    if (draft.mode !== 'code') {
+      const idx = queryDrafts.value.findIndex((d) => String(d.id) === draftId);
+      if (idx < 0) return;
+      const res = switchQueryMode(idx, 'builder');
+      if (!res.ok) showSwitchError(res.message || '无法切换到 QueryBuilder');
+      return;
+    }
+
+    const expr = String(draft.code.expr ?? '').trim();
+    if (!expr) {
+      const idx = queryDrafts.value.findIndex((d) => String(d.id) === draftId);
+      if (idx < 0) return;
+      const res = switchQueryMode(idx, 'builder');
+      if (!res.ok) showSwitchError(res.message || '无法切换到 QueryBuilder');
+      return;
+    }
+
+    const parsed = parsePromqlToVisualQuery(expr);
+    if (!parsed.ok) {
+      // 走既有逻辑：会自动保持 code 模式，并产出统一提示文案
+      const idx = queryDrafts.value.findIndex((d) => String(d.id) === draftId);
+      if (idx < 0) return;
+      const res = switchQueryMode(idx, 'builder');
+      if (!res.ok) showSwitchError(res.message || '无法切换到 QueryBuilder');
+      return;
+    }
+
+    if (parsed.confidence !== 'exact') {
+      // 走既有逻辑：会自动保持 code 模式，并产出统一提示文案
+      const idx = queryDrafts.value.findIndex((d) => String(d.id) === draftId);
+      if (idx < 0) return;
+      const res = switchQueryMode(idx, 'builder');
+      if (!res.ok) showSwitchError(res.message || '无法切换到 QueryBuilder');
+      return;
+    }
+
+    const buildIssueMessage = (issues: string[]) => {
+      const head = issues.slice(0, 3).join('；');
+      const more = issues.length > 3 ? `（另有 ${issues.length - 3} 处）` : '';
+      return `无法切换到 QueryBuilder：${head}${more}。请继续使用 Code 模式。`;
+    };
+
+    const validateQueryOptions = async (q: PromVisualQuery, prefix: string, issues: string[], caches: any) => {
+      const metric = String(q.metric ?? '').trim();
+      if (!metric) {
+        if ((q.labels?.length ?? 0) > 0 || (q.operations?.length ?? 0) > 0) {
+          issues.push(`${prefix}缺少指标名，无法校验 QueryBuilder 选项`);
+        }
+      }
+
+      const getMetricExists = async (): Promise<boolean | null> => {
+        if (!metric) return null;
+        const cached = caches.metricExists.get(metric);
+        if (cached) return cached;
+        const p = api.query
+          .fetchMetrics(metric)
+          .then((list) => Array.isArray(list) && list.includes(metric))
+          .catch((error: unknown) => {
+            const msg = error instanceof Error ? error.message : String(error);
+            issues.push(`${prefix}校验指标 '${metric}' 失败（POST /query/metrics）：${msg}`);
+            return null;
+          });
+        caches.metricExists.set(metric, p);
+        return p;
+      };
+
+      const getLabelKeys = async (): Promise<Set<string> | null> => {
+        if (!metric) return null;
+        const cached = caches.labelKeys.get(metric);
+        if (cached) return cached;
+        const p = api.query
+          .fetchLabelKeys(metric)
+          .then((list) => new Set((Array.isArray(list) ? list : []).map((v) => String(v))))
+          .catch((error: unknown) => {
+            const msg = error instanceof Error ? error.message : String(error);
+            issues.push(`${prefix}加载标签名列表失败（POST /query/label-keys）：${msg}`);
+            return null;
+          });
+        caches.labelKeys.set(metric, p);
+        return p;
+      };
+
+      const stableOtherLabelsKey = (otherLabels: Record<string, string>) => {
+        const keys = Object.keys(otherLabels).sort();
+        const normalized: Record<string, string> = {};
+        for (const k of keys) normalized[k] = otherLabels[k]!;
+        return JSON.stringify(normalized);
+      };
+
+      const getLabelValues = async (labelKey: string, otherLabels: Record<string, string>): Promise<Set<string> | null> => {
+        if (!metric) return null;
+        const key = `${metric}@@${labelKey}@@${stableOtherLabelsKey(otherLabels)}`;
+        const cached = caches.labelValues.get(key);
+        if (cached) return cached;
+        const p = api.query
+          .fetchLabelValues(metric, labelKey, otherLabels)
+          .then((list) => new Set((Array.isArray(list) ? list : []).map((v) => String(v))))
+          .catch((error: unknown) => {
+            const msg = error instanceof Error ? error.message : String(error);
+            issues.push(`${prefix}加载标签值列表失败（POST /query/label-values, ${labelKey}）：${msg}`);
+            return null;
+          });
+        caches.labelValues.set(key, p);
+        return p;
+      };
+
+      // (1) 指标：必须存在于可选列表中（POST /query/metrics）
+      const metricOk = await getMetricExists();
+      if (metricOk === false) {
+        issues.push(`${prefix}指标 '${metric}' 不在后端返回的指标列表中（POST /query/metrics）`);
+      }
+
+      // (2) 标签名：必须存在于可选列表中（POST /query/label-keys）
+      const labelKeys = await getLabelKeys();
+      const hasLabelKey = (k: string) => (labelKeys ? labelKeys.has(k) : true);
+
+      for (const f of q.labels ?? []) {
+        const k = String(f?.label ?? '').trim();
+        if (!k) continue;
+        if (k === '__name__') continue;
+        if (!hasLabelKey(k)) issues.push(`${prefix}标签名 '${k}' 不在可选列表中（POST /query/label-keys）`);
+      }
+
+      // (3) 操作参数中的 label：LabelParamEditor 依赖 label-keys 下拉
+      for (const op of q.operations ?? []) {
+        const opId = String(op?.id ?? '').trim();
+        if (!opId) continue;
+        const def = promQueryModeller.getOperationDef(opId);
+        if (!def) continue;
+        const params = Array.isArray(op?.params) ? op.params : [];
+        for (let i = 0; i < params.length; i++) {
+          const paramDef = def.params?.[Math.min((def.params?.length ?? 1) - 1, i)];
+          if (!paramDef) continue;
+          if (paramDef.editor !== 'LabelParamEditor') continue;
+          const v = String(params[i] ?? '').trim();
+          if (!v) continue;
+          if (!hasLabelKey(v)) issues.push(`${prefix}操作 ${opId} 的标签参数 '${v}' 不在可选列表中（POST /query/label-keys）`);
+        }
+      }
+
+      // (4) 标签值：仅对 = / != 做“必须在下拉列表里”的校验（POST /query/label-values）
+      // - 正则（=~ / !~）本身不是“选项值”，允许继续编辑
+      const looksLikeVariableRef = (value: string) => /\$\{|\[\[|\$[A-Za-z_]/.test(value);
+      const variableValueTokens = new Set(getLabelFilterVariableOptions(variablesStore.variables ?? []).map((o) => o.value));
+
+      for (let i = 0; i < (q.labels?.length ?? 0); i++) {
+        const f = q.labels?.[i];
+        if (!f) continue;
+        const k = String(f.label ?? '').trim();
+        if (!k) continue;
+        const op = String(f.op ?? '').trim();
+        if (op !== '=' && op !== '!=') continue;
+
+        const rawValue = String(f.value ?? '');
+        // 空字符串是合法 PromQL（label=""），不阻断切换
+        if (rawValue === '') continue;
+
+        const varName = extractVariableNameFromToken(rawValue);
+        if (varName) {
+          const token = `$${varName}`;
+          if (!variableValueTokens.has(token)) {
+            issues.push(`${prefix}变量 ${token} 未在后端下发，无法用于标签过滤（POST /variables/load）`);
+          }
+          continue;
+        }
+
+        const otherLabels: Record<string, string> = {};
+        for (let j = 0; j < (q.labels?.length ?? 0); j++) {
+          if (j === i) continue;
+          const o = q.labels?.[j];
+          if (!o?.label || o.value == null) continue;
+          const ov = String(o.value);
+          if (!ov) continue;
+          if (looksLikeVariableRef(ov)) continue;
+          otherLabels[String(o.label)] = ov;
+        }
+
+        const values = await getLabelValues(k, otherLabels);
+        if (!values) continue;
+        const allowed = new Set<string>([...values, ...variableValueTokens]);
+        if (!allowed.has(rawValue)) {
+          issues.push(`${prefix}标签 ${k} 的值 '${rawValue}' 不在可选列表中（POST /query/label-values）`);
+        }
+      }
+
+      // (5) 递归校验二元查询
+      const nested = q.binaryQueries ?? [];
+      for (let i = 0; i < nested.length; i++) {
+        const bq = nested[i];
+        if (!bq?.query) continue;
+        await validateQueryOptions(bq.query as PromVisualQuery, `${prefix}二元查询#${i + 1}：`, issues, caches);
+      }
+    };
+
+    const checkSwitchable = async (): Promise<{ ok: true } | { ok: false; issues: string[] }> => {
+      const issues: string[] = [];
+      const caches = {
+        metricExists: new Map<string, Promise<boolean | null>>(),
+        labelKeys: new Map<string, Promise<Set<string> | null>>(),
+        labelValues: new Map<string, Promise<Set<string> | null>>(),
+      };
+      await validateQueryOptions(parsed.value, '', issues, caches);
+      return issues.length ? { ok: false, issues } : { ok: true };
+    };
+
+    void (async () => {
+      const check = await checkSwitchable();
+      // 如果期间发生了新的模式切换请求，则放弃本次结果
+      if ((modeSwitchGeneration.get(draftId) ?? 0) !== gen) return;
+
+      const idx = queryDrafts.value.findIndex((d) => String(d.id) === draftId);
+      if (idx < 0) return;
+      const current = queryDrafts.value[idx];
+      if (!current) return;
+
+      if (!check.ok) {
+        const msg = buildIssueMessage(check.issues);
+        setBuilderBlocked(current, msg, parsed);
+        showSwitchError(msg);
+        return;
+      }
+
+      const res = switchQueryMode(idx, 'builder');
+      if (!res.ok) {
+        showSwitchError(res.message || '无法切换到 QueryBuilder');
+      } else {
+        // 清掉之前的“解析失败”提示（若有），避免用户误解
+        current.builder.status = 'ok';
+        current.builder.issueType = undefined;
+        current.builder.message = undefined;
+      }
+    })();
   };
 
   const copyToClipboard = async (text: string) => {
@@ -833,11 +1111,6 @@
       flex-direction: column;
       gap: var(--dp-inner-gap);
       width: 100%;
-
-      &--readonly {
-        pointer-events: none;
-        opacity: 0.6;
-      }
     }
 
     // ===== Section 样式（无包裹，纯标题+内容） =====

@@ -2,33 +2,24 @@ import { ref } from 'vue';
 import type { CanonicalQuery, PromVisualQuery } from '@grafana-fast/types';
 import { parsePromqlToVisualQuery } from '@grafana-fast/utils';
 import { createPrefixedId, deepClone } from '/#/utils';
-import { emptyVisualQuery, indexToRefId, nextRefId } from './helpers';
+import { emptyVisualQuery, indexToRefId, nextRefId, renderPromql } from './helpers';
 import type { QueryDraft } from './types';
 
 function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): QueryDraft {
   const refId = (q.refId || fallbackRefId).trim() || fallbackRefId;
   const id = q.id || createPrefixedId('q');
 
-  const persisted = (q as any).visualQuery as PromVisualQuery | undefined;
-  if (persisted && typeof persisted === 'object') {
-    return {
-      id,
-      refId,
-      hide: !!q.hide,
-      collapsed: false,
-      mode: 'builder',
-      showExplain: false,
-      code: {
-        expr: String(q.expr ?? ''),
-        legendFormat: String(q.legendFormat ?? ''),
-        minStep: typeof q.minStep === 'number' && q.minStep > 0 ? q.minStep : 15,
-      },
-      builder: { status: 'ok', visualQuery: deepClone(persisted), parseWarnings: [], confidence: 'exact', acceptedPartial: true },
-    };
-  }
+  const expr = String(q.expr ?? '');
+  const parsed = expr.trim() ? parsePromqlToVisualQuery(expr) : null;
 
-  const parsed = parsePromqlToVisualQuery(String(q.expr ?? ''));
-  if (parsed.ok && (parsed.confidence === 'exact' || parsed.confidence === 'partial')) {
+  // 约定：默认优先进入 Builder；仅当“无法 exact 反解析”时降级到 Code
+  const canUseBuilder = !expr.trim() || (parsed?.ok && parsed.confidence === 'exact');
+
+  if (canUseBuilder) {
+    const visual = !expr.trim()
+      ? emptyVisualQuery()
+      : (deepClone((parsed as Extract<typeof parsed, { ok: true }>).value) as PromVisualQuery);
+    const nextExpr = expr.trim() ? renderPromql(visual) : '';
     return {
       id,
       refId,
@@ -37,64 +28,54 @@ function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): Quer
       mode: 'builder',
       showExplain: false,
       code: {
-        expr: String(q.expr ?? ''),
+        expr: nextExpr,
         legendFormat: String(q.legendFormat ?? ''),
         minStep: typeof q.minStep === 'number' && q.minStep > 0 ? q.minStep : 15,
       },
       builder: {
         status: 'ok',
-        visualQuery: deepClone(parsed.value),
-        parseWarnings: parsed.warnings ? [...parsed.warnings] : [],
-        confidence: parsed.confidence,
-        acceptedPartial: parsed.confidence === 'exact',
+        issueType: undefined,
+        message: undefined,
+        parseWarnings: (parsed && parsed.ok && parsed.warnings) ? [...parsed.warnings] : [],
+        confidence: parsed && parsed.ok ? parsed.confidence : 'exact',
+        diagnostics: [],
+        visualQuery: visual,
       },
     };
   }
 
-  if (parsed.ok && parsed.confidence === 'selector-only') {
-    return {
-      id,
-      refId,
-      hide: !!q.hide,
-      collapsed: false,
-      mode: 'builder',
-      showExplain: false,
-      code: {
-        expr: String(q.expr ?? ''),
-        legendFormat: String(q.legendFormat ?? ''),
-        minStep: typeof q.minStep === 'number' && q.minStep > 0 ? q.minStep : 15,
-      },
-      builder: {
-        status: 'unsupported',
-        message: parsed.warnings?.[0]?.message ?? '该表达式过于复杂，Builder 仅能提取部分信息；请使用 Code 模式编辑。',
-        parseWarnings: parsed.warnings ? [...parsed.warnings] : [],
-        visualQuery: deepClone(parsed.value),
-        confidence: parsed.confidence,
-        acceptedPartial: false,
-        issueType: 'unsupported',
-      },
-    };
-  }
+  const messageFromWarnings = (warnings?: Array<{ message?: unknown }>) => {
+    const head = warnings?.[0]?.message;
+    return typeof head === 'string' && head.trim() ? head.trim() : '';
+  };
+
+  const fallbackMessage =
+    parsed && parsed.ok
+      ? `该 PromQL 无法完整反解析为 QueryBuilder（confidence=${parsed.confidence}），已切换到 Code 模式。`
+      : `该 PromQL 暂无法反解析为 QueryBuilder，已切换到 Code 模式。`;
+  const errText = parsed && !parsed.ok ? String(parsed.error ?? '').trim() : '';
+  const issueType: NonNullable<QueryDraft['builder']['issueType']> = parsed && !parsed.ok ? 'syntax' : 'unsupported';
 
   return {
     id,
     refId,
     hide: !!q.hide,
     collapsed: false,
-    mode: 'builder',
+    mode: 'code',
     showExplain: false,
     code: {
-      expr: String(q.expr ?? ''),
+      expr,
       legendFormat: String(q.legendFormat ?? ''),
       minStep: typeof q.minStep === 'number' && q.minStep > 0 ? q.minStep : 15,
     },
     builder: {
       status: 'unsupported',
-      message: '该 PromQL 暂无法转换为 Builder（best-effort 解析失败），请使用 Code 模式编辑。',
-      parseWarnings: [],
-      visualQuery: emptyVisualQuery(),
-      acceptedPartial: false,
-      issueType: 'unsupported',
+      issueType,
+      message: errText || messageFromWarnings(parsed && parsed.ok ? parsed.warnings : undefined) || fallbackMessage,
+      parseWarnings: parsed && parsed.ok && parsed.warnings ? [...parsed.warnings] : [],
+      confidence: parsed && parsed.ok ? parsed.confidence : undefined,
+      diagnostics: [],
+      visualQuery: parsed && parsed.ok ? deepClone(parsed.value) : emptyVisualQuery(),
     },
   };
 }
@@ -127,7 +108,7 @@ export function useQueryDrafts() {
           mode: 'builder',
           showExplain: false,
           code: { expr: '', legendFormat: '', minStep: 15 },
-          builder: { status: 'ok', visualQuery: emptyVisualQuery(), parseWarnings: [] },
+          builder: { status: 'ok', visualQuery: emptyVisualQuery() },
         },
       ];
       return;
@@ -159,7 +140,7 @@ export function useQueryDrafts() {
       mode: 'builder',
       showExplain: false,
       code: { expr: '', legendFormat: '', minStep: 15 },
-      builder: { status: 'ok', visualQuery: emptyVisualQuery(), parseWarnings: [] },
+      builder: { status: 'ok', visualQuery: emptyVisualQuery() },
     });
   };
 
@@ -173,38 +154,85 @@ export function useQueryDrafts() {
     draft.builder.status = 'ok';
     draft.builder.message = undefined;
     draft.builder.parseWarnings = [];
+    draft.builder.confidence = 'exact';
     draft.builder.diagnostics = [];
     draft.builder.issueType = undefined;
-    draft.builder.confidence = 'exact';
-    draft.builder.acceptedPartial = true;
     draft.builder.visualQuery = deepClone(updatedQuery);
+    draft.code.expr = renderPromql(draft.builder.visualQuery);
   };
 
   const updateBuilderQuery = (index: number, updatedQuery: PromVisualQuery) => {
     const draft = queryDrafts.value[index];
     if (!draft) return;
-    // partial 未接受时禁止编辑（理论上 UI 已拦截，这里再做一次防御）
-    if (draft.builder.confidence && draft.builder.confidence !== 'exact' && !draft.builder.acceptedPartial) {
-      return;
-    }
     draft.builder.status = 'ok';
     draft.builder.message = undefined;
     draft.builder.parseWarnings = [];
+    draft.builder.confidence = 'exact';
     draft.builder.diagnostics = [];
     draft.builder.issueType = undefined;
-    draft.builder.confidence = 'exact';
-    draft.builder.acceptedPartial = true;
     draft.builder.visualQuery = deepClone(updatedQuery);
+    draft.code.expr = renderPromql(draft.builder.visualQuery);
   };
 
-  // 用户明确确认：接受 partial 转换（允许 Builder 编辑，Code 模式保持独立）
-  const acceptPartialConversion = (index: number) => {
-    const d = queryDrafts.value[index];
-    if (!d) return;
-    if (d.builder.status !== 'ok') return;
-    if (!d.builder.confidence || d.builder.confidence === 'exact') return;
+  const switchQueryMode = (index: number, nextMode: QueryDraft['mode']): { ok: true } | { ok: false; message: string } => {
+    const draft = queryDrafts.value[index];
+    if (!draft) return { ok: false, message: 'Query draft not found' };
 
-    d.builder.acceptedPartial = true;
+    const mode = nextMode === 'builder' ? 'builder' : 'code';
+    if (mode === draft.mode) return { ok: true };
+
+    if (mode === 'code') {
+      // builder -> code：确保把当前 Builder 的表达式同步到 code.expr
+      if (draft.builder.status === 'ok') {
+        draft.code.expr = renderPromql(draft.builder.visualQuery);
+      }
+      draft.mode = 'code';
+      return { ok: true };
+    }
+
+    // code -> builder：检查是否能 exact 反解析到 Builder
+    const expr = String(draft.code.expr ?? '').trim();
+    if (!expr) {
+      draft.builder.status = 'ok';
+      draft.builder.issueType = undefined;
+      draft.builder.message = undefined;
+      draft.builder.parseWarnings = [];
+      draft.builder.confidence = 'exact';
+      draft.builder.diagnostics = [];
+      draft.builder.visualQuery = emptyVisualQuery();
+      draft.mode = 'builder';
+      return { ok: true };
+    }
+
+    const parsed = parsePromqlToVisualQuery(expr);
+    if (parsed.ok && parsed.confidence === 'exact') {
+      draft.builder.status = 'ok';
+      draft.builder.issueType = undefined;
+      draft.builder.message = undefined;
+      draft.builder.parseWarnings = parsed.warnings ? [...parsed.warnings] : [];
+      draft.builder.confidence = parsed.confidence;
+      draft.builder.diagnostics = [];
+      draft.builder.visualQuery = deepClone(parsed.value);
+      // 同步：保证 Builder/Code 看到的是同一份 expr（canonical form）
+      draft.code.expr = renderPromql(draft.builder.visualQuery);
+      draft.mode = 'builder';
+      return { ok: true };
+    }
+
+    const msg = parsed.ok
+      ? `无法切换到 QueryBuilder：该表达式无法完整反解析（confidence=${parsed.confidence}）。请继续使用 Code 模式。`
+      : `无法切换到 QueryBuilder：${String(parsed.error ?? '解析失败')}`;
+
+    draft.builder.status = 'unsupported';
+    draft.builder.issueType = parsed.ok ? 'unsupported' : 'syntax';
+    draft.builder.message = msg;
+    draft.builder.parseWarnings = parsed.ok && parsed.warnings ? [...parsed.warnings] : [];
+    draft.builder.confidence = parsed.ok ? parsed.confidence : undefined;
+    draft.builder.diagnostics = [];
+    draft.builder.visualQuery = parsed.ok ? deepClone(parsed.value) : emptyVisualQuery();
+    // 关键：保持在 code 模式
+    draft.mode = 'code';
+    return { ok: false, message: msg };
   };
 
   return {
@@ -216,6 +244,6 @@ export function useQueryDrafts() {
     removeQuery,
     updateNestedQuery,
     updateBuilderQuery,
-    acceptPartialConversion,
+    switchQueryMode,
   };
 }

@@ -26,13 +26,13 @@ export interface QueryDraft {
      */
     issueType?: 'syntax' | 'unsupported';
     message?: string;
+    /**
+     * 反解析 PromQL 的 warnings（best-effort）
+     * - confidence !== 'exact' 时通常会携带 warnings
+     * - 仅用于提示用户，不应影响保存/执行逻辑
+     */
     parseWarnings?: PromqlParseWarning[];
     confidence?: PromqlParseConfidence;
-    /**
-     * 当 confidence !== 'exact' 时，Builder 默认只允许预览；
-     * 需要用户点击“接受转换”后，才允许编辑并覆盖 code.expr（避免隐式语义变化）。
-     */
-    acceptedPartial?: boolean;
     /**
      * 语法诊断（带范围），仅编辑器使用；没有依赖强类型，避免类型耦合。
      */

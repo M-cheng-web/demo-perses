@@ -1,6 +1,5 @@
 import type { Ref } from 'vue';
-import type { CanonicalQuery, PromVisualQuery } from '@grafana-fast/types';
-import { parsePromqlToVisualQuery } from '@grafana-fast/utils';
+import type { CanonicalQuery } from '@grafana-fast/types';
 import { deepClone } from '/#/utils';
 import { renderPromql } from './helpers';
 import type { QueryDraft } from './types';
@@ -14,8 +13,7 @@ export function useQueryValidation(options: { queryDrafts: Ref<QueryDraft[]> }) 
     for (const d of queryDrafts.value) {
       const shouldValidate = purpose === 'save' ? true : !d.hide;
       if (!shouldValidate) continue;
-      const canUseBuilder =
-        d.mode === 'builder' && d.builder.status === 'ok' && (d.builder.confidence === 'exact' || !!d.builder.acceptedPartial);
+      const canUseBuilder = d.mode === 'builder' && d.builder.status === 'ok';
       const expr = canUseBuilder ? renderPromql(d.builder.visualQuery) : d.code.expr;
       if (!expr || !String(expr).trim()) {
         errors.push({ refId: d.refId || 'query', message: '表达式不能为空' });
@@ -26,8 +24,7 @@ export function useQueryValidation(options: { queryDrafts: Ref<QueryDraft[]> }) 
 
   const convertDraftsToCanonical = (purpose: 'save' | 'execute'): CanonicalQuery[] => {
     return queryDrafts.value.map((d) => {
-      const canUseBuilder =
-        d.mode === 'builder' && d.builder.status === 'ok' && (d.builder.confidence === 'exact' || !!d.builder.acceptedPartial);
+      const canUseBuilder = d.mode === 'builder' && d.builder.status === 'ok';
       const expr = canUseBuilder ? renderPromql(d.builder.visualQuery) : d.code.expr;
       const out: CanonicalQuery = {
         id: d.id,
@@ -40,14 +37,9 @@ export function useQueryValidation(options: { queryDrafts: Ref<QueryDraft[]> }) 
         hide: d.hide,
       };
 
-      // 只在“exact 或已接受 partial”时持久化 visualQuery，避免把“未确认的过滤结果”写入面板配置
-      if (d.builder.status === 'ok' && (d.builder.confidence === 'exact' || !!d.builder.acceptedPartial)) {
+      // 仅在 Builder 模式下持久化 visualQuery，保证与 expr 保持一致
+      if (d.mode === 'builder' && d.builder.status === 'ok') {
         (out as any).visualQuery = deepClone(d.builder.visualQuery);
-      } else if (purpose === 'save') {
-        const parsed = parsePromqlToVisualQuery(expr || '');
-        if (parsed.ok && parsed.confidence === 'exact') {
-          (out as any).visualQuery = deepClone(parsed.value) as PromVisualQuery;
-        }
       }
       return out;
     });

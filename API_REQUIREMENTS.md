@@ -18,8 +18,8 @@
 
 - Dashboard JSON（整盘）
   - `POST /dashboards/session/resolve`：根据宿主业务参数解析并签发 `dashboardSessionKey`（前端不知真实 dashboardId）
-  - `POST /dashboards/load`：进入时加载整盘 `DashboardContent`（只拉一次；依赖 header `X-Dashboard-Session-Key`）
-  - `POST /dashboards/save`：全量保存 `DashboardContent`（JSON 导入/应用后的持久化兜底；也用于“整盘覆盖保存”；依赖 header）
+  - `POST /dashboards/load`：进入时加载整盘 `DashboardContent`
+  - `POST /dashboards/save`：全量保存 `DashboardContent`（JSON 导入/应用后的持久化兜底；也用于“整盘覆盖保存”）
 - 面板组 PanelGroup（局部写）
   - `POST /dashboards/panel-groups/create`：创建面板组
   - `POST /dashboards/panel-groups/update`：更新面板组元信息（标题/描述）
@@ -90,17 +90,17 @@
 ### B2. 基础类型（契约）
 
 ```ts
-type ID = string;
-type DashboardSessionKey = string; // 真实 dashboardId 仅后端内部使用，不在 API 中出现
+type ID = string; // 后端生成的业务 ID（panelId/groupId/variableId 等）
+type DashboardSessionKey = string; // 会话级资源定位 key（真实 dashboardId 仅后端内部使用，不在 API 中出现）
 
-type TimestampMs = number;
+type TimestampMs = number; // 毫秒时间戳（Unix epoch, ms）
 
 type TimeRange = {
   // 允许两种形态：
   // 1) number：绝对时间戳（毫秒）
   // 2) string：相对时间（如 "now-1h" / "now"），由查询/变量解析服务解释
-  from: number | string;
-  to: number | string;
+  from: number | string; // 起始时间
+  to: number | string; // 结束时间
 };
 ```
 
@@ -113,8 +113,8 @@ type TimeRange = {
 type ErrorResponse = {
   error: {
     code: string; // e.g. "VALIDATION_ERROR" | "NOT_FOUND" | "CONFLICT" | ...
-    message: string;
-    details?: any;
+    message: string; // 人类可读错误信息（用于 toast/alert 展示）
+    details?: any; // 可选：调试信息/字段级错误
   };
 };
 ```
@@ -153,7 +153,7 @@ type ResolveDashboardSessionRequest = {
    * - { scene: "overview", tenantId }
    * - { dashboardTemplate: "cpu", cluster, namespace }
    */
-  params: Record<string, any>;
+  params: Record<string, any>; // 宿主业务参数（透传给后端用于定位真实资源）
 };
 ```
 
@@ -161,7 +161,7 @@ type ResolveDashboardSessionRequest = {
 
 ```ts
 type ResolveDashboardSessionResponse = {
-  dashboardSessionKey: DashboardSessionKey;
+  dashboardSessionKey: DashboardSessionKey; // 后端签发的 sessionKey（后续请求通过 header 透传）
 };
 ```
 
@@ -185,76 +185,78 @@ type ResolveDashboardSessionResponse = {
 - Request Body（严格）：
 
 ```ts
-type LoadDashboardRequest = {};
+type LoadDashboardRequest = {}; // body 为空（资源定位完全依赖 header: X-Dashboard-Session-Key）
 ```
 - Response `200`：
 
 ```ts
 type DashboardContent = {
-  schemaVersion: number;
-  name: string;
-  description?: string;
+  schemaVersion: number; // Dashboard JSON schema 版本号（仅持久化）
+  name: string; // Dashboard 名称
+  description?: string; // Dashboard 描述
 
-  panelGroups: PanelGroup[];
+  panelGroups: PanelGroup[]; // 面板组列表
 };
 
 type PanelGroup = {
-  id: ID;
-  title: string;
-  description?: string;
+  id: ID; // 面板组 ID（服务端生成）
+  title: string; // 面板组标题
+  description?: string; // 面板组描述
 
-  // 排序字段（与数组顺序一致）
-  order: number;
+  order: number; // 排序字段（与 panelGroups[] 数组顺序一致）
 
-  panels: Panel[];
-  layout: PanelLayout[];
+  panels: Panel[]; // 面板列表（数组顺序用于分页与新增/复制追加语义）
+  layout: PanelLayout[]; // 该组所有面板的布局信息（i=panelId；patch-page 每次只更新“当前页”子集）
 };
 
 type PanelLayout = {
-  i: ID; // panelId
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+  i: ID; // panelId（必须与 panels[].id 一一对应）
+  x: number; // grid x（单位：grid）
+  y: number; // grid y（单位：grid，全局 y，非“页内 y”）
+  w: number; // grid width（单位：grid）
+  h: number; // grid height（单位：grid）
 
-  minW?: number;
-  minH?: number;
-  maxW?: number;
-  maxH?: number;
-  static?: boolean;
+  minW?: number; // 可选：最小宽度
+  minH?: number; // 可选：最小高度
+  maxW?: number; // 可选：最大宽度
+  maxH?: number; // 可选：最大高度
+  static?: boolean; // 可选：是否禁用拖拽/缩放
 };
 
-type CorePanelType = 'timeseries' | 'pie' | 'bar' | 'table' | 'stat' | 'gauge' | 'heatmap';
+type CorePanelType = 'timeseries' | 'pie' | 'bar' | 'table' | 'stat' | 'gauge' | 'heatmap'; // 内置面板类型
 
 type Panel = {
-  id: ID;
-  name: string;
-  description?: string;
-  type: CorePanelType;
+  id: ID; // 面板 ID（服务端生成）
+  name: string; // 面板标题/名称
+  description?: string; // 面板描述
+  type: CorePanelType; // 面板类型
 
-  queries: CanonicalQuery[];
+  queries: CanonicalQuery[]; // 查询列表（面板取数入口）
 
   // options/transformations 属于“面板配置 JSON”，要求 round-trip（存什么回什么）
-  options: Record<string, any>;
-  transformations?: Array<{ id: string; options?: Record<string, any> }>;
+  options: Record<string, any>; // 面板配置（要求 round-trip）
+  transformations?: Array<{ id: string; options?: Record<string, any> }>; // 可选：数据变换链
 };
 
 type DashboardVariable = {
-  id: ID;
-  name: string;
-  label: string;
-  type: 'select' | 'input' | 'constant' | 'query';
+  id: ID; // 变量 ID（用于 key；由后端决定是否稳定）
+  name: string; // 变量名（用于 expr 插值，如 $cluster）
+  label: string; // 展示名称
+  type: 'select' | 'input' | 'constant' | 'query'; // 变量类型（决定渲染/插值策略）
 
-  query?: string;
-  options?: VariableOption[];
+  query?: string; // query 型变量：解析 options 的表达式（由实现层解释）
+  options?: VariableOption[]; // 下拉选项列表（select/query 常用；后端全量下发）
 
-  current: string | string[];
-  multi?: boolean;
-  includeAll?: boolean;
-  allValue?: string;
+  current: string | string[]; // 当前选中值（multi=true 时为数组）
+  multi?: boolean; // 是否多选（多选通常在标签过滤里用 =~）
+  includeAll?: boolean; // 是否包含 “All” 选项
+  allValue?: string; // All 的实际值（常见：'.*'）
 };
 
-type VariableOption = { text: string; value: string };
+type VariableOption = {
+  text: string; // 展示文本
+  value: string; // 实际值（写入 current/用于插值）
+};
 ```
 
 > 说明（重要）：`timeRange` 与“自动刷新间隔”属于运行时全局状态，不存入 Dashboard JSON（`DashboardContent`）。
@@ -287,7 +289,7 @@ type VariableOption = { text: string; value: string };
 
 ```ts
 type SaveDashboardRequest = {
-  content: DashboardContent;
+  content: DashboardContent; // 要保存的整盘 Dashboard JSON
 };
 ```
 - Response：`204 No Content`
@@ -313,8 +315,8 @@ type SaveDashboardRequest = {
 ```ts
 type CreatePanelGroupRequest = {
   group: {
-    title: string;
-    description?: string;
+    title: string; // 面板组标题
+    description?: string; // 面板组描述
   };
 };
 ```
@@ -323,7 +325,7 @@ type CreatePanelGroupRequest = {
 
 ```ts
 type CreatePanelGroupResponse = {
-  group: PanelGroup;
+  group: PanelGroup; // 创建后的面板组（包含 id / panels / layout / order）
 };
 ```
 
@@ -343,10 +345,10 @@ type CreatePanelGroupResponse = {
 
 ```ts
 type UpdatePanelGroupRequest = {
-  groupId: ID;
+  groupId: ID; // 目标面板组 id
   group: {
-    title: string;
-    description?: string;
+    title: string; // 新标题
+    description?: string; // 新描述
   };
 };
 ```
@@ -355,7 +357,7 @@ type UpdatePanelGroupRequest = {
 
 ```ts
 type UpdatePanelGroupResponse = {
-  group: PanelGroup;
+  group: PanelGroup; // 更新后的面板组（仅 title/description 变化；其他字段保持一致）
 };
 ```
 
@@ -372,7 +374,7 @@ type UpdatePanelGroupResponse = {
 
 ```ts
 type DeletePanelGroupRequest = {
-  groupId: ID;
+  groupId: ID; // 目标面板组 id
 };
 ```
 - Response：`204 No Content`
@@ -389,7 +391,7 @@ type DeletePanelGroupRequest = {
 
 ```ts
 type ReorderPanelGroupsRequest = {
-  order: ID[]; // panelGroupId 的顺序数组
+  order: ID[]; // panelGroupId 的顺序数组（拖拽后的最终顺序）
 };
 ```
 
@@ -417,9 +419,9 @@ type ReorderPanelGroupsRequest = {
 
 ```ts
 type CreatePanelRequest = {
-  groupId: ID;
+  groupId: ID; // 目标面板组 id
   // 前端发送“完整面板内容”（不含 id）
-  panel: Omit<Panel, 'id'>;
+  panel: Omit<Panel, 'id'>; // 新面板内容（不含 id）
 };
 ```
 
@@ -427,8 +429,8 @@ type CreatePanelRequest = {
 
 ```ts
 type CreatePanelResponse = {
-  panel: Panel; // 必须包含生成的 id
-  layout?: PanelLayout;
+  panel: Panel; // 新面板（必须包含生成的 id）
+  layout?: PanelLayout; // 可选：新面板初始布局（若不返回，前端会生成默认布局并随后 patch-page）
 };
 ```
 
@@ -448,9 +450,9 @@ type CreatePanelResponse = {
 
 ```ts
 type UpdatePanelRequest = {
-  groupId: ID;
-  panelId: ID;
-  panel: Omit<Panel, 'id'>; // 前端发送“完整面板内容”（不含 id）
+  groupId: ID; // 面板组 id（用于定位所属组）
+  panelId: ID; // 目标面板 id
+  panel: Omit<Panel, 'id'>; // 面板完整内容（不含 id，要求 round-trip）
 };
 ```
 
@@ -475,8 +477,8 @@ type UpdatePanelResponse = {
 
 ```ts
 type DeletePanelRequest = {
-  groupId: ID;
-  panelId: ID;
+  groupId: ID; // 面板组 id
+  panelId: ID; // 目标面板 id
 };
 ```
 - Response：`204 No Content`
@@ -494,8 +496,8 @@ type DeletePanelRequest = {
 
 ```ts
 type DuplicatePanelRequest = {
-  groupId: ID;
-  panelId: ID;
+  groupId: ID; // 面板组 id
+  panelId: ID; // 被复制的面板 id
 };
 ```
 - Response `200`：
@@ -503,7 +505,7 @@ type DuplicatePanelRequest = {
 ```ts
 type DuplicatePanelResponse = {
   panel: Panel; // 新面板（新 id）
-  layout?: PanelLayout; // 可选：新面板初始布局
+  layout?: PanelLayout; // 可选：新面板初始布局（若不返回，前端会生成默认布局并随后 patch-page）
 };
 ```
 
@@ -530,14 +532,14 @@ type DuplicatePanelResponse = {
 
 ```ts
 type PatchPanelGroupLayoutPageRequest = {
-  groupId: ID;
+  groupId: ID; // 面板组 id
   items: Array<{
     i: ID; // panelId
     x: number; // grid units
     y: number; // grid units（全局 y，非页内 y）
     w: number; // grid units
     h: number; // grid units
-  }>;
+  }>; // 当前页全部面板的最终 layout（最多 20 个；不是增量 patch）
 };
 ```
 
@@ -549,7 +551,7 @@ type PatchPanelGroupLayoutPageRequest = {
 
 ```ts
 type PatchPanelGroupLayoutPageResponse = {
-  items?: PanelLayout[];
+  items?: PanelLayout[]; // 可选：后端保存后的 layout 回显（通常为该页 items）
 };
 ```
 
@@ -572,8 +574,8 @@ type PatchPanelGroupLayoutPageResponse = {
 
 ```ts
 type ExecuteQueriesRequest = {
-  queries: CanonicalQuery[];
-  context: QueryContext;
+  queries: CanonicalQuery[]; // 本次要执行的查询列表
+  context: QueryContext; // 本次查询的公共上下文（timeRange 等）
 };
 
 type CanonicalQuery = {
@@ -584,16 +586,16 @@ type CanonicalQuery = {
   expr: string; // PromQL（前端已完成变量插值）
   visualQuery?: Record<string, any>; // 可视化 QueryBuilder 模型（用于 QueryBuilder 反显与 round-trip）
 
-  legendFormat?: string;
-  minStep: number; // seconds
-  format: 'time_series';
-  instant: boolean;
-  hide: boolean;
+  legendFormat?: string; // 可选：图例格式（如 {{instance}}）
+  minStep: number; // 最小步长（秒）
+  format: 'time_series'; // 返回格式（当前仅支持 time_series）
+  instant: boolean; // 是否 instant query（通常为 false）
+  hide: boolean; // 是否隐藏该 query（execute 时可跳过隐藏 query）
 };
 
 type QueryContext = {
-  timeRange: TimeRange;
-  suggestedStepMs?: number;
+  timeRange: TimeRange; // 本次查询时间范围
+  suggestedStepMs?: number; // 可选：前端建议 step（ms），后端可忽略
 };
 ```
 
@@ -602,16 +604,16 @@ type QueryContext = {
 ```ts
 type QueryResult = {
   queryId: ID; // 必须等于输入 CanonicalQuery.id
-  refId?: string;
-  expr: string;
+  refId?: string; // 可选：回传 refId（便于调试/展示）
+  expr: string; // 最终执行的表达式（用于回显/调试）
 
   data: Array<{
-    metric: Record<string, string>;
-    values: Array<[TimestampMs, number]>; // [ts,value]
+    metric: Record<string, string>; // 标签集（包含 __name__/instance/job 等）
+    values: Array<[TimestampMs, number]>; // 时序点：[ts,value]
   }>;
 
   error?: string; // 单 query 失败时填充（不要让整个接口 500）
-  meta?: Record<string, any>;
+  meta?: Record<string, any>; // 可选：额外信息（step/from/to 等）
 };
 type ExecuteQueriesResponse = QueryResult[];
 ```
@@ -641,13 +643,13 @@ type ExecuteQueriesResponse = QueryResult[];
 - Request Body（可为空对象）：
 
 ```ts
-type LoadVariablesRequest = {};
+type LoadVariablesRequest = {}; // body 可为空（变量作用域由 header sessionKey 决定）
 ```
 
 - Response `200`：
 
 ```ts
-type LoadVariablesResponse = DashboardVariable[];
+type LoadVariablesResponse = DashboardVariable[]; // 整份变量列表（定义 + options + current）
 ```
 
 ---
@@ -665,14 +667,14 @@ type LoadVariablesResponse = DashboardVariable[];
 
 ```ts
 type ApplyVariablesRequest = {
-  values: Record<string, string | string[]>;
+  values: Record<string, string | string[]>; // 变量值 patch（key 为变量 name；multi 变量用数组）
 };
 ```
 
 - Response `200`：
 
 ```ts
-type ApplyVariablesResponse = DashboardVariable[];
+type ApplyVariablesResponse = DashboardVariable[]; // 应用后的整份变量列表（后端可更新 options/current）
 ```
 
 ## J. 模块：QueryBuilder 联想（指标/标签）
@@ -689,13 +691,13 @@ type ApplyVariablesResponse = DashboardVariable[];
 
 ```ts
 type FetchMetricsRequest = {
-  search?: string;
+  search?: string; // 可选：模糊搜索关键字；为空等价于“默认列表”
 };
 ```
 - Response `200`：
 
 ```ts
-type FetchMetricsResponse = string[];
+type FetchMetricsResponse = string[]; // 指标名列表（Prometheus metric names）
 ```
 
 - 场景/时机：
@@ -712,13 +714,13 @@ type FetchMetricsResponse = string[];
 
 ```ts
 type FetchLabelKeysRequest = {
-  metric: string;
+  metric: string; // 指标名（用于限定 label keys 范围）
 };
 ```
 - Response `200`：
 
 ```ts
-type FetchLabelKeysResponse = string[];
+type FetchLabelKeysResponse = string[]; // label key 列表（如 instance/job/namespace）
 ```
 
 ### J3. Label Values 联想（支持 otherLabels 过滤）
@@ -732,14 +734,14 @@ type FetchLabelKeysResponse = string[];
 ```ts
 type FetchLabelValuesRequest = {
   metric: string; // 必填；若为空字符串，返回 400 + ErrorResponse(code="VALIDATION_ERROR")
-  labelKey: string; // 必填
-  otherLabels?: Record<string, string>; // 可选：其他 label 条件（前端会跳过含变量引用的条件）
+  labelKey: string; // 必填：要联想的 label key
+  otherLabels?: Record<string, string>; // 可选：其他 label 过滤条件（用于缩小 label value 联想范围）
 };
 ```
 - Response `200`：
 
 ```ts
-type FetchLabelValuesResponse = string[];
+type FetchLabelValuesResponse = string[]; // label value 列表
 ```
 
 - 约束：
