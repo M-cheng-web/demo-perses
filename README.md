@@ -1,13 +1,12 @@
 # @grafana-fast/monorepo
 
-原 `demo-perses` 项目已重构为 pnpm monorepo，提供可复用的 Dashboard 组件、对外 SDK hooks、类型包、文档与演示站点。
+原 `demo-perses` 项目已重构为 pnpm monorepo，提供可复用的 Dashboard 组件、对外 SDK hooks、类型包与演示站点。
 
 ## ✨ 概览
 
 - 多图表类型的仪表板体验（Dashboard）
 - QueryBuilder（PromQL 可视化构建 + 智能提示）
 - 可复用的 UI 组件库、SDK hooks、类型包
-- VitePress 文档与演示站点
 
 ## 🚀 快速开始
 
@@ -16,11 +15,11 @@
 ```bash
 pnpm install
 pnpm dev   # 运行演示站点（packages/app）
-pnpm build # 构建 types -> store -> component(UI) -> dashboard -> hooks
-pnpm docs  # 打开 VitePress 文档
+pnpm build # 构建可发布包（dist）并生成 release/ 离线产物
+pnpm app-release # 启动最小 demo，验证 release/ 可被真实消费
 ```
 
-演示站点默认运行在 http://localhost:5173 ，文档运行在 http://localhost:4173 。
+演示站点默认运行在 http://localhost:5173 。
 
 ## 🔌 后端接口对接
 
@@ -36,12 +35,10 @@ pnpm docs  # 打开 VitePress 文档
 | 命令              | 含义                            | 备注                                                                              |
 | ----------------- | ------------------------------- | --------------------------------------------------------------------------------- |
 | `pnpm dev`        | 启动演示站点                    | 先 `nr update`，再 `nr -C packages/app dev`                                       |
-| `pnpm build`      | 构建可发布包 + 同步 dist 元信息 | `nr update && esno scripts/build.ts`                                              |
-| `pnpm docs`       | 启动文档（VitePress dev）       | 先 `nr update`，再 `nr -C packages/docs docs:dev`                                 |
-| `pnpm docs:build` | 构建文档                        | 先 `nr update`，再 `nr -C packages/docs docs:build`                               |
-| `pnpm docs:serve` | 预览文档产物                    | 先 `nr update`，再 `nr -C packages/docs docs:serve`                               |
+| `pnpm build`      | 构建可发布包 + 生成 release/    | `nr update && esno scripts/build.ts && pnpm dist:validate && pnpm dist:pack`      |
+| `pnpm app-release`| 启动离线消费演示                | 先执行 `pnpm build`，再启动 `packages/app-release`（从 `release/` 直接引用 SDK） |
 | `pnpm update`     | 同步工作区包版本/依赖协议       | 基于 `meta/packages.ts`，把内部依赖统一为 `workspace:*`，并对齐版本号             |
-| `pnpm clean`      | 清理构建产物                    | 清理各包 `dist/` 与 docs 的缓存/产物                                              |
+| `pnpm clean`      | 清理构建产物                    | 清理各包 `dist/` 与增量编译缓存                                                   |
 | `pnpm types:fix`  | 同步 dist 内元信息              | 把各包 `package.json/README.md` 同步到 `dist/`，并把 `workspace:*` 改写为实际版本 |
 | `pnpm publish`    | 发布（从 dist 发布）            | 先校验 `exports/main/module/types` 指向文件存在，再 `npm publish`                 |
 | `pnpm lint`       | ESLint 检查                     | 使用 `--cache` 提速                                                               |
@@ -65,12 +62,13 @@ GF_USE_DIST=1 pnpm -C packages/app dev
 demo-perses/
 ├── packages/
 │   ├── app/         # 演示站点（消费组件与 hooks）
+│   ├── app-release/  # 离线消费演示（直接使用 release/ 产物）
 │   ├── component/   # 自研 UI 组件包 @grafana-fast/component（取代 Ant Design Vue）
 │   ├── dashboard/   # Dashboard 体验包 @grafana-fast/dashboard
 │   ├── hook/        # SDK hooks 包 @grafana-fast/hooks（依赖 dashboard）
 │   ├── types/       # 类型包 @grafana-fast/types
-│   └── docs/        # VitePress 文档
 ├── scripts/         # 打包/发布辅助脚本（参考 morehook 的 build/publish）
+├── release/         # 可直接拷贝分发的离线产物（单入口 index.mjs）
 ├── tsconfig.base.json  # 统一别名与编译配置，提供 /#/ 与 @grafana-fast/* 路径
 ├── pnpm-workspace.yaml
 └── README.md
@@ -91,4 +89,4 @@ demo-perses/
 维护约束：
 
 - 除非是“上游同步”或“明确的本地兼容补丁”，否则不在这些目录内做功能开发。
-- CI、代码审查与路线图里提到的类型债/测试覆盖/重构目标，默认只覆盖 `packages/*` 与 `scripts/*`。
+- 质量指标与路线图里提到的类型债/测试覆盖/重构目标，默认只覆盖 `packages/*` 与 `scripts/*`。

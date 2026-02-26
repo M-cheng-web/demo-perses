@@ -22,8 +22,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rollup -c ../../scripts/rollup.config.js",
-    "type-check": "tsc --noEmit -p tsconfig.json"
+    "build": "rollup -c ../../scripts/rollup.config.js"
   },
   "dependencies": {
     "@grafana-fast/types": "workspace:*",

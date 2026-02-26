@@ -11,7 +11,7 @@
 import path from 'path';
 import { packagesDir } from './paths.js';
 
-export type PackageCategory = 'library' | 'app' | 'docs';
+export type PackageCategory = 'library' | 'app';
 
 export interface PackageMeta {
   /**
@@ -126,11 +126,11 @@ export const packages: PackageMeta[] = [
     publish: false,
   },
   {
-    name: 'docs',
-    packageName: '@grafana-fast/docs',
-    display: '文档',
-    description: 'VitePress 文档站点。',
-    category: 'docs',
+    name: 'app-release',
+    packageName: '@grafana-fast/app-release',
+    display: 'Release 演示',
+    description: '用于验证 release/ 离线产物的真实消费效果。',
+    category: 'app',
     publish: false,
   },
 ];

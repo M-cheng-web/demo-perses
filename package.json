@@ -12,22 +12,16 @@
     "postinstall": "node ./scripts/link-nr.mjs",
     "build": "nr update && esno scripts/build.ts && pnpm dist:validate && pnpm dist:pack",
     "dev": "nr update && nr -C packages/app dev",
-    "docs": "nr update && nr -C packages/docs docs:dev",
-    "docs:build": "nr update && nr -C packages/docs docs:build",
-    "docs:serve": "nr update && nr -C packages/docs docs:serve",
+    "app-release": "pnpm build && pnpm -C packages/app-release run dev:release",
     "lint": "eslint --cache \"packages/**/*.{ts,tsx,vue,js,cjs,mjs}\" \"scripts/**/*.{ts,js,cjs,mjs}\" \"meta/**/*.{ts,js,cjs,mjs}\"",
     "lint:fix": "eslint --cache --fix \"packages/**/*.{ts,tsx,vue,js,cjs,mjs}\" \"scripts/**/*.{ts,js,cjs,mjs}\" \"meta/**/*.{ts,js,cjs,mjs}\"",
     "format": "prettier --check .",
-    "typecheck": "pnpm run typecheck:dist",
-    "typecheck:dist": "nr update && pnpm -C packages/dashboard run build:types && pnpm -r --if-present run type-check",
-    "typecheck:dev": "nr update && pnpm -r --filter \"!@grafana-fast/hooks\" --if-present run type-check && pnpm -C packages/hook run type-check:dev",
     "test": "nr update && pnpm -r --if-present run test",
     "update": "esno scripts/update.ts",
     "clean": "esno scripts/clean.ts",
     "types:fix": "esno scripts/sync-dist-meta.ts",
     "dist:validate": "esno scripts/validate-dist.ts",
     "dist:pack": "esno scripts/pack-dist.ts",
-    "ci": "pnpm clean && pnpm lint && pnpm format && pnpm build && pnpm typecheck && pnpm test",
     "publish": "esno scripts/publish.ts"
   },
   "pnpm": {
@@ -61,8 +55,7 @@
     "ts-node": "^10.9.2",
     "typescript": "~5.9.3",
     "vite": "^7.2.2",
-    "vue": "^3.5.24",
-    "vue-tsc": "^3.1.3"
+    "vue": "^3.5.24"
   },
   "engines": {
     "node": ">=20.19.0"

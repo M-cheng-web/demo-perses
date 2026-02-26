@@ -18,8 +18,7 @@
   ],
   "scripts": {
     "build": "rollup -c ../../scripts/rollup.config.js",
-    "build:types": "vue-tsc --project tsconfig.json --declaration --emitDeclarationOnly --outDir dist",
-    "type-check": "vue-tsc --noEmit --project tsconfig.json"
+    "build:types": "vue-tsc --project tsconfig.json --declaration --emitDeclarationOnly --outDir dist"
   },
   "dependencies": {
     "@grafana-fast/component": "workspace:*",
