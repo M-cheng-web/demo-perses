@@ -5,9 +5,9 @@ import { createPrefixedId, deepClone } from '/#/utils';
 import { emptyVisualQuery, indexToRefId, nextRefId, renderPromql } from './helpers';
 import type { QueryDraft } from './types';
 
-function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): QueryDraft {
-  const refId = (q.refId || fallbackRefId).trim() || fallbackRefId;
-  const id = q.id || createPrefixedId('q');
+	function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): QueryDraft {
+	  const refId = fallbackRefId.trim() || fallbackRefId;
+	  const id = q.id || createPrefixedId('q');
 
   const expr = String(q.expr ?? '');
   const parsed = expr.trim() ? parsePromqlToVisualQuery(expr) : null;

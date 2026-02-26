@@ -42,15 +42,26 @@
 
   const timeRangeStore = useTimeRangeStore();
   const variablesStore = useVariablesStore();
-  const queryResults = ref<QueryResult[]>([]);
-  const isLoading = ref(false);
-  const lastError = ref<string>('');
-  let abortController: AbortController | null = null;
+	  const queryResults = ref<QueryResult[]>([]);
+	  const isLoading = ref(false);
+	  const lastError = ref<string>('');
+	  let abortController: AbortController | null = null;
 
-  // 根据面板类型选择对应的图表组件
-  const chartComponent = computed(() => {
-    return getBuiltInPanelComponent(props.panel.type) ?? UnsupportedPanel;
-  });
+	  // UI 显示用的查询标识（A/B/C...）：按 queries[] 数组顺序派生
+	  const indexToRefId = (index: number): string => {
+	    let n = index;
+	    let out = '';
+	    while (n >= 0) {
+	      out = String.fromCharCode(65 + (n % 26)) + out;
+	      n = Math.floor(n / 26) - 1;
+	    }
+	    return out;
+	  };
+
+	  // 根据面板类型选择对应的图表组件
+	  const chartComponent = computed(() => {
+	    return getBuiltInPanelComponent(props.panel.type) ?? UnsupportedPanel;
+	  });
 
   // 执行查询（使用和外部一样的查询逻辑，确保数据一致）
   const executeQueriesInternal = async () => {
@@ -72,24 +83,30 @@
       const runner = new QueryRunner(api, { maxConcurrency: 4, cacheTtlMs: 0 });
 
       const values = (variablesStore.state?.values ?? {}) as Record<string, string | string[]>;
-      const resolvedQueries = (props.panel.queries ?? []).map((q) => {
-        const rawExpr = String(q.expr ?? '');
-        const expr = interpolateExpr(rawExpr, values, { multiFormat: 'regex', unknown: 'keep' });
-        return expr === rawExpr ? q : { ...q, expr };
-      });
+	      const resolvedQueries = (props.panel.queries ?? []).map((q) => {
+	        const rawExpr = String(q.expr ?? '');
+	        const expr = interpolateExpr(rawExpr, values, { multiFormat: 'regex', unknown: 'keep' });
+	        return expr === rawExpr ? q : { ...q, expr };
+	      });
 
-      const results = await runner.executeQueries(resolvedQueries, context, { signal: abortController.signal });
+	      const results = await runner.executeQueries(resolvedQueries, context, { signal: abortController.signal });
 
-      queryResults.value = results;
+	      queryResults.value = results;
 
-      // 严格：任意 query 返回 error 都视为“执行失败”，需要显式暴露给上层与用户。
-      const errors = results
-        .map((r) => (r.error ? `${String(r.refId || r.queryId || 'query')}: ${String(r.error)}` : ''))
-        .filter(Boolean);
-      if (errors.length > 0) {
-        const msg = errors.length === 1 ? errors[0]! : `${errors[0]} 等 ${errors.length} 个错误`;
-        lastError.value = msg;
-        throw new Error(msg);
+	      // 严格：任意 query 返回 error 都视为“执行失败”，需要显式暴露给上层与用户。
+	      const labelById = new Map<string, string>();
+	      resolvedQueries.forEach((q, i) => labelById.set(String(q.id), indexToRefId(i)));
+	      const errors = results
+	        .map((r) => {
+	          if (!r.error) return '';
+	          const label = labelById.get(String(r.queryId)) || String(r.queryId) || 'query';
+	          return `${label}: ${String(r.error)}`;
+	        })
+	        .filter(Boolean);
+	      if (errors.length > 0) {
+	        const msg = errors.length === 1 ? errors[0]! : `${errors[0]} 等 ${errors.length} 个错误`;
+	        lastError.value = msg;
+	        throw new Error(msg);
       }
     } catch (error) {
       if ((error as any)?.name === 'AbortError') return;

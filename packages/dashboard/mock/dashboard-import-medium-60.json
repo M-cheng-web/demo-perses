@@ -17,7 +17,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-1",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -44,7 +43,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-2",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -71,7 +69,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-3",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -98,7 +95,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-4",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -125,7 +121,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-5",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -152,7 +147,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-6",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -179,7 +173,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-7",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -206,7 +199,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-8",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -233,7 +225,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-9",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -260,7 +251,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-10",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -287,7 +277,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-11",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -314,7 +303,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-12",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -341,7 +329,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-13",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -368,7 +355,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-14",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -395,7 +381,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-15",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -422,7 +407,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-16",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -449,7 +433,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-17",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -476,7 +459,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-18",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -503,7 +485,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-19",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -530,7 +511,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-20",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -557,7 +537,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-21",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -584,7 +563,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-22",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -611,7 +589,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-23",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -638,7 +615,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-24",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -665,7 +641,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-25",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -692,7 +667,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-26",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -719,7 +693,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-27",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -746,7 +719,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-28",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -773,7 +745,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-29",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -800,7 +771,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-30",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -827,7 +797,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-31",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -854,7 +823,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-32",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -881,7 +849,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-33",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -908,7 +875,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-34",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -935,7 +901,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-35",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -962,7 +927,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-36",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -989,7 +953,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-37",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1016,7 +979,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-38",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1043,7 +1005,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-39",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1070,7 +1031,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-40",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1097,7 +1057,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-41",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1124,7 +1083,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-42",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1151,7 +1109,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-43",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1178,7 +1135,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-44",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1205,7 +1161,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-45",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1232,7 +1187,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-46",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1259,7 +1213,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-47",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1286,7 +1239,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-48",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1313,7 +1265,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-49",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1340,7 +1291,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-50",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1367,7 +1317,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-51",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1394,7 +1343,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-52",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1421,7 +1369,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-53",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1448,7 +1395,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-54",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1475,7 +1421,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-55",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1502,7 +1447,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-56",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1529,7 +1473,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-57",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1556,7 +1499,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-58",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1583,7 +1525,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-59",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1610,7 +1551,6 @@
           "queries": [
             {
               "id": "q-panel-import-medium-60",
-              "refId": "A",
               "datasourceRef": {
                 "type": "prometheus",
                 "uid": "prometheus-mock"
@@ -1637,540 +1577,420 @@
           "x": 0,
           "y": 0,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-2",
           "x": 12,
           "y": 0,
           "w": 12,
-          "h": 14,
-          "minW": 8,
-          "minH": 4
+          "h": 14
         },
         {
           "i": "panel-import-medium-3",
           "x": 24,
           "y": 0,
           "w": 16,
-          "h": 12,
-          "minW": 8,
-          "minH": 4
+          "h": 12
         },
         {
           "i": "panel-import-medium-4",
           "x": 0,
           "y": 14,
           "w": 24,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-5",
           "x": 24,
           "y": 14,
           "w": 24,
-          "h": 14,
-          "minW": 8,
-          "minH": 4
+          "h": 14
         },
         {
           "i": "panel-import-medium-6",
           "x": 0,
           "y": 28,
           "w": 12,
-          "h": 14,
-          "minW": 8,
-          "minH": 4
+          "h": 14
         },
         {
           "i": "panel-import-medium-7",
           "x": 12,
           "y": 28,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-8",
           "x": 24,
           "y": 28,
           "w": 12,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-9",
           "x": 36,
           "y": 28,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-10",
           "x": 0,
           "y": 42,
           "w": 24,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-11",
           "x": 24,
           "y": 42,
           "w": 16,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-12",
           "x": 0,
           "y": 52,
           "w": 48,
-          "h": 18,
-          "minW": 8,
-          "minH": 4
+          "h": 18
         },
         {
           "i": "panel-import-medium-13",
           "x": 0,
           "y": 70,
           "w": 12,
-          "h": 6,
-          "minW": 8,
-          "minH": 4
+          "h": 6
         },
         {
           "i": "panel-import-medium-14",
           "x": 12,
           "y": 70,
           "w": 24,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-15",
           "x": 0,
           "y": 80,
           "w": 48,
-          "h": 18,
-          "minW": 8,
-          "minH": 4
+          "h": 18
         },
         {
           "i": "panel-import-medium-16",
           "x": 0,
           "y": 98,
           "w": 24,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-17",
           "x": 24,
           "y": 98,
           "w": 24,
-          "h": 14,
-          "minW": 8,
-          "minH": 4
+          "h": 14
         },
         {
           "i": "panel-import-medium-18",
           "x": 0,
           "y": 112,
           "w": 24,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-19",
           "x": 24,
           "y": 112,
           "w": 24,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-20",
           "x": 0,
           "y": 120,
           "w": 24,
-          "h": 12,
-          "minW": 8,
-          "minH": 4
+          "h": 12
         },
         {
           "i": "panel-import-medium-21",
           "x": 0,
           "y": 132,
           "w": 48,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-22",
           "x": 0,
           "y": 142,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-23",
           "x": 12,
           "y": 142,
           "w": 24,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-24",
           "x": 36,
           "y": 142,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-25",
           "x": 0,
           "y": 152,
           "w": 24,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-26",
           "x": 24,
           "y": 152,
           "w": 24,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-27",
           "x": 0,
           "y": 162,
           "w": 24,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-28",
           "x": 24,
           "y": 162,
           "w": 24,
-          "h": 14,
-          "minW": 8,
-          "minH": 4
+          "h": 14
         },
         {
           "i": "panel-import-medium-29",
           "x": 0,
           "y": 176,
           "w": 12,
-          "h": 6,
-          "minW": 8,
-          "minH": 4
+          "h": 6
         },
         {
           "i": "panel-import-medium-30",
           "x": 0,
           "y": 182,
           "w": 48,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-31",
           "x": 0,
           "y": 190,
           "w": 24,
-          "h": 14,
-          "minW": 8,
-          "minH": 4
+          "h": 14
         },
         {
           "i": "panel-import-medium-32",
           "x": 24,
           "y": 190,
           "w": 12,
-          "h": 6,
-          "minW": 8,
-          "minH": 4
+          "h": 6
         },
         {
           "i": "panel-import-medium-33",
           "x": 36,
           "y": 190,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-34",
           "x": 0,
           "y": 204,
           "w": 24,
-          "h": 6,
-          "minW": 8,
-          "minH": 4
+          "h": 6
         },
         {
           "i": "panel-import-medium-35",
           "x": 24,
           "y": 204,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-36",
           "x": 0,
           "y": 212,
           "w": 16,
-          "h": 14,
-          "minW": 8,
-          "minH": 4
+          "h": 14
         },
         {
           "i": "panel-import-medium-37",
           "x": 16,
           "y": 212,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-38",
           "x": 28,
           "y": 212,
           "w": 16,
-          "h": 6,
-          "minW": 8,
-          "minH": 4
+          "h": 6
         },
         {
           "i": "panel-import-medium-39",
           "x": 0,
           "y": 226,
           "w": 16,
-          "h": 14,
-          "minW": 8,
-          "minH": 4
+          "h": 14
         },
         {
           "i": "panel-import-medium-40",
           "x": 16,
           "y": 226,
           "w": 24,
-          "h": 12,
-          "minW": 8,
-          "minH": 4
+          "h": 12
         },
         {
           "i": "panel-import-medium-41",
           "x": 0,
           "y": 240,
           "w": 16,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-42",
           "x": 16,
           "y": 240,
           "w": 12,
-          "h": 12,
-          "minW": 8,
-          "minH": 4
+          "h": 12
         },
         {
           "i": "panel-import-medium-43",
           "x": 28,
           "y": 240,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-44",
           "x": 0,
           "y": 252,
           "w": 24,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-45",
           "x": 24,
           "y": 252,
           "w": 16,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-46",
           "x": 0,
           "y": 260,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-47",
           "x": 12,
           "y": 260,
           "w": 12,
-          "h": 6,
-          "minW": 8,
-          "minH": 4
+          "h": 6
         },
         {
           "i": "panel-import-medium-48",
           "x": 24,
           "y": 260,
           "w": 24,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-49",
           "x": 0,
           "y": 270,
           "w": 16,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-50",
           "x": 16,
           "y": 270,
           "w": 12,
-          "h": 12,
-          "minW": 8,
-          "minH": 4
+          "h": 12
         },
         {
           "i": "panel-import-medium-51",
           "x": 28,
           "y": 270,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-52",
           "x": 0,
           "y": 282,
           "w": 24,
-          "h": 14,
-          "minW": 8,
-          "minH": 4
+          "h": 14
         },
         {
           "i": "panel-import-medium-53",
           "x": 24,
           "y": 282,
           "w": 12,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-54",
           "x": 36,
           "y": 282,
           "w": 12,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-55",
           "x": 0,
           "y": 296,
           "w": 12,
-          "h": 14,
-          "minW": 8,
-          "minH": 4
+          "h": 14
         },
         {
           "i": "panel-import-medium-56",
           "x": 12,
           "y": 296,
           "w": 24,
-          "h": 8,
-          "minW": 8,
-          "minH": 4
+          "h": 8
         },
         {
           "i": "panel-import-medium-57",
           "x": 0,
           "y": 310,
           "w": 24,
-          "h": 14,
-          "minW": 8,
-          "minH": 4
+          "h": 14
         },
         {
           "i": "panel-import-medium-58",
           "x": 24,
           "y": 310,
           "w": 16,
-          "h": 10,
-          "minW": 8,
-          "minH": 4
+          "h": 10
         },
         {
           "i": "panel-import-medium-59",
           "x": 0,
           "y": 324,
           "w": 48,
-          "h": 12,
-          "minW": 8,
-          "minH": 4
+          "h": 12
         },
         {
           "i": "panel-import-medium-60",
           "x": 0,
           "y": 336,
           "w": 24,
-          "h": 6,
-          "minW": 8,
-          "minH": 4
+          "h": 6
         }
       ]
     }

@@ -29,7 +29,6 @@ function makePanels({ count, idPrefix, heavy, heavyTextRepeat = 12 }) {
       queries: [
         {
           id: `q-${id}`,
-          refId: 'A',
           expr: heavy ? `sum(rate(container_cpu_usage_seconds_total{job=\"node\", instance=\"$instance\"}[5m])) by (cpu)` : 'cpu_usage',
           legendFormat: heavy ? 'CPU {{cpu}} / {{instance}}' : 'CPU {{cpu}}',
           format: 'time_series',
@@ -120,7 +119,7 @@ function makeLayoutPacked({ panels, seed }) {
     }
 
     w = Math.min(w, TOTAL_COLS);
-    layout.push({ i: p.id, x: rowX, y: rowY, w, h, minW: 8, minH: 4 });
+    layout.push({ i: p.id, x: rowX, y: rowY, w, h });
 
     rowX += w;
     rowMaxH = Math.max(rowMaxH, h);
@@ -141,7 +140,7 @@ function makeLayoutVertical({ panels, seed }) {
   let y = 0;
   for (const p of panels) {
     const h = pick(rng, [6, 8, 10, 12, 14, 18]);
-    layout.push({ i: p.id, x: 0, y, w: 48, h, minW: 8, minH: 4 });
+    layout.push({ i: p.id, x: 0, y, w: 48, h });
     y += h;
   }
   return layout;

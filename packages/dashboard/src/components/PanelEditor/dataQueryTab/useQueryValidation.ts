@@ -28,7 +28,6 @@ export function useQueryValidation(options: { queryDrafts: Ref<QueryDraft[]> }) 
       const expr = canUseBuilder ? renderPromql(d.builder.visualQuery) : d.code.expr;
       const out: CanonicalQuery = {
         id: d.id,
-        refId: d.refId,
         expr: expr || '',
         legendFormat: d.code.legendFormat || '',
         minStep: d.code.minStep || 15,

@@ -60,6 +60,27 @@
 
   const hasVisibleQueries = computed(() => (props.panel.queries ?? []).some((q) => !q.hide));
 
+  // UI 显示用的查询标识（A/B/C...）：按 queries[] 数组顺序派生，不参与持久化/传输
+  const indexToRefId = (index: number): string => {
+    let n = index;
+    let out = '';
+    while (n >= 0) {
+      out = String.fromCharCode(65 + (n % 26)) + out;
+      n = Math.floor(n / 26) - 1;
+    }
+    return out;
+  };
+  const queryLabelById = computed(() => {
+    const map = new Map<string, string>();
+    const list = props.panel.queries ?? [];
+    for (let i = 0; i < list.length; i++) {
+      const id = String(list[i]?.id ?? '');
+      if (!id) continue;
+      map.set(id, indexToRefId(i));
+    }
+    return map;
+  });
+
   // 根据面板类型选择组件
   const chartComponent = computed(() => {
     const type = props.panel.type;
@@ -99,8 +120,8 @@
       .map((r) => {
         const msg = r.error;
         if (!msg) return '';
-        const refId = r.refId || String(r.queryId) || 'query';
-        return `${refId}: ${String(msg)}`;
+        const label = queryLabelById.value.get(String(r.queryId)) || String(r.queryId) || 'query';
+        return `${label}: ${String(msg)}`;
       })
       .filter(Boolean);
 

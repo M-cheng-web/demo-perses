@@ -60,22 +60,19 @@ function sanitizePanelLayout(input: unknown): PanelLayout {
     y: toNum(it.y, 0),
     w: Math.max(1, toNum(it.w, 1)),
     h: Math.max(1, toNum(it.h, 1)),
-    minW: typeof it.minW === 'number' && Number.isFinite(it.minW) ? it.minW : undefined,
-    minH: typeof it.minH === 'number' && Number.isFinite(it.minH) ? it.minH : undefined,
-    maxW: typeof it.maxW === 'number' && Number.isFinite(it.maxW) ? it.maxW : undefined,
-    maxH: typeof it.maxH === 'number' && Number.isFinite(it.maxH) ? it.maxH : undefined,
-    static: typeof it.static === 'boolean' ? it.static : undefined,
   } as PanelLayout;
 }
 
 function sanitizeCanonicalQuery(input: unknown): CanonicalQuery {
   const q = (isPlainObject(input) ? input : {}) as any;
-  return {
+  const out = {
     ...q,
     id: String(q.id ?? ''),
-    refId: String(q.refId ?? ''),
     expr: String(q.expr ?? ''),
-  } as CanonicalQuery;
+  } as any;
+  // refId 已从 CanonicalQuery 移除：历史数据可能携带该字段，这里显式丢弃
+  delete out.refId;
+  return out as CanonicalQuery;
 }
 
 function sanitizeTransformation(input: unknown): PanelTransformation {

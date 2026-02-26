@@ -6,7 +6,7 @@
  * - 同时提供 QueryBuilder 所需的 metrics/labels/value 列表能力
  */
 import type { QueryService } from '../../contracts';
-import type { CanonicalQuery, QueryContext, QueryResult, TimeSeriesData } from '@grafana-fast/types';
+import type { QueryContext, QueryExecuteDTO, QueryResult, TimeSeriesData } from '@grafana-fast/types';
 import { getDefaultDataByExpr } from './defaultDataPool';
 
 const mockMetrics = [
@@ -64,7 +64,7 @@ function getMockLabelValues(metric: string, labelKey: string): string[] {
 
 export function createMockQueryService(): QueryService {
   return {
-    async executeQueries(queries: CanonicalQuery[], context: QueryContext): Promise<QueryResult[]> {
+    async executeQueries(queries: QueryExecuteDTO[], context: QueryContext): Promise<QueryResult[]> {
       const { timeRange } = context;
       const from = typeof timeRange.from === 'number' ? timeRange.from : Date.now() - 60 * 60 * 1000;
       const to = typeof timeRange.to === 'number' ? timeRange.to : Date.now();
@@ -73,7 +73,6 @@ export function createMockQueryService(): QueryService {
         const data: TimeSeriesData[] = getDefaultDataByExpr(q.expr);
         return {
           queryId: q.id,
-          refId: q.refId,
           expr: q.expr,
           data,
           error: undefined,

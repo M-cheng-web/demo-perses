@@ -18,15 +18,15 @@ export interface PanelLayout {
   w: number;
   /** 高度（网格单位） */
   h: number;
-  /** 最小宽度 */
+  /** 最小宽度（前端网格约束，UI 内部使用；后端契约仅要求 i/x/y/w/h） */
   minW?: number;
-  /** 最小高度 */
+  /** 最小高度（前端网格约束，UI 内部使用；后端契约仅要求 i/x/y/w/h） */
   minH?: number;
-  /** 最大宽度 */
+  /** 最大宽度（前端网格约束，UI 内部使用；后端契约仅要求 i/x/y/w/h） */
   maxW?: number;
-  /** 最大高度 */
+  /** 最大高度（前端网格约束，UI 内部使用；后端契约仅要求 i/x/y/w/h） */
   maxH?: number;
-  /** 是否静态（不可拖拽和调整） */
+  /** 是否静态（不可拖拽和调整；前端网格约束，UI 内部使用；后端契约仅要求 i/x/y/w/h） */
   static?: boolean;
 }
 

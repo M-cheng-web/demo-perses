@@ -5,8 +5,11 @@
 本文档特点：
 - 不标注具体代码调用位置，只描述：场景/调用时机/用途/严格入参出参
 - HTTP 路径与 `@grafana-fast/api` 默认 endpoints 对齐；如需对接现有服务路由，在 http 实现层集中映射
+
+> 注意：本文档中的 path **不包含**前端默认的 `baseUrl=/api` 前缀。若宿主未改 baseUrl，则实际请求为：`/api{path}`。
 - 对接约定：
   - **所有接口统一使用 `POST` + JSON body**（`Content-Type: application/json`）
+  - **Body 统一为 JSON 对象**：即便无参数也发送 `{}`（不要省略请求体）
   - 不使用 URL path params 传递业务 id（panelId/groupId 等）
   - Dashboard 资源定位不使用 `dashboardId`：前端只持有 **`dashboardSessionKey`**，并通过 header `X-Dashboard-Session-Key` 传递（详见 B1）
 
@@ -128,6 +131,16 @@ type ErrorResponse = {
 
 ---
 
+### B5. 状态码约定（建议）
+
+- `200`：有 JSON 返回体
+- `204 No Content`：无返回体（body 为空）
+- `400`：参数非法（返回 `ErrorResponse`）
+- `401`：sessionKey 失效（返回 `ErrorResponse(code="DASHBOARD_SESSION_EXPIRED")`）
+- `404`：资源不存在（返回 `ErrorResponse(code="NOT_FOUND")`）
+
+---
+
 ## C. 模块：Dashboard Session（dashboardSessionKey）
 
 ### C1. 解析并签发 dashboardSessionKey（业务接口）
@@ -215,12 +228,6 @@ type PanelLayout = {
   y: number; // grid y（单位：grid，全局 y，非“页内 y”）
   w: number; // grid width（单位：grid）
   h: number; // grid height（单位：grid）
-
-  minW?: number; // 可选：最小宽度
-  minH?: number; // 可选：最小高度
-  maxW?: number; // 可选：最大宽度
-  maxH?: number; // 可选：最大高度
-  static?: boolean; // 可选：是否禁用拖拽/缩放
 };
 
 type CorePanelType = 'timeseries' | 'pie' | 'bar' | 'table' | 'stat' | 'gauge' | 'heatmap'; // 内置面板类型
@@ -236,6 +243,22 @@ type Panel = {
   // options/transformations 属于“面板配置 JSON”，要求 round-trip（存什么回什么）
   options: Record<string, any>; // 面板配置（要求 round-trip）
   transformations?: Array<{ id: string; options?: Record<string, any> }>; // 可选：数据变换链
+};
+
+type CanonicalQuery = {
+  id: ID; // 查询 ID（用于结果对齐：QueryResult.queryId 必须等于它）
+
+  expr: string; // PromQL（存储态；执行前前端会结合变量做插值）
+
+  // 可选：可视化 QueryBuilder 模型（用于编辑器反显与 round-trip；不进入 /queries/execute）
+  visualQuery?: Record<string, any>;
+
+  // 以下字段属于“用户可配置项”，建议落库以保证反显一致；缺失时前端会补齐默认值
+  legendFormat?: string; // 图例格式（如 {{instance}}）
+  minStep?: number; // 最小步长（秒；缺失默认 15）
+  format?: 'time_series'; // 返回格式（当前仅支持 time_series）
+  instant?: boolean; // 是否 instant query（缺失默认 false）
+  hide?: boolean; // 是否隐藏（缺失默认 false）
 };
 
 type DashboardVariable = {
@@ -574,19 +597,18 @@ type PatchPanelGroupLayoutPageResponse = {
 
 ```ts
 type ExecuteQueriesRequest = {
-  queries: CanonicalQuery[]; // 本次要执行的查询列表
-  context: QueryContext; // 本次查询的公共上下文（timeRange 等）
+  queries: QueryExecuteDTO[]; // 本次要执行的查询列表（前端已补齐默认值）
+  context: QueryContext; // 本次查询的公共上下文（timeRange）
 };
 
-type CanonicalQuery = {
+type QueryExecuteDTO = {
   id: ID; // 用于结果对齐（必须原样回传到 QueryResult.queryId）
-  refId: string; // A/B/C...
   // 注意：前端不传 datasource 信息；由后端按租户/环境/默认配置选择查询数据源。
 
   expr: string; // PromQL（前端已完成变量插值）
-  visualQuery?: Record<string, any>; // 可视化 QueryBuilder 模型（用于 QueryBuilder 反显与 round-trip）
+  // 注意：visualQuery（可视化 QueryBuilder 模型）仅用于面板编辑器反显/round-trip，属于落库字段，不进入该执行接口。
 
-  legendFormat?: string; // 可选：图例格式（如 {{instance}}）
+  legendFormat: string; // 图例格式（如 {{instance}}；默认 ''）
   minStep: number; // 最小步长（秒）
   format: 'time_series'; // 返回格式（当前仅支持 time_series）
   instant: boolean; // 是否 instant query（通常为 false）
@@ -595,7 +617,6 @@ type CanonicalQuery = {
 
 type QueryContext = {
   timeRange: TimeRange; // 本次查询时间范围
-  suggestedStepMs?: number; // 可选：前端建议 step（ms），后端可忽略
 };
 ```
 
@@ -603,8 +624,7 @@ type QueryContext = {
 
 ```ts
 type QueryResult = {
-  queryId: ID; // 必须等于输入 CanonicalQuery.id
-  refId?: string; // 可选：回传 refId（便于调试/展示）
+  queryId: ID; // 必须等于输入 QueryExecuteDTO.id
   expr: string; // 最终执行的表达式（用于回显/调试）
 
   data: Array<{

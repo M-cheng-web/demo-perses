@@ -120,11 +120,11 @@
                       <div :class="[bem('section'), bem('section--metric')]">
                         <div :class="bem('section-header')">
                           <span :class="bem('section-title')">指标</span>
-	                        </div>
-	                        <div :class="bem('section-content')">
-	                          <MetricSelector :class="bem('metric-selector')" v-model="draft.builder.visualQuery.metric" />
-	                        </div>
-	                      </div>
+                        </div>
+                        <div :class="bem('section-content')">
+                          <MetricSelector :class="bem('metric-selector')" v-model="draft.builder.visualQuery.metric" />
+                        </div>
+                      </div>
 
                       <!-- 标签过滤器 -->
                       <div :class="[bem('section'), bem('section--filters')]">
@@ -133,12 +133,12 @@
                         </div>
                         <div :class="bem('section-content')">
                           <LabelFilters
-	                            :class="bem('label-filters')"
-	                            v-model="draft.builder.visualQuery.labels"
-	                            :metric="draft.builder.visualQuery.metric"
-	                          />
-	                        </div>
-	                      </div>
+                            :class="bem('label-filters')"
+                            v-model="draft.builder.visualQuery.labels"
+                            :metric="draft.builder.visualQuery.metric"
+                          />
+                        </div>
+                      </div>
 
                       <!-- 操作列表 -->
                       <div :class="[bem('section'), bem('section--operations')]">
@@ -146,13 +146,13 @@
                           <span :class="bem('section-title')">操作</span>
                         </div>
                         <div :class="bem('section-content')">
-	                          <OperationsList
-	                            :class="bem('operations-list')"
-	                            v-model="draft.builder.visualQuery.operations"
-	                            :currentQuery="draft.builder.visualQuery"
-	                            :highlighted-index="highlightedOpIndex"
-	                            @query-update="handleBuilderQueryUpdate(index, $event)"
-	                          />
+                          <OperationsList
+                            :class="bem('operations-list')"
+                            v-model="draft.builder.visualQuery.operations"
+                            :currentQuery="draft.builder.visualQuery"
+                            :highlighted-index="highlightedOpIndex"
+                            @query-update="handleBuilderQueryUpdate(index, $event)"
+                          />
                         </div>
                       </div>
 
@@ -165,12 +165,12 @@
                           <span :class="bem('section-title')">二元查询</span>
                         </div>
                         <div :class="bem('section-content')">
-	                          <NestedQueryList
-	                            :class="bem('nested-query-list')"
-	                            :query="draft.builder.visualQuery"
-	                            :show-explain="draft.showExplain"
-	                            @update="handleNestedQueryUpdate(index, $event)"
-	                          />
+                          <NestedQueryList
+                            :class="bem('nested-query-list')"
+                            :query="draft.builder.visualQuery"
+                            :show-explain="draft.showExplain"
+                            @update="handleNestedQueryUpdate(index, $event)"
+                          />
                         </div>
                       </div>
 
@@ -180,11 +180,7 @@
                           <span :class="bem('section-title')">查询提示</span>
                         </div>
                         <div :class="bem('section-content')">
-	                          <QueryHints
-	                            :class="bem('query-hints')"
-	                            :query="draft.builder.visualQuery"
-	                            @apply-fix="handleApplyFix(index, $event)"
-	                          />
+                          <QueryHints :class="bem('query-hints')" :query="draft.builder.visualQuery" @apply-fix="handleApplyFix(index, $event)" />
                         </div>
                       </div>
 
@@ -210,7 +206,6 @@
                           <QueryExplain :class="bem('query-explain')" :query="draft.builder.visualQuery" @highlight="handleHighlightOperation" />
                         </div>
                       </div>
-
                     </div>
                   </template>
                 </Space>
@@ -232,12 +227,7 @@
                 />
                 <div :class="bem('code-grid')">
                   <FormItem :class="bem('code-item', 'wide')" label="PromQL 表达式">
-                    <Textarea
-                      v-model:value="draft.code.expr"
-                      placeholder="例如：cpu_usage"
-                      :rows="3"
-                      @change="handleCodeExprChange(index)"
-                    />
+                    <Textarea v-model:value="draft.code.expr" placeholder="例如：cpu_usage" :rows="3" @change="handleCodeExprChange(index)" />
                   </FormItem>
 
                   <FormItem :class="bem('code-item')" label="图例格式">
@@ -260,7 +250,6 @@
         添加查询
       </Button>
     </div>
-
   </div>
 </template>
 
@@ -409,7 +398,11 @@
       message.error({ content: msg || '无法切换模式', key: `query-mode:${draftId}`, duration: 3200 });
     };
 
-    const setBuilderBlocked = (target: typeof draft, blockedMsg: string, parsed?: { ok: true; value: PromVisualQuery; warnings?: any[]; confidence?: any }) => {
+    const setBuilderBlocked = (
+      target: typeof draft,
+      blockedMsg: string,
+      parsed?: { ok: true; value: PromVisualQuery; warnings?: any[]; confidence?: any }
+    ) => {
       // 关键：保持在 code 模式
       target.mode = 'code';
       target.builder.status = 'unsupported';

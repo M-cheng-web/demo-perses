@@ -40,7 +40,6 @@ const validDashboard = (): DashboardContent => ({
           queries: [
             {
               id: 'query-1',
-              refId: 'A',
               expr: 'up',
               minStep: 15,
               format: 'time_series',

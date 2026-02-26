@@ -73,7 +73,7 @@ function getPanelOrThrow(group: PanelGroup, panelId: string): Panel {
 
 function computeNewPanelLayout(group: PanelGroup, panelId: string): PanelLayout {
   const maxY = Math.max(...(group.layout ?? []).map((l) => Number(l.y ?? 0) + Number(l.h ?? 0)), 0);
-  return { i: panelId, x: 0, y: maxY, w: 24, h: 8, minW: 6, minH: 4 };
+  return { i: panelId, x: 0, y: maxY, w: 24, h: 8 };
 }
 
 function createRng(seed: number) {
@@ -159,7 +159,7 @@ function buildGroupLayout(panels: Panel[], rng: () => number): PanelLayout[] {
     }
 
     w = Math.min(w, TOTAL_COLS);
-    layout.push({ i: p.id, x: rowX, y: rowY, w, h, minW: 8, minH: 4 });
+    layout.push({ i: p.id, x: rowX, y: rowY, w, h });
     rowX += w;
     rowMaxH = Math.max(rowMaxH, h);
 
@@ -185,18 +185,17 @@ function createFixedCpuGroup(): PanelGroup {
         id: 'panel-1',
         name: 'CPU 使用率',
         type: 'timeseries',
-        queries: [
+	        queries: [
 	          {
 	            id: 'q-1',
-	            refId: 'A',
 	            expr: `cpu_usage${scopeSelector}`,
 	            legendFormat: 'CPU {{cpu}}',
 	            format: 'time_series',
 	            instant: false,
-            hide: false,
-            minStep: 15,
-          },
-        ],
+	            hide: false,
+	            minStep: 15,
+	          },
+	        ],
         options: {
           legend: { show: true, position: 'bottom' },
           format: { unit: 'percent', decimals: 2 },
@@ -207,17 +206,16 @@ function createFixedCpuGroup(): PanelGroup {
         id: 'panel-2',
         name: 'CPU 平均使用率',
         type: 'stat',
-        queries: [
+	        queries: [
 	          {
 	            id: 'q-2',
-	            refId: 'A',
 	            expr: `avg(cpu_usage${scopeSelector})`,
 	            format: 'time_series',
 	            instant: false,
 	            hide: false,
-            minStep: 15,
-          },
-        ],
+	            minStep: 15,
+	          },
+	        ],
         options: {
           format: { unit: 'percent', decimals: 2 },
           specific: { displayMode: 'value-and-name', orientation: 'vertical', textAlign: 'center', showTrend: true },
@@ -227,17 +225,16 @@ function createFixedCpuGroup(): PanelGroup {
         id: 'panel-3',
         name: 'CPU 最大使用率',
         type: 'stat',
-        queries: [
+	        queries: [
 	          {
 	            id: 'q-3',
-	            refId: 'A',
 	            expr: `max(cpu_usage${scopeSelector})`,
 	            format: 'time_series',
 	            instant: false,
 	            hide: false,
-            minStep: 15,
-          },
-        ],
+	            minStep: 15,
+	          },
+	        ],
         options: {
           format: { unit: 'percent', decimals: 2 },
           specific: { displayMode: 'value-and-name', orientation: 'vertical', textAlign: 'center', showTrend: true },
@@ -247,18 +244,17 @@ function createFixedCpuGroup(): PanelGroup {
         id: 'panel-4',
         name: 'CPU 使用率（副本）',
         type: 'timeseries',
-        queries: [
+	        queries: [
 	          {
 	            id: 'q-4',
-	            refId: 'A',
 	            expr: `cpu_usage${scopeSelector}`,
 	            legendFormat: 'CPU {{cpu}}',
 	            format: 'time_series',
 	            instant: false,
-            hide: false,
-            minStep: 15,
-          },
-        ],
+	            hide: false,
+	            minStep: 15,
+	          },
+	        ],
         options: {
           legend: { show: true, position: 'bottom' },
           format: { unit: 'percent', decimals: 2 },
@@ -269,17 +265,16 @@ function createFixedCpuGroup(): PanelGroup {
         id: 'panel-5',
         name: 'CPU 核心对比',
         type: 'bar',
-        queries: [
+	        queries: [
 	          {
 	            id: 'q-5',
-	            refId: 'A',
 	            expr: `cpu_usage${scopeSelector}`,
 	            format: 'time_series',
 	            instant: false,
 	            hide: false,
-            minStep: 15,
-          },
-        ],
+	            minStep: 15,
+	          },
+	        ],
         options: {
           legend: { show: true, position: 'bottom' },
           format: { unit: 'percent', decimals: 2 },
@@ -288,11 +283,11 @@ function createFixedCpuGroup(): PanelGroup {
       },
     ],
     layout: [
-      { i: 'panel-1', x: 0, y: 0, w: 28, h: 8, minW: 12, minH: 6 },
-      { i: 'panel-2', x: 28, y: 0, w: 10, h: 5, minW: 6, minH: 4 },
-      { i: 'panel-3', x: 38, y: 0, w: 10, h: 5, minW: 6, minH: 4 },
-      { i: 'panel-4', x: 0, y: 8, w: 28, h: 8, minW: 12, minH: 6 },
-      { i: 'panel-5', x: 28, y: 8, w: 20, h: 11, minW: 8, minH: 6 },
+      { i: 'panel-1', x: 0, y: 0, w: 28, h: 8 },
+      { i: 'panel-2', x: 28, y: 0, w: 10, h: 5 },
+      { i: 'panel-3', x: 38, y: 0, w: 10, h: 5 },
+      { i: 'panel-4', x: 0, y: 8, w: 28, h: 8 },
+      { i: 'panel-5', x: 28, y: 8, w: 20, h: 11 },
     ],
   };
 }
@@ -310,18 +305,17 @@ function createLargeGroup(): PanelGroup {
       id,
       name: `Large Panel #${n}`,
       type: 'timeseries',
-      queries: [
+	      queries: [
 	        {
 	          id: `q-big-${n}`,
-	          refId: 'A',
 	          expr: `cpu_usage${scopeSelector}`,
 	          legendFormat: 'CPU {{cpu}}',
 	          format: 'time_series',
 	          instant: false,
-          hide: false,
-          minStep: 15,
-        },
-      ],
+	          hide: false,
+	          minStep: 15,
+	        },
+	      ],
       options: {
         legend: { show: true, position: 'bottom' },
         format: { unit: 'percent', decimals: 2 },
@@ -354,7 +348,7 @@ function createLargeGroup(): PanelGroup {
     }
 
     w = Math.min(w, TOTAL_COLS);
-    layout.push({ i: p.id, x: rowX, y: rowY, w, h, minW: 8, minH: 4 });
+    layout.push({ i: p.id, x: rowX, y: rowY, w, h });
     rowX += w;
     rowMaxH = Math.max(rowMaxH, h);
 
@@ -427,18 +421,17 @@ function createDefaultDashboardContent(dashboardKey: string): DashboardContent {
           id,
           name: `G${String(groupIndex).padStart(2, '0')} · ${type.toUpperCase()} · #${panelIndex}`,
           type,
-          queries: [
+	          queries: [
 	            {
 	              id: `q-${id}`,
-	              refId: 'A',
 	              expr,
 	              legendFormat: 'series {{instance}}',
 	              format,
 	              instant: false,
-              hide: false,
-              minStep: 15,
-            },
-          ],
+	              hide: false,
+	              minStep: 15,
+	            },
+	          ],
           options: buildPanelOptions(type, rng),
         };
       });
@@ -619,8 +612,6 @@ export function createMockDashboardService(): DashboardService {
           y: Number(it.y ?? 0),
           w: Number(it.w ?? 24),
           h: Number(it.h ?? 8),
-          minW: 6,
-          minH: 4,
         };
         group.layout ??= [];
         group.layout.push(created);

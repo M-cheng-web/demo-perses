@@ -11,7 +11,7 @@
  * - 具体请求如何发出由 @grafana-fast/api 的实现层决定（mock/http）
  */
 import type { GrafanaFastApiClient } from '@grafana-fast/api';
-import type { CanonicalQuery, QueryContext, QueryResult } from '@grafana-fast/types';
+import type { CanonicalQuery, QueryContext, QueryExecuteDTO, QueryResult } from '@grafana-fast/types';
 
 export interface QueryRunnerOptions {
   /**
@@ -50,6 +50,8 @@ const toErrorMessage = (value: unknown): string => {
   }
   return stableStringify(value);
 };
+
+const DEFAULT_MIN_STEP_SEC = 15;
 
 function stableStringify(value: unknown): string {
   try {
@@ -143,14 +145,24 @@ export class QueryRunner {
     }
   }
 
-  private buildCacheKey(query: CanonicalQuery, context: QueryContext, expr: string): string {
+  private normalizeExecuteQuery(query: CanonicalQuery, expr: string): QueryExecuteDTO {
+    const legendFormat = typeof query.legendFormat === 'string' ? query.legendFormat : '';
+    const minStep =
+      typeof query.minStep === 'number' && Number.isFinite(query.minStep) && query.minStep > 0 ? query.minStep : DEFAULT_MIN_STEP_SEC;
+    const format = query.format ?? 'time_series';
+    const instant = query.instant === true;
+    const hide = query.hide === true;
+    return { id: query.id, expr, legendFormat, minStep, format, instant, hide };
+  }
+
+  private buildCacheKey(query: QueryExecuteDTO, context: QueryContext, expr: string): string {
     const tr = context.timeRange;
     const from = typeof tr.from === 'number' ? tr.from : String(tr.from);
     const to = typeof tr.to === 'number' ? tr.to : String(tr.to);
     return [
-      query.format ?? 'time_series',
+      query.format,
       query.instant ? 'instant' : 'range',
-      query.minStep ?? '',
+      query.minStep,
       from,
       to,
       expr,
@@ -171,7 +183,8 @@ export class QueryRunner {
       if (options.signal?.aborted) throw this.createAbortError();
 
       const expr = q.expr;
-      const cacheKey = this.buildCacheKey(q, context, expr);
+      const exec = this.normalizeExecuteQuery(q, expr);
+      const cacheKey = this.buildCacheKey(exec, context, expr);
       const now = Date.now();
       this.pruneCache(now);
 
@@ -189,13 +202,12 @@ export class QueryRunner {
       }
 
       const promise = this.runWithConcurrency(async () => {
-        const resultList = await this.api.query.executeQueries([{ ...q, expr }], context, options.signal ? { signal: options.signal } : undefined);
+        const resultList = await this.api.query.executeQueries([exec], context, options.signal ? { signal: options.signal } : undefined);
         const first = Array.isArray(resultList) ? resultList[0] : undefined;
 
         if (!first || typeof first !== 'object') {
           return {
             queryId: q.id,
-            refId: q.refId,
             expr,
             data: [],
             error: '契约错误：executeQueries 返回空数组（未返回该 query 的结果）',
@@ -206,7 +218,6 @@ export class QueryRunner {
         if (!queryId || queryId !== String(q.id)) {
           return {
             queryId: q.id,
-            refId: q.refId,
             expr,
             data: [],
             error: `契约错误：executeQueries 返回的 queryId 不匹配（expected=${String(q.id)}, got=${queryId || '<empty>'}）`,
@@ -217,14 +228,13 @@ export class QueryRunner {
         if (!Array.isArray(data)) {
           return {
             queryId: q.id,
-            refId: q.refId,
             expr,
             data: [],
             error: '契约错误：QueryResult.data 必须为数组',
           };
         }
 
-        return { ...(first as QueryResult), refId: q.refId };
+        return first as QueryResult;
       }, options.signal);
 
       this.cache.set(cacheKey, { timestamp: now, promise });
@@ -244,7 +254,6 @@ export class QueryRunner {
         // 写入一个短暂的“负缓存”：避免同一错误导致的高频重试（hot loop）
         const errorResult: QueryResult = {
           queryId: q.id,
-          refId: q.refId,
           expr,
           data: [],
           error: toErrorMessage(err),
@@ -270,7 +279,6 @@ export class QueryRunner {
       // 非 abort 的异常已在 task 内归一化为 QueryResult.error；这里兜底一下（理论上不会走到）
       return {
         queryId: 'unknown',
-        refId: 'unknown',
         expr: '',
         data: [],
         error: toErrorMessage(s.reason),

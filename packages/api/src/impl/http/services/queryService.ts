@@ -7,7 +7,7 @@
  */
 
 import type { QueryService } from '../../../contracts/query';
-import type { CanonicalQuery, QueryContext, QueryResult } from '@grafana-fast/types';
+import type { QueryContext, QueryExecuteDTO, QueryResult } from '@grafana-fast/types';
 import type { FetchHttpClient } from '@grafana-fast/utils';
 import type { HttpApiEndpointKey } from '../endpoints';
 import { HttpApiEndpointKey as EndpointKey, getEndpointPath } from '../endpoints';
@@ -35,7 +35,7 @@ export function createHttpQueryService(_deps: HttpQueryServiceDeps): QueryServic
    *   - 如需缓存，优先在上层 QueryRunner/调度器做（更符合“不要过度设计”）
    */
   return {
-    async executeQueries(queries: CanonicalQuery[], context: QueryContext, options): Promise<QueryResult[]> {
+    async executeQueries(queries: QueryExecuteDTO[], context: QueryContext, options): Promise<QueryResult[]> {
       const path = getEndpointPath(_deps.endpoints, EndpointKey.ExecuteQueries);
       const headers = options?.dashboardSessionKey ? { 'X-Dashboard-Session-Key': options.dashboardSessionKey } : undefined;
       const res = await _deps.http.post<unknown>(path, { queries, context }, { signal: options?.signal, headers });

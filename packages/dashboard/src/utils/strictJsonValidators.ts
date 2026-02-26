@@ -39,12 +39,10 @@ function validateCanonicalQueryObject(query: unknown, path: string): string[] {
 
   const q = query as {
     id?: unknown;
-    refId?: unknown;
     expr?: unknown;
   };
 
   if (typeof q.id !== 'string' || !q.id.trim()) errors.push(`${path}.id 必填`);
-  if (typeof q.refId !== 'string' || !q.refId.trim()) errors.push(`${path}.refId 必填`);
   if (typeof q.expr !== 'string' || !q.expr.trim()) errors.push(`${path}.expr 必填`);
 
   return errors;

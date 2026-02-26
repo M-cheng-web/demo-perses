@@ -9,7 +9,6 @@ export function signatureFromCanonical(queries: CanonicalQuery[] | undefined): s
     return JSON.stringify(
       list.map((q) => ({
         id: q.id,
-        refId: q.refId,
         expr: q.expr,
         legendFormat: q.legendFormat,
         minStep: q.minStep,

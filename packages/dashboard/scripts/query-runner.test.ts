@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import type { GrafanaFastApiClient } from '@grafana-fast/api';
-import type { CanonicalQuery, QueryContext, QueryResult } from '@grafana-fast/types';
+import type { CanonicalQuery, QueryContext, QueryExecuteDTO, QueryResult } from '@grafana-fast/types';
 import { QueryRunner } from '../src/query/queryRunner';
 
 function sleep(ms: number) {
@@ -25,9 +25,8 @@ const baseContext: QueryContext = {
   timeRange: { from: 1_700_000_000_000, to: 1_700_000_060_000 },
 };
 
-const makeQuery = (id: string, refId: string, expr: string): CanonicalQuery => ({
+const makeQuery = (id: string, expr: string): CanonicalQuery => ({
   id,
-  refId,
   expr,
   minStep: 15,
   format: 'time_series',
@@ -35,9 +34,8 @@ const makeQuery = (id: string, refId: string, expr: string): CanonicalQuery => (
   hide: false,
 });
 
-const toResult = (query: CanonicalQuery): QueryResult => ({
+const toResult = (query: QueryExecuteDTO): QueryResult => ({
   queryId: query.id,
-  refId: query.refId,
   expr: query.expr,
   data: [],
 });
@@ -49,7 +47,7 @@ function createAbortError(): Error {
 }
 
 function createApiClient(
-  executeQueries: (queries: CanonicalQuery[], context: QueryContext, options?: { signal?: AbortSignal }) => Promise<QueryResult[]>
+  executeQueries: (queries: QueryExecuteDTO[], context: QueryContext, options?: { signal?: AbortSignal }) => Promise<QueryResult[]>
 ): GrafanaFastApiClient {
   return {
     kind: 'mock',
@@ -78,7 +76,7 @@ await test('dedupes identical in-flight queries', async () => {
   });
 
   const runner = new QueryRunner(api, { maxConcurrency: 4, cacheTtlMs: 1_000 });
-  const query = makeQuery('q-1', 'A', 'up');
+  const query = makeQuery('q-1', 'up');
 
   const first = runner.executeQueries([query], baseContext);
   await sleep(0);
@@ -108,10 +106,10 @@ await test('respects maxConcurrency when executing panel queries', async () => {
 
   const runner = new QueryRunner(api, { maxConcurrency: 2, cacheTtlMs: 0 });
   const queries = [
-    makeQuery('q-1', 'A', 'up'),
-    makeQuery('q-2', 'B', 'up{job="a"}'),
-    makeQuery('q-3', 'C', 'up{job="b"}'),
-    makeQuery('q-4', 'D', 'up{job="c"}'),
+    makeQuery('q-1', 'up'),
+    makeQuery('q-2', 'up{job="a"}'),
+    makeQuery('q-3', 'up{job="b"}'),
+    makeQuery('q-4', 'up{job="c"}'),
   ];
 
   const results = await runner.executeQueries(queries, baseContext);
@@ -147,7 +145,7 @@ await test('propagates abort and does not reuse aborted cache entries', async ()
   });
 
   const runner = new QueryRunner(api, { maxConcurrency: 4, cacheTtlMs: 1_000 });
-  const query = makeQuery('q-1', 'A', 'up');
+  const query = makeQuery('q-1', 'up');
 
   const controller = new AbortController();
   const aborted = runner.executeQueries([query], baseContext, { signal: controller.signal });
@@ -171,7 +169,7 @@ await test('reuses cached result before TTL and refreshes after TTL', async () =
   });
 
   const runner = new QueryRunner(api, { maxConcurrency: 4, cacheTtlMs: 40 });
-  const query = makeQuery('q-1', 'A', 'up');
+  const query = makeQuery('q-1', 'up');
 
   await runner.executeQueries([query], baseContext);
   await runner.executeQueries([query], baseContext);

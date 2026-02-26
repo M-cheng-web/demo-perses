@@ -13,17 +13,12 @@ export type QueryFormat = 'time_series' | 'table' | 'heatmap';
 
 /**
  * 规范化查询（存储/传输层）
- * - refId: A/B/C...（与 Grafana 一致）
- * - hide: 是否参与结果/渲染
+ * - 以 id 为唯一对齐键：QueryResult.queryId 必须等于 CanonicalQuery.id
+ * - UI 展示用的 A/B/C... 由前端按数组顺序派生，不再持久化到该结构中
  */
 export interface CanonicalQuery {
   /** 查询唯一 ID（用于持久化/对齐） */
   id: ID;
-  /**
-   * 查询引用标识（Grafana 风格：A/B/C...）
-   * - UI 展示、调试、以及多查询对齐使用
-   */
-  refId: string;
   /**
    * 注意：
    * - 本项目不在前端暴露数据源选择能力；执行层会按租户/环境/默认配置选择数据源。
@@ -52,6 +47,31 @@ export interface CanonicalQuery {
 }
 
 /**
+ * 查询执行 DTO（发往后端执行接口）
+ *
+ * 说明：
+ * - 该结构用于 `POST /queries/execute` 的入参 queries[]
+ * - 字段固定齐全：前端会补齐默认值后再发送（避免接口层出现“可选/不可选”的歧义）
+ * - 不包含 visualQuery：visualQuery 仅用于编辑器反显/round-trip（落库字段）
+ */
+export interface QueryExecuteDTO {
+  /** 查询 ID（用于对齐 QueryResult.queryId） */
+  id: ID;
+  /** 查询表达式（通常为 PromQL；执行前前端会做变量插值） */
+  expr: string;
+  /** 图例格式（默认空字符串） */
+  legendFormat: string;
+  /** 最小步长（秒，默认 15） */
+  minStep: number;
+  /** 查询格式（默认 time_series） */
+  format: QueryFormat;
+  /** 是否即时查询（默认 false） */
+  instant: boolean;
+  /** 是否隐藏（默认 false；通常 hide=true 的 query 不会被发送） */
+  hide: boolean;
+}
+
+/**
  * 时间序列数据
  */
 export interface TimeSeriesData {
@@ -72,8 +92,6 @@ export type DataPoint = [Timestamp, number];
 export interface QueryResult {
   /** 查询 ID */
   queryId: ID;
-  /** refId（A/B/C...），用于 UI 对齐与调试 */
-  refId?: string;
   /** 查询表达式 */
   expr: string;
   /** 数据 */
@@ -92,8 +110,6 @@ export interface QueryResult {
 export interface QueryContext {
   /** 时间范围 */
   timeRange: TimeRange;
-  /** 建议的步长（毫秒） */
-  suggestedStepMs?: number;
 }
 
 /**
