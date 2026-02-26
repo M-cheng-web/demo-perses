@@ -46,4 +46,7 @@ SDK 不再直接暴露可被外部改写的响应式状态引用：
 - 监听变化：使用 `on/off` 事件总线（例如 `change` / `error`）
 - 修改内部：仅允许通过 `actions.*`（命令式 API）
 
-更多接入细节与最佳实践见：`packages/docs/sdk/dashboard-sdk-usage.md`。
+参考：
+
+- `@grafana-fast/dashboard` 的 README（集成指南）
+- 仓库内示例：`packages/app/src/views/DashboardView.vue`
