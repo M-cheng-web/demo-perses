@@ -10,7 +10,7 @@
   "scripts": {
     "preinstall": "node ./scripts/ensure-pnpm.mjs",
     "postinstall": "node ./scripts/link-nr.mjs",
-    "build": "nr update && esno scripts/build.ts && pnpm dist:validate",
+    "build": "nr update && esno scripts/build.ts && pnpm dist:validate && pnpm dist:pack",
     "dev": "nr update && nr -C packages/app dev",
     "docs": "nr update && nr -C packages/docs docs:dev",
     "docs:build": "nr update && nr -C packages/docs docs:build",
@@ -26,6 +26,7 @@
     "clean": "esno scripts/clean.ts",
     "types:fix": "esno scripts/sync-dist-meta.ts",
     "dist:validate": "esno scripts/validate-dist.ts",
+    "dist:pack": "esno scripts/pack-dist.ts",
     "ci": "pnpm clean && pnpm lint && pnpm format && pnpm build && pnpm typecheck && pnpm test",
     "publish": "esno scripts/publish.ts"
   },
