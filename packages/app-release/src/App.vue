@@ -1,4 +1,4 @@
-<!-- 离线消费演示根组件：挂载 release/ bundle 的 useDashboardSdk，并展示 SDK 状态。 -->
+<!-- 离线消费演示根组件：挂载 release/ bundle 的 useDashboardSdk，并提供 Dashboard 容器。 -->
 <template>
   <a-layout class="page">
     <a-layout-header class="page__header">
@@ -9,50 +9,24 @@
     </a-layout-header>
 
     <a-layout-content class="page__content">
-      <a-row :gutter="16">
-        <a-col :xs="24" :lg="8">
-          <a-card title="SDK 状态" size="small">
-            <a-space direction="vertical" style="width: 100%">
-              <a-alert v-if="errorText" type="error" :message="errorText" show-icon />
-              <a-descriptions size="small" :column="1" bordered>
-                <a-descriptions-item label="mounted">{{ state.mounted }}</a-descriptions-item>
-                <a-descriptions-item label="ready">{{ state.ready }}</a-descriptions-item>
-                <a-descriptions-item label="bootStage">{{ state.bootStage }}</a-descriptions-item>
-                <a-descriptions-item label="theme">{{ state.theme }}</a-descriptions-item>
-                <a-descriptions-item label="readOnly">{{ state.readOnly }}</a-descriptions-item>
-                <a-descriptions-item label="dashboard">{{ state.dashboard?.name ?? '-' }}</a-descriptions-item>
-              </a-descriptions>
-
-              <a-space wrap>
-                <a-button size="small" @click="actions.toggleTheme()">切换主题</a-button>
-                <a-button size="small" @click="actions.refreshTimeRange()">刷新</a-button>
-                <a-button size="small" @click="actions.setReadOnly(!state.readOnly)">
-                  {{ state.readOnly ? '关闭只读' : '开启只读' }}
-                </a-button>
-              </a-space>
-            </a-space>
-          </a-card>
-        </a-col>
-
-        <a-col :xs="24" :lg="16">
-          <a-card title="Dashboard 容器" size="small">
-            <div ref="containerRef" class="dashboard-container"></div>
-          </a-card>
-        </a-col>
-      </a-row>
+      <a-space direction="vertical" style="width: 100%" :size="12">
+        <a-alert v-if="errorText" type="error" :message="errorText" show-icon />
+        <a-card title="Dashboard 容器" size="small">
+          <div ref="containerRef" class="dashboard-container"></div>
+        </a-card>
+      </a-space>
     </a-layout-content>
   </a-layout>
 </template>
 
 <script setup lang="ts">
-  import { onUnmounted, ref } from 'vue';
+  import { ref } from 'vue';
   import { useDashboardSdk } from '../vendor/grafana-fast/index.mjs';
-  import type { DashboardSdkStateSnapshot } from '../vendor/grafana-fast/index.mjs';
 
   const containerRef = ref<HTMLElement | null>(null);
   const errorText = ref<string | null>(null);
 
-  const sdk = useDashboardSdk(containerRef, {
+  useDashboardSdk(containerRef, {
     enableMock: true,
     defaultApiMode: 'mock',
     createMockApiClient: async () => (await import('../vendor/grafana-fast/mock.mjs')).createMockApiClient(),
@@ -66,21 +40,6 @@
       errorText.value = err instanceof Error ? err.message : String(err);
     },
   });
-
-  const state = ref<DashboardSdkStateSnapshot>(sdk.getState());
-  const unsubChange = sdk.on('change', ({ state: next }) => {
-    state.value = next;
-  });
-  const unsubError = sdk.on('error', ({ error }) => {
-    errorText.value = error instanceof Error ? error.message : String(error);
-  });
-
-  onUnmounted(() => {
-    unsubChange();
-    unsubError();
-  });
-
-  const actions = sdk.actions;
 </script>
 
 <style scoped>
