@@ -97,7 +97,7 @@ sdk.actions.setReadOnly(true);
 
 ```bash
 pnpm build
-GF_USE_DIST=1 pnpm -C packages/app dev
+pnpm -C packages/app dev:prod
 ```
 
 ## Mock / Fixtures（可选）

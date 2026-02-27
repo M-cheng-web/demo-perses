@@ -7,7 +7,15 @@ import App from './App.vue';
 import router from './router';
 import GrafanaFastUI from '@grafana-fast/component';
 
-const app = createApp(App);
-const pinia = createPinia();
+void (async () => {
+  // mode=production 时，packages/app 会消费各包 dist 产物。
+  // 由于 component/dashboard 的样式会被抽取为独立 css 文件，这里需要显式引入。
+  if (import.meta.env.MODE === 'production') {
+    await import('./distStyles');
+  }
 
-app.use(pinia).use(router).use(GrafanaFastUI).mount('#app');
+  const app = createApp(App);
+  const pinia = createPinia();
+
+  app.use(pinia).use(router).use(GrafanaFastUI).mount('#app');
+})();

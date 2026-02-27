@@ -8,6 +8,22 @@
 pnpm dev
 ```
 
+## Development (consume dist)
+
+用于验证“宿主消费发布产物”的集成形态（通过 dist 产物运行）。
+
+```bash
+pnpm dev:prod
+```
+
+## Build
+
+默认以 production mode 构建（消费 dist 产物）。
+
+```bash
+pnpm build
+```
+
 ## License
 
 MIT

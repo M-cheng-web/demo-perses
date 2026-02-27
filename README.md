@@ -53,7 +53,7 @@ pnpm app-release # 启动最小 demo，验证 release/ 可被真实消费
 
 ```bash
 pnpm build
-GF_USE_DIST=1 pnpm -C packages/app dev
+pnpm -C packages/app dev:prod
 ```
 
 ## 📁 项目结构
