@@ -1,7 +1,7 @@
 {
   "name": "@grafana-fast/component",
   "version": "0.1.0",
-  "description": "Lightweight tech-styled UI kit for grafana-fast dashboards.",
+  "description": "grafana-fast 仪表板用轻量 UI 组件库（偏科技风）。",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

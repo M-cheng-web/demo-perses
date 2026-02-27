@@ -33,8 +33,8 @@
        * 默认校验触发时机（当 rule.trigger 未指定时使用）
        *
        * 与 AntD 对齐的建议值：
-       * - Input/Textarea：change
-       * - Select/Cascader：change
+       * - Input/Textarea：change（输入变更）
+       * - Select/Cascader：change（选择变更）
        * - 需要“失焦才校验”的场景：blur
        */
       validateTrigger?: GfFormValidateTrigger | GfFormValidateTrigger[];

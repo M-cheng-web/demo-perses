@@ -1,3 +1,6 @@
+/**
+ * GridLayout 虚拟列表窗口计算：视口高度、热区范围与渲染 items 过滤。
+ */
 import type { PanelLayout } from '@grafana-fast/types';
 
 export interface VirtualViewportSnapshot {
@@ -38,7 +41,7 @@ export function getHotRange(viewport: VirtualViewportSnapshot, overscanScreens: 
 
 export function estimateItemRect(item: PanelLayout, options: EstimateItemRectOptions): { top: number; bottom: number } {
   // 与当前 grid-layout 的 calcPosition 保持一致：
-  // top = rowHeight*y + (y+1)*marginY = marginY + y*(rowHeight+marginY)
+  // 计算公式：top = rowHeight*y + (y+1)*marginY = marginY + y*(rowHeight+marginY)
   const rowHeight = Math.max(0, options.rowHeight);
   const marginY = Math.max(0, options.marginY);
   const rowUnit = Math.max(1, options.rowUnitPx);

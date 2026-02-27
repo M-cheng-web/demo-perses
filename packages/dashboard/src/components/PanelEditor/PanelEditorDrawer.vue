@@ -269,10 +269,10 @@
   };
 
   const editorSessionKey = computed(() => {
-    // Any change to this value should force DataQueryTab to rebuild its internal drafts from props.
-    // - Open/close changes
-    // - Switching between create/edit
-    // - Switching between different panels (originalPanelId)
+    // 该值用于驱动 DataQueryTab 从 props 重新构建内部 drafts（任何变化都应触发）。
+    // - 抽屉开关变化
+    // - create/edit 模式切换
+    // - 切换到不同面板（originalPanelId）
     return [
       isDrawerOpen.value ? 'open' : 'closed',
       editingMode.value,

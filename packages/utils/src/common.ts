@@ -161,7 +161,7 @@ export function debounceCancellable<T extends (...args: any[]) => any>(func: T, 
   };
 
   const wrapped = function (this: any, ...args: Parameters<T>) {
-    // Use an arrow to capture `this` without aliasing it (ESLint no-this-alias)
+    // 使用箭头函数捕获 `this`，避免别名变量（ESLint no-this-alias）
     pendingInvoke = () => func.apply(this, args);
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => {
@@ -242,7 +242,7 @@ export function throttleCancellable<T extends (...args: any[]) => any>(func: T, 
       scheduleTrailing();
       return;
     }
-    // Use an arrow to capture `this` without aliasing it (ESLint no-this-alias)
+    // 使用箭头函数捕获 `this`，避免别名变量（ESLint no-this-alias）
     pendingInvoke = () => invoke(this, args);
   } as CancellableFn<T>;
 
@@ -291,10 +291,10 @@ export function get(obj: any, path: string, defaultValue?: any): any {
  * 检查是否为空
  *
  * 判定规则：
- * - null/undefined -> empty
- * - string -> trim 后为空
- * - array -> length === 0
- * - object -> key 数量 === 0
+ * - null/undefined：认为为空
+ * - 字符串：trim 后为空
+ * - 数组：length === 0
+ * - 对象：key 数量 === 0
  */
 export function isEmpty(value: any): boolean {
   if (value == null) return true;

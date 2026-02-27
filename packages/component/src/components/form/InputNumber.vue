@@ -145,7 +145,7 @@
 
   const handleBlur = (evt: FocusEvent) => {
     isFocused.value = false;
-    // Re-clamp on blur to ensure valid value
+    // blur 时重新 clamp，确保值合法
     if (innerValue.value !== undefined) {
       updateValue(innerValue.value);
     }
@@ -157,7 +157,7 @@
     const target = evt.target as HTMLInputElement;
     const value = target.value;
 
-    // Allow empty input
+    // 允许空输入
     if (value === '' || value === '-') {
       innerValue.value = undefined;
       emit('update:value', undefined);
@@ -196,7 +196,7 @@
     emitChange();
   };
 
-  // Expose focus method
+  // 对外暴露 focus 方法
   defineExpose({
     focus: () => inputRef.value?.focus(),
     blur: () => inputRef.value?.blur(),
@@ -261,7 +261,7 @@
         color: var(--gf-color-text-disabled);
       }
 
-      // Hide browser number input spinners
+      // 隐藏浏览器原生 number 输入的上下箭头
       &::-webkit-outer-spin-button,
       &::-webkit-inner-spin-button {
         -webkit-appearance: none;
@@ -323,7 +323,7 @@
       transform: scale(0.83333);
     }
 
-    // Size variants
+    // 尺寸变体
     &--size-small {
       width: 70px;
 
@@ -360,7 +360,7 @@
       }
     }
 
-    // Disabled state
+    // Disabled 状态
     &.is-disabled {
       background: var(--gf-color-fill);
       cursor: not-allowed;

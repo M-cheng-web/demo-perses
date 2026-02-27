@@ -1,3 +1,6 @@
+/**
+ * mock fixture 生成脚本：生成用于导入/虚拟滚动/性能回归的 Dashboard JSON 样例。
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -43,7 +46,7 @@ function makePanels({ count, idPrefix, heavy, heavyTextRepeat = 12 }) {
     };
 
     if (heavy) {
-      // extra config fields to increase JSON size and simulate real dashboards
+      // 额外配置字段：用于增大 JSON 体积并模拟真实 dashboard
       base.transformations = [
         { id: 'reduce', options: { reducers: ['lastNotNull', 'mean'], fields: '' } },
         { id: 'renameByRegex', options: { regex: '(.*)', renamePattern: '$1' } },
@@ -174,14 +177,14 @@ function mb(bytes) {
 function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
-  // Huge fixtures can bloat the git repo quickly; keep them opt-in.
-  // Usage:
-  //   GF_GENERATE_HUGE_FIXTURES=1 node packages/dashboard/mock/generate-fixtures.mjs
+  // 大型 fixture 会快速膨胀 git 仓库体积，因此默认关闭（opt-in）。
+  // 用法：
+  //   生成超大 fixture：GF_GENERATE_HUGE_FIXTURES=1 node packages/dashboard/mock/generate-fixtures.mjs
   const generateHuge = process.env.GF_GENERATE_HUGE_FIXTURES === '1';
 
   const outputs = [];
 
-  // small 9
+  // 小型：9
   {
     const panels = makePanels({ count: 9, idPrefix: 'panel-import-small', heavy: false });
     const layout = makeLayoutPacked({ panels, seed: 0x11111111 });
@@ -203,7 +206,7 @@ function main() {
     outputs.push(writeJson('dashboard-import-small-9.json', d));
   }
 
-  // threshold 10
+  // 阈值：10
   {
     const panels = makePanels({ count: 10, idPrefix: 'panel-import-threshold', heavy: false });
     const layout = makeLayoutPacked({ panels, seed: 0x22222222 });
@@ -225,7 +228,7 @@ function main() {
     outputs.push(writeJson('dashboard-import-threshold-10.json', d));
   }
 
-  // medium 60
+  // 中型：60
   {
     const panels = makePanels({ count: 60, idPrefix: 'panel-import-medium', heavy: false });
     const layout = makeLayoutPacked({ panels, seed: 0x33333333 });
@@ -247,7 +250,7 @@ function main() {
     outputs.push(writeJson('dashboard-import-medium-60.json', d));
   }
 
-  // large 240 (same idea as previous file, but deterministic generation)
+  // 大型：240（固定 seed，生成可复现）
   {
     const panels = makePanels({ count: 240, idPrefix: 'panel-import', heavy: false });
     const layout = makeLayoutPacked({ panels, seed: 0x44444444 });
@@ -269,7 +272,7 @@ function main() {
     outputs.push(writeJson('dashboard-import-large-240.json', d));
   }
 
-  // vertical 240
+  // 垂直：240
   {
     const panels = makePanels({ count: 240, idPrefix: 'panel-import-vertical', heavy: false });
     const layout = makeLayoutVertical({ panels, seed: 0x55555555 });
@@ -291,7 +294,7 @@ function main() {
     outputs.push(writeJson('dashboard-import-vertical-240.json', d));
   }
 
-  // multi groups 3x120
+  // 多面板组：3x120
   {
     const groups = [];
     for (let gi = 1; gi <= 3; gi++) {
@@ -317,7 +320,7 @@ function main() {
     outputs.push(writeJson('dashboard-import-multi-groups-3x120.json', d));
   }
 
-  // heavy 240
+  // 重配置：240
   {
     const panels = makePanels({ count: 240, idPrefix: 'panel-import-heavy', heavy: true, heavyTextRepeat: 12 });
     const layout = makeLayoutPacked({ panels, seed: 0x77777777 });
@@ -339,7 +342,7 @@ function main() {
     outputs.push(writeJson('dashboard-import-heavy-240.json', d));
   }
 
-  // heavy 240 ~5MB
+  // 重配置：240（~5MB）
   if (generateHuge) {
     const panels = makePanels({ count: 240, idPrefix: 'panel-import-heavy-5mb', heavy: true, heavyTextRepeat: 350 });
     const layout = makeLayoutPacked({ panels, seed: 0x78787878 });
@@ -361,7 +364,7 @@ function main() {
     outputs.push(writeJson('dashboard-import-heavy-240-5mb.json', d));
   }
 
-  // heavy 240 ~10MB
+  // 重配置：240（~10MB）
   if (generateHuge) {
     const panels = makePanels({ count: 240, idPrefix: 'panel-import-heavy-10mb', heavy: true, heavyTextRepeat: 700 });
     const layout = makeLayoutPacked({ panels, seed: 0x79797979 });
@@ -383,9 +386,9 @@ function main() {
     outputs.push(writeJson('dashboard-import-heavy-240-10mb.json', d));
   }
 
-  // heavy 1000 >10MB (extreme scrolling)
+  // 重配置：1000（>10MB，极限滚动）
   if (generateHuge) {
-    // 240@repeat700 ~= 10MB -> scale down repeat for 1000 to keep size around 10~20MB
+    // 240@repeat700 ≈ 10MB：对 1000 的场景降低 repeat，控制体积在 10~20MB 左右。
     const panels = makePanels({ count: 1000, idPrefix: 'panel-import-heavy-1k', heavy: true, heavyTextRepeat: 220 });
     const layout = makeLayoutPacked({ panels, seed: 0x8a8a8a8a });
     const d = makeDashboard({
@@ -406,9 +409,9 @@ function main() {
     outputs.push(writeJson('dashboard-import-heavy-1000-10mb.json', d));
   }
 
-  // print summary
+  // 输出汇总
   const summary = outputs.map((o) => `- ${path.basename(o.file)}: ${mb(o.bytes)}`).join('\n');
-  console.log('Generated fixtures:');
+  console.log('已生成 fixtures：');
   console.log(summary);
 }
 

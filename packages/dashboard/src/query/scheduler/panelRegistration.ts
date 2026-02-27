@@ -1,3 +1,6 @@
+/**
+ * QueryScheduler：面板注册 API（注册/注销、watch queries，并触发 enqueue 刷新任务）。
+ */
 import { ref, watch } from 'vue';
 import type { PanelQueryPhase, PanelQueryState, PanelRef, PanelRegistration, RefreshReason, RefreshTask } from './types';
 

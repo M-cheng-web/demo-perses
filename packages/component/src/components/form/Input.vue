@@ -134,7 +134,7 @@
     inputRef.value?.focus();
   };
 
-  // Expose focus method
+  // 对外暴露 focus 方法
   defineExpose({
     focus: () => inputRef.value?.focus(),
     blur: () => inputRef.value?.blur(),
@@ -142,7 +142,7 @@
 </script>
 
 <style scoped lang="less">
-  // Ant Design 5.x inspired Input styles
+  // Input 基础样式（参考 Ant Design 5.x）
   .gf-input {
     position: relative;
     display: inline-flex;
@@ -160,19 +160,19 @@
     transition: all var(--gf-motion-normal) var(--gf-easing);
     box-sizing: border-box;
 
-    // Hover state
+    // Hover 状态
     &:hover:not(.is-disabled) {
       border-color: var(--gf-color-primary-hover);
     }
 
-    // Focus state - Ant Design style
+    // Focus 状态（参考 Ant Design）
     &.is-focused:not(.is-disabled) {
       border-color: var(--gf-color-primary);
       box-shadow: var(--gf-focus-ring);
       outline: none;
     }
 
-    // Inner input element
+    // 内部 input 元素
     &__input {
       flex: 1;
       min-width: 0;
@@ -201,7 +201,7 @@
       }
     }
 
-    // Prefix and suffix
+    // 前后缀
     &__prefix,
     &__suffix {
       display: inline-flex;
@@ -220,7 +220,7 @@
       margin-left: 8px;
     }
 
-    // Clear button
+    // 清空按钮
     &__clear {
       display: inline-flex;
       align-items: center;
@@ -252,13 +252,13 @@
       line-height: 1;
     }
 
-    // Show clear button on hover/focus
+    // hover/focus 时显示清空按钮
     &:hover &__clear,
     &.is-focused &__clear {
       opacity: 1;
     }
 
-    // Size variants
+    // 尺寸变体
     &--size-small {
       height: var(--gf-control-height-sm, 24px);
       min-height: var(--gf-control-height-sm, 24px);
@@ -304,7 +304,7 @@
       }
     }
 
-    // Disabled state
+    // Disabled 状态
     &.is-disabled {
       background: var(--gf-color-fill);
       border-color: var(--gf-color-border);
@@ -316,7 +316,7 @@
       }
     }
 
-    // Status variants (for form validation)
+    // 状态变体（用于表单校验）
     &.is-error {
       border-color: var(--gf-color-danger);
 

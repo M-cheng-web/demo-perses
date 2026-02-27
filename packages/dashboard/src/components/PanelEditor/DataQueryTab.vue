@@ -70,7 +70,7 @@
                 </div>
               </div>
 
-              <!-- Dashboard variables helper (for template dashboards) -->
+              <!-- Dashboard 变量辅助栏（用于模板类 dashboard） -->
               <div v-if="availableVariables.length > 0" :class="bem('vars-bar')">
                 <div :class="bem('vars-label')">变量</div>
                 <div :class="bem('vars-list')">

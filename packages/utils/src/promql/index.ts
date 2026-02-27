@@ -29,7 +29,7 @@ export type {
 
 export { PromOperationId, PromVisualQueryOperationCategory, PromQueryPatternType } from './types';
 
-// PromQL -> VisualQuery (best-effort) parser
+// PromQL -> VisualQuery 反解析（best-effort parser）
 export { parsePromqlToVisualQuery, promqlParser } from './parsePromqlToVisualQuery';
 export type { ParsePromqlToVisualQueryResult, PromqlParseConfidence, PromqlParseWarning, PromqlParseWarningCode } from './parsePromqlToVisualQuery';
 

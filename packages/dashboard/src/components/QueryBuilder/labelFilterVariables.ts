@@ -1,3 +1,6 @@
+/**
+ * QueryBuilder 标签过滤：变量 token 解析与下拉伪选项生成。
+ */
 import type { DashboardVariable } from '@grafana-fast/types';
 
 export interface SelectOption {
@@ -54,4 +57,3 @@ export function getLabelFilterVariableOptions(variables: DashboardVariable[] | u
   }
   return out;
 }
-

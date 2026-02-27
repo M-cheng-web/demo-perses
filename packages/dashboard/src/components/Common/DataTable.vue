@@ -379,7 +379,7 @@
         }
       }
 
-      /* Body scrollbar styling */
+      /* 表格 body 滚动条样式 */
       &::-webkit-scrollbar {
         width: 6px;
       }

@@ -1,5 +1,5 @@
 /**
- * @grafana-fast/store
+ * @grafana-fast/store：轻量状态管理包入口
  *
  * 一个轻量级的 Pinia-like 状态管理实现，目标是：
  * - 让 dashboard/hooks 在不引入真实 Pinia 依赖的情况下，拥有“按 id 的 store 单例 + actions/getters + storeToRefs”
@@ -108,8 +108,8 @@ export function defineStore<
     Object.defineProperties(store, {
       $id: { value: id, enumerable: false, configurable: true, writable: false },
       $state: { value: state, enumerable: false, configurable: true, writable: false },
-      // markRaw() is important: Vue reactive proxy must return the exact value for
-      // non-writable properties; otherwise Proxy invariants can throw at runtime.
+      // markRaw() 很重要：Vue 的 reactive proxy 在读取只读属性时必须返回同一个值，
+      // 否则可能触发 Proxy invariants 并在运行时报错。
       $pinia: { value: markRaw(targetPinia), enumerable: false, configurable: true, writable: false },
     });
 

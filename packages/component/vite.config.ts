@@ -1,3 +1,6 @@
+/**
+ * @grafana-fast/component 的 Vite 构建配置（library mode：index + styles 双入口）。
+ */
 import path from 'path';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
@@ -34,8 +37,8 @@ export default defineConfig({
     rollupOptions: {
       external: ['vue', '@ant-design/icons-vue', '@grafana-fast/utils'],
       output: {
-        // `src/index.ts` exports both named + default (Vue plugin object).
-        // Make CJS export mode explicit to avoid rollup interop warnings.
+        // `src/index.ts` 同时导出 named 与 default（Vue plugin 对象）。
+        // 显式设置 CJS export mode，避免 rollup interop warnings。
         exports: 'named',
         globals: {
           vue: 'Vue',

@@ -1,10 +1,10 @@
 <!--
   组件说明：JsonTextArea（带行号的轻量文本编辑器）
 
-  为什么要在 json-editor 内实现（而不是用组件库的 CodeEditor）：
-  - 这里需要“行号 + 错误行高亮”，而 textarea 本身无法只对某一行做样式标记；
-  - 我们采用“背景层 + textarea 前景层”的方式：背景层负责高亮，textarea 负责输入与光标；
-  - 整体保持轻量：不引入 Monaco / CodeMirror，避免体积与初始化成本。
+	  为什么要在 json-editor 内实现（而不是用组件库的 CodeEditor）：
+	  - 这里需要“行号 + 错误行高亮”，而 textarea 本身无法只对某一行做样式标记；
+	  - 采用“背景层 + textarea 前景层”的方式：背景层负责高亮，textarea 负责输入与光标；
+	  - 整体保持轻量：不引入 Monaco / CodeMirror，避免体积与初始化成本。
 
   能力：
   - 每行行号（从 1 开始）

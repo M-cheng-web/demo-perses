@@ -1,7 +1,7 @@
 {
   "name": "@grafana-fast/promql",
   "version": "0.1.0",
-  "description": "PromQL parsing (AST/diagnostics) and editor-side conversions for grafana-fast.",
+  "description": "PromQL 解析（AST/diagnostics）与编辑器侧转换逻辑（Code <-> Builder）。",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

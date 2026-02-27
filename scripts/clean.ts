@@ -1,3 +1,6 @@
+/**
+ * 清理脚本：删除各包 dist/ 与 TypeScript 增量编译缓存（tsbuildinfo）。
+ */
 import consola from 'consola';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
@@ -7,7 +10,7 @@ import { packages as metaPackages } from '../meta/packages.js';
 
 const targets = [
   ...metaPackages.map((pkg) => `packages/${pkg.name}/dist`),
-  // TypeScript incremental artifacts (composite projects):
+  // TypeScript 增量编译产物（composite projects）：
   // - dist 目录被清理后，如果 tsbuildinfo 仍在，某些情况下会导致 d.ts 未重新生成（增量状态不一致）
   ...metaPackages.map((pkg) => `packages/${pkg.name}/*.tsbuildinfo`),
   ...metaPackages.map((pkg) => `packages/${pkg.name}/node_modules/.tmp/*.tsbuildinfo`),

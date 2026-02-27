@@ -1,3 +1,6 @@
+/**
+ * 内置面板注册表：维护 panel type 与渲染组件、样式编辑组件、默认 options 的映射。
+ */
 import type { Component } from 'vue';
 import type { CorePanelType } from '@grafana-fast/types';
 import { isBuiltInPanelType } from './builtInPanelTypes';

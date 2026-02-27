@@ -167,7 +167,7 @@
       user-select: none;
     }
 
-    // Checked state
+    // 选中状态
     &.is-checked &__inner,
     &.is-indeterminate &__inner {
       background: var(--gf-color-primary);
@@ -180,7 +180,7 @@
       border-color: var(--gf-color-primary-hover);
     }
 
-    // Disabled state
+    // Disabled 状态
     &.is-disabled {
       cursor: not-allowed;
       color: var(--gf-color-text-disabled);
@@ -203,7 +203,7 @@
       }
     }
 
-    // Size variants
+    // 尺寸变体
     &--size-small {
       font-size: var(--gf-font-size-xs);
       gap: 6px;
@@ -242,7 +242,7 @@
     }
   }
 
-  // Animation
+  // 动画
   .gf-checkbox-icon-enter-active,
   .gf-checkbox-icon-leave-active {
     transition:

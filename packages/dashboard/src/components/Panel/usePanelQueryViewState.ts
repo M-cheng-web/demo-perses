@@ -1,3 +1,6 @@
+/**
+ * Panel 查询相关的视图状态计算（loading / refreshing 等）。
+ */
 import { computed, type ComputedRef, type Ref } from 'vue';
 import type { PanelLoadingKind, PanelQueryPhase } from '/#/query/queryScheduler';
 

@@ -180,7 +180,7 @@
     if (!open.value) return;
     open.value = false;
     dropdownStyle.value = {};
-    // Treat "dropdown closed" as finishing interaction (AntD-ish blur validation).
+    // 把“下拉关闭”视为交互结束（类似 AntD 的 blur 校验）
     formItem?.onFieldBlur();
   };
 
@@ -414,7 +414,7 @@
     }
   }
 
-  // Animation
+  // 动画
   .gf-slide-up-enter-active,
   .gf-slide-up-leave-active {
     transition:

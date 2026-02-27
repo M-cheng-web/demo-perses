@@ -1,6 +1,7 @@
 {
   "name": "@grafana-fast/app-release",
   "version": "0.1.0",
+  "description": "release/ 离线产物消费演示站点（用于验证真实宿主集成）。",
   "private": true,
   "type": "module",
   "scripts": {

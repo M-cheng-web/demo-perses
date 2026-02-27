@@ -1,13 +1,16 @@
+/**
+ * useDashboardMountLifecycle 单元测试（最小回归）：元素尺寸读取与 remount 判定。
+ */
 import assert from 'node:assert/strict';
 import { getElementSize, shouldRemountOnTargetSwap } from '../src/sdk/useDashboardMountLifecycle';
 
 function test(name: string, fn: () => void) {
   try {
     fn();
-    // eslint-disable-next-line no-console -- test script output is allowed
+    // eslint-disable-next-line no-console -- 允许测试脚本输出
     console.log(`✓ ${name}`);
   } catch (error) {
-    // eslint-disable-next-line no-console -- test script output is allowed
+    // eslint-disable-next-line no-console -- 允许测试脚本输出
     console.error(`✗ ${name}`);
     throw error;
   }

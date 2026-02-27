@@ -1,3 +1,6 @@
+/**
+ * Form 上下文：provide/inject keys 与表单/表单项的类型定义。
+ */
 import type { Ref } from 'vue';
 import type { GfFormRuleTrigger, GfFormRules } from '../../types';
 

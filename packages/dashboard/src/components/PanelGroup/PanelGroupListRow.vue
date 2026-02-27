@@ -145,7 +145,7 @@
     transition: opacity var(--gf-motion-fast) var(--gf-easing);
   }
 
-  // Show actions on hover
+  // hover 时显示操作按钮
   .dp-panel-group-list__group:hover .dp-panel-group-list__actions {
     opacity: 1;
     pointer-events: auto;

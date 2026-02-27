@@ -1,3 +1,6 @@
+/**
+ * DataQueryTab：查询变更的 emit 管理（防抖、签名去重、canEmit 开关）。
+ */
 import { onBeforeUnmount, ref, watch, type Ref } from 'vue';
 import type { CanonicalQuery } from '@grafana-fast/types';
 import { debounceCancellable } from '/#/utils';
@@ -35,7 +38,7 @@ export function useQueryEmit(options: {
     () => getQueriesProp(),
     (next) => {
       const sig = signatureFromCanonical(next);
-      // 忽略由我们自身 emit('update:queries', ...) 引起的 props 回写更新
+      // 忽略由内部 emit('update:queries', ...) 引起的 props 回写更新
       if (sig === lastEmittedSignature.value) return;
       resetFromProps(next as any);
     },

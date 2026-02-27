@@ -128,14 +128,14 @@ export function createQueryScheduler(pinia?: Pinia) {
   const bumpQueueGeneration = () => {
     queueGeneration++;
 
-    // Pending tasks are canceled; recompute phase for those panels.
+    // pending 任务会被取消：对相关面板重新计算 phase。
     for (const id of pending.keys()) {
       const reg = registrations.get(id);
       if (reg && !reg.inflight) setPanelPhase(reg, deriveRegPassivePhase(reg));
     }
     pending.clear();
 
-    // Abort all in-flight panels so old requests don't waste network.
+    // 中止所有 in-flight：避免旧请求继续占用网络与回写状态。
     for (const reg of registrations.values()) {
       reg.abort?.abort();
     }
@@ -203,7 +203,7 @@ export function createQueryScheduler(pinia?: Pinia) {
     }
 
     const now = Date.now();
-    // Simple per-panel debounce: don't enqueue too frequently.
+    // 简单的按面板 debounce：避免过于频繁地 enqueue。
     if (now - reg.lastEnqueuedAt < 300 && reason === 'became-visible') {
       const shouldBypass = !reg.hasSnapshot || isRegStale(reg);
       if (!shouldBypass) return;
@@ -316,7 +316,7 @@ export function createQueryScheduler(pinia?: Pinia) {
       setPanelPhase(reg, reg.state.error.value ? 'error' : 'ready');
     };
 
-    // Active-only policy: drop pending tasks for panels that are no longer active.
+    // active-only 策略：丢弃不再 active 的面板 pending 任务。
     for (const id of removedActive) {
       if (!pending.has(id)) continue;
       pending.delete(id);
@@ -324,7 +324,7 @@ export function createQueryScheduler(pinia?: Pinia) {
       if (reg && !reg.inflight) setPanelPhase(reg, deriveRegPassivePhase(reg));
     }
 
-    // Panels no longer rendered and already unmounted -> abort in-flight.
+    // 面板已不再渲染且已卸载：中止其 in-flight 请求。
     for (const id of removedRender) {
       const reg = registrations.get(id);
       if (!reg || !reg.inflight) continue;

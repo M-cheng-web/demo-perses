@@ -115,7 +115,7 @@
   watch(layoutKey, syncLayoutFromGroups, { immediate: true });
 
   // ---------------------------
-  // DOM refs (for FocusLayer startOffsetY)
+  // DOM refs（用于 FocusLayer 的 startOffsetY）
   // ---------------------------
   const groupRootElById = new Map<string, HTMLElement>();
 
@@ -152,7 +152,7 @@
   };
 
   // ---------------------------
-  // Layout model updates (drag performance)
+  // 布局模型更新（拖拽性能优化）
   // ---------------------------
   const handleLayoutModelUpdate = (nextLayout: GroupLayoutItem[]) => {
     // vue-grid-layout-v3 在拖拽过程中会高频 emit(update:layout)（每次都会 clone layout）
@@ -162,7 +162,7 @@
   };
 
   // ---------------------------
-  // Drag & drop
+  // 拖拽
   // ---------------------------
   const lastDragEndAt = ref(0);
   const DRAG_CLICK_SUPPRESS_MS = 100;
@@ -210,7 +210,7 @@
   const handleGroupMoved = () => {
     if (!canManageGroups.value) return;
     flushPendingLayoutUpdate();
-    // drag end: commit order to store
+    // 拖拽结束：提交排序到 store
     lastDragEndAt.value = Date.now();
     isDragging.value = false;
     const currentOrder = panelGroups.value.map((g) => String(g.id));

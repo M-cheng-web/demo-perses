@@ -1,3 +1,6 @@
+/**
+ * Ant Design v5 token 映射：将 AntD token key 映射到 @grafana-fast/component 的 CSS Variables。
+ */
 export type AntdTokenValue = string | number;
 
 export type AntdTokenMap = Record<string, AntdTokenValue>;

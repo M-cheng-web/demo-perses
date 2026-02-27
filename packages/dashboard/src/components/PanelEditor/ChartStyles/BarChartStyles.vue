@@ -180,7 +180,7 @@
     height: 100%;
     overflow-y: auto;
 
-    /* Scrollbar styling */
+    /* 滚动条样式 */
     &::-webkit-scrollbar {
       width: 6px;
     }

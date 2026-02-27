@@ -1,3 +1,6 @@
+/**
+ * Select 逻辑工具：禁用项跳过、activeIndex 移动、tag 宽度估算等基础函数。
+ */
 export interface SelectOptionLike {
   disabled?: boolean;
 }

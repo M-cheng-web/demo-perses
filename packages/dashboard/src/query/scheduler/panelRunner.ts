@@ -1,3 +1,6 @@
+/**
+ * QueryScheduler：执行单个面板的查询请求，并维护 loading/phase、错误与快照状态。
+ */
 import type { QueryContext } from '@grafana-fast/types';
 import type { QueryRunner } from '../queryRunner';
 import { interpolateExpr } from '../interpolate';
@@ -70,7 +73,7 @@ export async function runPanelRequest(reg: PanelRegistration, deps: RunPanelRequ
       reg.lastLoadedConditionGen = deps.getConditionGeneration();
     }
 
-    // Keep loading visible for a minimum time to avoid flicker.
+    // 最小 loading 展示时长：避免闪烁。
     const elapsed = Date.now() - startedAt;
     const remaining = Math.max(0, deps.minLoadingMs - elapsed);
 

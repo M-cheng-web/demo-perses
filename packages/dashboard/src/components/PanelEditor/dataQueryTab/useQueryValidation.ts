@@ -1,3 +1,6 @@
+/**
+ * DataQueryTab 查询草稿校验与 CanonicalQuery 持久化转换。
+ */
 import type { Ref } from 'vue';
 import type { CanonicalQuery } from '@grafana-fast/types';
 import { deepClone } from '/#/utils';
@@ -16,14 +19,15 @@ export function useQueryValidation(options: { queryDrafts: Ref<QueryDraft[]> }) 
       const canUseBuilder = d.mode === 'builder' && d.builder.status === 'ok';
       const expr = canUseBuilder ? renderPromql(d.builder.visualQuery) : d.code.expr;
       if (!expr || !String(expr).trim()) {
-        errors.push({ refId: d.refId || 'query', message: '表达式不能为空' });
+        errors.push({ refId: d.refId || '查询', message: '表达式不能为空' });
       }
     }
     return { ok: errors.length === 0, errors };
   };
 
   const convertDraftsToCanonical = (purpose: 'save' | 'execute'): CanonicalQuery[] => {
-    return queryDrafts.value.map((d) => {
+    const list = purpose === 'execute' ? queryDrafts.value.filter((d) => !d.hide) : queryDrafts.value;
+    return list.map((d) => {
       const canUseBuilder = d.mode === 'builder' && d.builder.status === 'ok';
       const expr = canUseBuilder ? renderPromql(d.builder.visualQuery) : d.code.expr;
       const out: CanonicalQuery = {

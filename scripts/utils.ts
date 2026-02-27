@@ -1,3 +1,6 @@
+/**
+ * scripts 工具函数：读取版本、执行命令、改写 workspace 依赖版本、同步 dist 元信息。
+ */
 import { execSync } from 'child_process';
 import fs from 'fs-extra';
 import consola from 'consola';
@@ -59,8 +62,8 @@ export async function rewriteWorkspaceVersion(pkgDir: string, version: string) {
 }
 
 function stripDistPrefix(p: string): string {
-  // When we publish from `<pkg>/dist`, that folder becomes the package root.
-  // So `dist/index.mjs` -> `index.mjs`, `./dist/index.d.ts` -> `./index.d.ts`.
+  // 当从 `<pkg>/dist` 发布时，dist 目录会成为“发布包的根目录”。
+  // 因此 `dist/index.mjs` -> `index.mjs`，`./dist/index.d.ts` -> `./index.d.ts`。
   return p.replace(/^(\.\/)?dist\//, '$1');
 }
 
@@ -87,11 +90,11 @@ function rewriteDistPathsForPublish(pkgJSON: Record<string, any>) {
     pkgJSON.exports = rewriteExports(pkgJSON.exports);
   }
 
-  // `files: ["dist"]` is correct when publishing from the package root.
-  // But we publish from `<pkg>/dist`, so keeping it would publish nothing.
+  // `files: ["dist"]` 只在“从包根目录发布”时才正确。
+  // 当前仓库从 `<pkg>/dist` 发布，因此保留该字段会导致发布内容为空。
   delete pkgJSON.files;
 
-  // Dist-only publish should not ship internal build scripts.
+  // 从 dist 发布时不应携带内部构建脚本与 devDependencies。
   delete pkgJSON.scripts;
   delete pkgJSON.devDependencies;
 }

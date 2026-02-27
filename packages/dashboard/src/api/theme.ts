@@ -1,3 +1,6 @@
+/**
+ * Dashboard 主题能力：偏好读取/写入、system 解析与 document theme 应用。
+ */
 export type DashboardTheme = 'light' | 'dark';
 export type DashboardThemePreference = DashboardTheme | 'system';
 
@@ -12,7 +15,7 @@ export interface SetDashboardThemeOptions {
    *
    * 说明：
    * - 对“嵌入式 widget”场景，默认不建议修改宿主全局 document
-   * - 当你明确在做“全站接管主题”的应用形态时，可以开启
+   * - 明确需要“全站接管主题”的应用形态时可开启
    *
    * 默认：true
    */
@@ -80,7 +83,7 @@ export function setDashboardThemePreference(preference: DashboardThemePreference
     try {
       window.localStorage.setItem(STORAGE_KEY, preference);
     } catch {
-      // ignore
+      // 忽略：localStorage 不可用/超额等不应影响主题设置
     }
   }
 

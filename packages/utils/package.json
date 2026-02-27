@@ -1,7 +1,7 @@
 {
   "name": "@grafana-fast/utils",
   "version": "0.1.0",
-  "description": "Shared utilities (bem/time/http/common) for grafana-fast packages.",
+  "description": "grafana-fast 子包共享工具函数（bem/time/http/common 等）。",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

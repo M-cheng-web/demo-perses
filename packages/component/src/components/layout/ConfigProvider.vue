@@ -60,14 +60,14 @@
     themeClass,
   });
 
-  // Global component size – always provide so descendants can inject it.
-  // When componentSize is not set, the context value falls back to 'middle'.
+  // 全局组件尺寸：始终 provide，便于子组件注入读取。
+  // 当未设置 componentSize 时，上下文默认回退到 'middle'。
   provide(GF_SIZE_CONTEXT_KEY, {
     size: computed(() => props.componentSize ?? 'middle'),
   });
 
   // ------------------------------------------------------------
-  // Portal root for Teleport-based components
+  // Teleport 组件的 Portal 根节点
   // ------------------------------------------------------------
   const portalRootEl = ref<HTMLElement | null>(null);
   const ACTIVE_PORTAL_ROOT_KEY = '__gfActivePortalRoot';
@@ -107,7 +107,7 @@
     const portalEl = portalRootEl.value;
     if (!providerEl && !portalEl) return;
 
-    // Capture phase ensures we mark the active root early.
+    // capture 阶段可以更早标记 active root，避免状态滞后。
     providerEl?.addEventListener('pointerdown', markActivePortalRoot, { capture: true });
     providerEl?.addEventListener('focusin', markActivePortalRoot, { capture: true });
     portalEl?.addEventListener('pointerdown', markActivePortalRoot, { capture: true });
@@ -140,7 +140,7 @@
     syncPortalMount();
     syncPortalTheme();
     bindActiveListeners();
-    // Make this instance the default until user interacts with another one.
+    // 默认标记当前实例为 active；当与其他实例交互时会被覆盖。
     markActivePortalRoot();
   });
 

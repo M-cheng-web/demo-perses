@@ -1,3 +1,6 @@
+/**
+ * Dashboard store 类型定义：状态字段、boot 阶段与内部同步标记。
+ */
 import type { DashboardContent, DashboardSessionKey, ID } from '@grafana-fast/types';
 
 export type BootStage = 'idle' | 'fetching' | 'parsing' | 'initializing' | 'ready' | 'error';
@@ -79,11 +82,11 @@ export interface DashboardState {
    */
   dashboardContentRevision: number;
 
-  // ---- Internal sync state (per store instance) ----
+  // ---- 内部同步状态（每个 store 实例） ----
   _syncSeq: number;
   _syncInFlightSeq: number | null;
 
-  // ---- UI coordination (cross-component) ----
+  // ---- UI 协调状态（跨组件） ----
   /**
    * UI 请求跳转某个面板组的分页（例如创建面板后自动跳到最后一页展示）
    * - 由 store 发出请求
@@ -92,7 +95,7 @@ export interface DashboardState {
   uiPageJumpRequest: { groupId: ID; page: number; nonce: number } | null;
   _uiPageJumpNonce: number;
 
-  // ---- Internal partial-persist state (per store instance) ----
+  // ---- 内部局部持久化状态（每个 store 实例） ----
   /** 局部布局 patch：按 groupId 记录 in-flight，避免并发乱序 */
   _layoutPatchInFlightByGroupId: Record<string, boolean>;
   /** 局部布局 patch：若 in-flight，缓存最后一次提交的当前页 items（最多 20 条） */

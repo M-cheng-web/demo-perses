@@ -1,3 +1,6 @@
+/**
+ * Cascader 逻辑工具：路径解析、下拉宽度约束与定位计算。
+ */
 export interface CascaderOptionLike {
   label: string;
   value: unknown;

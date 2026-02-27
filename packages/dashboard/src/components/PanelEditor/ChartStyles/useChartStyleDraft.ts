@@ -1,3 +1,6 @@
+/**
+ * 图表样式草稿：在本地 draft 与外部 options 之间做合并、回写与重置。
+ */
 import { ref, watch, type Ref } from 'vue';
 import { deepClone } from '/#/utils';
 import { deepMerge } from './utils';

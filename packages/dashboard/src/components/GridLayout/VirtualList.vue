@@ -394,7 +394,7 @@
   .dp-virtual-list {
     width: 100%;
 
-    /* Scrollbar styling for self scroll mode */
+    /* 自滚动模式的滚动条样式 */
     &::-webkit-scrollbar {
       width: 6px;
       height: 6px;

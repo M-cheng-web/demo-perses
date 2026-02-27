@@ -1,16 +1,16 @@
-import type { Tree, TreeCursor } from '@lezer/common';
-import { aggById, aggWithoutId, promQueryModeller, type PromqlParseConfidence, type PromqlParseWarning } from '@grafana-fast/utils';
-import type { PromVisualQuery, PromVisualQueryBinary, QueryBuilderLabelFilter, QueryBuilderOperation, VectorMatching } from '@grafana-fast/types';
-import { PromOperationId } from '@grafana-fast/types';
-
 /**
  * PromQL AST -> PromVisualQuery（QueryBuilder 映射层）
  *
  * 设计目标：
- * - 覆盖 QueryBuilder 当前能表达的 PromQL 子集
- * - 对无法表达/不支持的语义：尽量“向内提取”，并用 warnings 提示用户（best-effort）
+ * - 覆盖 QueryBuilder 当前可表达的 PromQL 子集
+ * - 对无法表达/不支持的语义：尽量“向内提取”，并通过 warnings 提示（best-effort）
  * - 上层应决定是否接受 partial（避免隐式改变语义）
  */
+
+import type { Tree, TreeCursor } from '@lezer/common';
+import { aggById, aggWithoutId, promQueryModeller, type PromqlParseConfidence, type PromqlParseWarning } from '@grafana-fast/utils';
+import type { PromVisualQuery, PromVisualQueryBinary, QueryBuilderLabelFilter, QueryBuilderOperation, VectorMatching } from '@grafana-fast/types';
+import { PromOperationId } from '@grafana-fast/types';
 
 export interface AstToVisualQueryResult {
   ok: true;
@@ -86,7 +86,7 @@ type MappedFail = { ok: false; error: string };
 /**
  * 把任意 PromQL 表达式映射为 PromVisualQuery（含 binaryQueries）。
  *
- * 关键约束（来自你们现有 QueryBuilder 模型）：
+ * 关键约束（来自现有 QueryBuilder 模型）：
  * - operations 只能作用在“左侧基础查询”上（renderOperations 在 binaryQueries 之前执行）
  * - 因此：函数/聚合包裹整个 binary expr（例如 `acos(a + b)`）无法精确表达
  *   - 这里会给 warning，并“尽量向内提取”，让用户在 Builder 中至少看到可编辑的部分
@@ -169,7 +169,7 @@ function mapExprToVisualQuery(expr: TreeCursor, ctx: WarningContext): MappedQuer
     }
 
     // 4) 如果是 MatrixSelector / SubqueryExpr 直接出现在顶层：Builder 没有等价表达
-    //    但我们至少提取 vector selector，让用户看到 metric/labels
+    //    但至少提取 vector selector，让用户看到 metric/labels
     if (inner.type.name === 'MatrixSelector' || inner.type.name === 'SubqueryExpr') {
       const extracted = extractSelectorFromRangeLike(inner, ctx);
       if (extracted.ok) {

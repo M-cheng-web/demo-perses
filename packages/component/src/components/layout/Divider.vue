@@ -74,7 +74,7 @@
       white-space: nowrap;
     }
 
-    // With text
+    // 带文字的分割线
     &--orientation-left,
     &--orientation-center,
     &--orientation-right {

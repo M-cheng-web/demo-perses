@@ -1,3 +1,6 @@
+/**
+ * Cascader 下拉定位：宽度约束、位置计算，并与 useFloatingOverlay 同步 resize/scroll。
+ */
 import { computed, ref, type ComputedRef, type Ref } from 'vue';
 import { useFloatingOverlay } from '../../../composables/useFloatingOverlay';
 import { placeDropdown, resolveDropdownMetrics, type RectLike } from './cascaderLogic';

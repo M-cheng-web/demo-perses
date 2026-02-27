@@ -1,3 +1,6 @@
+/**
+ * 同步 workspace 元信息：对齐各包版本号，并把内部依赖改写为 `workspace:*`。
+ */
 import consola from 'consola';
 import fg from 'fast-glob';
 import fs from 'fs-extra';

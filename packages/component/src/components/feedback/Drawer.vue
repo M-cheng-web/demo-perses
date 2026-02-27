@@ -240,7 +240,7 @@
     (nextEl) => {
       if (!props.open) return;
       if (props.lockScroll === false) return;
-      // switch lock target while staying open
+      // 在保持打开状态时切换锁定目标
       releaseIfNeeded();
       releaseScrollLock = acquireScrollLock(nextEl ?? null);
     }
@@ -286,7 +286,7 @@
 </script>
 
 <style scoped lang="less">
-  // Ant Design 5.x inspired Drawer styles
+  // Drawer 基础样式（参考 Ant Design 5.x）
   .gf-drawer {
     position: fixed;
     inset: 0;

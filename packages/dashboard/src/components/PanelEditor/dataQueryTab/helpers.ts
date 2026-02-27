@@ -1,3 +1,6 @@
+/**
+ * DataQueryTab 辅助函数：refId 生成、PromQL 渲染、告警文案与变量 token 处理。
+ */
 import type { CanonicalQuery, PromVisualQuery } from '@grafana-fast/types';
 import { promQueryModeller } from '@grafana-fast/utils';
 import type { PromqlParseWarning } from '@grafana-fast/utils';

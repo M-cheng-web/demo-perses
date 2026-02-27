@@ -1,9 +1,10 @@
 {
   "name": "@grafana-fast/monorepo",
   "version": "0.1.0",
+  "description": "grafana-fast 的 pnpm monorepo（包构建/发布 + 演示站点 + release 离线产物）。",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@7.6.0",
+  "packageManager": "pnpm@7.33.6",
   "workspaces": [
     "packages/*"
   ],

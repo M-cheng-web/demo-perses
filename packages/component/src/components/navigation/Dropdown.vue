@@ -109,17 +109,17 @@
     let left = rect.left;
     let top = rect.bottom + 4;
 
-    // Handle horizontal placement
+    // 处理水平定位
     if (props.placement === 'bottomRight' || props.placement === 'topRight') {
       left = rect.right - width;
     }
 
-    // Handle vertical placement
+    // 处理垂直定位
     if (props.placement === 'topLeft' || props.placement === 'topRight') {
       top = rect.top - height - 4;
     }
 
-    // Clamp to viewport
+    // 约束到视口范围
     left = clamp(left, padding, window.innerWidth - width - padding);
     if (top + height > window.innerHeight - padding) {
       top = rect.top - height - 4;
@@ -168,7 +168,7 @@
     }
   }
 
-  // Animation
+  // 动画
   .gf-slide-up-enter-active,
   .gf-slide-up-leave-active {
     transition:

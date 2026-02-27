@@ -33,7 +33,7 @@
 
   const [_, bem] = createNamespace('loading');
   const globalSize = useComponentSize(computed(() => props.size));
-  // Loading supports 'small' | 'default' | 'large'; map 'middle' → 'default'
+  // Loading 支持 'small' | 'default' | 'large'；把 'middle' 映射为 'default'
   const resolvedSize = computed(() => {
     const s = globalSize.value;
     if (s === 'middle') return 'default';
@@ -95,7 +95,7 @@
       color: var(--gf-color-primary);
     }
 
-    // Size variants
+    // 尺寸变体
     &--size-small &__dot {
       width: 14px;
       height: 14px;

@@ -34,8 +34,8 @@ export function isAbsoluteUrl(url: string): boolean {
  * 规范化 baseUrl：去掉末尾多余的 `/`
  *
  * 入参示例：
- * - "https://example.com/" -> "https://example.com"
- * - "/api/" -> "/api"
+ * - "https://example.com/" -> "https://example.com"（去掉尾部斜杠）
+ * - "/api/" -> "/api"（去掉尾部斜杠）
  */
 export function normalizeBaseUrl(baseUrl: string): string {
   if (!baseUrl) return baseUrl;
@@ -65,7 +65,7 @@ export function joinUrl(baseUrl: string | undefined, url: string): string {
  * 将 query 对象转换为 querystring（不带 `?`）
  *
  * @example
- * toQueryString({ a: 1, b: ['x', 'y'] }) // "a=1&b=x&b=y"
+ * toQueryString({ a: 1, b: ['x', 'y'] }) // "a=1&b=x&b=y"（数组会展开成重复 key）
  */
 export function toQueryString(query: Record<string, UrlQueryValue>): string {
   const pairs: string[] = [];

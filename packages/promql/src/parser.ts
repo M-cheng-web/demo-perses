@@ -1,3 +1,6 @@
+/**
+ * PromQL 解析器：基于 lezer-promql 生成 AST，并输出 diagnostics（编辑器侧校验/提示用）。
+ */
 import { parser as promqlLezerParser } from '@prometheus-io/lezer-promql';
 import type { Tree } from '@lezer/common';
 import type { TreeCursor } from '@lezer/common';
@@ -18,7 +21,7 @@ export interface PromqlDiagnostic {
    * 错误范围（字符偏移，0-based）。
    *
    * 注意：
-   * - 我们在语法解析前会对 Grafana 变量做“长度不变”的兜底替换（例如 `$__interval` -> `1111111111s`），
+   * - 语法解析前会对 Grafana 变量做“长度不变”的兜底替换（例如 `$__interval` -> `1111111111s`），
    *   这样 lezer 能按 PromQL 语法解析，同时 range 仍然能对齐到原始表达式的位置。
    */
   range?: PromqlRange;
@@ -32,7 +35,7 @@ export type PromqlAstParseResult =
  * PromQL -> AST（lezer）解析
  *
  * 说明：
- * - lezer 会始终返回一棵 parse tree（即使有错误节点），因此我们额外扫描 Error 节点生成 diagnostics。
+ * - lezer 会始终返回一棵 parse tree（即使有错误节点），因此额外扫描 Error 节点生成 diagnostics。
  * - 当前阶段只在“编辑器”内使用（Code <-> Builder 切换、校验、提示），不进入运行时查询执行链路。
  */
 export function parsePromqlToAst(expr: string): PromqlAstParseResult {
@@ -63,7 +66,7 @@ export function parsePromqlToAst(expr: string): PromqlAstParseResult {
  * 从 lezer parse tree 中收集 Error 节点。
  *
  * 注意：
- * - lezer 的错误信息比较“结构化”但不包含人类友好的语法提示，我们这里先用通用 message 兜底。
+ * - lezer 的错误信息比较“结构化”但不包含人类友好的语法提示，因此先用通用 message 兜底。
  * - 后续可以按 node.type.name 做更精细的错误文案。
  */
 function collectLezerErrors(tree: Tree): PromqlDiagnostic[] {
@@ -113,13 +116,13 @@ function mergeOverlappingDiagnostics(list: PromqlDiagnostic[]): PromqlDiagnostic
  * 把 Grafana 扩展变量替换成“标准 PromQL”可接受的占位值，仅用于语法解析。
  *
  * 覆盖场景（常见）：
- * - `metric[$__interval]`
- * - `metric[$__range]`
- * - `offset $__interval`
+ * - `metric[$__interval]`（区间变量）
+ * - `metric[$__range]`（区间变量）
+ * - `offset $__interval`（offset 变量）
  *
  * 说明：
  * - 此函数不追求完美，只做编辑器体验的“best-effort 语法兜底”。
- * - 我们会尽量保持替换前后字符串长度一致，以便 diagnostics 的 range 能对齐原表达式。
+ * - 尽量保持替换前后字符串长度一致，以便 diagnostics 的 range 能对齐原表达式。
  */
 function sanitizePromqlForLezer(expr: string): string {
   const s = String(expr ?? '');
@@ -236,7 +239,7 @@ export function debugPrintTree(tree: Tree, source: string, maxDepth: number = 6)
     if (top.depth >= maxDepth) {
       // 深度限制：直接跳出当前子树
       while (cursor.nextSibling()) {
-        // skip
+        // 跳过
       }
       if (!cursor.parent()) break;
       stack.pop();

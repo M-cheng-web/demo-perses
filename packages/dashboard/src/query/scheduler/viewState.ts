@@ -1,3 +1,6 @@
+/**
+ * QueryScheduler 视图状态推导：根据面板渲染/挂载/快照等条件计算 phase 与 loadingKind。
+ */
 import type { PanelLoadingKind, PanelQueryPhase } from './types';
 
 export const LOADING_PHASES = new Set<PanelQueryPhase>(['waiting', 'queued', 'loading']);

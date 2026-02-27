@@ -1,6 +1,7 @@
 {
   "name": "@grafana-fast/app",
   "version": "0.1.0",
+  "description": "演示站点（用于本地联调与体验）。",
   "private": true,
   "type": "module",
   "scripts": {

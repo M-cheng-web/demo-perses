@@ -124,14 +124,14 @@
     box-sizing: border-box;
     transition: all var(--gf-motion-fast) var(--gf-easing);
 
-    // Default style
+    // 默认样式
     &--default {
       background: var(--gf-color-fill);
       color: var(--gf-color-text);
       border: 1px solid var(--gf-color-border);
     }
 
-    // Preset colors
+    // 预设颜色
     &--success {
       color: var(--gf-color-success);
       background: var(--gf-color-success-soft);
@@ -202,14 +202,14 @@
       border: 1px solid #d3adf7;
     }
 
-    // Custom color
+    // 自定义颜色
     &--custom {
       color: var(--gf-tag-custom-color);
       background: var(--gf-tag-custom-bg);
       border: 1px solid var(--gf-tag-custom-border);
     }
 
-    // No border variant
+    // 无边框变体
     &:not(&--bordered) {
       border-color: transparent;
     }
@@ -253,7 +253,7 @@
       }
     }
 
-    // Size variants
+    // 尺寸变体
     &--size-small {
       height: 18px;
       padding: 0 5px;

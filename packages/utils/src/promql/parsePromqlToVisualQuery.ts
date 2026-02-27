@@ -1,3 +1,6 @@
+/**
+ * PromQL 字符串 best-effort 解析：将 PromQL 文本尽量映射为 PromVisualQuery（用于 QueryBuilder 兜底转换）。
+ */
 import type { PromVisualQuery, QueryBuilderLabelFilter, QueryBuilderOperation } from '@grafana-fast/types';
 import { PromOperationId } from '@grafana-fast/types';
 import { aggById, aggWithoutId } from './ids';

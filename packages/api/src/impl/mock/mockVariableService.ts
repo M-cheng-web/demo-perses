@@ -102,7 +102,7 @@ export function createMockVariableService(): VariableService {
   return {
     async loadVariables(context?: VariablesRequestContext): Promise<DashboardVariable[]> {
       const sessionKey = requireSessionKey(context);
-      // Validate sessionKey (throws on expired/not found), and implicitly ties variables to dashboardSessionKey scope.
+      // 校验 sessionKey（过期/不存在会抛错），并把变量作用域绑定到 dashboardSessionKey。
       void resolveMockDashboardKeyBySessionKey(sessionKey);
 
       const existing = variablesBySessionKey.get(sessionKey);

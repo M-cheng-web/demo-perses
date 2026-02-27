@@ -1,3 +1,6 @@
+/**
+ * Select 下拉定位：计算 dropdown 的 top/left/minWidth，并与 useFloatingOverlay 同步 resize/scroll。
+ */
 import { computed, nextTick, ref, type Ref } from 'vue';
 import { useFloatingOverlay } from '../../../composables/useFloatingOverlay';
 import { clampNumber } from './selectLogic';

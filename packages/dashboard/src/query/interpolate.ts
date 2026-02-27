@@ -3,9 +3,9 @@
  *
  * 说明：
  * - 当前阶段实现“最常见、最可控”的变量替换：
- *   - $var
- *   - ${var}
- *   - [[var]]
+ *   - $var（最常见形式）
+ *   - ${var}（显式包裹）
+ *   - [[var]]（模板形式）
  * - 不处理 Grafana 的内置宏（例如 $__interval / $__range），避免误伤；这些以 `$__` 开头会被保留。
  *
  * 设计目标：
@@ -34,7 +34,7 @@ function formatValue(value: VariableValue, options: Required<Pick<InterpolateExp
   if (Array.isArray(value)) {
     const list = value.map((v) => String(v));
     if (options.multiFormat === 'csv') return list.join(',');
-    // default: regex
+    // 默认：regex
     return list.join('|');
   }
   return String(value);

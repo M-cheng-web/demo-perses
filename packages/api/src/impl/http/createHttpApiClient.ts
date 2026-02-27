@@ -25,7 +25,7 @@ import { createHttpVariableService } from './services/variableService';
  * 创建 HTTP API Client
  *
  * 推荐调用方式（宿主应用/hook）：
- * - createHttpApiClient({ apiConfig: { baseUrl: '/api', auth: { getBearerToken: ... } } })
+ * - createHttpApiClient({ apiConfig: { baseUrl: '/api', auth: { getBearerToken: ... } } })（示例）
  */
 export function createHttpApiClient(options: CreateHttpApiClientOptions = {}): GrafanaFastApiClient {
   const resolved = resolveHttpApiClientConfig(options.apiConfig);

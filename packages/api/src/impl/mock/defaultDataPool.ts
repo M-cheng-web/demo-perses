@@ -103,7 +103,7 @@ const DEFAULT_DATA_POOL = {
 
 export function getDefaultDataByExpr(expr: string): TimeSeriesData[] {
   const normalized = String(expr ?? '').trim();
-  // A few common aggregate wrappers used in demo dashboards.
+  // 演示仪表盘中常见的聚合包装（例如 avg/max）。
   if (normalized.includes('avg(') && normalized.includes('cpu_usage')) return DEFAULT_DATA_POOL.avg_cpu_usage();
   if (normalized.includes('max(') && normalized.includes('cpu_usage')) return DEFAULT_DATA_POOL.max_cpu_usage();
 

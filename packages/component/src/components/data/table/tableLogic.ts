@@ -1,3 +1,6 @@
+/**
+ * Table 逻辑：列 key 规范化与排序状态切换（ascend/descend/null）。
+ */
 export type SortOrder = 'ascend' | 'descend';
 
 export interface SortState {

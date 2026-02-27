@@ -70,7 +70,7 @@
 
   const [_, bem] = createNamespace('alert');
   const globalSize = useComponentSize(computed(() => props.size));
-  // Alert only supports 'small' | 'middle'; map 'large' → 'middle'
+  // Alert 只支持 'small' | 'middle'；把 'large' 映射为 'middle'
   const resolvedSize = computed(() => (globalSize.value === 'small' ? 'small' : 'middle'));
   const visible = ref(true);
   const slots = useSlots();
@@ -104,7 +104,7 @@
       align-items: center;
     }
 
-    // Info (default)
+    // Info（默认）
     &--info {
       background: var(--gf-color-primary-soft);
       border: 1px solid var(--gf-color-primary-border);
@@ -114,7 +114,7 @@
       color: var(--gf-color-primary);
     }
 
-    // Success
+    // Success（成功）
     &--success {
       background: var(--gf-color-success-soft);
       border: 1px solid var(--gf-color-success-border);
@@ -124,7 +124,7 @@
       color: var(--gf-color-success);
     }
 
-    // Warning
+    // Warning（警告）
     &--warning {
       background: var(--gf-color-warning-soft);
       border: 1px solid var(--gf-color-warning-border);
@@ -134,7 +134,7 @@
       color: var(--gf-color-warning);
     }
 
-    // Error
+    // Error（错误）
     &--error {
       background: var(--gf-color-danger-soft);
       border: 1px solid var(--gf-color-danger-border);
@@ -204,7 +204,7 @@
       }
     }
 
-    // Size small
+    // small 尺寸
     &--size-small {
       padding: 6px 10px;
 
@@ -218,7 +218,7 @@
       }
     }
 
-    // Banner mode
+    // Banner 模式
     &.is-banner {
       border-radius: 0;
       border-left: none;
@@ -226,7 +226,7 @@
     }
   }
 
-  // Animation
+  // 动画
   .gf-slide-up-enter-active,
   .gf-slide-up-leave-active {
     transition:

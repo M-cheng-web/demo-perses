@@ -1,7 +1,7 @@
 {
   "name": "@grafana-fast/api",
   "version": "0.1.0",
-  "description": "Data access layer (contracts + implementations) for grafana-fast.",
+  "description": "grafana-fast 数据访问层（契约 + 实现）。",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

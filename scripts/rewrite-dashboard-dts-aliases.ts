@@ -1,15 +1,14 @@
 /**
- * Rewrite dashboard declaration files to remove the internal `/#/` alias.
+ * 重写 dashboard 声明文件：移除内部 `/#/` 别名引用。
  *
- * Background:
- * - Dashboard source code uses Vite alias `/#/` to represent `packages/dashboard/src`.
- * - `vue-tsc --emitDeclarationOnly` preserves the original import specifiers, so the emitted
- *   `dist/*.d.ts` would contain `from '/#/...'`.
- * - That breaks downstream TypeScript consumers (e.g. `@grafana-fast/hooks`) because `/#/`
- *   is not a real package path outside of the dashboard build setup.
+ * 背景：
+ * - Dashboard 源码使用 Vite 别名 `/#/` 指向 `packages/dashboard/src`。
+ * - `vue-tsc --emitDeclarationOnly` 会保留 import specifier，导致生成的 `dist/*.d.ts`
+ *   仍然包含 `from '/#/...'`。
+ * - `/#/` 不是一个真实的包路径，会影响下游 TypeScript 消费者（例如 `@grafana-fast/hook`）。
  *
- * This script rewrites `'/#/foo/bar'` -> relative path (e.g. `'../foo/bar'`) based on
- * the current `.d.ts` file location inside `packages/dashboard/dist`.
+ * 本脚本会基于 `packages/dashboard/dist` 内 `.d.ts` 文件的相对位置，把 `'/#/foo/bar'`
+ * 改写为相对路径（例如 `'../foo/bar'`）。
  */
 
 import consola from 'consola';
@@ -30,13 +29,13 @@ function computeRelative(fromDirPosix: string, targetPosix: string): string {
 async function main() {
   const distRoot = path.join(rootDir, 'packages/dashboard/dist');
   if (!(await fs.pathExists(distRoot))) {
-    consola.warn(`dashboard dist not found, skip rewrite: ${distRoot}`);
+    consola.warn(`未找到 dashboard dist，跳过重写：${distRoot}`);
     return;
   }
 
   const files = await fg(['**/*.d.ts'], { cwd: distRoot, absolute: true, dot: true });
   if (files.length === 0) {
-    consola.warn(`no .d.ts files found under: ${distRoot}`);
+    consola.warn(`在该目录下未找到 .d.ts 文件：${distRoot}`);
     return;
   }
 
@@ -61,7 +60,7 @@ async function main() {
     }
   }
 
-  consola.success(`dashboard d.ts alias rewrite complete: ${changedCount}/${files.length} files updated`);
+  consola.success(`dashboard d.ts 别名重写完成：已更新 ${changedCount}/${files.length} 个文件`);
 }
 
 main().catch((err) => {

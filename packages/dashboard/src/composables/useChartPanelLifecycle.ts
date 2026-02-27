@@ -1,3 +1,6 @@
+/**
+ * 图表面板生命周期 Composable：收敛“初始化 + 首次渲染 + resize 绑定 + 后续更新”等通用流程。
+ */
 import { computed, nextTick, type Ref } from 'vue';
 import type { ECharts } from 'echarts';
 import { useChartInit } from './useChartInit';
@@ -27,7 +30,7 @@ export function useChartPanelLifecycle<T extends ResizableChartInstance = EChart
       },
       {
         value: options.panelOptions,
-        // Options can be an empty object; charts should still render with defaults.
+        // options 可以是空对象；图表仍应按默认值渲染。
         isValid: (val: unknown) => val != null,
       },
     ],

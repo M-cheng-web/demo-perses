@@ -40,7 +40,7 @@ export function renderQuery(
     // 只有标签没有指标
     queryString = labels;
   } else if (query.operations.length > 0) {
-    // 对于查询模式，我们希望操作渲染为 e.g. rate([$__rate_interval])
+    // 对于“仅操作”的查询形态，操作应渲染为 e.g. rate([$__rate_interval])
     queryString = '';
   }
 
@@ -83,7 +83,7 @@ export function renderQuery(
 
 /**
  * 渲染二元查询的嵌套部分的特殊辅助函数
- * 这确保我们只在需要时添加括号
+ * 用于确保仅在需要时添加括号
  */
 function renderNestedPart(query: PrometheusVisualQuery, operationsRegistry?: Map<string, QueryBuilderOperationDef>): string {
   // 首先渲染查询本身

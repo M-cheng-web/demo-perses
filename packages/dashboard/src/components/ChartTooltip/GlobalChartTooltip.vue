@@ -43,9 +43,9 @@
   import { Button, GF_THEME_CONTEXT_KEY } from '@grafana-fast/component';
   import { storeToRefs } from '@grafana-fast/store';
   import { PushpinFilled } from '@ant-design/icons-vue';
+  import { subscribeEvent } from '@grafana-fast/utils';
   import { useTooltipStore } from '/#/stores';
   import { useDashboardRuntime } from '/#/runtime/useInjected';
-  import { subscribeEvent } from '/#/runtime/windowEvents';
   import { createNamespace } from '/#/utils';
 
   const [_, bem] = createNamespace('chart-tooltip');
@@ -57,12 +57,12 @@
   const runtime = useDashboardRuntime();
   const { pinnedChartId, activeChartId, currentPosition, currentTooltipData } = storeToRefs(tooltipStore);
 
-  // State
+  // 状态
   const tooltipRef = ref<HTMLElement>();
   const showAllSeries = ref(false);
   const maxVisibleSeries = 10;
 
-  // Computed
+  // 计算属性
   const isPinned = computed(() => pinnedChartId.value !== null);
 
   const totalSeries = computed(() => {

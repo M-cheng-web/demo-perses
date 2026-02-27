@@ -169,7 +169,7 @@
       }
     }
 
-    /* Scrollbar styling */
+    /* 滚动条样式 */
     &::-webkit-scrollbar {
       width: 4px;
       height: 4px;

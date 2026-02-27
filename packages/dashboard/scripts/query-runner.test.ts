@@ -1,3 +1,6 @@
+/**
+ * QueryRunner 单元测试（最小回归）：去重、并发限制、abort 传播与缓存 TTL 行为。
+ */
 import assert from 'node:assert/strict';
 import type { GrafanaFastApiClient } from '@grafana-fast/api';
 import type { CanonicalQuery, QueryContext, QueryExecuteDTO, QueryResult } from '@grafana-fast/types';
@@ -12,10 +15,10 @@ function sleep(ms: number) {
 async function test(name: string, fn: () => Promise<void>) {
   try {
     await fn();
-    // eslint-disable-next-line no-console -- test script output is allowed
+    // eslint-disable-next-line no-console -- 允许测试脚本输出
     console.log(`✓ ${name}`);
   } catch (error) {
-    // eslint-disable-next-line no-console -- test script output is allowed
+    // eslint-disable-next-line no-console -- 允许测试脚本输出
     console.error(`✗ ${name}`);
     throw error;
   }
@@ -105,12 +108,7 @@ await test('respects maxConcurrency when executing panel queries', async () => {
   });
 
   const runner = new QueryRunner(api, { maxConcurrency: 2, cacheTtlMs: 0 });
-  const queries = [
-    makeQuery('q-1', 'up'),
-    makeQuery('q-2', 'up{job="a"}'),
-    makeQuery('q-3', 'up{job="b"}'),
-    makeQuery('q-4', 'up{job="c"}'),
-  ];
+  const queries = [makeQuery('q-1', 'up'), makeQuery('q-2', 'up{job="a"}'), makeQuery('q-3', 'up{job="b"}'), makeQuery('q-4', 'up{job="c"}')];
 
   const results = await runner.executeQueries(queries, baseContext);
   assert.equal(results.length, 4);

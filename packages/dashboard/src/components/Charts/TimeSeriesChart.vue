@@ -276,7 +276,7 @@
           };
 
           updateTooltipData(tooltipData);
-          return ''; // 返回空字符串，我们使用自定义 Tooltip 展示
+          return ''; // 返回空字符串，由自定义 Tooltip 展示
         },
       },
       // 禁用 ECharts 原生 legend，使用自定义

@@ -63,7 +63,7 @@
       overflow: auto;
       border-radius: var(--gf-radius-sm);
 
-      /* Scrollbar styling */
+      /* 滚动条样式 */
       &::-webkit-scrollbar {
         width: 6px;
         height: 6px;

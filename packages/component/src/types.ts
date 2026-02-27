@@ -1,3 +1,6 @@
+/**
+ * 组件库公共类型：Table 配置、分页配置与表单校验规则。
+ */
 export interface TableColumnType<T = any> {
   title: string;
   dataIndex?: Extract<keyof T, string> | string;

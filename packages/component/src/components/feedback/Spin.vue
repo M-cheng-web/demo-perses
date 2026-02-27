@@ -41,7 +41,7 @@
 
   const [_, bem] = createNamespace('spin');
   const globalSize = useComponentSize(computed(() => props.size));
-  // Spin supports 'small' | 'default' | 'large'; map 'middle' → 'default'
+  // Spin 支持 'small' | 'default' | 'large'；把 'middle' 映射为 'default'
   const resolvedSize = computed(() => {
     const s = globalSize.value;
     if (s === 'middle') return 'default';
@@ -139,7 +139,7 @@
       }
     }
 
-    // Size variants
+    // 尺寸变体
     &--size-small &__dot {
       width: 14px;
       height: 14px;

@@ -2,14 +2,13 @@
  * ECharts 响应式调整 Composable
  * 参考 Perses 项目的图表自适应实现
  *
- * todo : window.addEventListener('resize' 这种应该创建集中的事件机制
+ * TODO：window.addEventListener('resize') 这类场景应由集中事件机制统一管理
  */
 
 import { onUnmounted, type Ref } from 'vue';
 import type { ComputedRef } from 'vue';
 import type { ResizeOpts } from 'echarts/core';
-import { subscribeWindowResize } from '/#/runtime/windowEvents';
-import { debounceCancellable } from '@grafana-fast/utils';
+import { debounceCancellable, subscribeWindowResize } from '@grafana-fast/utils';
 
 export interface ResizableChartInstance {
   isDisposed: () => boolean;

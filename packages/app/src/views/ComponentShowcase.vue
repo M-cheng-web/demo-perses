@@ -354,7 +354,7 @@
     MenuItem,
     Modal,
     Popconfirm,
-    // Result removed; Alert is the recommended replacement
+    // Result 组件已移除；推荐使用 Alert 作为替代
     Segmented,
     Select,
     Slider,

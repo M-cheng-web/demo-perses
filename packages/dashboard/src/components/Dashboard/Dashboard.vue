@@ -107,12 +107,7 @@
         :lock-scroll-el="lockScrollEl"
       >
         <div v-if="isGeneratingJson" :class="bem('json-loading')">正在生成 JSON（内容较大时可能需要几秒）...</div>
-        <DashboardJsonEditor
-          v-else
-          v-model="dashboardJson"
-          :read-only="true"
-          :max-editable-chars="MAX_DASHBOARD_JSON_CHARS_FOR_FAST_VIEW"
-        />
+        <DashboardJsonEditor v-else v-model="dashboardJson" :read-only="true" :max-editable-chars="MAX_DASHBOARD_JSON_CHARS_FOR_FAST_VIEW" />
         <template #footer>
           <Space>
             <Button @click="jsonModalVisible = false">关闭</Button>
@@ -354,11 +349,11 @@
     }
   };
 
-  // PanelEditorDrawer is heavy (query builder + editor helpers).
-  // Strategy:
-  // - Do not block the first render/booting stage
-  // - Once dashboard is ready (booting finished), mount it in the background (idle/next tick)
-  // - Also ensure it's mounted if something tries to open it
+  // PanelEditorDrawer 较重（QueryBuilder + 编辑器辅助逻辑）。
+  // 策略：
+  // - 不阻塞首次渲染/boot 阶段
+  // - dashboard ready 后在后台加载（idle/nextTick）
+  // - 当出现打开请求时，确保已加载
   const panelEditorDrawerLoaded = ref(false);
 
   const requestLoadPanelEditorDrawer = () => {
@@ -368,7 +363,7 @@
 
   const scheduleLoadPanelEditorDrawer = () => {
     if (panelEditorDrawerLoaded.value) return;
-    // Defer to idle time so the main dashboard UI can paint first.
+    // 延迟到空闲时间：让主 dashboard UI 先完成绘制。
     const w = window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number };
     if (typeof w?.requestIdleCallback === 'function') {
       w.requestIdleCallback(() => requestLoadPanelEditorDrawer(), { timeout: 800 });

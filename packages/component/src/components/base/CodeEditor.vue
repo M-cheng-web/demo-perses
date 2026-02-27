@@ -104,7 +104,7 @@
     try {
       await navigator.clipboard.writeText(props.modelValue ?? '');
     } catch {
-      // ignore
+      // 忽略：剪贴板 API 失败不应阻断交互
     }
   };
 

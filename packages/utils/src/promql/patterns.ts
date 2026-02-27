@@ -18,7 +18,7 @@ function emptyQuery(): PromVisualQuery {
 export function getPromQueryPatterns(): PromQueryPattern[] {
   return [
     // ----------------------------
-    // Rate
+    // 速率（Rate）
     // ----------------------------
     {
       name: 'Rate then sum',
@@ -60,7 +60,7 @@ export function getPromQueryPatterns(): PromQueryPattern[] {
     },
 
     // ----------------------------
-    // Histogram
+    // 直方图（Histogram）
     // ----------------------------
     {
       name: 'Histogram quantile on rate',
@@ -100,7 +100,7 @@ export function getPromQueryPatterns(): PromQueryPattern[] {
     },
 
     // ----------------------------
-    // Binary
+    // 二元运算（Binary）
     // ----------------------------
     {
       name: 'Error Rate (errors / total)',

@@ -1,3 +1,6 @@
+/**
+ * QueryScheduler 类型定义：面板查询状态、任务模型、注册信息与调试快照。
+ */
 import type { ComputedRef, Ref } from 'vue';
 import type { Panel, QueryResult } from '@grafana-fast/types';
 

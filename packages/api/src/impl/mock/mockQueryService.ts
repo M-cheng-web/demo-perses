@@ -1,5 +1,5 @@
 /**
- * mock QueryService
+ * Mock QueryService（模拟查询服务）
  *
  * 说明：
  * - 用内置数据池（defaultDataPool.ts）模拟 Prometheus 查询结果

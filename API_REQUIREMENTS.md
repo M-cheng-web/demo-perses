@@ -3,10 +3,12 @@
 目标：接口按此文档约定实现后，`@grafana-fast/dashboard` 可以在“只拉一次 Dashboard JSON + 局部增删改 + 失败回滚”的产品约束下完整跑通（含 QueryBuilder / 变量 / 查询执行）。
 
 本文档特点：
+
 - 不标注具体代码调用位置，只描述：场景/调用时机/用途/严格入参出参
 - HTTP 路径与 `@grafana-fast/api` 默认 endpoints 对齐；如需对接现有服务路由，在 http 实现层集中映射
 
 > 注意：本文档中的 path **不包含**前端默认的 `baseUrl=/api` 前缀。若宿主未改 baseUrl，则实际请求为：`/api{path}`。
+
 - 对接约定：
   - **所有接口统一使用 `POST` + JSON body**（`Content-Type: application/json`）
   - **Body 统一为 JSON 对象**：即便无参数也发送 `{}`（不要省略请求体）
@@ -16,6 +18,7 @@
 ## 0. 接口总览（Dashboard 子项目实际会用到）
 
 > 说明：
+>
 > - Dashboard 子项目的所有网络请求都通过 `@grafana-fast/api`（HTTP 实现层）发出；以下清单与其默认 endpoints 对齐。
 > - 本清单只列 dashboard 子项目实际会调用的接口（因此清单内全部都是必需接口）。
 
@@ -74,13 +77,11 @@
 
 ### B1. 鉴权与上下文
 
-本文档不约束鉴权/多租户的 header/cookie/session 形态；由宿主统一实现。
-本文档只约束：接口 method/path/body/response/状态码与关键业务语义。
+本文档不约束鉴权/多租户的 header/cookie/session 形态；由宿主统一实现。本文档只约束：接口 method/path/body/response/状态码与关键业务语义。
 
 #### B1.1 DashboardSessionKey（资源定位，必需）
 
-**Dashboard 资源定位不再使用 `dashboardId`**（真实 id 不对前端暴露）。
-前端只持有一个临时的 `dashboardSessionKey`，并在请求头中携带：
+**Dashboard 资源定位不再使用 `dashboardId`**（真实 id 不对前端暴露）。前端只持有一个临时的 `dashboardSessionKey`，并在请求头中携带：
 
 - Header: `X-Dashboard-Session-Key: <dashboardSessionKey>`
 
@@ -200,6 +201,7 @@ type ResolveDashboardSessionResponse = {
 ```ts
 type LoadDashboardRequest = {}; // body 为空（资源定位完全依赖 header: X-Dashboard-Session-Key）
 ```
+
 - Response `200`：
 
 ```ts
@@ -283,6 +285,7 @@ type VariableOption = {
 ```
 
 > 说明（重要）：`timeRange` 与“自动刷新间隔”属于运行时全局状态，不存入 Dashboard JSON（`DashboardContent`）。
+>
 > - 前端会在每次加载/整盘重载时重置为默认值；
 > - 查询执行会在请求里显式携带 `timeRange`（见 H 模块）。
 
@@ -315,6 +318,7 @@ type SaveDashboardRequest = {
   content: DashboardContent; // 要保存的整盘 Dashboard JSON
 };
 ```
+
 - Response：`204 No Content`
 - 说明：日常拖拽/增删改面板不调用该接口（使用局部接口）
 - 重要约束（导入兜底校验）：后端必须校验 `content` 未修改服务端管理/不可变字段（例如 panelGroupId/panelId 等）；若发现越权或非法变更，必须返回非 2xx 且不应用该 JSON。
@@ -323,8 +327,7 @@ type SaveDashboardRequest = {
 
 ## E. 模块：面板组 PanelGroup（局部编辑接口）
 
-> 说明：PanelGroup 的“内容（panels/layout）”来自 `POST /dashboards/load` 的 `DashboardContent`；
-> 面板组接口只负责元信息与结构性变更（增删改/排序），避免走全量 save。
+> 说明：PanelGroup 的“内容（panels/layout）”来自 `POST /dashboards/load` 的 `DashboardContent`；面板组接口只负责元信息与结构性变更（增删改/排序），避免走全量 save。
 
 ### E1. 创建面板组
 
@@ -400,6 +403,7 @@ type DeletePanelGroupRequest = {
   groupId: ID; // 目标面板组 id
 };
 ```
+
 - Response：`204 No Content`
 - 约束：删除该组时同时删除该组下的 `panels/layout`。
 
@@ -425,8 +429,7 @@ type ReorderPanelGroupsRequest = {
 
 ## F. 模块：面板 Panel（局部编辑接口）
 
-> 说明：面板的“配置”完全来自 Dashboard JSON（不再有“打开面板详情再拉面板配置”的接口）。
-> 所谓“面板数据”统一由查询执行接口提供。
+> 说明：面板的“配置”完全来自 Dashboard JSON（不再有“打开面板详情再拉面板配置”的接口）。所谓“面板数据”统一由查询执行接口提供。
 
 ### F1. 新增面板（编辑态按钮：新增面板）
 
@@ -504,6 +507,7 @@ type DeletePanelRequest = {
   panelId: ID; // 目标面板 id
 };
 ```
+
 - Response：`204 No Content`
 - 约束：必须同时删除该面板对应的 layout 项（`layout[i==panelId]`）。
   - 删除成功后：前端会对“当前所在页”补一次 `POST /dashboards/panel-groups/layout/patch-page`，把删除后的最终布局提交给后端（用于锁定 compact/reflow 结果；后端无需自行推断）
@@ -523,6 +527,7 @@ type DuplicatePanelRequest = {
   panelId: ID; // 被复制的面板 id
 };
 ```
+
 - Response `200`：
 
 ```ts
@@ -647,6 +652,7 @@ type ExecuteQueriesResponse = QueryResult[];
 ## I. 模块：变量 Variables（后端全量下发）
 
 > 本项目采用“后端全量下发变量”的模式：
+>
 > - Dashboard JSON 不承载 variables（不导入/导出，不随 `/dashboards/load` round-trip）
 > - 后端根据 `dashboardSessionKey` 返回该 dashboard 需要的“全局变量定义 + options + 默认值”
 > - 前端在 Dashboard 初始化阶段必须先加载变量，再展示面板组（避免首屏查询出现 `$cluster` 未替换等问题）
@@ -714,6 +720,7 @@ type FetchMetricsRequest = {
   search?: string; // 可选：模糊搜索关键字；为空等价于“默认列表”
 };
 ```
+
 - Response `200`：
 
 ```ts
@@ -737,6 +744,7 @@ type FetchLabelKeysRequest = {
   metric: string; // 指标名（用于限定 label keys 范围）
 };
 ```
+
 - Response `200`：
 
 ```ts
@@ -758,6 +766,7 @@ type FetchLabelValuesRequest = {
   otherLabels?: Record<string, string>; // 可选：其他 label 过滤条件（用于缩小 label value 联想范围）
 };
 ```
+
 - Response `200`：
 
 ```ts

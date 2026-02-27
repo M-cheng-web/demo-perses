@@ -16,7 +16,7 @@ PromQL 解析与编辑器侧转换工具包（基于 `@prometheus-io/lezer-promq
 兼容性说明：
 
 - 默认会对常见 Grafana 变量做“长度保持不变”的占位替换（例如 `$__interval`），仅用于语法解析与 diagnostics 的 range 对齐
-- 不会修改你真正执行/保存的 PromQL（上层仍应使用原始表达式）
+- 不会修改实际执行/保存的 PromQL（上层仍应使用原始表达式）
 
 ## 安装
 

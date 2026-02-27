@@ -1,3 +1,6 @@
+/**
+ * 主题上下文：提供 light/dark 与 colorScheme/themeClass 的注入 key。
+ */
 import type { ComputedRef, InjectionKey } from 'vue';
 
 export type GfTheme = 'light' | 'dark';

@@ -1,3 +1,6 @@
+/**
+ * release/ 同步脚本：把仓库根目录的 release/ 拷贝到 app-release 的 vendor 目录，用于本地验证离线消费。
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,4 +38,4 @@ fs.cpSync(releaseDir, vendorDir, {
   filter: (src) => path.basename(src) !== '.DS_Store',
 });
 
-console.log(`[app-release] Synced release bundle to: ${path.relative(projectDir, vendorDir)}`);
+console.log(`[app-release] 已同步 release bundle 到：${path.relative(projectDir, vendorDir)}`);

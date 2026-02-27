@@ -2,8 +2,8 @@
  * 文件说明：VariableService 的 HTTP 实现
  *
  * 模式：后端全量下发变量
- * - loadVariables：POST /variables/load
- * - applyVariables：POST /variables/apply
+ * - loadVariables：POST /variables/load（加载变量列表）
+ * - applyVariables：POST /variables/apply（应用变量值）
  */
 
 import type { VariableService, VariablesRequestContext } from '../../../contracts/variable';

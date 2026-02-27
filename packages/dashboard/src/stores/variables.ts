@@ -189,7 +189,10 @@ export const useVariablesStore = defineStore('variables', {
       this.optionsGeneration = (this.optionsGeneration + 1) % Number.MAX_SAFE_INTEGER;
 
       if (invalid.length > 0) {
-        const head = invalid.slice(0, 3).map((it) => `#${it.index}(${it.reason})`).join(', ');
+        const head = invalid
+          .slice(0, 3)
+          .map((it) => `#${it.index}(${it.reason})`)
+          .join(', ');
         const more = invalid.length > 3 ? ` ...(+${invalid.length - 3})` : '';
         this.lastError = `变量返回部分不合法，已忽略：${head}${more}`;
       } else {
@@ -242,7 +245,9 @@ export const useVariablesStore = defineStore('variables', {
       const api = getPiniaApiClient(this.$pinia);
       this.isApplying = true;
       try {
-        const res = await api.variable.applyVariables(deepCloneStructured(patch) as Record<string, string | string[]>, { dashboardSessionKey: sessionKey });
+        const res = await api.variable.applyVariables(deepCloneStructured(patch) as Record<string, string | string[]>, {
+          dashboardSessionKey: sessionKey,
+        });
         if (!Array.isArray(res)) throw new Error('Invalid ApplyVariablesResponse: expected DashboardVariable[]');
         const apply = this._applyVariablesListFromServer;
         if (typeof apply !== 'function') {

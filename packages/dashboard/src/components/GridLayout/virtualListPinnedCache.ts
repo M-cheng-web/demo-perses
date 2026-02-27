@@ -1,3 +1,6 @@
+/**
+ * 虚拟列表渲染缓存：根据热区 id 计算 pinned keep-alive 队列。
+ */
 export interface PinnedCacheSnapshot {
   current: Set<string>;
   queue: string[];

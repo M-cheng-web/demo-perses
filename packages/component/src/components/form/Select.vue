@@ -186,8 +186,8 @@
       width?: number | string;
       /**
        * 下拉弹窗的最大高度（options 区域），超出后滚动。
-       * - number: px
-       * - string: 例如 '240px'
+       * - 传入 number：按 px
+       * - 传入 string：例如 '240px'
        */
       dropdownMaxHeight?: number | string;
       /**
@@ -389,7 +389,7 @@
 
   const handleFocusOut = (evt: FocusEvent) => {
     const relatedTarget = evt.relatedTarget as HTMLElement | null;
-    // Check if focus is moving to dropdown or staying within component
+    // 判断焦点是否移动到下拉层，或仍停留在组件内部
     if (rootRef.value?.contains(relatedTarget) || dropdownRef.value?.contains(relatedTarget)) {
       return;
     }
@@ -419,7 +419,7 @@
       registry.token = null;
       registry.close = null;
     }
-    // Treat "dropdown closed" as finishing interaction (AntD-ish blur validation).
+    // 把“下拉关闭”视为交互结束（类似 AntD 的 blur 校验）
     formItem?.onFieldBlur();
   };
 
@@ -553,7 +553,7 @@
 </script>
 
 <style scoped lang="less">
-  // Ant Design 5.x inspired Select styles
+  // Select 基础样式（参考 Ant Design 5.x）
   .gf-select {
     position: relative;
     width: 100%;
@@ -605,7 +605,7 @@
       box-shadow: none !important;
     }
 
-    // Multi-select with tags
+    // 多选（Tag 模式）
     &.is-multiple &__selector {
       padding: 1px 30px 1px 4px;
       flex-wrap: wrap;
@@ -641,7 +641,7 @@
       white-space: nowrap;
     }
 
-    // Tag item (multi-select) - Ant Design style
+    // Tag 条目（多选）
     &__item {
       display: inline-flex;
       align-items: center;
@@ -720,7 +720,7 @@
       }
     }
 
-    // Arrow & Clear
+    // 箭头与清空按钮
     &__arrow {
       position: absolute;
       right: 11px;
@@ -775,7 +775,7 @@
       opacity: 1;
     }
 
-    // Dropdown - Ant Design 5.x style
+    // 下拉层样式（参考 Ant Design 5.x）
     &__dropdown {
       position: fixed;
       z-index: var(--gf-z-popover);
@@ -880,7 +880,7 @@
       font-size: var(--gf-font-size-md);
     }
 
-    // Size variants
+    // 尺寸变体
     &--size-small {
       font-size: var(--gf-font-size-sm);
 
@@ -941,7 +941,7 @@
     }
   }
 
-  // Transition animations - Ant Design style
+  // 过渡动画（参考 Ant Design 5.x）
   .gf-slide-up-enter-active,
   .gf-slide-up-leave-active {
     transition:

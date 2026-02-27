@@ -1,3 +1,6 @@
+/**
+ * QueryBuilder Explain：把 PromVisualQuery 转为分步骤解释与简单 Markdown 渲染。
+ */
 import { promQueryModeller } from '@grafana-fast/utils';
 import type { PromVisualQuery, QueryBuilderOperationDef, QueryBuilderOperationParamValue } from '@grafana-fast/utils';
 

@@ -15,10 +15,10 @@ export interface BEM {
    * 生成 className
    *
    * 入参约定：
-   * - `bem()`：仅 block
-   * - `bem('el')`：block__el
-   * - `bem({ disabled: true })`：block + block--disabled
-   * - `bem('el', { disabled: true })`：block__el + block__el--disabled
+   * - `bem()`：生成 block
+   * - `bem('el')`：生成 block__el
+   * - `bem({ disabled: true })`：生成 block + block--disabled
+   * - `bem('el', { disabled: true })`：生成 block__el + block__el--disabled
    */
   (el?: Mods, mods?: Mods): string;
   b: () => string;
@@ -34,8 +34,8 @@ export interface CreateNamespaceOptions {
    * 默认：`gf`
    *
    * 示例：
-   * - `createNamespace('button')` -> `gf-button`
-   * - `createNamespace('button', { namespace: 'dp' })` -> `dp-button`
+   * - `createNamespace('button')` -> `gf-button`（默认 namespace）
+   * - `createNamespace('button', { namespace: 'dp' })` -> `dp-button`（自定义 namespace）
    */
   namespace?: string;
 }
@@ -67,13 +67,13 @@ function genBem(name: string, mods?: Mods): string {
  *
  * @param blockName 块名（不含 namespace 前缀）
  * @param options 可选配置（namespace 等）
- * @returns `[prefixedBlockName, bem]`
+ * @returns `[prefixedBlockName, bem]`（前缀后的 blockName 与 bem 函数）
  *
  * @example
  * const [_, bem] = createNamespace('json-editor-lite');
- * bem() // gf-json-editor-lite
- * bem('pos') // gf-json-editor-lite__pos
- * bem({ disabled: true }) // gf-json-editor-lite gf-json-editor-lite--disabled
+ * bem() // gf-json-editor-lite（根 block）
+ * bem('pos') // gf-json-editor-lite__pos（元素）
+ * bem({ disabled: true }) // gf-json-editor-lite gf-json-editor-lite--disabled（状态）
  */
 export function createNamespace(blockName: string, options: CreateNamespaceOptions = {}): [string, BEM] {
   const namespace = options.namespace ?? DEFAULT_BEM_NAMESPACE;

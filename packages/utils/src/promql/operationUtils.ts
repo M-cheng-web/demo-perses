@@ -190,8 +190,8 @@ export function createAggregationOperation(name: string, overrides: Partial<Quer
           type: 'string',
           restParam: true,
           optional: true,
-          // Keep UI consistent: label params should always use the label selector dropdown.
-          // When a label is added, paramChangedHandler will switch this op to the `... by(...)` variant.
+          // 保持 UI 一致：Label 参数统一使用标签选择下拉框。
+          // 当添加 label 时，paramChangedHandler 会把该操作切换到 `... by(...)` 变体。
           editor: 'LabelParamEditor',
         },
       ],

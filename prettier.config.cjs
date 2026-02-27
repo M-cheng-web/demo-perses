@@ -1,8 +1,11 @@
+/**
+ * Prettier 配置：统一仓库的代码格式化风格。
+ */
 module.exports = {
   printWidth: 150,
   tabWidth: 2,
   useTabs: false,
-  semi: true, //语句末尾使用分号
+  semi: true, // 语句末尾使用分号
   vueIndentScriptAndStyle: true,
   singleQuote: true, // 使用单引号
   quoteProps: 'as-needed',

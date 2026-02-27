@@ -1,3 +1,6 @@
+/**
+ * app-release 的 Vite 配置：用于验证 release/ 离线产物在真实宿主中的消费方式。
+ */
 import path from 'path';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
@@ -19,4 +22,3 @@ export default defineConfig({
     host: true,
   },
 });
-

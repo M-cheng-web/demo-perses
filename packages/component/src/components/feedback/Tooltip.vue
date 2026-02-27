@@ -126,7 +126,7 @@
     let left = 0;
     let top = 0;
 
-    // Calculate base position
+    // 计算基础位置
     switch (props.placement) {
       case 'top':
       case 'topLeft':
@@ -148,7 +148,7 @@
         break;
     }
 
-    // Horizontal positioning for top/bottom
+    // 顶部/底部的水平定位
     if (props.placement === 'top' || props.placement === 'bottom') {
       left = rect.left + (rect.width - popupRect.width) / 2;
     } else if (props.placement === 'topLeft' || props.placement === 'bottomLeft') {
@@ -157,7 +157,7 @@
       left = rect.right - popupRect.width;
     }
 
-    // Clamp to viewport
+    // 约束到视口范围
     left = clamp(left, padding, window.innerWidth - popupRect.width - padding);
     top = clamp(top, padding, window.innerHeight - popupRect.height - padding);
 
@@ -297,7 +297,7 @@
     box-shadow: var(--gf-shadow-2);
   }
 
-  // Animation
+  // 动画
   .gf-zoom-big-fast-enter-active,
   .gf-zoom-big-fast-leave-active {
     transition:

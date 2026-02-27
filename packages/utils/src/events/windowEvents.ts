@@ -37,8 +37,8 @@ function captureFromOptions(options: ListenerOptions): boolean {
 }
 
 function normalizeOptions(type: string, options: ListenerOptions): ListenerOptions {
-  // Default options: keep behavior aligned and safe.
-  // - scroll/resize: prefer passive listeners to reduce main-thread blocking.
+  // 默认 options：保持行为一致且更安全。
+  // - scroll/resize：优先使用 passive listener，减少主线程阻塞。
   const capture = captureFromOptions(options);
   const base: AddEventListenerOptions = typeof options === 'object' && options ? { ...options } : {};
   if (type === 'scroll' || type === 'resize') {
@@ -120,7 +120,7 @@ export function subscribeWindowEvent<E extends Event = Event>(type: string, fn: 
   return subscribeEvent(window, type, fn as Subscriber, options);
 }
 
-// Convenience helpers
+// 便捷方法
 export function subscribeWindowResize(fn: () => void): Unsubscribe {
   return subscribeWindowEvent('resize', () => fn(), { passive: true });
 }

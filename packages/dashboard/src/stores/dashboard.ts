@@ -27,18 +27,13 @@ import {
   updatePanelGroup as updatePanelGroupLocal,
   updatePanelGroupLayout as updatePanelGroupLayoutLocal,
 } from './dashboard/mutations';
-import {
-  countDashboardStats,
-  safeUtf8Bytes,
-  sanitizeDashboardContent,
-  yieldToPaint,
-} from './dashboard/helpers';
+import { countDashboardStats, safeUtf8Bytes, sanitizeDashboardContent, yieldToPaint } from './dashboard/helpers';
 import type { BootStage, DashboardState } from './dashboard/types';
 import { useTimeRangeStore } from './timeRange';
 import { useVariablesStore } from './variables';
 import { message } from '@grafana-fast/component';
 
-// NOTE: constants + helpers extracted to ./dashboard/* to keep this store file focused on mutations/state.
+// 说明：constants/helpers 抽到 ./dashboard/*，用于保持本文件聚焦在 state/mutations。
 
 export const useDashboardStore = defineStore('dashboard', {
   state: (): DashboardState => ({
@@ -155,7 +150,7 @@ export const useDashboardStore = defineStore('dashboard', {
           const timeRangeStore = useTimeRangeStore(this.$pinia);
           timeRangeStore.reset();
         } catch {
-          // ignore: runtime sync should never break dashboard flow
+          // 忽略：运行时同步不应影响 Dashboard 主流程
         }
       }
     },
@@ -447,7 +442,7 @@ export const useDashboardStore = defineStore('dashboard', {
       const tmp = String(tempId);
       const nextId = String(panel.id);
 
-      // Replace panel entry (keep array order stable)
+      // 替换 panel 条目（保持数组顺序稳定）
       const panelIdx = group.panels.findIndex((p) => String(p.id) === tmp);
       if (panelIdx >= 0) {
         group.panels[panelIdx] = panel;
@@ -455,7 +450,7 @@ export const useDashboardStore = defineStore('dashboard', {
         group.panels.push(panel);
       }
 
-      // Replace layout entry id + apply backend layout if provided
+      // 替换 layout 条目 id；若后端返回 layout，则同时应用
       const layoutIdx = group.layout.findIndex((it) => String(it.i) === tmp);
       if (layoutIdx >= 0) {
         const existing = group.layout[layoutIdx]!;
@@ -468,12 +463,12 @@ export const useDashboardStore = defineStore('dashboard', {
       } else if (layout) {
         group.layout.push(layout);
       } else {
-        // Fallback: keep a minimal layout entry so the new panel is renderable
+        // 兜底：补一个最小 layout 条目，确保新 panel 可渲染
         const maxY = Math.max(...(group.layout ?? []).map((l) => Number(l.y ?? 0) + Number(l.h ?? 0)), 0);
         group.layout.push({ i: nextId, x: 0, y: maxY, w: 24, h: 8, minW: 6, minH: 4 });
       }
 
-      // Ensure no leftover temp layout entries
+      // 清理残留的临时 layout 条目
       group.layout = (group.layout ?? []).filter((it) => String(it.i) !== tmp);
 
       this.markDashboardDirty({ hasUnsyncedChanges: false });
@@ -591,7 +586,7 @@ export const useDashboardStore = defineStore('dashboard', {
             patchPanelGroupLayoutItemsLocal.call(this, groupId, serverItems);
           }
 
-          const applyItems: PanelLayout[] = serverItems ?? queued.map((it) => ({ i: it.i, x: it.x, y: it.y, w: it.w, h: it.h } as PanelLayout));
+          const applyItems: PanelLayout[] = serverItems ?? queued.map((it) => ({ i: it.i, x: it.x, y: it.y, w: it.w, h: it.h }) as PanelLayout);
           this._upsertLayoutItemsOnDashboard(this.syncedDashboard, groupId, applyItems);
           this.hasUnsyncedChanges = false;
           this.lastError = null;
@@ -645,7 +640,7 @@ export const useDashboardStore = defineStore('dashboard', {
       const dashboardSessionKey = this.dashboardSessionKey;
       if (!dashboardSessionKey) throw new Error('Missing dashboardSessionKey. Call loadDashboard(dashboardSessionKey) first.');
 
-      // optimistic insert with a temp id (backend generates the final id)
+      // 乐观插入：先使用临时 id，等待后端返回最终 id
       const tempId = createPrefixedId('p_tmp');
       const optimistic: Panel = { ...(deepCloneStructured(panel) as Panel), id: tempId };
       addPanelLocal.call(this, groupId, optimistic);
@@ -857,7 +852,7 @@ export const useDashboardStore = defineStore('dashboard', {
         }
 
         const created = deepCloneStructured(res.group) as PanelGroup;
-        // Replace temp group id with backend-generated id (keep array order stable)
+        // 用后端生成的 id 替换临时 group id（保持数组顺序稳定）
         const dash = this.currentDashboard;
         const idx = dash.panelGroups.findIndex((g) => String(g.id) === String(tempId));
         if (idx >= 0) {
@@ -865,7 +860,7 @@ export const useDashboardStore = defineStore('dashboard', {
         } else {
           dash.panelGroups.push(created);
         }
-        // Normalize order fields to match current array order
+        // 规范化 order 字段，使其与数组顺序一致
         dash.panelGroups.forEach((g, i) => (g.order = i));
 
         if (this.syncedDashboard) {
@@ -997,7 +992,7 @@ export const useDashboardStore = defineStore('dashboard', {
         if (opSeq !== this._remoteOpSeq) return;
 
         if (this.syncedDashboard) {
-          // apply the same reorder logic to synced snapshot
+          // 对 synced 快照应用同样的重排逻辑
           const groups = this.syncedDashboard.panelGroups ?? [];
           const byId = new Map<string, PanelGroup>();
           for (const g of groups) byId.set(String(g.id), g);
@@ -1077,7 +1072,7 @@ export const useDashboardStore = defineStore('dashboard', {
         const variablesStore = useVariablesStore(this.$pinia);
         if (typeof variablesStore.reset === 'function') variablesStore.reset();
       } catch {
-        // ignore
+        // 忽略：变量 reset 失败不应影响加载流程
       }
 
       this.beginBoot('remote', 'fetching');
@@ -1086,7 +1081,7 @@ export const useDashboardStore = defineStore('dashboard', {
         const api = getPiniaApiClient(this.$pinia);
 
         // 并行加载：
-        // - dashboard JSON（/dashboards/load）
+        // - Dashboard JSON（/dashboards/load，加载 dashboard 内容）
         // - 全局变量（/variables/load）
         const variablesStore = useVariablesStore(this.$pinia);
         const loadVariables = variablesStore.loadVariables;
@@ -1136,11 +1131,11 @@ export const useDashboardStore = defineStore('dashboard', {
               if (!variableNames.has(name)) missing.add(name);
             };
 
-            // ${var}
+            // 变量 token：${var}
             text.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_, name: string) => (add(name), ''));
-            // [[var]]
+            // 变量 token：[[var]]
             text.replace(/\[\[([A-Za-z_][A-Za-z0-9_]*)\]\]/g, (_, name: string) => (add(name), ''));
-            // $var
+            // 变量 token：$var
             text.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (_, name: string) => (add(name), ''));
           };
 
@@ -1153,7 +1148,10 @@ export const useDashboardStore = defineStore('dashboard', {
           }
 
           if (missing.size > 0) {
-            const list = Array.from(missing).slice(0, 6).map((n) => `$${n}`).join(', ');
+            const list = Array.from(missing)
+              .slice(0, 6)
+              .map((n) => `$${n}`)
+              .join(', ');
             const more = missing.size > 6 ? `（另有 ${missing.size - 6} 个）` : '';
             message.error({
               content: `变量缺失：${list}${more}。后端返回的变量列表不包含这些变量，相关查询可能失败。`,
@@ -1162,7 +1160,7 @@ export const useDashboardStore = defineStore('dashboard', {
             });
           }
         } catch {
-          // ignore
+          // 忽略：缺失变量提示失败不应影响加载流程
         }
 
         this.markSyncedFromCurrent();
@@ -1220,8 +1218,9 @@ export const useDashboardStore = defineStore('dashboard', {
         const message = error instanceof Error ? error.message : 'Failed to apply dashboard json';
         // 不进入 boot error：只记录错误并抛出，确保不会打断当前编辑态/打开的面板组。
         this.lastError = message;
-        // eslint-disable-next-line no-console -- import failures should be traceable in dev
-        if (typeof rawJsonText === 'string' && rawJsonText.trim()) console.error('Failed to apply dashboard json:', message, { bytes: safeUtf8Bytes(rawJsonText) });
+        // eslint-disable-next-line no-console -- 导入失败需要在开发环境可追溯
+        if (typeof rawJsonText === 'string' && rawJsonText.trim())
+          console.error('Failed to apply dashboard json:', message, { bytes: safeUtf8Bytes(rawJsonText) });
         throw error;
       }
     },
@@ -1244,7 +1243,7 @@ export const useDashboardStore = defineStore('dashboard', {
       }
     },
 
-    // ---- Dashboard view/UI state mutations ----
+    // ---- Dashboard 视图/UI 状态变更 ----
     setEditingGroup,
     toggleGroupEditing,
     setViewMode,
@@ -1252,7 +1251,7 @@ export const useDashboardStore = defineStore('dashboard', {
     setViewPanel,
     togglePanelView,
 
-    // ---- (Optional) local-only helpers ----
+    // ---- （可选）仅本地辅助方法 ----
     movePanelGroup: movePanelGroupLocal,
     updatePanelGroupLayout: updatePanelGroupLayoutLocal,
   },

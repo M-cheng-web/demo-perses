@@ -48,4 +48,3 @@ export interface VariableService {
    */
   applyVariables: (values: Record<string, string | string[]>, context?: VariablesRequestContext) => Promise<DashboardVariable[]>;
 }
-

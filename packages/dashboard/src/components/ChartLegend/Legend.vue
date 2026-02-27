@@ -143,11 +143,11 @@
     }
 
     &.dp-chart-legend--mode-compact {
-      // Compact mode styles
+      // 紧凑模式样式
     }
 
     &.dp-chart-legend--mode-list {
-      // List mode styles
+      // 列表模式样式
     }
   }
 </style>

@@ -1,5 +1,5 @@
 /**
- * @grafana-fast/api/mock
+ * @grafana-fast/api/mock：mock 实现入口
  *
  * mock 实现入口（仅在需要“本地 mock / 演示 / 回归”时显式引入）
  *

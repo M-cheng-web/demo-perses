@@ -283,7 +283,7 @@
       }
     }
 
-    // Placeholder styling
+    // 占位符样式
     :deep(.vue-grid-placeholder) {
       background: var(--gf-color-primary-bg);
       border: 2px dashed var(--gf-color-primary-border);

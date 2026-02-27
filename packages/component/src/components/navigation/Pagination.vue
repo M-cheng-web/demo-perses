@@ -91,7 +91,7 @@
 
   const [_, bem] = createNamespace('pagination');
   const globalSize = useComponentSize(computed(() => props.size));
-  // Pagination only supports 'small' | 'default'; map 'middle'/'large' → 'default'
+  // Pagination 只支持 'small' | 'default'；把 'middle'/'large' 映射为 'default'
   const resolvedSize = computed(() => (globalSize.value === 'small' ? 'small' : 'default'));
 
   const pageCount = computed(() => Math.max(1, Math.ceil(Math.max(0, props.total) / Math.max(1, props.pageSize))));
@@ -301,7 +301,7 @@
       }
     }
 
-    // Size small
+    // small 尺寸
     &--size-small &__item {
       min-width: 24px;
       height: 24px;

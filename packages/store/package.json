@@ -1,7 +1,7 @@
 {
   "name": "@grafana-fast/store",
   "version": "0.1.0",
-  "description": "Lightweight Pinia-like store for grafana-fast without external dependency.",
+  "description": "轻量级 Pinia 风格状态管理（用于 grafana-fast，尽量减少额外依赖）。",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

@@ -1,3 +1,6 @@
+/**
+ * PanelGroup 布局模型批处理：用 requestAnimationFrame 合并高频更新，并尽量保持 item 引用稳定。
+ */
 import { onBeforeUnmount, type Ref } from 'vue';
 
 export interface LayoutItemLike {

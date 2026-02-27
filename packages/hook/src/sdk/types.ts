@@ -1,3 +1,6 @@
+/**
+ * SDK 类型定义：Dashboard SDK 的初始化参数、事件与对外快照模型。
+ */
 import type { GrafanaFastApiClient } from '@grafana-fast/api';
 import type { DashboardTheme, DashboardThemePreference } from '@grafana-fast/dashboard';
 import type { ID, TimeRange } from '@grafana-fast/types';
@@ -87,7 +90,7 @@ export interface DashboardSdkOptions {
    * 是否把主题应用到全局 document（documentElement.dataset）
    *
    * 说明：
-   * - 只有当你明确要“全站接管主题”时才建议开启
+   * - 仅在明确需要“全站接管主题”时建议开启
    * - 默认：false
    */
   applyThemeToDocument?: boolean;

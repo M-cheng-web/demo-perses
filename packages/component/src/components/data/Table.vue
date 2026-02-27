@@ -457,7 +457,7 @@
       z-index: 1;
     }
 
-    // Bordered variant
+    // 带边框变体
     &--bordered &__table {
       border: 1px solid var(--gf-color-border);
       border-radius: var(--gf-radius-lg);
@@ -480,7 +480,7 @@
       border-top-right-radius: var(--gf-radius-lg);
     }
 
-    // Size variants
+    // 尺寸变体
     &--size-small &__cell {
       padding: 8px 8px;
       font-size: var(--gf-font-size-xs);

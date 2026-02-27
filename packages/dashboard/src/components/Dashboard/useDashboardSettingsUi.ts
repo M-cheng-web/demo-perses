@@ -1,3 +1,6 @@
+/**
+ * Dashboard 设置按钮 UI 交互：打开/关闭、拖拽定位、位置持久化与半隐藏效果。
+ */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, type ComputedRef, type Ref } from 'vue';
 
 type ToolbarRefLike = Ref<{
@@ -235,7 +238,7 @@ export function useDashboardSettingsUi(options: Options) {
   });
 
   onUnmounted(() => {
-    // In case the component is unmounted while dragging, ensure global listeners are removed.
+    // 兜底：若拖拽中组件被卸载，确保全局事件监听被移除。
     endSettingsDrag();
   });
 

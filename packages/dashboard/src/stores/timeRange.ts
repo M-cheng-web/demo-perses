@@ -96,7 +96,7 @@ export const useTimeRangeStore = defineStore('timeRange', {
     },
 
     _restartAutoRefreshTimer() {
-      // private-ish action (still callable)
+      // 偏内部的 action（仍可调用）
       this.stopAutoRefresh();
       if (!this.refreshInterval || this.refreshInterval <= 0) return;
       this._timerId = window.setInterval(() => {

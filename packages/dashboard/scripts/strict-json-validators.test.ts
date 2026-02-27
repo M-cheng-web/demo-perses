@@ -1,3 +1,6 @@
+/**
+ * strictJsonValidators 单元测试（最小回归）：校验 dashboard JSON 的必需字段与错误提示。
+ */
 import assert from 'node:assert/strict';
 import type { DashboardContent } from '@grafana-fast/types';
 import { validateDashboardStrict } from '../src/utils/strictJsonValidators';
@@ -5,10 +8,10 @@ import { validateDashboardStrict } from '../src/utils/strictJsonValidators';
 async function test(name: string, fn: () => void | Promise<void>) {
   try {
     await fn();
-    // eslint-disable-next-line no-console -- test script output is allowed
+    // eslint-disable-next-line no-console -- 允许测试脚本输出
     console.log(`✓ ${name}`);
   } catch (error) {
-    // eslint-disable-next-line no-console -- test script output is allowed
+    // eslint-disable-next-line no-console -- 允许测试脚本输出
     console.error(`✗ ${name}`);
     throw error;
   }

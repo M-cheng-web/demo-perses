@@ -1,3 +1,6 @@
+/**
+ * DataQueryTab 查询草稿：CanonicalQuery <-> Draft 的转换与 Builder/Code 模式切换。
+ */
 import { ref } from 'vue';
 import type { CanonicalQuery, PromVisualQuery } from '@grafana-fast/types';
 import { parsePromqlToVisualQuery } from '@grafana-fast/utils';
@@ -5,9 +8,9 @@ import { createPrefixedId, deepClone } from '/#/utils';
 import { emptyVisualQuery, indexToRefId, nextRefId, renderPromql } from './helpers';
 import type { QueryDraft } from './types';
 
-	function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): QueryDraft {
-	  const refId = fallbackRefId.trim() || fallbackRefId;
-	  const id = q.id || createPrefixedId('q');
+function buildDraftFromCanonical(q: CanonicalQuery, fallbackRefId: string): QueryDraft {
+  const refId = fallbackRefId.trim() || fallbackRefId;
+  const id = q.id || createPrefixedId('q');
 
   const expr = String(q.expr ?? '');
   const parsed = expr.trim() ? parsePromqlToVisualQuery(expr) : null;
@@ -16,9 +19,7 @@ import type { QueryDraft } from './types';
   const canUseBuilder = !expr.trim() || (parsed?.ok && parsed.confidence === 'exact');
 
   if (canUseBuilder) {
-    const visual = !expr.trim()
-      ? emptyVisualQuery()
-      : (deepClone((parsed as Extract<typeof parsed, { ok: true }>).value) as PromVisualQuery);
+    const visual = !expr.trim() ? emptyVisualQuery() : (deepClone((parsed as Extract<typeof parsed, { ok: true }>).value) as PromVisualQuery);
     const nextExpr = expr.trim() ? renderPromql(visual) : '';
     return {
       id,
@@ -36,7 +37,7 @@ import type { QueryDraft } from './types';
         status: 'ok',
         issueType: undefined,
         message: undefined,
-        parseWarnings: (parsed && parsed.ok && parsed.warnings) ? [...parsed.warnings] : [],
+        parseWarnings: parsed && parsed.ok && parsed.warnings ? [...parsed.warnings] : [],
         confidence: parsed && parsed.ok ? parsed.confidence : 'exact',
         diagnostics: [],
         visualQuery: visual,

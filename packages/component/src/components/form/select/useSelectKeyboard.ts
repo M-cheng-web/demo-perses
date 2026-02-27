@@ -1,3 +1,6 @@
+/**
+ * Select 键盘交互：处理打开/关闭、上下选择、回车确认与 tags 输入等行为。
+ */
 import type { ComputedRef, Ref } from 'vue';
 import { moveActiveIndex, type SelectOptionLike } from './selectLogic';
 
@@ -77,7 +80,7 @@ export function useSelectKeyboard<Option extends SelectOptionLike>(options: UseS
       options.search.value = '';
     }
 
-    // Pass arrow keys to main keydown handler
+    // 方向键/回车交给主 keydown 逻辑处理
     if (evt.key === 'ArrowDown' || evt.key === 'ArrowUp' || evt.key === 'Enter') {
       handleKeydown(evt);
     }

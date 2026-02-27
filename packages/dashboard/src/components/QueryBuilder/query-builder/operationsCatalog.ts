@@ -1,3 +1,6 @@
+/**
+ * QueryBuilder 操作目录：生成 PromQL 操作的级联选择（分类 -> 操作）。
+ */
 import { promQueryModeller } from '@grafana-fast/utils';
 
 export interface OperationCascaderOption {
@@ -10,11 +13,11 @@ export interface OperationCascaderOption {
 }
 
 /**
- * Build cascader options for PromQL operations.
+ * 生成 PromQL 操作的 Cascader 选项（按分类分组）。
  *
- * Notes:
- * - Filters out `hideFromList` operations
- * - Removes empty categories
+ * 说明：
+ * - 过滤 `hideFromList` 的操作
+ * - 自动剔除空分类
  */
 export function getOperationCascaderOptions(): OperationCascaderOption[] {
   const categories = promQueryModeller.getCategories();

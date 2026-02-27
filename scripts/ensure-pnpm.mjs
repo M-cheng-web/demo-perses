@@ -1,8 +1,11 @@
+/**
+ * 安装前检查：强制使用 pnpm，并校验 Node.js 版本满足仓库要求。
+ */
 const userAgent = process.env.npm_config_user_agent ?? '';
 
 if (!userAgent.includes('pnpm')) {
-  // Keep this message short and actionable; it commonly shows up in CI logs.
-  console.error('This repo uses pnpm. Please run: pnpm install');
+  // 提示信息保持简短且可执行；通常会出现在 CI 日志中。
+  console.error('本仓库使用 pnpm，请执行：pnpm install');
   process.exit(1);
 }
 
@@ -27,8 +30,8 @@ const currentNode = parseNodeVersion(process.versions.node);
 if (!isAtLeast(currentNode, REQUIRED_NODE)) {
   console.error(
     [
-      `Node.js >=${REQUIRED_NODE.major}.${REQUIRED_NODE.minor}.${REQUIRED_NODE.patch} is required (current: v${process.versions.node}).`,
-      'If you use nvm: run `nvm use` (or `nvm install 20.19.0`).',
+      `需要 Node.js >=${REQUIRED_NODE.major}.${REQUIRED_NODE.minor}.${REQUIRED_NODE.patch}（当前：v${process.versions.node}）。`,
+      '若使用 nvm：执行 `nvm use`（或 `nvm install 20.19.0`）。',
     ].join(' ')
   );
   process.exit(1);

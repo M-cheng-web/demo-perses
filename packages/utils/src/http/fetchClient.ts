@@ -32,8 +32,8 @@ export interface HttpClientConfig {
    * baseURL（可选）
    *
    * 示例：
-   * - https://example.com
-   * - /api
+   * - https://example.com（完整 URL）
+   * - /api（相对路径）
    *
    * 说明：
    * - 传入相对路径时，最终 URL 仍由浏览器根据当前 origin 解析
@@ -311,7 +311,7 @@ export function createFetchHttpClient(config: HttpClientConfig = {}): FetchHttpC
         return (await res.text()) as unknown as T;
       }
 
-      // json
+      // JSON 响应
       if (res.status === 204) {
         return undefined as unknown as T;
       }

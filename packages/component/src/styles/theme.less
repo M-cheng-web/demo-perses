@@ -1,14 +1,15 @@
+/* 主题基础样式入口：引入 tokens，并提供 embed-safe 的基础样式与可选的 gf-app 外壳。 */
 @import './tokens.less';
 
 /**
- * Theme base (embed-safe)
+ * 主题基础样式（embed-safe）
  *
- * IMPORTANT:
- * - This file must be safe to import in embedded/widget scenarios.
- * - Do NOT style `html`/`body`/`:root` here (avoid polluting host apps).
- * - Only style namespaced classes or `[data-gf-theme]` containers.
+ * 重要：
+ * - 该文件需可安全用于嵌入式/widget 场景
+ * - 不在此处样式化 `html`/`body`/`:root`（避免污染宿主应用）
+ * - 仅样式化命名空间 class 或 `[data-gf-theme]` 容器
  *
- * Aligned with Ant Design 5.x design system.
+ * 参考 Ant Design 5.x 设计体系。
  */
 
 :where(.gf-theme-light, .gf-theme-dark, [data-gf-theme]) {
@@ -42,7 +43,7 @@
   box-sizing: border-box;
 }
 
-// Link styles - Ant Design 5.x
+// 链接样式（Ant Design 5.x）
 :where(.gf-theme-light, .gf-theme-dark, [data-gf-theme], .gf-app) a {
   color: var(--gf-color-primary);
   text-decoration: none;
@@ -60,10 +61,11 @@
 }
 
 /**
- * Optional "app shell" styling
+ * 可选的「app 外壳」样式
  *
- * Use this class when you DO want a full-page-ish background (demo site),
- * without forcing styles onto the host application's `body`.
+ * 说明：
+ * - 用于需要“近似全页”的背景效果（演示站点）
+ * - 同时不强制把样式写到宿主应用的 `body`
  */
 .gf-app {
   min-height: 100vh;
@@ -112,7 +114,7 @@
   z-index: 1;
 }
 
-// Surface card - Ant Design 5.x style
+// 容器卡片（Ant Design 5.x）
 .gf-surface {
   background: var(--gf-color-surface);
   border: 1px solid var(--gf-color-border-secondary);
@@ -138,7 +140,7 @@
   box-shadow: 0 0 24px var(--gf-color-primary-soft);
 }
 
-// Vue transition animations - Ant Design 5.x motion
+// Vue 过渡动画（参考 Ant Design 5.x motion）
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity var(--gf-motion-normal) var(--gf-easing);
@@ -150,7 +152,7 @@
 }
 
 /* ------------------------------------------------------------
- * Density / Zebra utilities (dashboard-friendly, industrial)
+ * 密度 / 斑马纹工具（dashboard 友好）
  * ------------------------------------------------------------ */
 .gf-zebra-rows > *:nth-child(even) {
   background: var(--gf-color-zebra);
@@ -161,7 +163,7 @@
 }
 
 /* ------------------------------------------------------------
- * Focus visible styles for keyboard navigation
+ * 键盘导航的 focus-visible 样式
  * ------------------------------------------------------------ */
 :where(.gf-theme-light, .gf-theme-dark, [data-gf-theme]) :focus-visible {
   outline: none;
@@ -177,7 +179,7 @@
 }
 
 /* ------------------------------------------------------------
- * Selection styles
+ * 文本选中样式
  * ------------------------------------------------------------ */
 :where(.gf-theme-light, [data-gf-theme='light'])::selection {
   background: var(--gf-color-primary-bg);

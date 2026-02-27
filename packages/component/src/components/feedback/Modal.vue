@@ -183,7 +183,7 @@
 </script>
 
 <style scoped lang="less">
-  // Ant Design 5.x inspired Modal styles
+  // Modal 基础样式（参考 Ant Design 5.x）
   .gf-modal__root {
     position: fixed;
     inset: 0;
@@ -290,7 +290,7 @@
     background: var(--gf-color-bg-elevated);
   }
 
-  // Animations - Ant Design 5.x motion
+  // 动画（参考 Ant Design 5.x motion）
   .gf-fade-enter-active,
   .gf-fade-leave-active {
     transition: opacity var(--gf-motion-normal) var(--gf-easing);

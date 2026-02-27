@@ -1,3 +1,6 @@
+/**
+ * ECharts Tooltip formatter 类型与工具函数：统一参数形态与 value/label 的读取逻辑。
+ */
 import type { DefaultLabelFormatterCallbackParams, TooltipComponentFormatterCallbackParams } from 'echarts/types/dist/option';
 
 export type AxisTooltipFormatterParams = DefaultLabelFormatterCallbackParams[];

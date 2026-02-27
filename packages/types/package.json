@@ -1,7 +1,7 @@
 {
   "name": "@grafana-fast/types",
   "version": "0.1.0",
-  "description": "Shared type definitions for the grafana-fast monorepo.",
+  "description": "grafana-fast monorepo 的共享类型定义。",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

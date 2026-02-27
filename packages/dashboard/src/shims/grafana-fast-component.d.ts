@@ -1,3 +1,6 @@
+/**
+ * 类型补丁：dashboard 包内的最小 `@grafana-fast/component` 声明（用于构建/类型生成阶段）。
+ */
 declare module '@grafana-fast/component' {
   import type { ComputedRef, InjectionKey } from 'vue';
 

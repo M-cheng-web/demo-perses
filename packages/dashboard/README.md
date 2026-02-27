@@ -26,7 +26,7 @@ pnpm add @grafana-fast/dashboard @grafana-fast/hooks
 
 Dashboard 的资源定位采用短期会话 key：`dashboardSessionKey`（真实 `dashboardId` 不对前端暴露）。
 
-宿主需要提供一个函数：进入/切换业务上下文时，向你的后端换取 `dashboardSessionKey`。
+宿主需要提供一个函数：进入/切换业务上下文时，向后端换取 `dashboardSessionKey`。
 
 - 接口约定见根目录：`API_REQUIREMENTS.md`
 
@@ -54,12 +54,12 @@ const sdk = useDashboardSdk(dashboardRef, {
   getDashboardSessionKey,
   instanceId: 'my-dashboard-1',
   // 推荐：宿主注入 remote apiClient（实现 API_REQUIREMENTS.md 里的接口）
-  // apiClient: yourRemoteApiClient,
+  // apiClient: yourRemoteApiClient（示例）,
   //
   // 本地开发可选：启用 mock（参考 packages/app）
-  // enableMock: true,
-  // defaultApiMode: 'mock',
-  // createMockApiClient: async () => (await import('@grafana-fast/api/mock')).createMockApiClient(),
+  // enableMock: true（启用 mock）,
+  // defaultApiMode: 'mock'（默认模式）,
+  // createMockApiClient: async () => (await import('@grafana-fast/api/mock')).createMockApiClient(), // 示例
 });
 
 sdk.actions.setReadOnly(true);

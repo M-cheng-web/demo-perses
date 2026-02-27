@@ -42,11 +42,11 @@ import type {
 } from './sdk/types';
 
 type DashboardViewExpose = {
-    openSettings?: () => void;
-    closeSettings?: () => void;
-    toggleSettings?: () => void;
-    toolbar?: {
-      openJsonModal?: () => void;
+  openSettings?: () => void;
+  closeSettings?: () => void;
+  toggleSettings?: () => void;
+  toolbar?: {
+    openJsonModal?: () => void;
     closeJsonModal?: () => void;
     refresh?: () => void;
     save?: () => Promise<void>;
@@ -245,7 +245,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
   };
 
   // ---------------------------
-  // Dashboard sessionKey resolve + single-flight reload
+  // dashboardSessionKey 解析与 single-flight 重载
   // ---------------------------
 
   const DASHBOARD_SESSION_EXPIRED_CODE = 'DASHBOARD_SESSION_EXPIRED';
@@ -279,7 +279,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     dashboardStore.bootStage = 'idle';
     dashboardStore.bootStats = { startedAt: null, groupCount: null, panelCount: null, jsonBytes: null, source: null };
 
-    // bump revision: help host detect a "hard reset"
+    // bump revision：用于使宿主感知一次“硬重置”
     const rev = Number(dashboardStore.dashboardContentRevision ?? 0);
     dashboardStore.dashboardContentRevision = Number.isFinite(rev) ? rev + 1 : 0;
     scheduleChange();
@@ -307,7 +307,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     if (resolveAndLoadInFlight) return resolveAndLoadInFlight;
     resolveAndLoadInFlight = (async () => {
       await apiReadyPromise;
-      // Show waiting mask during sessionKey resolving.
+      // 在解析 sessionKey 期间展示等待遮罩。
       resetDashboardStoreState();
       const sessionKey = await resolveDashboardSessionKey();
       await dashboardStore.loadDashboard(sessionKey);
@@ -318,7 +318,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
     return resolveAndLoadInFlight;
   };
 
-  // Wrap apiClient so any dashboard request that hits "SESSION_EXPIRED" will trigger a single-flight reload.
+  // 包装 apiClient：当 dashboard 请求命中 “SESSION_EXPIRED” 时触发 single-flight 重载。
   const apiClientWrapCache = new WeakMap<object, GrafanaFastApiClient>();
   const wrapApiClientWithSessionReload = (client: GrafanaFastApiClient): GrafanaFastApiClient => {
     const cached = apiClientWrapCache.get(client as any);
@@ -397,7 +397,9 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       query: {
         ...baseQuery,
         executeQueries: (queries, context, options) =>
-          wrapWithSessionReload(() => Promise.resolve(baseQuery.executeQueries(queries as any, context as any, withDashboardSessionKey(options) as any))),
+          wrapWithSessionReload(() =>
+            Promise.resolve(baseQuery.executeQueries(queries as any, context as any, withDashboardSessionKey(options) as any))
+          ),
         fetchMetrics: (search, options) =>
           wrapWithSessionReload(() => Promise.resolve(baseQuery.fetchMetrics(search as any, withDashboardSessionKey(options) as any))),
         fetchLabelKeys: (metric, options) =>
@@ -411,10 +413,8 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
         ...baseVariable,
         loadVariables: (context?: Parameters<typeof baseVariable.loadVariables>[0]) =>
           wrapWithSessionReload(() => Promise.resolve(baseVariable.loadVariables(withVariableResolveContext(context as any) as any))),
-        applyVariables: (
-          values: Parameters<typeof baseVariable.applyVariables>[0],
-          context?: Parameters<typeof baseVariable.applyVariables>[1]
-        ) => wrapWithSessionReload(() => Promise.resolve(baseVariable.applyVariables(values as any, withVariableResolveContext(context as any) as any))),
+        applyVariables: (values: Parameters<typeof baseVariable.applyVariables>[0], context?: Parameters<typeof baseVariable.applyVariables>[1]) =>
+          wrapWithSessionReload(() => Promise.resolve(baseVariable.applyVariables(values as any, withVariableResolveContext(context as any) as any))),
       },
     };
 
@@ -506,7 +506,7 @@ export function useDashboardSdk(targetRef: Ref<HTMLElement | null>, options: Das
       // 默认不修改宿主 document；如需全站主题接管，可通过 applyThemeToDocument 开启
       applyTheme(initialPreference, { emitChange: false });
 
-      // Ensure the initial apiClient is attached to pinia before mounting/auto-load.
+      // 确保在 mount/autoLoad 前，初始 apiClient 已绑定到 pinia。
       await initializeApiClient();
       apiReadyResolve?.();
 

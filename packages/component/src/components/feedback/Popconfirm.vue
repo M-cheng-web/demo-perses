@@ -216,7 +216,7 @@
     margin-top: 12px;
   }
 
-  // Animation
+  // 动画
   .gf-zoom-big-fast-enter-active,
   .gf-zoom-big-fast-leave-active {
     transition:

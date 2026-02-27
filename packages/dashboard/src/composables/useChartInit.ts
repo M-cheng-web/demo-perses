@@ -1,12 +1,10 @@
+/**
+ * 图表初始化 Composable：在依赖就绪后创建 ECharts 实例，并在更新/卸载时维护生命周期。
+ */
 import { ref, watch, onUnmounted, type Ref } from 'vue';
 import * as echarts from 'echarts';
 import type { ECharts } from 'echarts';
 
-/**
- * 图表初始化 Hook
- * 用于处理异步数据就绪后的一次性初始化和后续更新
- * 内部管理 ECharts 实例的创建、更新和销毁
- */
 export function useChartInit<T = ECharts>(options: {
   /** 图表 DOM 引用 */
   chartRef: Ref<HTMLElement | undefined>;

@@ -212,7 +212,7 @@
     max-height: 60vh;
     overflow-y: auto;
 
-    /* Scrollbar styling */
+    /* 滚动条样式 */
     &::-webkit-scrollbar {
       width: 6px;
     }

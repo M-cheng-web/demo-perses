@@ -1,7 +1,7 @@
 /**
  * PromQL 反解析回归测试（best-effort parser）
  *
- * Run:
+ * 运行：
  * - `pnpm -C packages/utils run test:promql-parse`
  */
 
@@ -11,10 +11,10 @@ import { parsePromqlToVisualQuery } from '../src/promql/parsePromqlToVisualQuery
 function test(name: string, fn: () => void) {
   try {
     fn();
-    // eslint-disable-next-line no-console -- test script output is allowed
+    // eslint-disable-next-line no-console -- 测试脚本允许输出到 console
     console.log(`✓ ${name}`);
   } catch (err) {
-    // eslint-disable-next-line no-console -- test script output is allowed
+    // eslint-disable-next-line no-console -- 测试脚本允许输出到 console
     console.error(`✗ ${name}`);
     throw err;
   }

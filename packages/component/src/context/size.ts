@@ -1,3 +1,6 @@
+/**
+ * 组件尺寸上下文：提供 small/middle/large 预设，并封装 useComponentSize 的读取逻辑。
+ */
 import { type ComputedRef, type InjectionKey, inject, computed } from 'vue';
 
 /**

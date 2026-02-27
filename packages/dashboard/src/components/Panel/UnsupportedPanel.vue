@@ -111,7 +111,7 @@
       white-space: pre-wrap;
       word-break: break-word;
 
-      /* Scrollbar styling */
+      /* 滚动条样式 */
       &::-webkit-scrollbar {
         width: 6px;
         height: 6px;

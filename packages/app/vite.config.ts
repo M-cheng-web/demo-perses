@@ -12,7 +12,7 @@ import vue from '@vitejs/plugin-vue';
 const resolveFromRoot = (p: string) => path.resolve(__dirname, p);
 const useDist = process.env.GF_USE_DIST === '1';
 
-// https://vite.dev/config/
+// Vite 配置参考：https://vite.dev/config/
 export default defineConfig({
   base: './',
   // 说明：在 pnpm + workspace 下，vite/plugin-vue 可能出现“重复 vite 类型”导致的 TS 类型不兼容。

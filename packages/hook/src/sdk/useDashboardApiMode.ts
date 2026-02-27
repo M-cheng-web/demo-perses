@@ -1,3 +1,6 @@
+/**
+ * SDK API 模式管理：remote/mock 切换、apiClient 解析与重挂载策略。
+ */
 import { computed, ref, type Ref } from 'vue';
 import type { GrafanaFastApiClient } from '@grafana-fast/api';
 import type { Pinia } from '@grafana-fast/store';
@@ -30,7 +33,7 @@ export const resolveInitialApiMode = (sdkOptions: DashboardSdkOptions, isMockEna
   if (preferred === 'remote') {
     return hasRemote ? 'remote' : isMockEnabled ? 'mock' : 'remote';
   }
-  // Default strategy: remote first, then mock.
+  // 默认策略：优先 remote，其次 mock。
   return hasRemote ? 'remote' : isMockEnabled ? 'mock' : 'remote';
 };
 
@@ -49,13 +52,13 @@ export function useDashboardApiMode(options: UseDashboardApiModeOptions) {
   const resolveApiClientForMode = async (mode: ApiMode): Promise<GrafanaFastApiClient> => {
     if (mode === 'remote') {
       if (!remoteApiClient) {
-        throw new Error('[grafana-fast] Remote mode requires `apiClient`.');
+        throw new Error('[grafana-fast] 远程模式需要提供 `apiClient`。');
       }
       return remoteApiClient;
     }
 
     if (!isMockEnabled || !sdkOptions.createMockApiClient) {
-      throw new Error('[grafana-fast] Mock mode is disabled. Set `enableMock=true` and provide `createMockApiClient()`.');
+      throw new Error('[grafana-fast] Mock 模式未启用：请设置 `enableMock=true` 并提供 `createMockApiClient()`。');
     }
 
     if (mockApiClientCache) return mockApiClientCache;
@@ -67,14 +70,14 @@ export function useDashboardApiMode(options: UseDashboardApiModeOptions) {
     const client = await resolveApiClientForMode(mode);
     activeApiClient.value = client;
     apiMode.value = mode;
-    // Attach runtime deps to pinia so dashboard stores/scheduler can access it.
+    // 将运行时依赖绑定到 pinia，使 dashboard stores/scheduler 可访问。
     runtimeBindings.attachApiClient(options.pinia, client);
 
     if (opts.remount !== false) {
       try {
         runtimeBindings.disposeQueryScheduler(options.pinia);
       } catch {
-        // ignore
+        // 忽略：dispose 失败不应影响切换流程
       }
 
       if (options.isDashboardMounted.value) {

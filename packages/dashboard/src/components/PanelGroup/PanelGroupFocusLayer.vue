@@ -99,7 +99,7 @@
     startOffsetY: number;
     /** 当前聚焦的分页组（从外部 pagination composable 派生） */
     pagedGroup: PagedPanelGroup | null;
-    /** Pagination options */
+    /** 分页选项 */
     pageSizeOptions: number[];
     pagerThreshold: number;
     /** boot 状态 */
@@ -326,12 +326,12 @@
       return;
     }
 
-    // opening end
+    // 打开动画结束
     if (openFallbackTimer != null) {
       window.clearTimeout(openFallbackTimer);
       openFallbackTimer = null;
     }
-    // opening end: 内容由 timer 控制；这里仅作为兜底（例如某些浏览器 timer 被 clamp）
+    // 打开动画结束：内容由 timer 控制；这里仅作为兜底（例如某些浏览器 timer 被 clamp）
     if (showContent.value) return;
     showContent.value = true;
   };

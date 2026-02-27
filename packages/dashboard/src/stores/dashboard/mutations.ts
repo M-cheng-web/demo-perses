@@ -1,3 +1,6 @@
+/**
+ * Dashboard store 的 mutation 集合：面板组/面板增删改、布局调整与视图状态切换。
+ */
 import type { ID, Panel, PanelGroup, PanelLayout } from '@grafana-fast/types';
 
 import { createPrefixedId, deepClone } from '/#/utils';

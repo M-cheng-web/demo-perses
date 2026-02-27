@@ -1,3 +1,6 @@
+/**
+ * QueryBuilder 操作列表状态模型：新增/删除/拖拽排序/参数编辑与解释读取。
+ */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { promQueryModeller } from '@grafana-fast/utils';
 import type { PromVisualQuery, QueryBuilderOperation, QueryBuilderOperationParamDef, QueryBuilderOperationParamValue } from '@grafana-fast/utils';

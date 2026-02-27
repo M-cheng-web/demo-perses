@@ -156,7 +156,7 @@ export type PromVisualQueryOperationCategory = (typeof PromVisualQueryOperationC
 
 // Prometheus 操作 ID
 export const PromOperationId = {
-  // Aggregations
+  // 聚合
   Sum: 'sum',
   Avg: 'avg',
   Min: 'min',
@@ -172,7 +172,7 @@ export const PromOperationId = {
   LimitK: 'limitk',
   LimitRatio: 'limit_ratio',
 
-  // Range Functions
+  // 范围函数
   Rate: 'rate',
   Irate: 'irate',
   Increase: 'increase',
@@ -194,7 +194,7 @@ export const PromOperationId = {
   AbsentOverTime: 'absent_over_time',
   StddevOverTime: 'stddev_over_time',
 
-  // Functions
+  // 函数
   Abs: 'abs',
   Absent: 'absent',
   Ceil: 'ceil',
@@ -217,7 +217,7 @@ export const PromOperationId = {
   Pi: 'pi',
   Vector: 'vector',
 
-  // Time Functions
+  // 时间函数
   Time: 'time',
   Timestamp: 'timestamp',
   Hour: 'hour',
@@ -229,7 +229,7 @@ export const PromOperationId = {
   Month: 'month',
   Year: 'year',
 
-  // Trigonometric Functions
+  // 三角函数
   Acos: 'acos',
   Acosh: 'acosh',
   Asin: 'asin',
@@ -243,7 +243,7 @@ export const PromOperationId = {
   Tan: 'tan',
   Tanh: 'tanh',
 
-  // Histogram Functions
+  // 直方图函数
   HistogramQuantile: 'histogram_quantile',
   HistogramAvg: 'histogram_avg',
   HistogramCount: 'histogram_count',
@@ -252,11 +252,11 @@ export const PromOperationId = {
   HistogramStddev: 'histogram_stddev',
   HistogramStdvar: 'histogram_stdvar',
 
-  // Label manipulation
+  // 标签处理
   LabelReplace: 'label_replace',
   LabelJoin: 'label_join',
 
-  // Binary ops - Arithmetic
+  // 二元运算 - 算术
   Addition: '__addition',
   Subtraction: '__subtraction',
   MultiplyBy: '__multiply_by',
@@ -264,7 +264,7 @@ export const PromOperationId = {
   Modulo: '__modulo',
   Exponent: '__exponent',
 
-  // Binary ops - Comparison
+  // 二元运算 - 比较
   EqualTo: '__equal_to',
   NotEqualTo: '__not_equal_to',
   GreaterThan: '__greater_than',
@@ -272,7 +272,7 @@ export const PromOperationId = {
   GreaterOrEqual: '__greater_or_equal',
   LessOrEqual: '__less_or_equal',
 
-  // Nested Query
+  // 嵌套查询
   NestedQuery: '__nested_query',
 } as const;
 export type PromOperationId = (typeof PromOperationId)[keyof typeof PromOperationId];
@@ -297,7 +297,7 @@ export interface PromQueryPattern {
 
 /**
  * 生成下一个 refId
- * A -> B -> C ... Z -> AA -> AB ...
+ * A -> B -> C ... Z -> AA -> AB ...（类 Excel 的递增规则）
  */
 export function generateNextRefId(existingRefIds: string[]): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';

@@ -154,7 +154,7 @@
     try {
       await dashboardActions.loadDashboard();
     } catch {
-      // demo page: errors are surfaced via console / onError hook in host apps
+      // 演示页面：错误通过 console 或宿主的 onError 回调暴露
     }
   };
   const handleRefresh = () => dashboardActions.refreshTimeRange();

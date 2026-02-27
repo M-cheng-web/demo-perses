@@ -1,3 +1,6 @@
+/**
+ * DataQueryTab 查询草稿类型：Builder/Code 模式、解析状态与诊断信息。
+ */
 import type { PromVisualQuery } from '@grafana-fast/types';
 import type { PromqlParseConfidence, PromqlParseWarning } from '@grafana-fast/utils';
 

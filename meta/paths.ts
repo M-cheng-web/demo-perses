@@ -1,3 +1,6 @@
+/**
+ * 仓库路径常量：从 meta 目录定位 root/packages，并提供 resolveFromRoot 工具函数。
+ */
 import path from 'path';
 import { fileURLToPath } from 'url';
 

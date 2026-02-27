@@ -23,8 +23,8 @@ export interface DashboardTextDiagnostics {
   summary?: DashboardSummary;
   /**
    * 面板类型统计（仅 json.ok && looksLikeDashboard 时存在）
-   * - key: panel.type
-   * - value: 该类型面板数量
+   * - 键：panel.type（字段路径）
+   * - 值：该类型面板数量
    */
   panelTypeCounts?: Record<string, number>;
   /**
@@ -68,7 +68,7 @@ function diagnoseStructure(dashboard: DashboardContent): string[] {
   const issues: string[] = [];
   const groups = Array.isArray(dashboard.panelGroups) ? dashboard.panelGroups : [];
 
-  // Duplicate group ids
+  // 重复的面板组 id
   const groupIdSeen = new Set<string>();
   const dupGroupIds = new Set<string>();
   for (const g of groups as Array<{ id?: unknown }>) {
@@ -81,7 +81,7 @@ function diagnoseStructure(dashboard: DashboardContent): string[] {
     issues.push(`存在重复的面板组 id：${Array.from(dupGroupIds).slice(0, 10).join(', ')}${dupGroupIds.size > 10 ? ' ...' : ''}`);
   }
 
-  // Duplicate panel ids (global)
+  // 重复的 panel id（全局）
   const panelIdSeen = new Set<string>();
   const dupPanelIds = new Set<string>();
   for (const g of groups as Array<{ panels?: unknown }>) {
@@ -97,7 +97,7 @@ function diagnoseStructure(dashboard: DashboardContent): string[] {
     issues.push(`存在重复的 panel id：${Array.from(dupPanelIds).slice(0, 10).join(', ')}${dupPanelIds.size > 10 ? ' ...' : ''}`);
   }
 
-  // Layout consistency (per group)
+  // 布局一致性（按面板组）
   for (const g of groups as Array<{ id?: unknown; title?: unknown; panels?: unknown; layout?: unknown }>) {
     const groupId = safeStr(g?.id).trim() || 'unknown';
     const groupTitle = safeStr(g?.title).trim();

@@ -20,7 +20,7 @@ import type { FetchLike, HeadersLike, HttpClientConfig } from '@grafana-fast/uti
  *
  * 说明：
  * - 这是“快捷配置”，用于快速接入常见的 Bearer Token 方式
- * - 如果你的鉴权更复杂（多 header、签名、cookie），也可以直接使用 apiConfig.getHeaders
+ * - 若鉴权更复杂（多 header、签名、cookie），可直接使用 apiConfig.getHeaders
  */
 export interface HttpApiAuthConfig {
   /**
@@ -48,7 +48,7 @@ export interface HttpApiAuthConfig {
 /**
  * createHttpApiClient 的配置（面向外部）
  *
- * 你可以把它理解为三层：
+ * 可将其理解为三层：
  * 1) transport：fetch 的注入与基础行为（timeout/credentials 等）
  * 2) headers：固定 + 动态（用于鉴权/trace）
  * 3) endpoints：预留口子，允许覆盖后端路径（通常不需要）
@@ -58,8 +58,8 @@ export interface HttpApiClientConfig {
    * API 根路径（推荐使用）
    *
    * 示例：
-   * - "/api"
-   * - "https://example.com/api"
+   * - "/api"（同源相对路径）
+   * - "https://example.com/api"（跨域完整地址）
    */
   baseUrl?: string;
 
@@ -99,9 +99,9 @@ export interface HttpApiClientConfig {
    * 预留：允许覆盖后端 endpoint 路径（可选）
    *
    * 说明：
-   * - 这里的 key 是强类型（HttpApiEndpointKey），避免你手写字符串时拼错
+   * - 这里的 key 是强类型（HttpApiEndpointKey），避免手写字符串时拼错
    * - 默认值在 DEFAULT_HTTP_API_ENDPOINTS 中统一维护
-   * - 后续对接真实后端时，你可以：
+   * - 后续对接真实后端时，可选择：
    *   1) 直接修改 DEFAULT_HTTP_API_ENDPOINTS（全局生效）
    *   2) 或在宿主应用里通过 apiConfig.endpoints 覆盖某几个 path（更灵活）
    */

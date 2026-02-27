@@ -1,3 +1,6 @@
+/**
+ * 统一管理 SDK 的容器挂载/重挂载与 ResizeObserver 生命周期。
+ */
 import { onMounted, onUnmounted, watch, type Ref } from 'vue';
 
 interface Size {
@@ -28,10 +31,6 @@ interface UseDashboardMountLifecycleOptions {
   onSizeChange: (size: Size) => void;
   onLifecycleUnmount?: () => void;
 }
-
-/**
- * 统一管理 SDK 的容器挂载/重挂载与 ResizeObserver 生命周期。
- */
 export function useDashboardMountLifecycle(options: UseDashboardMountLifecycleOptions) {
   const { targetRef, isMountedRef, mountDashboard, unmountDashboard, onSizeChange, onLifecycleUnmount } = options;
 

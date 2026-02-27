@@ -1,3 +1,6 @@
+/**
+ * Dashboard store 辅助函数：统计、规范化与导入内容清洗。
+ */
 import type { CanonicalQuery, DashboardContent, DashboardVariable, Panel, PanelGroup, PanelLayout, PanelTransformation } from '@grafana-fast/types';
 
 import { deepCloneStructured } from '/#/utils';

@@ -186,7 +186,7 @@
       display: block;
     }
 
-    // Card type
+    // Card 类型
     &--type-card &__nav {
       gap: 2px;
       border-bottom: 1px solid var(--gf-color-border);
@@ -210,7 +210,7 @@
       display: none;
     }
 
-    // Size variants
+    // 尺寸变体
     &--size-small &__tab {
       padding: 8px 12px;
       font-size: var(--gf-font-size-xs);

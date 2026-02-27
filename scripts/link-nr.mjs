@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/**
+ * postinstall 脚本：生成 `nr` 命令 shim 到 `node_modules/.bin`，用于统一执行仓库脚本。
+ */
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

@@ -12,7 +12,7 @@ import { useDashboardSdk } from '@grafana-fast/hooks';
 
 const container = ref<HTMLElement | null>(null);
 const getDashboardSessionKey = async () => {
-  // 真实场景：调用你的业务接口，根据上下文参数换取 sessionKey
+  // 真实场景：调用业务接口，根据上下文参数换取 sessionKey
   // demo/mock：直接用 mock apiClient 模拟“后端签发 sessionKey”
   const { createMockApiClient } = await import('@grafana-fast/api/mock');
   const api = createMockApiClient();

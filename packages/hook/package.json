@@ -1,7 +1,7 @@
 {
   "name": "@grafana-fast/hooks",
   "version": "0.1.0",
-  "description": "Composable hooks for interacting with grafana-fast dashboards.",
+  "description": "与 grafana-fast 仪表板交互的组合式 Hooks（SDK）。",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

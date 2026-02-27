@@ -1,3 +1,4 @@
+<!-- Dashboard 工具栏：数据源模式、操作入口、时间范围与变量编辑。 -->
 <template>
   <div :class="bem()">
     <div :class="bem('sidebar')">

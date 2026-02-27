@@ -17,15 +17,15 @@ pnpm add @grafana-fast/utils
 import { createNamespace } from '@grafana-fast/utils';
 
 const [block, bem] = createNamespace('button');
-// block: "gf-button"
-// bem(): "gf-button"
-// bem('icon'): "gf-button__icon"
-// bem({ disabled: true }): "gf-button gf-button--disabled"
+// block 名："gf-button"
+// bem()（根 block）："gf-button"
+// bem('icon')（元素）："gf-button__icon"
+// bem({ disabled: true })（状态）："gf-button gf-button--disabled"
 ```
 
 ## 命名空间（可选）
 
-为方便 IDE 提示与发现能力，`@grafana-fast/utils` 额外提供一些“命名空间对象”（不影响你继续按需导入单个函数）：
+为方便 IDE 提示与发现能力，`@grafana-fast/utils` 额外提供一些“命名空间对象”（不影响继续按需导入单个函数）：
 
 ```ts
 import { http, dom, promql, echarts, url } from '@grafana-fast/utils';
@@ -89,7 +89,7 @@ import { deepMerge } from '@grafana-fast/utils';
 
 const defaults = { a: 1, nested: { x: 1, y: 2 } };
 const merged = deepMerge(defaults, { nested: { y: 9 } });
-// merged.nested.y === 9, merged.nested.x === 1
+// 合并结果：merged.nested.y === 9，merged.nested.x === 1
 ```
 
 ## HTTP (fetch)

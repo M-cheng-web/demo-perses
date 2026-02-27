@@ -2,14 +2,7 @@
 <template>
   <div :class="bem()">
     <div ref="wrapperRef" :class="bem('wrapper')">
-      <Table
-        ref="tableRef"
-        :columns="columns"
-        :data-source="dataSource"
-        :pagination="paginationConfig"
-        :scroll="tableScroll"
-        style="height: 100%"
-      >
+      <Table ref="tableRef" :columns="columns" :data-source="dataSource" :pagination="paginationConfig" :scroll="tableScroll" style="height: 100%">
         <template #bodyCell="{ column, text }">
           <template v-if="column.key !== 'time'">
             {{ formatValue(text, panel.options.format || {}) }}

@@ -1,5 +1,5 @@
 /**
- * @grafana-fast/utils
+ * @grafana-fast/utils：通用工具包入口
  *
  * 说明：
  * - 该包用于承载 monorepo 内多个子包都会用到的“纯工具”能力
@@ -12,7 +12,7 @@
  */
 
 // ----------------------------
-// Base (general-purpose)
+// 基础（通用）
 // ----------------------------
 export * from './bem';
 export * from './time';
@@ -28,14 +28,14 @@ export * from './dom/scrollLock';
 export * from './events/windowEvents';
 
 // ----------------------------
-// Storage
+// 存储
 // ----------------------------
 export const storage = {
   createPrefixed: createPrefixedStorage,
 } as const;
 
 // ----------------------------
-// HTTP
+// HTTP（请求）
 // ----------------------------
 export * from './http/fetchClient';
 import {
@@ -59,7 +59,7 @@ export const http = {
 } as const;
 
 // ----------------------------
-// DOM
+// DOM（浏览器）
 // ----------------------------
 import { isBrowser, readCssVar } from './dom/cssVar';
 import { acquireScrollLock, lockBodyScroll, lockScroll, unlockBodyScroll, unlockScroll } from './dom/scrollLock';
@@ -75,7 +75,7 @@ export const dom = {
 } as const;
 
 // ----------------------------
-// URL
+// URL（链接）
 // ----------------------------
 import { isAbsoluteUrl, joinUrl, normalizeBaseUrl, resolveEndpointUrl, toQueryString, withQuery } from './url';
 
@@ -89,7 +89,7 @@ export const url = {
 } as const;
 
 // ----------------------------
-// ECharts (weak-typed helpers)
+// ECharts（弱类型工具）
 // ----------------------------
 export * from './charts/echartsTheme';
 import { getEChartsPalette, getEChartsTheme, getEChartsThemeForTarget } from './charts/echartsTheme';
@@ -101,7 +101,7 @@ export const echarts = {
 } as const;
 
 // ----------------------------
-// PromQL / QueryBuilder
+// PromQL / QueryBuilder（查询构建）
 // ----------------------------
 export * from './promql';
 import {

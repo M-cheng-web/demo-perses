@@ -129,7 +129,7 @@ export function useLegend(options: UseLegendOptions) {
   // ============ 全局选择状态管理 ============
   /**
    * 计算全局选择状态
-   * @returns 'all' | 'none' | 'indeterminate'
+   * @returns 'all' | 'none' | 'indeterminate'（全选 / 全不选 / 半选）
    */
   const globalSelectionState = computed((): 'all' | 'none' | 'indeterminate' => {
     if (selectedItems.value === 'ALL') {
@@ -241,7 +241,7 @@ export function useLegend(options: UseLegendOptions) {
 
   /**
    * 获取系列的显示状态
-   * @returns 'visible' | 'dimmed' | 'hidden'
+   * @returns 'visible' | 'dimmed' | 'hidden'（显示 / 弱化 / 隐藏）
    */
   function getSeriesVisibility(id: string): 'visible' | 'dimmed' | 'hidden' {
     // 如果该系列未被选中，则隐藏

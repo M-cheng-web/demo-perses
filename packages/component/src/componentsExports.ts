@@ -1,8 +1,8 @@
 /**
- * UI components exports (no side effects).
+ * UI 组件导出（无副作用）。
  *
- * Keep this file focused on Vue components only so it can be reused by:
- * - `src/index.ts` (plugin install + full exports)
+ * 约束：本文件只导出 Vue 组件，便于被不同入口复用：
+ * - `src/index.ts`（插件安装 + 完整导出）
  */
 // 基础组件
 export { default as Button } from './components/base/Button.vue';

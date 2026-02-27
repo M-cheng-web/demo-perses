@@ -500,7 +500,7 @@
       const confidence = mapped.ok ? mapped.confidence : '-';
       const warningsCount = mapped.ok ? (mapped.warnings?.length ?? 0) : 0;
 
-      // 最小断言：只做你能长期维护得住的“低耦合期望”
+      // 最小断言：只做可长期维护的“低耦合期望”
       let expectOk = true;
       const expect = e.expect;
       if (expect?.syntaxOk !== undefined) expectOk = expectOk && expect.syntaxOk === astRes.ok;

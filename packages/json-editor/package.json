@@ -1,7 +1,7 @@
 {
   "name": "@grafana-fast/json-editor",
   "version": "0.1.0",
-  "description": "Lightweight JSON editor for grafana-fast (import/export + diagnostics + strict validation gate).",
+  "description": "轻量 JSON 编辑器（导入/导出 + diagnostics + 严格校验阻断）。",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

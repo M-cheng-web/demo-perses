@@ -145,7 +145,7 @@
       background: var(--gf-color-fill-secondary);
     }
 
-    // Animation
+    // 动画
     &.is-active &__avatar,
     &.is-active &__title,
     &.is-active &__paragraph-row,

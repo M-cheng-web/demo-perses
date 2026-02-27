@@ -1,3 +1,6 @@
+/**
+ * QueryScheduler 队列工具：从 pending 任务中挑选下一个执行项。
+ */
 import type { RefreshTask } from './types';
 
 /**

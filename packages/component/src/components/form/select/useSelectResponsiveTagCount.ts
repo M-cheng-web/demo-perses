@@ -1,3 +1,6 @@
+/**
+ * Select 响应式 tag 数量：在 `maxTagCount='responsive'` 时根据可用宽度计算可展示的 tag 数。
+ */
 import { nextTick, onBeforeUnmount, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue';
 import { estimateTagWidthFromText } from './selectLogic';
 

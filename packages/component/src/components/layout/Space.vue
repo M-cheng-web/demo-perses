@@ -57,7 +57,7 @@
     const style: CSSProperties = {};
     const resolvedAlign = props.direction === 'vertical' && props.align === 'center' ? 'stretch' : props.align;
 
-    // Gap
+    // 间距
     if (typeof props.size === 'number') {
       style.gap = `${props.size}px`;
     } else if (Array.isArray(props.size)) {
@@ -65,7 +65,7 @@
       style.rowGap = `${props.size[1]}px`;
     }
 
-    // Align
+    // 交叉轴对齐
     switch (resolvedAlign) {
       case 'start':
         style.alignItems = 'flex-start';
@@ -83,7 +83,7 @@
         style.alignItems = 'center';
     }
 
-    // Justify
+    // 主轴分布
     switch (props.justify) {
       case 'end':
         style.justifyContent = 'flex-end';
@@ -126,7 +126,7 @@
       flex-wrap: wrap;
     }
 
-    // Size presets (AntD standard)
+    // 尺寸预设（AntD 约定）
     &--size-small {
       gap: 8px;
     }

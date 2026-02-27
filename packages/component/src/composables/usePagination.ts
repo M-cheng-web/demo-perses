@@ -1,3 +1,6 @@
+/**
+ * 分页 Composable：维护 page/pageSize，并派生 start/end/pageCount（供 Table/列表等组件复用）。
+ */
 import { computed, isRef, ref, watch, type ComputedRef, type Ref } from 'vue';
 
 export interface UsePaginationOptions {

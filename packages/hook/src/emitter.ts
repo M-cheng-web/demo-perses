@@ -1,7 +1,3 @@
-export type Unsubscribe = () => void;
-
-type Handler<Payload> = (payload: Payload) => void;
-
 /**
  * 一个极简的类型安全事件总线（实例级）
  *
@@ -10,6 +6,10 @@ type Handler<Payload> = (payload: Payload) => void;
  * - `emit` 只应由 SDK 内部调用；宿主侧只使用 `on/off` 订阅与取消订阅
  * - `on()` 会返回 `unsubscribe()`，建议在组件卸载时调用以防泄漏
  */
+export type Unsubscribe = () => void;
+
+type Handler<Payload> = (payload: Payload) => void;
+
 export function createEmitter<EventMap extends Record<string, any>>() {
   const listeners = new Map<keyof EventMap, Set<Handler<any>>>();
 

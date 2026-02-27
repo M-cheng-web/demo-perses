@@ -1,3 +1,6 @@
+/**
+ * Dashboard JSON 弹窗逻辑：查看、导入与应用（含大对象 stringify 性能保护）。
+ */
 import { computed, nextTick, ref, watch, type Ref } from 'vue';
 import { message } from '@grafana-fast/component';
 import type { DashboardContent } from '@grafana-fast/types';
@@ -39,10 +42,10 @@ export function useDashboardJsonModal(options: Options) {
   const generateDashboardJsonText = async (dash: DashboardContent) => {
     const seq = ++generateJsonSeq;
     isGeneratingJson.value = true;
-    // Avoid “open click → stringify big object → UI frozen before modal appears”.
+    // 避免“点击打开 → stringify 大对象 → 弹窗出现前 UI 卡住”。
     await nextTick();
 
-    // Yield a frame to make sure modal/loading hint is rendered.
+    // 让出一帧：确保弹窗/加载提示已渲染。
     await new Promise<void>((r) => window.setTimeout(r, 0));
     if (seq !== generateJsonSeq) return;
     if (!jsonModalVisible.value) return;
@@ -63,7 +66,7 @@ export function useDashboardJsonModal(options: Options) {
     () => jsonModalVisible.value,
     (open) => {
       if (open) return;
-      // Cancel any in-flight generation.
+      // 取消进行中的生成任务。
       generateJsonSeq++;
       isGeneratingJson.value = false;
     }
@@ -96,7 +99,7 @@ export function useDashboardJsonModal(options: Options) {
     const reader = new FileReader();
     reader.onload = () => {
       const json = String(reader.result ?? '');
-      // Importing does not need generation: cancel any in-flight generation.
+      // 导入不需要生成：取消进行中的生成任务。
       generateJsonSeq++;
       isGeneratingJson.value = false;
       dashboardJson.value = json;
@@ -106,7 +109,7 @@ export function useDashboardJsonModal(options: Options) {
     };
     reader.readAsText(file);
 
-    // Clear input so the same file can be imported again.
+    // 清空 input 值，允许再次导入同一个文件。
     target.value = '';
   };
 
@@ -154,9 +157,9 @@ export function useDashboardJsonModal(options: Options) {
       .catch((error) => {
         // 失败提示由 store 的 lastError 统一 toast，这里只清理 loading。
         message.destroy(toastKey);
-        // keep console for debugging
-        // eslint-disable-next-line no-console -- import failures should be traceable
-        console.error('Failed to apply imported dashboard json:', error);
+        // 保留 console 输出，便于排查。
+        // eslint-disable-next-line no-console -- 导入失败需要可追溯的日志
+        console.error('应用导入的 dashboard JSON 失败：', error);
       })
       .finally(() => {
         isApplyingJson.value = false;

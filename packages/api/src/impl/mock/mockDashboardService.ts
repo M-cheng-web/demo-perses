@@ -1,5 +1,5 @@
 /**
- * mock DashboardService
+ * Mock DashboardService（模拟仪表盘服务）
  *
  * 说明：
  * - 提供一个默认 Dashboard（包含多面板/变量等），用于演示与回归验证
@@ -34,8 +34,8 @@ function nowTs() {
 }
 
 function normalizeCanonicalQueriesInPlace(content: DashboardContent) {
-  // Keep mock payload aligned with API_REQUIREMENTS + dashboard strict validators.
-  // CanonicalQuery is the storage/transport model; the runtime assumes required fields are present.
+  // 保持 mock 返回值与 API_REQUIREMENTS + dashboard 严格校验保持一致。
+  // CanonicalQuery 是存储/传输模型；运行时假定必填字段存在。
   const DEFAULT_MIN_STEP = 15;
 
   for (const group of content.panelGroups ?? []) {
@@ -79,7 +79,7 @@ function computeNewPanelLayout(group: PanelGroup, panelId: string): PanelLayout 
 function createRng(seed: number) {
   let s = seed >>> 0;
   return () => {
-    // LCG (deterministic, fast, good enough for mock variation)
+    // LCG（线性同余）：确定性、快速，足够用于 mock 差异化
     s = (s * 1664525 + 1013904223) >>> 0;
     return s / 0xffffffff;
   };
@@ -185,17 +185,17 @@ function createFixedCpuGroup(): PanelGroup {
         id: 'panel-1',
         name: 'CPU 使用率',
         type: 'timeseries',
-	        queries: [
-	          {
-	            id: 'q-1',
-	            expr: `cpu_usage${scopeSelector}`,
-	            legendFormat: 'CPU {{cpu}}',
-	            format: 'time_series',
-	            instant: false,
-	            hide: false,
-	            minStep: 15,
-	          },
-	        ],
+        queries: [
+          {
+            id: 'q-1',
+            expr: `cpu_usage${scopeSelector}`,
+            legendFormat: 'CPU {{cpu}}',
+            format: 'time_series',
+            instant: false,
+            hide: false,
+            minStep: 15,
+          },
+        ],
         options: {
           legend: { show: true, position: 'bottom' },
           format: { unit: 'percent', decimals: 2 },
@@ -206,16 +206,16 @@ function createFixedCpuGroup(): PanelGroup {
         id: 'panel-2',
         name: 'CPU 平均使用率',
         type: 'stat',
-	        queries: [
-	          {
-	            id: 'q-2',
-	            expr: `avg(cpu_usage${scopeSelector})`,
-	            format: 'time_series',
-	            instant: false,
-	            hide: false,
-	            minStep: 15,
-	          },
-	        ],
+        queries: [
+          {
+            id: 'q-2',
+            expr: `avg(cpu_usage${scopeSelector})`,
+            format: 'time_series',
+            instant: false,
+            hide: false,
+            minStep: 15,
+          },
+        ],
         options: {
           format: { unit: 'percent', decimals: 2 },
           specific: { displayMode: 'value-and-name', orientation: 'vertical', textAlign: 'center', showTrend: true },
@@ -225,16 +225,16 @@ function createFixedCpuGroup(): PanelGroup {
         id: 'panel-3',
         name: 'CPU 最大使用率',
         type: 'stat',
-	        queries: [
-	          {
-	            id: 'q-3',
-	            expr: `max(cpu_usage${scopeSelector})`,
-	            format: 'time_series',
-	            instant: false,
-	            hide: false,
-	            minStep: 15,
-	          },
-	        ],
+        queries: [
+          {
+            id: 'q-3',
+            expr: `max(cpu_usage${scopeSelector})`,
+            format: 'time_series',
+            instant: false,
+            hide: false,
+            minStep: 15,
+          },
+        ],
         options: {
           format: { unit: 'percent', decimals: 2 },
           specific: { displayMode: 'value-and-name', orientation: 'vertical', textAlign: 'center', showTrend: true },
@@ -244,17 +244,17 @@ function createFixedCpuGroup(): PanelGroup {
         id: 'panel-4',
         name: 'CPU 使用率（副本）',
         type: 'timeseries',
-	        queries: [
-	          {
-	            id: 'q-4',
-	            expr: `cpu_usage${scopeSelector}`,
-	            legendFormat: 'CPU {{cpu}}',
-	            format: 'time_series',
-	            instant: false,
-	            hide: false,
-	            minStep: 15,
-	          },
-	        ],
+        queries: [
+          {
+            id: 'q-4',
+            expr: `cpu_usage${scopeSelector}`,
+            legendFormat: 'CPU {{cpu}}',
+            format: 'time_series',
+            instant: false,
+            hide: false,
+            minStep: 15,
+          },
+        ],
         options: {
           legend: { show: true, position: 'bottom' },
           format: { unit: 'percent', decimals: 2 },
@@ -265,16 +265,16 @@ function createFixedCpuGroup(): PanelGroup {
         id: 'panel-5',
         name: 'CPU 核心对比',
         type: 'bar',
-	        queries: [
-	          {
-	            id: 'q-5',
-	            expr: `cpu_usage${scopeSelector}`,
-	            format: 'time_series',
-	            instant: false,
-	            hide: false,
-	            minStep: 15,
-	          },
-	        ],
+        queries: [
+          {
+            id: 'q-5',
+            expr: `cpu_usage${scopeSelector}`,
+            format: 'time_series',
+            instant: false,
+            hide: false,
+            minStep: 15,
+          },
+        ],
         options: {
           legend: { show: true, position: 'bottom' },
           format: { unit: 'percent', decimals: 2 },
@@ -305,17 +305,17 @@ function createLargeGroup(): PanelGroup {
       id,
       name: `Large Panel #${n}`,
       type: 'timeseries',
-	      queries: [
-	        {
-	          id: `q-big-${n}`,
-	          expr: `cpu_usage${scopeSelector}`,
-	          legendFormat: 'CPU {{cpu}}',
-	          format: 'time_series',
-	          instant: false,
-	          hide: false,
-	          minStep: 15,
-	        },
-	      ],
+      queries: [
+        {
+          id: `q-big-${n}`,
+          expr: `cpu_usage${scopeSelector}`,
+          legendFormat: 'CPU {{cpu}}',
+          format: 'time_series',
+          instant: false,
+          hide: false,
+          minStep: 15,
+        },
+      ],
       options: {
         legend: { show: true, position: 'bottom' },
         format: { unit: 'percent', decimals: 2 },
@@ -371,9 +371,9 @@ function createLargeGroup(): PanelGroup {
 
 function createDefaultDashboardContent(dashboardKey: string): DashboardContent {
   const id = String(dashboardKey ?? '');
-  // Demo helper: allow host app to switch to an "empty dashboard" by key.
-  // - Used by packages/app DashboardView.vue to verify "dashboardSessionKey changes trigger full refresh".
-  // - Any key containing "empty" will be treated as an empty dashboard (no panelGroups).
+  // 演示辅助：允许宿主通过 key 切换到“空仪表盘”。
+  // - packages/app 的 DashboardView.vue 用于验证“dashboardSessionKey 变化触发全量刷新”
+  // - key 包含 "empty" 时会返回空 dashboard（无 panelGroups）
   if (id.toLowerCase().includes('empty')) {
     return {
       schemaVersion: 1,
@@ -396,7 +396,7 @@ function createDefaultDashboardContent(dashboardKey: string): DashboardContent {
     `max(cpu_usage${scopeSelector})`,
     `memory_usage${scopeSelector}`,
     `up${scopeSelector}`,
-    // window / rate demo (still matches cpu_usage in defaultDataPool)
+    // window/rate 演示（仍能命中 defaultDataPool 中的 cpu_usage 返回）
     `avg(rate(cpu_usage${scopeSelector}[$window]))`,
   ];
 
@@ -421,17 +421,17 @@ function createDefaultDashboardContent(dashboardKey: string): DashboardContent {
           id,
           name: `G${String(groupIndex).padStart(2, '0')} · ${type.toUpperCase()} · #${panelIndex}`,
           type,
-	          queries: [
-	            {
-	              id: `q-${id}`,
-	              expr,
-	              legendFormat: 'series {{instance}}',
-	              format,
-	              instant: false,
-	              hide: false,
-	              minStep: 15,
-	            },
-	          ],
+          queries: [
+            {
+              id: `q-${id}`,
+              expr,
+              legendFormat: 'series {{instance}}',
+              format,
+              instant: false,
+              hide: false,
+              minStep: 15,
+            },
+          ],
           options: buildPanelOptions(type, rng),
         };
       });
@@ -514,7 +514,7 @@ function touchSession(dashboardSessionKey: DashboardSessionKey): StoredMockSessi
     throw new MockDashboardSessionExpiredError();
   }
 
-  // Sliding renewal with write throttling: at most once per hour.
+  // 滑动续期 + 写入节流：最多每小时更新一次 expiresAt。
   if (now - session.lastRenewAt >= SESSION_RENEW_THROTTLE_MS) {
     session.lastRenewAt = now;
     session.expiresAt = now + SESSION_MIN_TTL_MS;
@@ -542,7 +542,7 @@ export function createMockDashboardService(): DashboardService {
   return {
     async resolveDashboardSession(req: ResolveDashboardSessionRequest): Promise<ResolveDashboardSessionResponse> {
       const dashboardKey = resolveDashboardKeyFromParams(req.params);
-      // Ensure the dashboard exists (get-or-create).
+      // 确保 dashboard 存在（get-or-create）。
       getOrCreate(dashboardKey);
 
       const now = nowTs();
@@ -573,7 +573,7 @@ export function createMockDashboardService(): DashboardService {
       sessions.delete(dashboardSessionKey);
     },
     async listDashboards(): Promise<DashboardListItem[]> {
-      // Ensure there is always at least one dashboard for demo flows.
+      // 演示场景兜底：确保至少存在一个 dashboard。
       getOrCreate('default');
       return Array.from(dashboards.entries()).map(([id, entry]) => ({
         id,
@@ -592,7 +592,7 @@ export function createMockDashboardService(): DashboardService {
       const content = entry.content;
       const group = getGroupOrThrow(content, String(req.groupId));
 
-      // merge by i
+      // 按 i 合并
       const byId = new Map<string, PanelLayout>();
       (group.layout ?? []).forEach((it) => byId.set(String(it.i), it));
 
@@ -730,7 +730,7 @@ export function createMockDashboardService(): DashboardService {
       const entry = getEntryBySessionKey(req.dashboardSessionKey);
       const content = entry.content;
       content.panelGroups = (content.panelGroups ?? []).filter((g) => String(g.id) !== String(req.groupId));
-      // re-index order
+      // 重排 order
       (content.panelGroups ?? []).forEach((g, idx) => (g.order = idx));
       entry.updatedAt = nowTs();
       dashboards.set(touchSession(req.dashboardSessionKey).dashboardKey, entry);

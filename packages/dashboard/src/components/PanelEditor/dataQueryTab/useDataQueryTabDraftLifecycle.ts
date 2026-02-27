@@ -1,3 +1,6 @@
+/**
+ * DataQueryTab 草稿生命周期编排：草稿状态、校验与对外 emit 同步。
+ */
 import type { CanonicalQuery } from '@grafana-fast/types';
 import { useQueryDrafts } from './useQueryDrafts';
 import { useQueryEmit } from './useQueryEmit';

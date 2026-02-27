@@ -39,13 +39,13 @@
         id,
         name: `Panel ${i + 1}`,
         type: 'timeseries',
-	        queries: [
-	          {
-	            id: `q-${i + 1}`,
-	            expr: i % 2 === 0 ? 'cpu_usage' : 'memory_usage',
-	            legendFormat: '',
-	            minStep: 15,
-	            format: 'time_series',
+        queries: [
+          {
+            id: `q-${i + 1}`,
+            expr: i % 2 === 0 ? 'cpu_usage' : 'memory_usage',
+            legendFormat: '',
+            minStep: 15,
+            format: 'time_series',
             instant: false,
             hide: false,
           },

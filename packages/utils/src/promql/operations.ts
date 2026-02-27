@@ -349,7 +349,7 @@ function labelJoinRenderer(model: QueryBuilderOperation, _def: QueryBuilderOpera
     .map((v) => String(v))
     .filter((v) => v.trim().length > 0);
 
-  // PromQL: label_join(v instant-vector, dst_label string, separator string, src_label_1 string, src_label_2 string, ...)
+  // PromQL 参考：label_join(v instant-vector, dst_label string, separator string, src_label_1 string, src_label_2 string, ...)
   const args = [innerExpr, quotePromqlString(destinationLabel), quotePromqlString(separator), ...sourceLabels.map(quotePromqlString)];
   return `${model.id}(${args.join(', ')})`;
 }
@@ -361,8 +361,8 @@ function createSimpleFunction(name: string, category: string): QueryBuilderOpera
     params: [],
     defaultParams: [],
     category,
-    // Allow switching between time functions via the operation dropdown.
-    // This avoids an "empty dropdown" UX when a time op is added.
+    // 允许在操作下拉中切换时间函数。
+    // 用于避免添加 time 类操作后出现“空下拉”的交互问题。
     alternativesKey: category === PromVisualQueryOperationCategory.Time ? 'time-functions' : undefined,
     renderer: functionRendererLeft,
     addOperationHandler: defaultAddOperationHandler,

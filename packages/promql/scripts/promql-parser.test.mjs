@@ -1,11 +1,11 @@
+/**
+ * PromQL parser 最小回归测试：
+ * - 只验证 AST/diagnostics 的稳定性
+ * - QueryBuilder 映射相关测试见 promql-ast.test.mjs
+ */
+
 import assert from 'node:assert/strict';
 import { parsePromqlToAst } from '../dist/index.mjs';
-
-/**
- * 说明：
- * - 这里是“core 包”的最小 smoke test：只验证 AST/diagnostics 的稳定性
- * - QueryBuilder 映射相关测试放在 promql-ast.test.mjs 中（同包内）
- */
 
 function testOk() {
   const r = parsePromqlToAst('sum(rate(cpu_usage{instance="server-1"}[5m]))');
@@ -21,7 +21,7 @@ function testError() {
 
 function testGrafanaVarDuration() {
   const r = parsePromqlToAst('rate(cpu_usage[$__interval])');
-  // 这里预期是 ok（因为我们做了长度保持的变量兜底替换）
+  // 这里预期是 ok（因为做了长度保持的变量兜底替换）
   assert.equal(r.ok, true);
 }
 

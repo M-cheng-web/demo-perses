@@ -1,14 +1,17 @@
-// Design Tokens (CSS Variables)
-// Naming convention:
-// - Primitive palette: --gf-palette-*
-// - Semantic tokens:   --gf-color-*, --gf-font-*, --gf-space-*, --gf-radius-*, --gf-shadow-*, --gf-z-*
-//
-// Color System: Based on Ant Design 5.x color palette
-// Primary: #1677ff (Ant Design Daybreak Blue)
+/*
+  Design Tokens（CSS Variables）
+
+  命名约定：
+  - 基础色板：--gf-palette-*
+  - 语义 token：--gf-color-*、--gf-font-*、--gf-space-*、--gf-radius-*、--gf-shadow-*、--gf-z-*
+
+  颜色系统：参考 Ant Design 5.x 调色板
+  - 主色：#1677ff（Ant Design Daybreak Blue）
+*/
 
 .gf-theme-light,
 [data-gf-theme='light'] {
-  /* Typography - Ant Design 5.x standards */
+  /* 字体排版（参考 Ant Design 5.x） */
   --gf-font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
     'Segoe UI Symbol', 'Noto Color Emoji';
@@ -18,7 +21,7 @@
   --gf-font-size-lg: 16px;
   --gf-line-height: 1.5714285714;
 
-  /* Spacing (8px baseline; allow 4px micro spacing) */
+  /* 间距（8px 基线；允许 4px 微间距） */
   --gf-space-1: 4px;
   --gf-space-2: 8px;
   --gf-space-3: 12px;
@@ -27,18 +30,18 @@
   --gf-space-6: 24px;
   --gf-space-8: 32px;
 
-  /* Radius - Ant Design 5.x style */
+  /* 圆角（参考 Ant Design 5.x） */
   --gf-radius-xs: 2px;
   --gf-radius-sm: 4px;
   --gf-radius-md: 6px;
   --gf-radius-lg: 8px;
 
-  /* Control heights (AntD 5.x compatible) */
+  /* 控件高度（兼容 AntD 5.x） */
   --gf-control-height-sm: 24px;
   --gf-control-height-md: 32px;
   --gf-control-height-lg: 40px;
 
-  /* Motion - Ant Design 5.x timing */
+  /* 动效时序（参考 Ant Design 5.x） */
   --gf-easing: cubic-bezier(0.645, 0.045, 0.355, 1);
   --gf-easing-out: cubic-bezier(0.215, 0.61, 0.355, 1);
   --gf-easing-in: cubic-bezier(0.55, 0.055, 0.675, 0.19);
@@ -47,7 +50,7 @@
   --gf-motion-normal: 200ms;
   --gf-motion-slow: 300ms;
 
-  /* Palette - Ant Design 5.x Daybreak Blue */
+  /* 色板（Ant Design 5.x Daybreak Blue） */
   --gf-palette-blue-50: #e6f4ff;
   --gf-palette-blue-100: #bae0ff;
   --gf-palette-blue-200: #91caff;
@@ -60,7 +63,7 @@
   --gf-palette-blue-900: #001d66;
   --gf-palette-blue-soft: rgba(22, 119, 255, 0.1);
 
-  /* Neutral - Ant Design 5.x Gray Scale */
+  /* 中性色（Ant Design 5.x 灰阶） */
   --gf-palette-neutral-0: #ffffff;
   --gf-palette-neutral-50: #fafafa;
   --gf-palette-neutral-100: #f5f5f5;
@@ -73,7 +76,7 @@
   --gf-palette-neutral-800: #262626;
   --gf-palette-neutral-900: #141414;
 
-  /* Status colors - Ant Design 5.x */
+  /* 状态色（Ant Design 5.x） */
   --gf-palette-success: #52c41a;
   --gf-palette-success-hover: #73d13d;
   --gf-palette-success-active: #389e0d;
@@ -85,7 +88,7 @@
   --gf-palette-danger-active: #d9363e;
   --gf-palette-info: #1677ff;
 
-  /* Semantic colors - Primary */
+  /* 语义色：主色 */
   --gf-color-primary: var(--gf-palette-blue-500);
   --gf-color-primary-secondary: var(--gf-palette-blue-400);
   --gf-color-primary-hover: var(--gf-palette-blue-400);
@@ -98,7 +101,7 @@
   --gf-color-primary-bg: var(--gf-palette-blue-50);
   --gf-color-primary-bg-hover: var(--gf-palette-blue-100);
 
-  /* Background colors */
+  /* 背景色 */
   --gf-color-bg: var(--gf-palette-neutral-100);
   --gf-color-bg-container: var(--gf-palette-neutral-0);
   --gf-color-bg-elevated: var(--gf-palette-neutral-0);
@@ -108,7 +111,7 @@
   --gf-color-surface-muted: var(--gf-palette-neutral-50);
   --gf-color-surface-raised: var(--gf-palette-neutral-0);
 
-  /* Ambient background (subtle glow effects) */
+  /* 氛围背景（轻量 glow 效果） */
   --gf-bg-glow-1: rgba(22, 119, 255, 0.08);
   --gf-bg-glow-2: rgba(64, 150, 255, 0.05);
   --gf-bg-glow-3: rgba(100, 116, 139, 0.04);
@@ -116,7 +119,7 @@
   --gf-bg-grid-line: rgba(0, 0, 0, 0.04);
   --gf-bg-grid-size: 24px 24px;
 
-  /* Text colors - Ant Design 5.x */
+  /* 文本色（Ant Design 5.x） */
   --gf-color-text: rgba(0, 0, 0, 0.88);
   --gf-color-text-secondary: rgba(0, 0, 0, 0.65);
   --gf-color-text-tertiary: rgba(0, 0, 0, 0.45);
@@ -127,13 +130,13 @@
   --gf-color-text-label: rgba(0, 0, 0, 0.65);
   --gf-color-text-description: rgba(0, 0, 0, 0.45);
 
-  /* Border colors - Ant Design 5.x */
+  /* 边框色（Ant Design 5.x） */
   --gf-color-border-muted: var(--gf-palette-neutral-200);
   --gf-color-border: var(--gf-palette-neutral-300);
   --gf-color-border-strong: var(--gf-palette-neutral-400);
   --gf-color-border-secondary: var(--gf-palette-neutral-200);
 
-  /* Fill colors (hover/selected backgrounds) */
+  /* 填充色（hover/selected 背景） */
   --gf-color-fill: rgba(0, 0, 0, 0.04);
   --gf-color-fill-secondary: rgba(0, 0, 0, 0.06);
   --gf-color-fill-tertiary: rgba(0, 0, 0, 0.04);
@@ -143,7 +146,7 @@
   --gf-color-fill-alter: rgba(0, 0, 0, 0.02);
   --gf-color-zebra: rgba(0, 0, 0, 0.02);
 
-  /* Status semantic colors */
+  /* 状态语义色 */
   --gf-color-success: var(--gf-palette-success);
   --gf-color-success-hover: var(--gf-palette-success-hover);
   --gf-color-success-active: var(--gf-palette-success-active);
@@ -155,7 +158,7 @@
   --gf-color-danger-active: var(--gf-palette-danger-active);
   --gf-color-info: var(--gf-palette-info);
 
-  /* Status soft backgrounds */
+  /* 状态浅背景 */
   --gf-color-success-soft: rgba(82, 196, 26, 0.1);
   --gf-color-success-bg: #f6ffed;
   --gf-color-success-border: #b7eb8f;
@@ -169,7 +172,7 @@
   --gf-color-info-bg: #e6f4ff;
   --gf-color-info-border: #91caff;
 
-  /* Form validation */
+  /* 表单校验 */
   --gf-color-form-error: var(--gf-color-danger);
   --gf-color-form-error-border: var(--gf-color-danger);
   --gf-color-form-error-bg: var(--gf-color-danger-bg);
@@ -180,41 +183,41 @@
   --gf-color-form-warning-bg: var(--gf-color-warning-bg);
   --gf-form-warning-ring: 0 0 0 2px rgba(250, 173, 20, 0.1);
 
-  /* Floating layer colors */
+  /* 浮层颜色 */
   --gf-color-mask: rgba(0, 0, 0, 0.45);
   --gf-color-overlay: rgba(255, 255, 255, 0.65);
   --gf-color-tooltip-bg: rgba(0, 0, 0, 0.85);
   --gf-color-tooltip-text: #ffffff;
 
-  /* Kbd / shortcut hint */
+  /* Kbd / 快捷键提示 */
   --gf-color-kbd-bg: var(--gf-palette-neutral-100);
   --gf-color-kbd-border: var(--gf-palette-neutral-300);
   --gf-color-kbd-text: rgba(0, 0, 0, 0.65);
 
-  /* Shadows - Ant Design 5.x */
+  /* 阴影（Ant Design 5.x） */
   --gf-shadow-1: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
   --gf-shadow-2: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
   --gf-shadow-3: 0 6px 16px -8px rgba(0, 0, 0, 0.08), 0 9px 28px 0 rgba(0, 0, 0, 0.05), 0 12px 48px 16px rgba(0, 0, 0, 0.03);
 
-  /* Focus - Ant Design 5.x style */
+  /* 焦点（Ant Design 5.x） */
   --gf-color-focus-border: var(--gf-color-primary);
   --gf-focus-ring: 0 0 0 2px rgba(22, 119, 255, 0.1);
   --gf-focus-ring-error: 0 0 0 2px rgba(255, 77, 79, 0.1);
   --gf-focus-ring-warning: 0 0 0 2px rgba(250, 173, 20, 0.1);
 
-  /* Charts - Ant Design 5.x inspired palette */
-  --gf-chart-1: #1677ff; /* primary blue */
-  --gf-chart-2: #52c41a; /* success green */
-  --gf-chart-3: #faad14; /* warning gold */
-  --gf-chart-4: #ff4d4f; /* danger red */
-  --gf-chart-5: #13c2c2; /* cyan */
-  --gf-chart-6: #722ed1; /* purple */
-  --gf-chart-7: #fa8c16; /* orange */
-  --gf-chart-8: #eb2f96; /* magenta */
-  --gf-chart-9: #2f54eb; /* geekblue */
-  --gf-chart-10: #a0d911; /* lime */
+  /* 图表色板（参考 Ant Design 5.x） */
+  --gf-chart-1: #1677ff; /* 主色蓝 */
+  --gf-chart-2: #52c41a; /* 成功绿 */
+  --gf-chart-3: #faad14; /* 警告金 */
+  --gf-chart-4: #ff4d4f; /* 危险红 */
+  --gf-chart-5: #13c2c2; /* 青色 */
+  --gf-chart-6: #722ed1; /* 紫色 */
+  --gf-chart-7: #fa8c16; /* 橙色 */
+  --gf-chart-8: #eb2f96; /* 洋红 */
+  --gf-chart-9: #2f54eb; /* 深蓝 */
+  --gf-chart-10: #a0d911; /* 青柠绿 */
 
-  /* Z-index scale */
+  /* Z-index 层级 */
   --gf-z-mask: 1000;
   --gf-z-drawer: 1000;
   --gf-z-modal: 1000;
@@ -222,14 +225,14 @@
   --gf-z-tooltip: 1070;
   --gf-z-message: 1010;
 
-  /* Gradient & glow effects */
+  /* 渐变与 glow 效果 */
   --gf-gradient: linear-gradient(135deg, var(--gf-palette-blue-500) 0%, var(--gf-palette-blue-400) 100%);
   --gf-panel-glow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
 }
 
 .gf-theme-dark,
 [data-gf-theme='dark'] {
-  /* Typography - Ant Design 5.x standards */
+  /* 字体排版（参考 Ant Design 5.x） */
   --gf-font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
     'Segoe UI Symbol', 'Noto Color Emoji';
@@ -239,7 +242,7 @@
   --gf-font-size-lg: 16px;
   --gf-line-height: 1.5714285714;
 
-  /* Spacing */
+  /* 间距 */
   --gf-space-1: 4px;
   --gf-space-2: 8px;
   --gf-space-3: 12px;
@@ -248,18 +251,18 @@
   --gf-space-6: 24px;
   --gf-space-8: 32px;
 
-  /* Radius - Ant Design 5.x style */
+  /* 圆角（参考 Ant Design 5.x） */
   --gf-radius-xs: 2px;
   --gf-radius-sm: 4px;
   --gf-radius-md: 6px;
   --gf-radius-lg: 8px;
 
-  /* Control heights (AntD 5.x compatible) */
+  /* 控件高度（兼容 AntD 5.x） */
   --gf-control-height-sm: 24px;
   --gf-control-height-md: 32px;
   --gf-control-height-lg: 40px;
 
-  /* Motion - Ant Design 5.x timing */
+  /* 动效时序（参考 Ant Design 5.x） */
   --gf-easing: cubic-bezier(0.645, 0.045, 0.355, 1);
   --gf-easing-out: cubic-bezier(0.215, 0.61, 0.355, 1);
   --gf-easing-in: cubic-bezier(0.55, 0.055, 0.675, 0.19);
@@ -268,7 +271,7 @@
   --gf-motion-normal: 200ms;
   --gf-motion-slow: 300ms;
 
-  /* Palette - Ant Design 5.x Dark Mode Blue */
+  /* 色板（Ant Design 5.x 暗色主蓝） */
   --gf-palette-blue-50: #111a2c;
   --gf-palette-blue-100: #112545;
   --gf-palette-blue-200: #15325b;
@@ -281,7 +284,7 @@
   --gf-palette-blue-900: #b7dcfa;
   --gf-palette-blue-soft: rgba(22, 104, 220, 0.15);
 
-  /* Neutral - Ant Design 5.x Dark Gray Scale */
+  /* 中性色（Ant Design 5.x 暗色灰阶） */
   --gf-palette-neutral-0: #141414;
   --gf-palette-neutral-50: #1f1f1f;
   --gf-palette-neutral-100: #141414;
@@ -294,7 +297,7 @@
   --gf-palette-neutral-800: #bfbfbf;
   --gf-palette-neutral-900: #dbdbdb;
 
-  /* Status colors - Ant Design 5.x Dark Mode */
+  /* 状态色（Ant Design 5.x 暗色模式） */
   --gf-palette-success: #49aa19;
   --gf-palette-success-hover: #6abe39;
   --gf-palette-success-active: #3c8618;
@@ -306,7 +309,7 @@
   --gf-palette-danger-active: #a8282a;
   --gf-palette-info: #1668dc;
 
-  /* Semantic colors - Primary */
+  /* 语义色：主色 */
   --gf-color-primary: var(--gf-palette-blue-500);
   --gf-color-primary-secondary: var(--gf-palette-blue-600);
   --gf-color-primary-hover: var(--gf-palette-blue-600);
@@ -319,7 +322,7 @@
   --gf-color-primary-bg: var(--gf-palette-blue-50);
   --gf-color-primary-bg-hover: var(--gf-palette-blue-100);
 
-  /* Background colors */
+  /* 背景色 */
   --gf-color-bg: var(--gf-palette-neutral-100);
   --gf-color-bg-container: var(--gf-palette-neutral-0);
   --gf-color-bg-elevated: #1f1f1f;
@@ -329,7 +332,7 @@
   --gf-color-surface-muted: var(--gf-palette-neutral-50);
   --gf-color-surface-raised: #1f1f1f;
 
-  /* Ambient background (subtle glow effects) */
+  /* 氛围背景（轻量 glow 效果） */
   --gf-bg-glow-1: rgba(22, 104, 220, 0.15);
   --gf-bg-glow-2: rgba(60, 137, 232, 0.1);
   --gf-bg-glow-3: rgba(140, 140, 140, 0.08);
@@ -337,7 +340,7 @@
   --gf-bg-grid-line: rgba(255, 255, 255, 0.06);
   --gf-bg-grid-size: 24px 24px;
 
-  /* Text colors - Ant Design 5.x Dark Mode */
+  /* 文本色（Ant Design 5.x 暗色模式） */
   --gf-color-text: rgba(255, 255, 255, 0.85);
   --gf-color-text-secondary: rgba(255, 255, 255, 0.65);
   --gf-color-text-tertiary: rgba(255, 255, 255, 0.45);
@@ -348,13 +351,13 @@
   --gf-color-text-label: rgba(255, 255, 255, 0.65);
   --gf-color-text-description: rgba(255, 255, 255, 0.45);
 
-  /* Border colors - Ant Design 5.x Dark Mode */
+  /* 边框色（Ant Design 5.x 暗色模式） */
   --gf-color-border-muted: #303030;
   --gf-color-border: #424242;
   --gf-color-border-strong: #525252;
   --gf-color-border-secondary: #303030;
 
-  /* Fill colors (hover/selected backgrounds) */
+  /* 填充色（hover/selected 背景） */
   --gf-color-fill: rgba(255, 255, 255, 0.04);
   --gf-color-fill-secondary: rgba(255, 255, 255, 0.08);
   --gf-color-fill-tertiary: rgba(255, 255, 255, 0.04);
@@ -364,7 +367,7 @@
   --gf-color-fill-alter: rgba(255, 255, 255, 0.04);
   --gf-color-zebra: rgba(255, 255, 255, 0.04);
 
-  /* Status semantic colors */
+  /* 状态语义色 */
   --gf-color-success: var(--gf-palette-success);
   --gf-color-success-hover: var(--gf-palette-success-hover);
   --gf-color-success-active: var(--gf-palette-success-active);
@@ -376,7 +379,7 @@
   --gf-color-danger-active: var(--gf-palette-danger-active);
   --gf-color-info: var(--gf-palette-info);
 
-  /* Status soft backgrounds - Dark Mode */
+  /* 状态浅背景（暗色模式） */
   --gf-color-success-soft: rgba(73, 170, 25, 0.15);
   --gf-color-success-bg: #162312;
   --gf-color-success-border: #274916;
@@ -390,7 +393,7 @@
   --gf-color-info-bg: #111a2c;
   --gf-color-info-border: #15325b;
 
-  /* Form validation - Dark Mode */
+  /* 表单校验（暗色模式） */
   --gf-color-form-error: var(--gf-color-danger);
   --gf-color-form-error-border: var(--gf-color-danger);
   --gf-color-form-error-bg: var(--gf-color-danger-bg);
@@ -401,41 +404,41 @@
   --gf-color-form-warning-bg: var(--gf-color-warning-bg);
   --gf-form-warning-ring: 0 0 0 2px rgba(216, 150, 20, 0.15);
 
-  /* Floating layer colors */
+  /* 浮层颜色 */
   --gf-color-mask: rgba(0, 0, 0, 0.45);
   --gf-color-overlay: rgba(0, 0, 0, 0.45);
   --gf-color-tooltip-bg: #434343;
   --gf-color-tooltip-text: rgba(255, 255, 255, 0.85);
 
-  /* Kbd / shortcut hint */
+  /* Kbd / 快捷键提示 */
   --gf-color-kbd-bg: rgba(255, 255, 255, 0.08);
   --gf-color-kbd-border: #424242;
   --gf-color-kbd-text: rgba(255, 255, 255, 0.65);
 
-  /* Shadows - Dark Mode */
+  /* 阴影（暗色模式） */
   --gf-shadow-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 6px -1px rgba(0, 0, 0, 0.25), 0 2px 4px 0 rgba(0, 0, 0, 0.2);
   --gf-shadow-2: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
   --gf-shadow-3: 0 6px 16px -8px rgba(0, 0, 0, 0.32), 0 9px 28px 0 rgba(0, 0, 0, 0.2), 0 12px 48px 16px rgba(0, 0, 0, 0.12);
 
-  /* Focus - Ant Design 5.x style */
+  /* 焦点（Ant Design 5.x） */
   --gf-color-focus-border: var(--gf-color-primary);
   --gf-focus-ring: 0 0 0 2px rgba(22, 104, 220, 0.2);
   --gf-focus-ring-error: 0 0 0 2px rgba(220, 68, 70, 0.2);
   --gf-focus-ring-warning: 0 0 0 2px rgba(216, 150, 20, 0.2);
 
-  /* Charts - Ant Design 5.x Dark Mode palette */
-  --gf-chart-1: #1668dc; /* primary blue */
-  --gf-chart-2: #49aa19; /* success green */
-  --gf-chart-3: #d89614; /* warning gold */
-  --gf-chart-4: #dc4446; /* danger red */
-  --gf-chart-5: #13a8a8; /* cyan */
-  --gf-chart-6: #642ab5; /* purple */
-  --gf-chart-7: #d87a16; /* orange */
-  --gf-chart-8: #cb2b83; /* magenta */
-  --gf-chart-9: #2b4acb; /* geekblue */
-  --gf-chart-10: #8bbb11; /* lime */
+  /* 图表色板（Ant Design 5.x 暗色模式） */
+  --gf-chart-1: #1668dc; /* 主色蓝 */
+  --gf-chart-2: #49aa19; /* 成功绿 */
+  --gf-chart-3: #d89614; /* 警告金 */
+  --gf-chart-4: #dc4446; /* 危险红 */
+  --gf-chart-5: #13a8a8; /* 青色 */
+  --gf-chart-6: #642ab5; /* 紫色 */
+  --gf-chart-7: #d87a16; /* 橙色 */
+  --gf-chart-8: #cb2b83; /* 洋红 */
+  --gf-chart-9: #2b4acb; /* 深蓝 */
+  --gf-chart-10: #8bbb11; /* 青柠绿 */
 
-  /* Z-index scale */
+  /* Z-index 层级 */
   --gf-z-mask: 1000;
   --gf-z-drawer: 1000;
   --gf-z-modal: 1000;
@@ -443,7 +446,7 @@
   --gf-z-tooltip: 1070;
   --gf-z-message: 1010;
 
-  /* Gradient & glow effects */
+  /* 渐变与 glow 效果 */
   --gf-gradient: linear-gradient(135deg, var(--gf-palette-blue-500) 0%, var(--gf-palette-blue-600) 100%);
   --gf-panel-glow: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 6px -1px rgba(0, 0, 0, 0.25), 0 2px 4px 0 rgba(0, 0, 0, 0.2);
 }

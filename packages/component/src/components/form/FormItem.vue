@@ -322,7 +322,7 @@
 
 <style scoped lang="less">
   .gf-form-item {
-    /* Default control states */
+    /* 默认控件状态 */
     --gf-control-border-color: var(--gf-color-border);
     --gf-control-border-color-hover: var(--gf-color-primary);
     --gf-control-border-color-focus: var(--gf-color-primary);
@@ -451,7 +451,7 @@
     }
   }
 
-  // Error state
+  // 错误态
   .gf-form-item.is-error {
     --gf-control-border-color: var(--gf-color-danger);
     --gf-control-border-color-hover: var(--gf-color-danger);
@@ -459,7 +459,7 @@
     --gf-control-shadow-focus: 0 0 0 2px var(--gf-color-danger-soft);
   }
 
-  // Warning state
+  // 警告态
   .gf-form-item.is-warning {
     --gf-control-border-color: var(--gf-color-warning);
     --gf-control-border-color-hover: var(--gf-color-warning);
@@ -467,7 +467,7 @@
     --gf-control-shadow-focus: 0 0 0 2px var(--gf-color-warning-soft);
   }
 
-  // Animation
+  // 动画
   .gf-show-help-enter-active,
   .gf-show-help-leave-active {
     transition:
@@ -482,7 +482,7 @@
     transform: translateY(-5px);
   }
 
-  // Spinning animation for loading icon
+  // 加载图标旋转动画
   .gf-spin {
     animation: gf-spin 1s linear infinite;
   }

@@ -1,7 +1,7 @@
 {
   "name": "@grafana-fast/dashboard",
   "version": "0.1.0",
-  "description": "Dashboard experience package for grafana-fast with custom UI kit.",
+  "description": "grafana-fast 仪表板体验包（基于自研 UI 组件库）。",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

@@ -1,11 +1,11 @@
 /**
- * Lightweight PromQL rendering regression checks
+ * PromQL 渲染回归检查（轻量脚本）
  *
- * Why a script (not a full test runner)?
- * - Keeps the repo lean: no extra test framework dependency
- * - Still provides a deterministic safety net for key rendering behaviors
+ * 说明：为什么使用脚本（而不是完整测试框架）？
+ * - 保持仓库轻量：避免额外测试框架依赖
+ * - 为关键渲染行为提供确定性的安全网
  *
- * Run:
+ * 运行：
  * - `pnpm -C packages/utils run test:promql`
  */
 

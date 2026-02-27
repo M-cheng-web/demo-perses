@@ -62,7 +62,7 @@
    * - 这里的逻辑刻意保持“轻量但产品化”
    * - 校验与错误定位由 jsonc-parser 支持（utils/analyzeJsonText）
    *
-   * 核心策略（按你最新需求）：
+   * 核心策略（按当前需求）：
    * - 用户输入的内容先落在 draftText（内部草稿）里；
    * - 当 JSON 不合法 / 外部校验不通过时，不会 emit update:modelValue，避免外部状态被污染；
    * - 只有当“JSON 语法合法 + 外部校验通过”时，才会把 draftText 同步到外部 modelValue。

@@ -1,3 +1,6 @@
+/**
+ * 全局 message：轻量 DOM 实现的消息提示（支持 PortalRoot 与多实例嵌入场景）。
+ */
 import { createTimeout, type TimeoutHandle } from '@grafana-fast/utils';
 
 type MessageType = 'info' | 'success' | 'error' | 'warning' | 'loading';
@@ -8,9 +11,9 @@ export interface MessageOptions {
   duration?: number;
   key?: string;
   /**
-   * Optional mount container override.
-   * - Useful for multi-instance embedded scenarios.
-   * - When omitted, message will try to mount into the "active" portal root.
+   * 可选：挂载容器覆盖。
+   * - 适用于多实例嵌入场景。
+   * - 未传入时，会尝试挂载到“当前活跃”的 portal root。
    */
   container?: string | HTMLElement;
 }
@@ -18,14 +21,13 @@ export interface MessageOptions {
 type MessageInput = MessageOptions | string;
 
 const resolveMountEl = () => {
-  // Prefer an "active" portal root (set by ConfigProvider) so messages appear
-  // in the instance the user is currently interacting with.
+  // 优先使用“活跃 portal root”（由 ConfigProvider 设置），使 message 出现在当前交互的实例中。
   const active = (globalThis as any).__gfActivePortalRoot as HTMLElement | undefined;
   if (active && typeof active === 'object' && active instanceof HTMLElement && active.isConnected) {
     return active;
   }
 
-  // Fallback: last portal root so message can inherit theme tokens in embedded scenarios.
+  // 兜底：使用最后一个 portal root，以便在嵌入场景中继承主题 tokens。
   const roots = Array.from(document.querySelectorAll<HTMLElement>('.gf-portal-root'));
   return roots[roots.length - 1] ?? document.body;
 };

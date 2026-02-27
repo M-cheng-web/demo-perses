@@ -1,11 +1,11 @@
+/**
+ * PromQL 映射层最小回归测试：
+ * - 验证典型表达式可被 AST 映射覆盖
+ * - 验证输出结构满足 PromVisualQuery 预期
+ */
+
 import assert from 'node:assert/strict';
 import { parsePromqlToVisualQueryAst } from '../dist/index.mjs';
-
-/**
- * 说明：
- * - 这里是 promql 包的“映射层”最小 smoke test
- * - 重点验证：AST 映射能覆盖典型表达式，并且结构满足 PromVisualQuery 预期
- */
 
 function testTopk() {
   const r = parsePromqlToVisualQueryAst('topk(5, cpu_usage)');

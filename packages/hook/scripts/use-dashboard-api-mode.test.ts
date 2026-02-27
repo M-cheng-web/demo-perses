@@ -1,3 +1,6 @@
+/**
+ * useDashboardApiMode 单元测试（最小回归）：覆盖初始模式选择与切换行为。
+ */
 import assert from 'node:assert/strict';
 import { ref } from 'vue';
 import type { GrafanaFastApiClient } from '@grafana-fast/api';
@@ -7,10 +10,10 @@ import { resolveInitialApiMode, useDashboardApiMode } from '../src/sdk/useDashbo
 async function test(name: string, fn: () => void | Promise<void>) {
   try {
     await fn();
-    // eslint-disable-next-line no-console -- test script output is allowed
+    // eslint-disable-next-line no-console -- 允许测试脚本输出
     console.log(`✓ ${name}`);
   } catch (error) {
-    // eslint-disable-next-line no-console -- test script output is allowed
+    // eslint-disable-next-line no-console -- 允许测试脚本输出
     console.error(`✗ ${name}`);
     throw error;
   }

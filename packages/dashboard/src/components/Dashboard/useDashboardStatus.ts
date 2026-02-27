@@ -1,3 +1,6 @@
+/**
+ * Dashboard 状态提示逻辑：boot/loading/error/waiting 文案与 toast 反馈。
+ */
 import { computed, ref, watch, type Ref } from 'vue';
 import { message } from '@grafana-fast/component';
 import { ClockCircleOutlined, CloseCircleOutlined } from '@ant-design/icons-vue';

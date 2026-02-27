@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/**
+ * `nr` 命令：轻量脚本执行器封装（支持 `-C` 切换工作目录），用于统一执行 pnpm scripts。
+ */
 import { spawnSync } from 'child_process';
 
 function usage(code = 0) {

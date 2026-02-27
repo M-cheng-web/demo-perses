@@ -1,3 +1,6 @@
+/**
+ * Base 组件导出入口：Button/Tabs/Tag/Empty/Loading/Alert 等。
+ */
 export { default as Button } from './Button.vue';
 export { default as Tabs } from './Tabs.vue';
 export { default as TabPane } from './TabPane.vue';

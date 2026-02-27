@@ -79,17 +79,17 @@ export class QueryRunner {
   }
 
   private touchCacheKey(key: string, entry: CacheEntry) {
-    // Move to the back (most recently used) without changing TTL timestamp.
+    // 移动到 Map 尾部（最近使用），但不改变 TTL 时间戳。
     this.cache.delete(key);
     this.cache.set(key, entry);
   }
 
   private pruneCache(now: number) {
-    // Don't prune too frequently; keep it cheap.
+    // 避免过于频繁的 prune，保持开销低。
     if (now - this.lastPruneAt < 2_000) return;
     this.lastPruneAt = now;
 
-    // 1) TTL prune (only for settled results; keep in-flight promises)
+    // 1) TTL 清理（仅清理已完成结果；保留 in-flight promise）
     if (this.options.cacheTtlMs > 0) {
       for (const [key, entry] of this.cache) {
         if (entry.promise) continue;
@@ -98,7 +98,7 @@ export class QueryRunner {
       }
     }
 
-    // 2) Size prune (LRU via Map insertion order)
+    // 2) 数量清理（按 Map 插入顺序实现 LRU）
     const max = this.options.maxCacheEntries;
     while (this.cache.size > max) {
       const oldestKey = this.cache.keys().next().value as string | undefined;
@@ -147,8 +147,7 @@ export class QueryRunner {
 
   private normalizeExecuteQuery(query: CanonicalQuery, expr: string): QueryExecuteDTO {
     const legendFormat = typeof query.legendFormat === 'string' ? query.legendFormat : '';
-    const minStep =
-      typeof query.minStep === 'number' && Number.isFinite(query.minStep) && query.minStep > 0 ? query.minStep : DEFAULT_MIN_STEP_SEC;
+    const minStep = typeof query.minStep === 'number' && Number.isFinite(query.minStep) && query.minStep > 0 ? query.minStep : DEFAULT_MIN_STEP_SEC;
     const format = query.format ?? 'time_series';
     const instant = query.instant === true;
     const hide = query.hide === true;
@@ -159,14 +158,7 @@ export class QueryRunner {
     const tr = context.timeRange;
     const from = typeof tr.from === 'number' ? tr.from : String(tr.from);
     const to = typeof tr.to === 'number' ? tr.to : String(tr.to);
-    return [
-      query.format,
-      query.instant ? 'instant' : 'range',
-      query.minStep,
-      from,
-      to,
-      expr,
-    ].join('::');
+    return [query.format, query.instant ? 'instant' : 'range', query.minStep, from, to, expr].join('::');
   }
 
   /**

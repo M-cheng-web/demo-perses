@@ -1,10 +1,13 @@
+/**
+ * Dashboard 运行时绑定：注入 runtime、绑定 apiClient、同步宿主容器尺寸与全局指针位置。
+ */
 import { computed, inject, onMounted, onUnmounted, provide, ref, watch, type ComputedRef, type Ref } from 'vue';
 import { getActivePinia, type Pinia } from '@grafana-fast/store';
 import type { GrafanaFastApiClient } from '@grafana-fast/api';
+import { subscribeWindowResize } from '@grafana-fast/utils';
 
 import { GF_RUNTIME_KEY } from '/#/runtime/keys';
 import { setPiniaApiClient } from '/#/runtime/piniaAttachments';
-import { subscribeWindowResize } from '/#/runtime/windowEvents';
 
 type TooltipStoreLike = {
   updateGlobalMousePosition: (pos: { x: number; y: number; pageX: number; pageY: number }) => void;
@@ -20,14 +23,14 @@ interface Options {
 }
 
 export function useDashboardRuntimeBindings(options: Options) {
-  // Provide “runtime deps” (isolated per dashboard instance).
+  // 注入运行时依赖（按 Dashboard 实例隔离）。
   provide(GF_RUNTIME_KEY, { id: options.instanceId.value, rootEl: options.rootEl, scrollEl: options.scrollEl });
 
-  // NOTE: inject() must be called during setup (not inside onMounted).
+  // 注意：inject() 必须在 setup 阶段调用（不能放到 onMounted 中）。
   const injectedPinia = inject<Pinia | undefined>('pinia', undefined);
 
-  // Attach apiClient to pinia so stores (non-component modules) can access per-instance runtime deps.
-  // Important: do this during setup/watch (not onMounted) so QueryScheduler can safely access it in setup.
+  // 把 apiClient 绑定到 pinia：使 store（非组件模块）可访问实例级运行时依赖。
+  // 注意：应在 setup/watch 阶段完成绑定（而不是 onMounted），以便 QueryScheduler 在 setup 中安全读取。
   const activePinia = injectedPinia ?? getActivePinia();
   watch(
     () => options.apiClient,
@@ -38,9 +41,9 @@ export function useDashboardRuntimeBindings(options: Options) {
     { immediate: true }
   );
 
-  // ---------------------------
-  // Host container height sync
-  // ---------------------------
+  // -------------------
+  // 宿主容器高度同步
+  // -------------------
   const hostHeightPx = ref<number | null>(null);
   let hostResizeObserver: ResizeObserver | null = null;
   let observedHostEl: HTMLElement | null = null;
@@ -98,9 +101,9 @@ export function useDashboardRuntimeBindings(options: Options) {
     return style;
   });
 
-  // ---------------------------
-  // Pointer tracking (global tooltip)
-  // ---------------------------
+  // ---------------------
+  // 指针追踪（全局 Tooltip）
+  // ---------------------
   const handleGlobalMouseMove = (event: MouseEvent) => {
     options.tooltipStore.updateGlobalMousePosition({
       x: event.clientX,
@@ -130,7 +133,7 @@ export function useDashboardRuntimeBindings(options: Options) {
     detachHostObserver();
   });
 
-  // Root node change (rare): re-bind pointer tracking and re-attach host resize observer.
+  // 根节点变更（较少发生）：重新绑定指针事件，并重新挂载宿主 resize 监听。
   watch(
     options.rootEl,
     (el, prev) => {

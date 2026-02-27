@@ -1,3 +1,4 @@
+<!-- 演示站点根组件：提供全局 ConfigProvider，并渲染 router-view。 -->
 <template>
   <ConfigProvider theme="light" component-size="middle">
     <div class="dp-app">

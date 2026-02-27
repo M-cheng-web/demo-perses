@@ -1,3 +1,6 @@
+/**
+ * 浮层 Composable：处理外部点击关闭，以及 resize/scroll 时的定位同步（Dropdown/Select/Tooltip 等复用）。
+ */
 import { onBeforeUnmount, onMounted, watch, type ComputedRef, type Ref } from 'vue';
 import { subscribeWindowEvent, subscribeWindowResize, type Unsubscribe } from '@grafana-fast/utils';
 

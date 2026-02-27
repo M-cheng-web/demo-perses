@@ -2,7 +2,7 @@
  * 文件说明：HTTP 实现层 endpoints（接口路径）定义
  *
  * 为什么要单独做这一层：
- * - 目前后端接口还没定稿，但我们希望调用层（dashboard/hook/app）保持稳定
+ * - 目前后端接口还没定稿，但调用层（dashboard/hook/app）应保持稳定
  * - 当后端路径发生变化时，尽量只改 http 实现层，不要牵扯 contracts / UI
  *
  * 这里解决的问题：
@@ -16,7 +16,7 @@
  *
  * 重要说明：
  * - DEFAULT_HTTP_API_ENDPOINTS 里的路径是“占位默认值”，不是最终真实接口
- * - 等你给出后端接口文档后，我们会在这里集中完成路径映射与 DTO 适配入口
+ * - 当后端接口文档就绪后，可在此集中完成路径映射与 DTO 适配入口
  */
 
 /**
@@ -27,7 +27,7 @@
  * - 它们与实际后端路径无关（路径可变，key 尽量稳定）
  */
 export const HttpApiEndpointKey = {
-  // --- Dashboard ---
+  // --- 仪表盘（Dashboard） ---
   /** POST /dashboards/session/resolve - 解析业务参数并签发 dashboardSessionKey */
   ResolveDashboardSession: 'ResolveDashboardSession',
   /** POST /dashboards/load - 获取单个 Dashboard（整盘 JSON，只在进入时拉一次） */
@@ -59,7 +59,7 @@ export const HttpApiEndpointKey = {
   /** POST /dashboards/panel-groups/reorder - 更新面板组排序 */
   ReorderPanelGroups: 'ReorderPanelGroups',
 
-  // --- Query ---
+  // --- 查询（Query） ---
   /** POST /queries/execute - 执行多条查询（推荐：面板通常包含多条 query） */
   ExecuteQueries: 'ExecuteQueries',
   /** POST /query/metrics - 拉取 metric 列表（QueryBuilder 用） */
@@ -69,7 +69,7 @@ export const HttpApiEndpointKey = {
   /** POST /query/label-values - 拉取 label value 列表（QueryBuilder 用） */
   FetchLabelValues: 'FetchLabelValues',
 
-  // --- Variable ---
+  // --- 变量（Variable） ---
   /**
    * POST /variables/load - 加载整份变量定义（后端全量下发）
    */
@@ -87,11 +87,11 @@ export type HttpApiEndpointKey = (typeof HttpApiEndpointKey)[keyof typeof HttpAp
  *
  * 说明：
  * - 这些路径是为了让“配置结构”先稳定下来
- * - 等真实后端接口文档确定后，你只需要在这里调整路径
+ * - 等真实后端接口文档确定后，只需在这里调整路径
  * - 如果真实后端路径与这些不同，不影响调用层/契约层
  */
 export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
-  // --- Dashboard ---
+  // --- 仪表盘（Dashboard） ---
   [HttpApiEndpointKey.ResolveDashboardSession]: '/dashboards/session/resolve',
   [HttpApiEndpointKey.LoadDashboard]: '/dashboards/load',
   [HttpApiEndpointKey.SaveDashboard]: '/dashboards/save',
@@ -108,13 +108,13 @@ export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
   [HttpApiEndpointKey.DeletePanelGroup]: '/dashboards/panel-groups/delete',
   [HttpApiEndpointKey.ReorderPanelGroups]: '/dashboards/panel-groups/reorder',
 
-  // --- Query ---
+  // --- 查询（Query） ---
   [HttpApiEndpointKey.ExecuteQueries]: '/queries/execute',
   [HttpApiEndpointKey.FetchMetrics]: '/query/metrics',
   [HttpApiEndpointKey.FetchLabelKeys]: '/query/label-keys',
   [HttpApiEndpointKey.FetchLabelValues]: '/query/label-values',
 
-  // --- Variable ---
+  // --- 变量（Variable） ---
   [HttpApiEndpointKey.LoadVariables]: '/variables/load',
   [HttpApiEndpointKey.ApplyVariables]: '/variables/apply',
 };
@@ -123,7 +123,7 @@ export const DEFAULT_HTTP_API_ENDPOINTS: Record<HttpApiEndpointKey, string> = {
  * 合并默认 endpoints 与外部覆盖项
  *
  * 典型用途：
- * - 你在 hook/app 里用 apiConfig.endpoints 覆盖某几个路径
+ * - 在 hook/app 中通过 apiConfig.endpoints 覆盖某几个路径
  * - 未覆盖的部分仍使用默认值，避免“只改一个 endpoint 导致其他 key undefined”
  */
 export function resolveHttpApiEndpoints(overrides: Partial<Record<HttpApiEndpointKey, string>> | undefined): Record<HttpApiEndpointKey, string> {

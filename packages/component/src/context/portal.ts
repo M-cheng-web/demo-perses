@@ -1,11 +1,14 @@
+/**
+ * Portal 上下文：为浮层组件提供 Teleport target（由 ConfigProvider 注入）。
+ */
 import type { ComputedRef, InjectionKey } from 'vue';
 
 export interface GfPortalContext {
   /**
-   * Teleport target for floating layers (Modal/Drawer/Dropdown/Select/Tooltip/Popconfirm...).
+   * 浮层 Teleport 目标容器（Modal/Drawer/Dropdown/Select/Tooltip/Popconfirm 等）。
    *
-   * - Default: `body`
-   * - When provided by ConfigProvider: `.gf-portal-root` element
+   * - 默认：`body`
+   * - 由 ConfigProvider 提供时：`.gf-portal-root` 元素
    */
   target: ComputedRef<string | HTMLElement>;
 }

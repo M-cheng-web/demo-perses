@@ -73,7 +73,7 @@
 
   const [_, bem] = createNamespace('card');
   const globalSize = useComponentSize(computed(() => props.size));
-  // Card only supports 'small' | 'default'; map 'middle'/'large' → 'default'
+  // Card 只支持 'small' | 'default'；把 'middle'/'large' 映射为 'default'
   const resolvedSize = computed(() => (globalSize.value === 'small' ? 'small' : 'default'));
 </script>
 
@@ -184,7 +184,7 @@
       }
     }
 
-    // Size small
+    // small 尺寸
     &--size-small &__header {
       min-height: 38px;
       padding: 0 12px;

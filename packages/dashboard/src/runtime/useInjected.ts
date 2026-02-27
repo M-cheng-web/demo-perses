@@ -17,7 +17,7 @@ import { GF_RUNTIME_KEY, type DashboardRuntimeContext } from './keys';
  * 获取当前运行时 API Client
  */
 export function useApiClient(): GrafanaFastApiClient {
-  // Prefer pinia attachments so runtime switching (mock/remote) works without re-providing inject values.
+  // 优先使用 piniaAttachments：便于 mock/remote 切换时无需重新提供 inject 值。
   return getPiniaApiClient();
 }
 

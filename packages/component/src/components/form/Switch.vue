@@ -62,7 +62,7 @@
 
   const [_, bem] = createNamespace('switch');
   const globalSize = useComponentSize(computed(() => props.size));
-  // Switch only supports 'small' | 'default'; map 'middle'/'large' → 'default'
+  // Switch 只支持 'small' | 'default'；把 'middle'/'large' 映射为 'default'
   const resolvedSize = computed(() => (globalSize.value === 'small' ? 'small' : 'default'));
   const formItem = inject<GfFormItemContext | null>(gfFormItemContextKey, null);
 
@@ -137,7 +137,7 @@
       white-space: nowrap;
     }
 
-    // Checked state
+    // 选中状态
     &.is-checked {
       background: var(--gf-color-primary);
 
@@ -154,19 +154,19 @@
       }
     }
 
-    // Disabled state
+    // Disabled 状态
     &.is-disabled {
       cursor: not-allowed;
       opacity: 0.65;
     }
 
-    // Loading state
+    // Loading 状态
     &.is-loading {
       cursor: not-allowed;
       opacity: 0.65;
     }
 
-    // Size variant
+    // 尺寸变体
     &--size-small {
       width: 28px;
       height: 16px;

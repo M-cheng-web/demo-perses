@@ -28,7 +28,7 @@ function pad(num: number, len = 2): string {
  * 格式化 Date（支持常用 token）
  *
  * 支持 token：
- * - YYYY MM DD HH mm ss SSS
+ * - YYYY MM DD HH mm ss SSS（年 月 日 时 分 秒 毫秒）
  */
 function formatDate(date: Date, format: string): string {
   const replacements: Record<string, string> = {
@@ -48,11 +48,11 @@ function formatDate(date: Date, format: string): string {
  * 解析相对时间字符串（如 "now-1h"）
  *
  * 入参示例：
- * - now
- * - now-30m
- * - now-7d
- * - now-1M
- * - now-1y
+ * - now（当前时间）
+ * - now-30m（当前时间 - 30 分钟）
+ * - now-7d（当前时间 - 7 天）
+ * - now-1M（当前时间 - 1 个月）
+ * - now-1y（当前时间 - 1 年）
  */
 export function parseRelativeTime(relativeTime: string): Timestamp {
   const now = Date.now();

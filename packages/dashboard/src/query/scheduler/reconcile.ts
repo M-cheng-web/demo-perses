@@ -1,3 +1,6 @@
+/**
+ * QueryScheduler 视口集合对比：计算 render/active 集合的增删差异（diff）。
+ */
 export interface ViewportDiff {
   addedRender: Set<string>;
   removedRender: Set<string>;

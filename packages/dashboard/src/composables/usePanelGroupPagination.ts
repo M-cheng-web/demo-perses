@@ -1,22 +1,25 @@
+/**
+ * 面板组分页 Composable：每组维护分页状态，并派生当前页 panels 与页内 layout。
+ */
 import { computed, reactive, watch } from 'vue';
 import type { Panel, PanelGroup, PanelLayout } from '@grafana-fast/types';
 
 export interface UsePanelGroupPaginationOptions {
   /**
    * 每页条数默认值（每个组独立 state，但默认值共享）
-   * @default 20
+   * @default 20（默认每页条数）
    */
   defaultPageSize?: number;
   /**
    * 可选 pageSize（用于 UI 展示；不强制限制 setPageSize 的值）
-   * @default [20, 30]
+   * @default [20, 30]（常用选项）
    */
   pageSizeOptions?: number[];
   /**
    * 修改 pageSize 时是否强制回到第一页
    * - true：更符合“换每页条数=重新分页”的直觉
    * - false：尽量保持当前页（会自动 clamp）
-   * @default true
+   * @default true（默认重置到第一页）
    */
   resetPageOnPageSizeChange?: boolean;
 }
@@ -94,7 +97,7 @@ export function usePanelGroupPagination(panelGroups: () => PanelGroup[], options
     const groups = panelGroups();
     const aliveIds = new Set(groups.map((g) => normalizeGroupId(g.id)));
 
-    // prune removed groups（避免 state 无限增长）
+    // 清理已移除的 group（避免 state 无限增长）
     for (const key of Object.keys(currentByGroupId)) {
       if (!aliveIds.has(key)) delete currentByGroupId[key];
     }
@@ -128,13 +131,13 @@ export function usePanelGroupPagination(panelGroups: () => PanelGroup[], options
     const end = start + pageSize;
     const pagePanels = (group.panels ?? []).slice(start, end);
 
-    // NOTE:
+    // 注意：
     // - 这里不要在每次 reactive 变更时为所有 group 都建一次 layoutById（会导致打开某个组时卡顿）。
     // - 调用方应只在“需要渲染/分页”的场景调用 buildPagedGroup（例如聚焦层当前打开的组）。
     const layoutById = new Map<string, PanelLayout>();
     (group.layout ?? []).forEach((it) => layoutById.set(String(it.i), it));
 
-    // Build the page layout strictly by panels array order (per requirement).
+    // 按 panels 数组顺序构建页面 layout（按需求约定）。
     const rawLayout: PanelLayout[] = pagePanels.map((p) => {
       const existing = layoutById.get(String(p.id));
       if (!existing) {
@@ -143,7 +146,7 @@ export function usePanelGroupPagination(panelGroups: () => PanelGroup[], options
       return existing;
     });
 
-    // Rebase Y so each page starts near the top (avoid huge blank space from original y).
+    // y 做页内 rebased：让每页从顶部附近开始（避免原始 y 带来的巨大空白）。
     let minY = Number.POSITIVE_INFINITY;
     for (const it of rawLayout) minY = Math.min(minY, Number(it.y ?? 0));
     const layoutBaseY = Number.isFinite(minY) ? Math.max(0, minY) : 0;

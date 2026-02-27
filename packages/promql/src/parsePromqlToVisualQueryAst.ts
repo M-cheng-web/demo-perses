@@ -1,3 +1,6 @@
+/**
+ * PromQL -> VisualQuery（AST 版本入口）：组合语法解析、AST 映射与兜底转换（编辑器侧使用）。
+ */
 import type { PromVisualQuery } from '@grafana-fast/types';
 import { parsePromqlToVisualQuery, type PromqlParseConfidence, type PromqlParseWarning } from '@grafana-fast/utils';
 import { parsePromqlToAst, type PromqlDiagnostic } from './parser';

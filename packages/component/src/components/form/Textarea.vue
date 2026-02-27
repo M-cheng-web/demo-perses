@@ -91,7 +91,7 @@
     await nextTick();
 
     const el = textareaRef.value;
-    // Reset height to calculate scroll height
+    // 先重置高度，再计算 scrollHeight
     el.style.height = 'auto';
 
     const computed = window.getComputedStyle(el);
@@ -136,7 +136,7 @@
     formItem?.onFieldBlur();
   };
 
-  // Expose
+  // 对外暴露
   defineExpose({
     focus: () => textareaRef.value?.focus(),
     blur: () => textareaRef.value?.blur(),

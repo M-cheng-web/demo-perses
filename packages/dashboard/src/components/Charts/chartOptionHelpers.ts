@@ -1,3 +1,6 @@
+/**
+ * 图表 option 工具：判定查询结果是否有数据，并提供“暂无数据”占位 option。
+ */
 import type { EChartsOption } from 'echarts';
 import type { QueryResult } from '@grafana-fast/types';
 

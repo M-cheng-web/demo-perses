@@ -111,9 +111,9 @@
 </script>
 
 <style scoped lang="less">
-  // Ant Design 5.x inspired Button styles
+  // Button 基础样式（参考 Ant Design 5.x）
   .gf-button {
-    // CSS Variables for easy customization
+    // CSS Variables：便于主题与定制
     --gf-btn-bg: var(--gf-color-surface);
     --gf-btn-bg-hover: var(--gf-color-surface);
     --gf-btn-bg-active: var(--gf-color-surface);
@@ -147,7 +147,7 @@
     box-shadow: var(--gf-btn-shadow);
     box-sizing: border-box;
 
-    // Primary button - Ant Design style
+    // Primary 按钮
     &--type-primary {
       --gf-btn-bg: var(--gf-color-primary);
       --gf-btn-bg-hover: var(--gf-color-primary-hover);
@@ -159,7 +159,7 @@
       --gf-btn-shadow-hover: 0 2px 0 rgba(5, 145, 255, 0.1);
     }
 
-    // Ghost/Outline button
+    // Ghost/Outline 按钮
     &--type-ghost {
       --gf-btn-bg: transparent;
       --gf-btn-bg-hover: transparent;
@@ -175,7 +175,7 @@
       }
     }
 
-    // Text button - minimal style
+    // Text 按钮（极简）
     &--type-text {
       --gf-btn-bg: transparent;
       --gf-btn-bg-hover: var(--gf-color-fill);
@@ -188,7 +188,7 @@
       padding: 4px 8px;
     }
 
-    // Icon-only text button - neutral hover
+    // Icon-only 的 Text 按钮（中性 hover）
     &--icon-only&--type-text {
       --gf-btn-color: var(--gf-color-text-secondary);
 
@@ -197,7 +197,7 @@
       }
     }
 
-    // Link button
+    // Link 按钮
     &--type-link {
       --gf-btn-bg: transparent;
       --gf-btn-bg-hover: transparent;
@@ -216,7 +216,7 @@
       }
     }
 
-    // Dashed button
+    // Dashed 按钮
     &--type-dashed {
       --gf-btn-bg: var(--gf-color-surface);
       --gf-btn-bg-hover: var(--gf-color-surface);
@@ -229,7 +229,7 @@
       }
     }
 
-    // Danger state - follows button type
+    // Danger 状态（跟随按钮类型）
     &--danger {
       --gf-btn-color: var(--gf-color-danger);
       --gf-btn-border: var(--gf-color-danger);
@@ -262,7 +262,7 @@
       --gf-btn-border: transparent;
     }
 
-    // Size variants
+    // 尺寸变体
     &--size-small {
       padding: 0 7px;
       height: var(--gf-control-height-sm, 24px);
@@ -286,12 +286,12 @@
       border-radius: var(--gf-radius-lg);
     }
 
-    // Block button
+    // Block 按钮
     &--block {
       width: 100%;
     }
 
-    // Icon-only button
+    // Icon-only 按钮
     &--icon-only {
       padding: 0;
       width: var(--gf-btn-icon-only-size, 32px);
@@ -312,12 +312,12 @@
       --gf-btn-icon-only-size: 40px;
     }
 
-    // Shape variants
+    // 形状变体
     &--shape-circle {
       border-radius: 50%;
     }
 
-    // Interactive states
+    // 交互状态
     &:hover:not(.is-disabled) {
       background: var(--gf-btn-bg-hover);
       border-color: var(--gf-btn-border-hover);
@@ -335,7 +335,7 @@
       box-shadow: var(--gf-focus-ring);
     }
 
-    // Disabled state
+    // Disabled 状态
     &.is-disabled {
       cursor: not-allowed;
       border-color: var(--gf-color-border);
@@ -356,12 +356,12 @@
       border-color: transparent;
     }
 
-    // Loading state
+    // Loading 状态
     &--loading .gf-button__content {
       opacity: 0.65;
     }
 
-    // Icon
+    // Icon 区域
     &__icon {
       display: inline-flex;
       align-items: center;
@@ -374,7 +374,7 @@
       }
     }
 
-    // Loading spinner
+    // 加载 Spinner
     &__spinner {
       width: 14px;
       height: 14px;
@@ -389,7 +389,7 @@
       }
     }
 
-    // Shortcut hint
+    // 快捷键提示
     &__shortcut {
       margin-left: 4px;
       padding: 0 6px;

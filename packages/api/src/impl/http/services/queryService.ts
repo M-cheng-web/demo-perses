@@ -23,14 +23,14 @@ export function createHttpQueryService(_deps: HttpQueryServiceDeps): QueryServic
    * 这里实现“常用且足够通用”的 QueryService HTTP 行为：
    *
    * - executeQueries：POST /queries/execute（默认占位路径）
-   *   - body：{ queries, context }
+   *   - body：{ queries, context }（请求体）
    *   - signal：透传给 fetch（支持取消/过期）
    *
    * 说明：
-   * - 我们不在这里做“重型的 DTO 适配框架”，只保留最常用的结构
-   * - 如果后端要求不同字段名，你只需要在这个方法里改一次映射即可
+   * - 这里不做“重型的 DTO 适配框架”，只保留最常用的结构
+   * - 若后端要求不同字段名，只需在该方法内调整映射即可
    *
-   * - fetchMetrics / fetchLabelKeys / fetchLabelValues：
+   * - fetchMetrics / fetchLabelKeys / fetchLabelValues（联想提示）：
    *   - 用于 QueryBuilder 的联想提示
    *   - 如需缓存，优先在上层 QueryRunner/调度器做（更符合“不要过度设计”）
    */
