@@ -1,7 +1,7 @@
 /**
  * Dashboard 状态提示逻辑：boot/loading/error/waiting 文案与 toast 反馈。
  */
-import { computed, ref, watch, type Ref } from 'vue';
+import { computed, ref, watch, type Component, type Ref } from 'vue';
 import { message } from '@grafana-fast/component';
 import { ClockCircleOutlined, CloseCircleOutlined } from '@ant-design/icons-vue';
 
@@ -133,7 +133,7 @@ export function useDashboardStatus(options: UseDashboardStatusOptions) {
     return '';
   });
 
-  const statusIcon = computed(() => {
+  const statusIcon = computed<Component>(() => {
     switch (statusKind.value) {
       case 'error':
         return CloseCircleOutlined;

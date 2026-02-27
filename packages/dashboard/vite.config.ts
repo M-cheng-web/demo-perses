@@ -45,7 +45,6 @@ export default defineConfig({
         '@grafana-fast/component',
         '@grafana-fast/api',
         '@grafana-fast/utils',
-        '@ant-design/icons-vue',
         '@grafana-fast/types',
         'echarts',
         'vue-grid-layout-v3',

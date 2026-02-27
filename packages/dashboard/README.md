@@ -18,7 +18,6 @@ pnpm add @grafana-fast/dashboard @grafana-fast/hooks
 
 - `vue`
 - `echarts`
-- `@ant-design/icons-vue`
 
 ## 集成指南（面向宿主应用）
 

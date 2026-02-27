@@ -35,7 +35,7 @@ export default defineConfig({
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
-      external: ['vue', '@ant-design/icons-vue', '@grafana-fast/utils'],
+      external: ['vue', '@grafana-fast/utils'],
       output: {
         // `src/index.ts` 同时导出 named 与 default（Vue plugin 对象）。
         // 显式设置 CJS export mode，避免 rollup interop warnings。

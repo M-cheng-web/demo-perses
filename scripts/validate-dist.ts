@@ -25,6 +25,22 @@ function assertNoWorkspaceProtocol(record: unknown, label: string) {
   }
 }
 
+function assertNoForbiddenDeps(pkgJSON: any, distDir: string) {
+  const forbidden = ['@ant-design/icons-vue'];
+  const fields = ['dependencies', 'peerDependencies', 'optionalDependencies'];
+  const pkgDirName = path.basename(path.dirname(distDir));
+
+  for (const name of forbidden) {
+    for (const field of fields) {
+      const record = pkgJSON?.[field];
+      if (!record || typeof record !== 'object') continue;
+      if (record[name]) {
+        throw new Error(`${pkgDirName} dist/package.json 不应声明 ${field}.${name}（应内置到 bundle 中）`);
+      }
+    }
+  }
+}
+
 async function validateDist(distDir: string) {
   const pkgJSONPath = path.join(distDir, 'package.json');
   if (!(await fs.pathExists(pkgJSONPath))) {
@@ -57,6 +73,7 @@ async function validateDist(distDir: string) {
 
   assertNoWorkspaceProtocol(pkgJSON?.dependencies, 'dependencies');
   assertNoWorkspaceProtocol(pkgJSON?.peerDependencies, 'peerDependencies');
+  assertNoForbiddenDeps(pkgJSON, distDir);
 
   const readmePath = path.join(distDir, 'README.md');
   if (!(await fs.pathExists(readmePath))) {

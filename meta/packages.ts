@@ -97,7 +97,7 @@ export const packages: PackageMeta[] = [
     description: 'grafana-fast 仪表板使用的 UI 组件库。',
     category: 'library',
     publish: true,
-    external: ['vue', '@ant-design/icons-vue'],
+    external: ['vue'],
   },
   {
     name: 'dashboard',

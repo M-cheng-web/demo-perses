@@ -45,7 +45,7 @@ async function createReleaseReadme(version: string) {
 > 注意：Vue 必须由宿主提供（不能内置），否则会出现“Ref / watch 不互通”的问题。
 
 \`\`\`bash
-pnpm add vue echarts @ant-design/icons-vue
+pnpm add vue echarts
 \`\`\`
 
 ## 使用方式
@@ -199,7 +199,6 @@ async function main() {
       // peer deps：由宿主提供（需使用同一 Vue 实例）
       'vue',
       'echarts',
-      '@ant-design/icons-vue',
     ],
     { bannerCssImport: true }
   );

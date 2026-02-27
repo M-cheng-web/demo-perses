@@ -31,7 +31,6 @@
     "@grafana-fast/utils": "workspace:*"
   },
   "peerDependencies": {
-    "@ant-design/icons-vue": "^7.0.1",
     "vue": "^3.5.0"
   },
   "devDependencies": {
